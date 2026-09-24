@@ -6,7 +6,7 @@ import {
   deleteProposal as deleteProposalService,
   uploadProposal as uploadProposalService,
 } from '@/services/supabase/proposals'
-import { generateProposal as generateProposalIntegration } from '@/integrations/anthropic'
+import { generateProposal as generateProposalIntegration } from '@/integrations/ai'
 import type { Deal, DealActivity, ProposalGenerationPayload } from '@/types'
 
 export function useDeal(id: string | undefined) {

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
+import { FlipItem } from '@/components/motion/FlipItem'
 import { StageBadge } from '@/components/deals/StageBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -126,8 +128,10 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
             {loading ? (
               <SkeletonRows />
             ) : (
-              sortedDeals.map((deal) => (
-                <tr
+              <AnimatePresence initial={false}>
+                {sortedDeals.map((deal) => (
+                <FlipItem
+                  as="tr"
                   key={deal.id}
                   className="group border-b border-neutral-100 transition-colors duration-150 last:border-0 hover:bg-purple-50/60"
                 >
@@ -162,8 +166,9 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))
+                </FlipItem>
+                ))}
+              </AnimatePresence>
             )}
           </tbody>
         </table>

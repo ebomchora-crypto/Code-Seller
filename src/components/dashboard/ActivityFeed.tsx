@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
+import { fadeInUp, staggerContainer } from '@/motion/variants'
+import { useRevealOnScroll } from '@/motion/hooks'
 import {
   Briefcase,
   FileText,
@@ -42,7 +45,7 @@ function ActivityItem({ item }: { item: ActivityFeedItem }) {
   const Icon = TYPE_ICONS[item.type] ?? StickyNote
 
   return (
-    <li className="relative pb-6 pl-8 last:pb-0">
+    <motion.li variants={fadeInUp} className="relative pb-6 pl-8 last:pb-0">
       <span className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--bg-muted)] text-[var(--text-secondary)]">
         <Icon className="h-3.5 w-3.5" />
       </span>
@@ -80,11 +83,13 @@ function ActivityItem({ item }: { item: ActivityFeedItem }) {
           )}
         </p>
       )}
-    </li>
+    </motion.li>
   )
 }
 
 export function ActivityFeed({ items, loading, error, onRetry }: ActivityFeedProps) {
+  const { ref, isInView } = useRevealOnScroll<HTMLOListElement>()
+
   return (
     <Card>
       <h3 className="mb-4 text-base font-semibold text-[var(--text-primary)]">Atividades Recentes</h3>
@@ -106,11 +111,17 @@ export function ActivityFeed({ items, loading, error, onRetry }: ActivityFeedPro
       ) : items.length === 0 ? (
         <EmptyState title="Nenhuma atividade registrada ainda" />
       ) : (
-        <ol className="animate-fade-in relative border-l border-[var(--border-subtle)] pl-0">
+        <motion.ol
+          ref={ref}
+          initial="hidden"
+          animate={isInView ? 'visible' : 'hidden'}
+          variants={staggerContainer(0.06)}
+          className="relative border-l border-[var(--border-subtle)] pl-0"
+        >
           {items.map((item) => (
             <ActivityItem key={`${item.source}-${item.id}`} item={item} />
           ))}
-        </ol>
+        </motion.ol>
       )}
     </Card>
   )

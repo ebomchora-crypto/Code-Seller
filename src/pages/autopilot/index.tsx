@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { FloatingPathsBackground } from '@/components/ui/floating-paths'
+import { AmbientBackground } from '@/components/motion/AmbientBackground'
+import { AmbientParticles } from '@/components/motion/AmbientParticles'
 import { ConversationSidebar } from '@/components/autopilot/ConversationSidebar'
 import { ChatInterface } from '@/components/autopilot/ChatInterface'
 import { useAutoPilot } from '@/hooks/useAutoPilot'
@@ -31,10 +33,12 @@ export default function AutopilotPage() {
         pathCount={10}
         className="autopilot-theme h-[calc(100vh-4rem)] min-h-[640px] bg-accent-ink"
       >
+        <AmbientBackground src="/backgrounds/autopilot-bg.png" opacity={0.5} />
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[760px] -translate-x-1/2 rounded-full bg-accent-bright/[0.12] blur-[140px]"
         />
+        <AmbientParticles count={14} />
         <div className="flex h-full">
           <div
             className={`fixed inset-y-0 left-0 z-30 w-72 transform transition-transform duration-200 lg:static lg:z-auto lg:w-72 lg:translate-x-0 ${

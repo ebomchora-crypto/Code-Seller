@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { DEAL_STAGES, formatCurrency } from '@/utils/deals'
 import type { Deal, DealStage } from '@/types'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { EASE_PREMIUM } from '@/utils/animations'
+import { duration, easing } from '@/motion/tokens'
 
 interface DealPipelineProps {
   deals: Deal[]
@@ -35,12 +35,27 @@ function DealDraggable({ deal, index }: { deal: Deal; index: number }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id })
 
   const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, opacity: isDragging ? 0.4 : 1 }
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${isDragging ? 0.97 : 1})`,
+        opacity: isDragging ? 0.5 : 1,
+      }
     : undefined
 
   return (
-    <motion.div initial={reducedMotion || index >= 15 ? false : { opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: Math.min(index, 14) * 0.05, ease: EASE_PREMIUM }}>
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} aria-roledescription="Negócio arrastável">
+    <motion.div
+      layout={!reducedMotion}
+      initial={reducedMotion || index >= 15 ? false : { opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: duration.enter, delay: Math.min(index, 10) * 0.03, ease: easing.standard }}
+    >
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="transition-shadow duration-150"
+      aria-roledescription="Negócio arrastável"
+    >
       <DealCard deal={deal} />
     </div>
     </motion.div>
@@ -55,9 +70,9 @@ function PipelineColumn({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-2xl border border-[var(--border-subtle)] p-3 transition-colors duration-150 ${
+      className={`flex w-72 shrink-0 flex-col rounded-2xl border border-[var(--border-subtle)] p-3 transition-all duration-200 ${
         columnBackground[stage] ?? 'bg-[var(--bg-secondary)]'
-      } ${isOver ? 'ring-1 ring-purple-300' : ''}`}
+      } ${isOver ? 'scale-[1.01] ring-2 ring-purple-300 shadow-[0_0_24px_rgba(179,92,255,0.12)]' : ''}`}
     >
       <div className="mb-1 flex items-center justify-between px-1">
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">

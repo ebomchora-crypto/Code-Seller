@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
+import { FlipItem } from '@/components/motion/FlipItem'
 import { CategoryBadge } from '@/components/financial/CategoryBadge'
 import { TransactionFilters } from '@/components/financial/TransactionFilters'
 import { TransactionCard } from '@/components/financial/TransactionCard'
@@ -162,12 +164,14 @@ export function TransactionList({
                   {loading ? (
                     <SkeletonRows />
                   ) : (
-                    visibleTransactions.map((transaction) => {
+                    <AnimatePresence initial={false}>
+                    {visibleTransactions.map((transaction) => {
                       const overdue = getOverdueStatus(transaction.due_date, transaction.status) === 'overdue'
                       const displayStatus = overdue ? 'overdue' : transaction.status
 
                       return (
-                        <tr
+                        <FlipItem
+                          as="tr"
                           key={transaction.id}
                           className={`group border-b border-neutral-100 transition-colors duration-150 last:border-0 hover:bg-purple-50/60 ${
                             overdue ? 'border-l-2 border-l-red-500' : ''
@@ -251,9 +255,10 @@ export function TransactionList({
                               </button>
                             </div>
                           </td>
-                        </tr>
+                        </FlipItem>
                       )
-                    })
+                    })}
+                    </AnimatePresence>
                   )}
                 </tbody>
               </table>

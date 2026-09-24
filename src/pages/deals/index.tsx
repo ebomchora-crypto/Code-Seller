@@ -126,7 +126,7 @@ export default function DealsPage() {
               </button>
             </div>
 
-            <Button onClick={openCreateForm}>+ Novo Negócio</Button>
+            <Button magnetic onClick={openCreateForm}>+ Novo Negócio</Button>
           </div>
         </div>
 

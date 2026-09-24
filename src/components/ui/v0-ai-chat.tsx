@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { ArrowUp, LoaderCircle, Sparkles, type LucideIcon } from 'lucide-react'
 import { Textarea } from '@/components/ui/Textarea'
+import { TextScramble } from '@/components/motion/TextScramble'
 import { cn } from '@/lib/utils'
 import { getChatSubmission, shouldSubmitChat } from './v0-ai-chat.utils'
 
@@ -119,7 +120,11 @@ export function V0AiChat({
           <div className="flex items-center justify-between gap-3 px-3 pb-3">
             <span className="inline-flex h-8 items-center gap-2 rounded-lg border border-dashed border-white/[0.12] bg-white/[0.025] px-2.5 text-[11px] font-medium text-white/45">
               <span className={cn('size-1.5 rounded-full', hasContext ? 'bg-emerald-400' : 'animate-pulse bg-accent-bright')} />
-              {hasContext ? 'Contexto ativo' : 'Carregando contexto'}
+              {hasContext ? (
+                'Contexto ativo'
+              ) : (
+                <TextScramble text="Carregando contexto" />
+              )}
             </span>
 
             <button

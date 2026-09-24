@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { TextScramble } from '@/components/motion/TextScramble'
 
 export function TypingIndicator() {
   const reducedMotion = useReducedMotion()
@@ -15,7 +16,7 @@ export function TypingIndicator() {
         <Sparkles className="relative h-3.5 w-3.5" />
       </span>
       <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm border border-white/[0.10] bg-white/[0.06] px-4 py-3 backdrop-blur-xl">
-        <span className="text-xs text-[var(--text-muted)]">AutoPilot está pensando...</span>
+        <TextScramble text="AutoPilot está pensando..." className="text-xs text-[var(--text-muted)]" />
       </div>
     </div>
   )

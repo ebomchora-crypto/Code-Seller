@@ -11,7 +11,7 @@ import {
 } from '@/services/supabase/autopilot'
 import { buildAutoPilotContext } from '@/services/supabase/autopilotContext'
 import { executeAction } from '@/services/autopilot/actionExecutor'
-import { sendAutoPilotMessage } from '@/integrations/anthropic'
+import { sendAutoPilotMessage } from '@/integrations/ai'
 import { generateConversationTitle, parseAutoPilotResponse } from '@/utils/autopilot'
 import { useAuthContext } from '@/stores/AuthContext'
 import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage } from '@/types'

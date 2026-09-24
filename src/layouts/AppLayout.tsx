@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header'
 import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider'
 import { useTheme } from '@/hooks/useTheme'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { EASE_PREMIUM } from '@/utils/animations'
+import { duration, easing } from '@/motion/tokens'
 import { getUpcomingReminders } from '@/services/supabase/tasks'
 import { cn } from '@/lib/utils'
 import { getAppSurface } from '@/layouts/appSurface'
@@ -17,9 +17,10 @@ interface AppLayoutProps {
   children?: ReactNode
 }
 
-// AppLayout é renderizado de novo a cada navegação (cada página o instancia),
-// então guardamos essa flag fora do componente para checar lembretes só uma
-// vez por carregamento do app, não a cada troca de rota.
+// AppLayout monta uma única vez no nível do router (envolvendo <Outlet/>,
+// ver src/router/index.tsx) e persiste entre navegações — só o conteúdo da
+// rota troca. Por isso a flag abaixo, fora do componente, ainda garante que
+// os lembretes só sejam checados uma vez por carregamento do app.
 let reminderCheckDone = false
 
 function formatReminderTime(value: string): string {
@@ -92,17 +93,17 @@ export function AppLayout({ children }: AppLayoutProps) {
           />
           <SmoothScrollProvider wrapperRef={mainRef} contentRef={contentRef}>
             <div ref={contentRef} className="relative">
-              {/* Cada página se auto-envolve em AppLayout (sem <Outlet/> compartilhado),
-                  então uma troca de rota desmonta e remonta este componente — não há
-                  como usar AnimatePresence com exit-animation sem mudar a estrutura de
-                  rotas. Este fade+slide roda só na entrada (mount), por `pathname`. */}
+              {/* Page transition real: AppLayout persiste entre rotas (ver comentário
+                  acima), então o exit abaixo realmente roda antes do próximo `key`
+                  entrar — fade + translateY mínimo, rápido o bastante para não atrasar
+                  a interação com a página nova. */}
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={pathname}
                   initial={reducedMotion || !surface.animateOpacity ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={reducedMotion || !surface.animateOpacity ? undefined : { opacity: 0, y: -6 }}
-                  transition={{ duration: reducedMotion || !surface.animateOpacity ? 0 : 0.3, ease: EASE_PREMIUM }}
+                  transition={{ duration: reducedMotion || !surface.animateOpacity ? 0 : duration.page, ease: easing.standard }}
                 >
                   {content}
                 </motion.div>

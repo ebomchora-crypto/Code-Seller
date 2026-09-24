@@ -59,9 +59,11 @@ export function DashboardSidebar({
       >
         <div className={cn('flex h-[72px] shrink-0 items-center p-3', collapsed ? 'justify-center' : 'justify-between')}>
           <div className={cn('flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3 px-2')}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[7px] bg-gradient-to-br from-accent-bright to-accent text-[12px] font-bold text-white shadow-[0_6px_18px_rgba(95,0,178,0.22)]">
-              CS
-            </span>
+            <img
+              src="/logo.png"
+              alt="Code Sellers"
+              className="h-8 w-8 shrink-0 rounded-[7px] object-cover shadow-[0_6px_18px_rgba(95,0,178,0.22)]"
+            />
             {!collapsed && (
               <span className="flex min-w-0 flex-col">
                 <span className="truncate font-display text-[14px] font-bold leading-none tracking-tight text-[var(--text-primary)]">

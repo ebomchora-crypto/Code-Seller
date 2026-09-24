@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { Zap } from 'lucide-react'
 import { FloatingPathsBackground } from '@/components/ui/floating-paths'
 import { GlassCard } from '@/components/ui/glass-card'
 
@@ -27,9 +26,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           {/* Lado esquerdo — branding, só no desktop */}
           <div className="hidden flex-col justify-between p-16 lg:flex lg:w-[45%]">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600">
-                <Zap size={16} className="text-white" />
-              </div>
+              <img src="/logo.png" alt="Code Sellers" className="h-8 w-8 rounded-lg object-cover" />
               <span className="font-display text-lg font-bold text-white">Code Sellers</span>
             </div>
 
@@ -57,9 +54,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           <div className="flex flex-1 items-center justify-center p-8">
             <div className="w-full max-w-md animate-fade-in">
               <div className="mb-8 flex flex-col items-center gap-3 text-center lg:hidden">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600">
-                  <Zap className="h-5 w-5 text-white" />
-                </span>
+                <img src="/logo.png" alt="Code Sellers" className="h-10 w-10 rounded-xl object-cover" />
                 <span className="text-2xl font-semibold text-white">Code Sellers</span>
               </div>
 

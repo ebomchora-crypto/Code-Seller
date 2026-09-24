@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { TASK_STATUS_CONFIG } from '@/utils/tasks'
 import type { Task, TaskStatus } from '@/types'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { EASE_PREMIUM } from '@/utils/animations'
+import { duration, easing } from '@/motion/tokens'
 
 interface TaskKanbanProps {
   tasksByStatus: Map<TaskStatus, Task[]>
@@ -35,15 +35,30 @@ function SortableTaskCard({ task, onOpenTask, index }: { task: Task; onOpenTask:
   const reducedMotion = useReducedMotion()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
+  // Nota: `transition` aqui vem do dnd-kit (useSortable) e já anima o reflow
+  // ao reordenar dentro da coluna — por isso o motion.div abaixo NÃO usa a
+  // prop `layout` (evitaria conflitar com a animação própria do dnd-kit).
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.5 : 1,
+    scale: isDragging ? 0.97 : 1,
   }
 
   return (
-    <motion.div initial={reducedMotion || index >= 15 ? false : { opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: Math.min(index, 14) * 0.05, ease: EASE_PREMIUM }}>
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} aria-roledescription="Tarefa arrastável">
+    <motion.div
+      initial={reducedMotion || index >= 15 ? false : { opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: duration.enter, delay: Math.min(index, 10) * 0.03, ease: easing.standard }}
+    >
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="transition-shadow duration-150"
+      aria-roledescription="Tarefa arrastável"
+    >
       <TaskCard task={task} onOpen={() => onOpenTask(task)} />
     </div>
     </motion.div>
@@ -67,7 +82,7 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-xl p-3 transition-colors duration-150 ${isOver ? 'ring-1 ring-purple-200' : ''}`}
+      className={`flex w-72 shrink-0 flex-col rounded-xl p-3 transition-all duration-200 ${isOver ? 'scale-[1.01] ring-2 ring-purple-300 shadow-[0_0_24px_rgba(179,92,255,0.12)]' : ''}`}
       style={{ backgroundColor: config.bg }}
     >
       <div className="mb-3 flex items-center justify-between px-1">

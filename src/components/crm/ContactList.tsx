@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
+import { FlipItem } from '@/components/motion/FlipItem'
 import { StatusBadge } from '@/components/crm/StatusBadge'
 import { TagBadge } from '@/components/crm/TagBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -119,8 +121,10 @@ export function ContactList({
             {loading ? (
               <SkeletonRows />
             ) : (
-              contacts.map((contact) => (
-                <tr
+              <AnimatePresence initial={false}>
+                {contacts.map((contact) => (
+                <FlipItem
+                  as="tr"
                   key={contact.id}
                   className="group border-b border-neutral-100 transition-colors duration-150 last:border-0 hover:bg-purple-50/60"
                 >
@@ -161,8 +165,9 @@ export function ContactList({
                       </button>
                     </div>
                   </td>
-                </tr>
-              ))
+                </FlipItem>
+                ))}
+              </AnimatePresence>
             )}
           </tbody>
         </table>

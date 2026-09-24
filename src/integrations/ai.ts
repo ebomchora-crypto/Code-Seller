@@ -5,21 +5,30 @@ import { serializeContext } from '@/utils/autopilot'
 // ============================================================================
 // ATENÇÃO — SEGURANÇA
 // ============================================================================
-// Esta integração chama a API da Anthropic diretamente do navegador usando
-// VITE_ANTHROPIC_API_KEY. Qualquer variável VITE_* é embutida no bundle e fica
-// visível a qualquer pessoa que inspecionar o código do site.
+// Esta integração chama a API do provedor diretamente do navegador usando
+// VITE_EXPERIENTIAL_API_KEY. Qualquer variável VITE_* é embutida no bundle e
+// fica visível a qualquer pessoa que inspecionar o código do site.
 //
-// Isso é aceitável APENAS para este MVP/desenvolvimento local. Antes de colocar
-// o Code Sellers em produção, esta chamada DEVE ser movida para uma Supabase
-// Edge Function (ou outro backend), que guarda a chave como secret do lado do
-// servidor e é chamada pelo frontend autenticado — nunca a chave da Anthropic
+// Isso é aceitável APENAS para este MVP/desenvolvimento local. Antes de
+// colocar o Code Sellers em produção, esta chamada DEVE ser movida para uma
+// Supabase Edge Function (ou outro backend), que guarda a chave como secret
+// do lado do servidor e é chamada pelo frontend autenticado — nunca a chave
 // diretamente no cliente.
+//
+// PROVEDOR: experientiallabs.ai é um agregador/comparador de modelos de
+// terceiros (não é Anthropic/OpenAI/Google diretamente) — a resposta da API
+// identifica "provider":"openai", ou seja, o agregador está repassando a
+// chamada para a OpenAI por trás. O host correto da API é `api.` (não
+// `platform.`, que é o dashboard web e redireciona para /signin quando
+// chamado sem sessão de navegador). Testado e confirmado em 2026-09-24:
+// schema OpenAI-compatible (Bearer token + /v1/chat/completions,
+// choices[0].message.content).
 // ============================================================================
 
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
-const MODEL = 'claude-sonnet-5'
+const AI_API_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
+const MODEL = 'gpt-6-luna'
 
-function buildPrompt(payload: ProposalGenerationPayload): string {
+function buildProposalPrompt(payload: ProposalGenerationPayload): string {
   const { deal, contact_name, contact_niche, user_name, additional_context } = payload
 
   return `Você é um assistente que ajuda freelancers e agências de desenvolvimento web a redigir propostas comerciais.
@@ -38,47 +47,60 @@ ${additional_context ? `- Contexto adicional informado pelo usuário: ${addition
 Escreva um texto pronto para ser enviado ao cliente, em tom profissional e direto, sem inventar informações que não foram fornecidas.`
 }
 
-interface AnthropicResponse {
-  content: { type: string; text?: string }[]
+interface ChatCompletionMessage {
+  role: 'system' | 'user' | 'assistant'
+  content: string
 }
 
-export async function generateProposal(payload: ProposalGenerationPayload): Promise<string> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
+interface ChatCompletionResponse {
+  choices: { message: { role: string; content: string } }[]
+}
+
+function getApiKey(): string {
+  const apiKey = import.meta.env.VITE_EXPERIENTIAL_API_KEY
 
   if (!apiKey) {
     throw new Error(
-      'VITE_ANTHROPIC_API_KEY não configurada. Adicione a chave no arquivo .env para usar a geração de propostas com IA.',
+      'VITE_EXPERIENTIAL_API_KEY não configurada. Adicione a chave no arquivo .env para usar a IA.',
     )
   }
 
-  const response = await fetch(ANTHROPIC_API_URL, {
+  return apiKey
+}
+
+async function chatCompletion(messages: ChatCompletionMessage[]): Promise<string> {
+  const apiKey = getApiKey()
+
+  const response = await fetch(AI_API_URL, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 2000,
-      messages: [{ role: 'user', content: buildPrompt(payload) }],
+      messages,
     }),
   })
 
   if (!response.ok) {
     const errorBody = await response.text()
-    throw new Error(`Falha ao gerar proposta (${response.status}): ${errorBody}`)
+    throw new Error(`Falha ao consultar a IA (${response.status}): ${errorBody}`)
   }
 
-  const data = (await response.json()) as AnthropicResponse
-  const text = data.content.find((block) => block.type === 'text')?.text
+  const data = (await response.json()) as ChatCompletionResponse
+  const text = data.choices?.[0]?.message?.content
 
   if (!text) {
     throw new Error('A IA não retornou nenhum conteúdo de texto.')
   }
 
   return text
+}
+
+export async function generateProposal(payload: ProposalGenerationPayload): Promise<string> {
+  return chatCompletion([{ role: 'user', content: buildProposalPrompt(payload) }])
 }
 
 // ============================================================================
@@ -114,8 +136,6 @@ REGRAS IMPORTANTES:
 10. Trate o usuário como um profissional — sem patronizar ou ser excessivamente formal.
 `
 
-const AUTOPILOT_MODEL = 'claude-sonnet-5'
-
 interface AutoPilotHistoryMessage {
   role: 'user' | 'assistant'
   content: string
@@ -128,45 +148,13 @@ export async function sendAutoPilotMessage(
   context: AutoPilotContext,
   userMessage: string,
 ): Promise<string> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
-
-  if (!apiKey) {
-    throw new Error(
-      'VITE_ANTHROPIC_API_KEY não configurada. Adicione a chave no arquivo .env para usar o AutoPilot.',
-    )
-  }
-
   const systemPrompt = AUTOPILOT_SYSTEM_PROMPT.replace('{context}', serializeContext(context))
 
-  const response = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: AUTOPILOT_MODEL,
-      max_tokens: 2000,
-      system: systemPrompt,
-      // Histórico enviado à API: apenas role e content limpo — sem actions
-      // nem qualquer outro metadado.
-      messages: [...messages, { role: 'user', content: userMessage }],
-    }),
-  })
-
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Falha ao consultar o AutoPilot (${response.status}): ${errorBody}`)
-  }
-
-  const data = (await response.json()) as AnthropicResponse
-  const text = data.content.find((block) => block.type === 'text')?.text
-
-  if (!text) {
-    throw new Error('O AutoPilot não retornou nenhum conteúdo de texto.')
-  }
-
-  return text
+  return chatCompletion([
+    { role: 'system', content: systemPrompt },
+    // Histórico enviado à API: apenas role e content limpo — sem actions nem
+    // qualquer outro metadado.
+    ...messages,
+    { role: 'user', content: userMessage },
+  ])
 }

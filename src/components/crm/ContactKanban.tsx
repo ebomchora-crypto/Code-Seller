@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { CONTACT_STATUSES, CONTACT_STATUS_LABELS, type Contact, type ContactStatus } from '@/types'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-import { EASE_PREMIUM } from '@/utils/animations'
+import { duration, easing } from '@/motion/tokens'
 
 interface ContactKanbanProps {
   contacts: Contact[]
@@ -39,12 +39,27 @@ function KanbanCard({ contact, index }: { contact: Contact; index: number }) {
   })
 
   const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, opacity: isDragging ? 0.4 : 1 }
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${isDragging ? 0.97 : 1})`,
+        opacity: isDragging ? 0.5 : 1,
+      }
     : undefined
 
   return (
-    <motion.div initial={reducedMotion || index >= 15 ? false : { opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: Math.min(index, 14) * 0.05, ease: EASE_PREMIUM }}>
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes} aria-roledescription="Contato arrastável">
+    <motion.div
+      layout={!reducedMotion}
+      initial={reducedMotion || index >= 15 ? false : { opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: duration.enter, delay: Math.min(index, 10) * 0.03, ease: easing.standard }}
+    >
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="transition-shadow duration-150"
+      aria-roledescription="Contato arrastável"
+    >
       <ContactCard contact={contact} />
     </div>
     </motion.div>
@@ -63,8 +78,8 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-xl bg-neutral-50 p-3 transition-colors duration-150 ${
-        isOver ? 'bg-purple-50/60 ring-1 ring-purple-200' : ''
+      className={`flex w-72 shrink-0 flex-col rounded-xl bg-neutral-50 p-3 transition-all duration-200 ${
+        isOver ? 'scale-[1.01] bg-purple-50/70 ring-2 ring-purple-300 shadow-[0_0_24px_rgba(179,92,255,0.12)]' : ''
       }`}
     >
       <div className="mb-3 flex items-center justify-between px-1">

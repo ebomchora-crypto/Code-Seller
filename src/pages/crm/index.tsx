@@ -128,7 +128,7 @@ export default function CrmPage() {
             <Button variant="secondary" onClick={() => setImportOpen(true)}>
               Importar CSV
             </Button>
-            <Button onClick={openCreateForm}>+ Novo Contato</Button>
+            <Button magnetic onClick={openCreateForm}>+ Novo Contato</Button>
           </div>
         </div>
 
