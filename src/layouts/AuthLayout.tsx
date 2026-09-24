@@ -51,8 +51,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           </div>
 
           {/* Lado direito — formulário */}
-          <div className="flex flex-1 items-center justify-center p-8">
-            <div className="w-full max-w-md animate-fade-in">
+          <div className="relative flex flex-1 items-center justify-center p-8">
+            {/* Glow radial sutil atrás do card — puramente decorativo, sem animação. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 isolate contain-strict opacity-70">
+              <div className="absolute right-0 top-0 h-[560px] w-[560px] -translate-y-1/3 translate-x-1/4 rounded-full bg-[radial-gradient(circle,rgba(179,92,255,0.10)_0%,rgba(179,92,255,0.02)_50%,transparent_80%)]" />
+            </div>
+            <div className="relative w-full max-w-md animate-fade-in">
               <div className="mb-8 flex flex-col items-center gap-3 text-center lg:hidden">
                 <img src="/logo.png" alt="Code Sellers" className="h-10 w-10 rounded-xl object-cover" />
                 <span className="text-2xl font-semibold text-white">Code Sellers</span>
