@@ -1,0 +1,314 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   TOKENS DE TEMA — LIGHT (padrão em :root)
+   ============================================ */
+:root {
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f3f2;
+  --bg-muted: #efece9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9f9f9;
+
+  /* Borders */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.1);
+  --border-strong: rgba(0, 0, 0, 0.18);
+
+  /* Text */
+  --text-primary: #0a0a0c;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+  --text-inverse: #ffffff;
+
+  /* Purple accent */
+  --purple-soft: rgba(179, 92, 255, 0.08);
+  --purple-border: rgba(179, 92, 255, 0.2);
+  --purple-glow: rgba(179, 92, 255, 0.15);
+
+  /* Sidebar — branco puro no light mode, sem glass (pedido explícito de
+     redesign: "limpo — branco puro com detalhes sutis") */
+  --sidebar-bg: #ffffff;
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --sidebar-item-hover: rgba(179, 92, 255, 0.05);
+  --sidebar-item-active: rgba(179, 92, 255, 0.08);
+
+  /* Shadow */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.12);
+
+  /* Glass tokens (independentes de tema — usados por AutoPilot/AuthLayout,
+     que são sempre escuros) */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 255, 255, 0.07);
+  --glass-bg-strong: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --glass-blur: blur(12px);
+  --glass-blur-strong: blur(20px);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --glass-shadow-strong: 0 16px 48px rgba(0, 0, 0, 0.24);
+  --glass-purple-bg: rgba(179, 92, 255, 0.06);
+  --glass-purple-border: rgba(179, 92, 255, 0.15);
+  --glass-purple-glow: 0 0 40px rgba(179, 92, 255, 0.08);
+}
+
+/* ============================================
+   TOKENS DE TEMA — DARK
+   ============================================ */
+.dark {
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #0b0014;
+  --bg-muted: #131316;
+  --bg-card: #131316;
+  --bg-card-hover: #2c0052;
+
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --text-inverse: #0a0a0c;
+
+  --purple-soft: rgba(179, 92, 255, 0.1);
+  --purple-border: rgba(179, 92, 255, 0.25);
+  --purple-glow: rgba(179, 92, 255, 0.2);
+
+  --sidebar-bg: #0b0014;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-item-hover: rgba(179, 92, 255, 0.08);
+  --sidebar-item-active: rgba(179, 92, 255, 0.15);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Sora', sans-serif;
+  }
+}
+
+/* AutoPilot is deliberately independent from the global light/dark toggle. */
+.autopilot-theme {
+  --bg-primary: #0b0014;
+  --bg-secondary: #0b0014;
+  --bg-muted: rgba(255, 255, 255, 0.06);
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-primary: #ffffff;
+  --text-secondary: #d4d4d8;
+  --text-muted: #a1a1aa;
+  --purple-soft: rgba(179, 92, 255, 0.1);
+  --purple-border: rgba(179, 92, 255, 0.25);
+  --shadow-card: 0 8px 32px rgba(11, 0, 20, 0.35);
+  --shadow-modal: 0 20px 60px rgba(11, 0, 20, 0.65);
+  color-scheme: dark;
+}
+
+@layer utilities {
+  .label-caps {
+    @apply text-xs font-medium uppercase tracking-widest;
+    color: var(--text-muted);
+  }
+
+  /* Títulos grandes — inspirados na referência codemakers.com.br */
+  .title-hero {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .title-page {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .title-section {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .label-uppercase {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+}
+
+/* Legacy light utility classes still used by dense data/form components are
+   mapped to theme tokens in dark mode. This keeps behavior untouched while
+   making every existing surface theme-safe. */
+@layer utilities {
+  .dark .bg-white { background-color: var(--bg-card); }
+  .dark .bg-neutral-50,
+  .dark .bg-neutral-100 { background-color: var(--bg-muted); }
+  .dark .border-neutral-100,
+  .dark .border-neutral-200,
+  .dark .border-neutral-300 { border-color: var(--border-default); }
+  .dark .text-neutral-900,
+  .dark .text-neutral-800,
+  .dark .text-neutral-700 { color: var(--text-primary); }
+  .dark .text-neutral-600,
+  .dark .text-neutral-500 { color: var(--text-secondary); }
+  .dark .text-neutral-400,
+  .dark .text-neutral-300 { color: var(--text-muted); }
+}
+
+/* Scrollbar fina e elegante, ciente do tema */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(179, 92, 255, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(179, 92, 255, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  .proposal-markdown h1,
+  .proposal-markdown h2,
+  .proposal-markdown h3 {
+    @apply mb-2 mt-4 font-medium text-neutral-900;
+  }
+
+  .proposal-markdown h1:first-child,
+  .proposal-markdown h2:first-child,
+  .proposal-markdown h3:first-child {
+    @apply mt-0;
+  }
+
+  .proposal-markdown p {
+    @apply mb-3 leading-relaxed;
+  }
+
+  .proposal-markdown ul,
+  .proposal-markdown ol {
+    @apply mb-3 ml-5 list-disc space-y-1;
+  }
+
+  .proposal-markdown ol {
+    @apply list-decimal;
+  }
+
+  .proposal-markdown strong {
+    @apply font-medium text-neutral-900;
+  }
+
+  /* Markdown das mensagens do AutoPilot — mesma estrutura de .proposal-markdown,
+     mas com cores por variável para acompanhar o toggle de tema (claro/escuro). */
+  .autopilot-markdown h1,
+  .autopilot-markdown h2,
+  .autopilot-markdown h3 {
+    @apply mb-2 mt-4 font-medium;
+    color: var(--text-primary);
+  }
+
+  .autopilot-markdown h1:first-child,
+  .autopilot-markdown h2:first-child,
+  .autopilot-markdown h3:first-child {
+    @apply mt-0;
+  }
+
+  .autopilot-markdown p {
+    @apply mb-3 leading-relaxed;
+    color: var(--text-secondary);
+  }
+
+  .autopilot-markdown ul,
+  .autopilot-markdown ol {
+    @apply mb-3 ml-5 list-disc space-y-1;
+    color: var(--text-secondary);
+  }
+
+  .autopilot-markdown ol {
+    @apply list-decimal;
+  }
+
+  .autopilot-markdown strong {
+    @apply font-medium;
+    color: var(--text-primary);
+  }
+
+  .autopilot-markdown a {
+    @apply text-purple-500 hover:text-purple-400;
+  }
+
+  .autopilot-markdown code {
+    @apply rounded px-1.5 py-0.5 font-mono text-sm text-purple-500;
+    background-color: var(--bg-muted);
+  }
+
+  .autopilot-markdown pre {
+    @apply rounded-xl border p-4 font-mono text-sm;
+    border-color: var(--border-default);
+    background-color: var(--bg-muted);
+    color: var(--text-secondary);
+  }
+
+  .autopilot-markdown pre code {
+    @apply bg-transparent p-0;
+    color: var(--text-secondary);
+  }
+}
