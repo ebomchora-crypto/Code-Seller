@@ -1,32 +1,25 @@
 import type { AutoPilotContext, ProposalGenerationPayload } from '@/types'
+import { supabase } from '@/lib/supabaseClient'
 import { formatCurrency } from '@/utils/deals'
 import { serializeContext } from '@/utils/autopilot'
 
 // ============================================================================
-// ATENÇÃO — SEGURANÇA
+// ARQUITETURA
 // ============================================================================
-// Esta integração chama a API do provedor diretamente do navegador usando
-// VITE_EXPERIENTIAL_API_KEY. Qualquer variável VITE_* é embutida no bundle e
-// fica visível a qualquer pessoa que inspecionar o código do site.
-//
-// Isso é aceitável APENAS para este MVP/desenvolvimento local. Antes de
-// colocar o Code Sellers em produção, esta chamada DEVE ser movida para uma
-// Supabase Edge Function (ou outro backend), que guarda a chave como secret
-// do lado do servidor e é chamada pelo frontend autenticado — nunca a chave
-// diretamente no cliente.
+// A chamada para api.experientiallabs.ai não pode ser feita direto do
+// navegador: o provedor não envia cabeçalho Access-Control-Allow-Origin, e o
+// browser bloqueia por CORS (confirmado em produção — erro "blocked by CORS
+// policy" + 404 na resposta do preflight). Por isso o request passa por uma
+// Supabase Edge Function (supabase/functions/ai-chat), que chama o provedor
+// servidor-a-servidor (CORS não se aplica) e devolve a resposta. Bônus: a
+// API key (EXPERIENTIAL_API_KEY) fica só no secret da function, nunca no
+// bundle do cliente.
 //
 // PROVEDOR: experientiallabs.ai é um agregador/comparador de modelos de
 // terceiros (não é Anthropic/OpenAI/Google diretamente) — a resposta da API
 // identifica "provider":"openai", ou seja, o agregador está repassando a
-// chamada para a OpenAI por trás. O host correto da API é `api.` (não
-// `platform.`, que é o dashboard web e redireciona para /signin quando
-// chamado sem sessão de navegador). Testado e confirmado em 2026-09-24:
-// schema OpenAI-compatible (Bearer token + /v1/chat/completions,
-// choices[0].message.content).
+// chamada para a OpenAI por trás.
 // ============================================================================
-
-const AI_API_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
-const MODEL = 'gpt-6-luna'
 
 function buildProposalPrompt(payload: ProposalGenerationPayload): string {
   const { deal, contact_name, contact_niche, user_name, additional_context } = payload
@@ -53,44 +46,24 @@ interface ChatCompletionMessage {
 }
 
 interface ChatCompletionResponse {
-  choices: { message: { role: string; content: string } }[]
-}
-
-function getApiKey(): string {
-  const apiKey = import.meta.env.VITE_EXPERIENTIAL_API_KEY
-
-  if (!apiKey) {
-    throw new Error(
-      'VITE_EXPERIENTIAL_API_KEY não configurada. Adicione a chave no arquivo .env para usar a IA.',
-    )
-  }
-
-  return apiKey
+  choices?: { message: { role: string; content: string } }[]
+  error?: string
 }
 
 async function chatCompletion(messages: ChatCompletionMessage[]): Promise<string> {
-  const apiKey = getApiKey()
-
-  const response = await fetch(AI_API_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2000,
-      messages,
-    }),
+  const { data, error } = await supabase.functions.invoke<ChatCompletionResponse>('ai-chat', {
+    body: { messages },
   })
 
-  if (!response.ok) {
-    const errorBody = await response.text()
-    throw new Error(`Falha ao consultar a IA (${response.status}): ${errorBody}`)
+  if (error) {
+    throw new Error(`Falha ao consultar a IA: ${error.message}`)
   }
 
-  const data = (await response.json()) as ChatCompletionResponse
-  const text = data.choices?.[0]?.message?.content
+  if (data?.error) {
+    throw new Error(`Falha ao consultar a IA: ${data.error}`)
+  }
+
+  const text = data?.choices?.[0]?.message?.content
 
   if (!text) {
     throw new Error('A IA não retornou nenhum conteúdo de texto.')

@@ -30,3 +30,7 @@ dist-ssr
 
 .vercel
 .env*
+
+# Cache local do Supabase CLI (project-ref, versões etc.) — específico da
+# máquina, não deve ser versionado.
+supabase/.temp
