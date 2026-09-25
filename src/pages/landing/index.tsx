@@ -10,7 +10,6 @@ import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
 import { LandingComparison } from '@/components/landing/LandingComparison'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
 import { LandingBenefits } from '@/components/landing/LandingBenefits'
-import { LandingMidCta } from '@/components/landing/LandingMidCta'
 import { LandingFAQ } from '@/components/landing/LandingFAQ'
 import { LandingCta } from '@/components/landing/LandingCta'
 import { LandingFooter } from '@/components/landing/LandingFooter'
@@ -70,7 +69,6 @@ export default function LandingPage() {
         <LandingComparison />
         <LandingTimeline />
         <LandingBenefits />
-        <LandingMidCta />
         <LandingFAQ />
         <LandingCta />
       </main>
