@@ -21,8 +21,6 @@ function useNarrow(query = '(max-width: 767px)') {
   return narrow
 }
 
-const trustLine = ['Criar', 'Encontrar', 'Vender']
-
 export function LandingHero() {
   const navigate = useNavigate()
   const narrow = useNarrow()
@@ -81,24 +79,12 @@ export function LandingHero() {
                     Conhecer o método
                   </LandingButton>
                 </motion.div>
-
-                <motion.ul
-                  variants={fadeInUp}
-                  className="mt-7 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm font-medium uppercase tracking-[0.1em] text-landing-text-muted"
-                >
-                  {trustLine.map((word, index) => (
-                    <li key={word} className="flex items-center gap-2">
-                      {index > 0 && <span className="text-landing-primary-hover">·</span>}
-                      {word}
-                    </li>
-                  ))}
-                </motion.ul>
               </div>
 
               {/* Card lateral compacto — eyebrow, headline curta, CTA. */}
               <motion.div
                 variants={fadeInUp}
-                className="hidden rounded-landing-lg border border-white/10 bg-landing-surface/75 p-6 shadow-landing-card backdrop-blur-xl lg:block"
+                className="hidden rounded-landing-lg border border-white/20 bg-white/[0.06] p-6 shadow-landing-card backdrop-blur-2xl backdrop-saturate-150 lg:block"
               >
                 <LandingEyebrow>Da ideia ao dinheiro no bolso</LandingEyebrow>
                 <h2 className="mt-3 text-base font-semibold leading-snug text-landing-text">

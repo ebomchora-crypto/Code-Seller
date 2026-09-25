@@ -21,8 +21,9 @@ export function LandingNavbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50">
       {/* Barra cheia, fixa no topo — não mais a pílula flutuante com
-          margem. Fundo escuro translúcido + blur, borda inferior sutil. */}
-      <div className="relative border-b border-white/[0.08] bg-[rgba(10,10,12,0.85)] backdrop-blur-[20px]">
+          margem. Vidro fosco: fundo bem translúcido, blur forte + saturação,
+          borda clara sutil pra ler como painel de vidro. */}
+      <div className="relative border-b border-white/[0.12] bg-[rgba(10,10,12,0.55)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px] backdrop-saturate-150">
         <div className="mx-auto w-full max-w-[1280px] px-6 sm:px-8 lg:px-12">
           <div className="relative flex h-[72px] items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5">
@@ -81,7 +82,7 @@ export function LandingNavbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? undefined : { opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: duration.enter, ease: easing.standard }}
-              className="mx-6 mb-4 flex flex-col gap-1 rounded-2xl border border-white/[0.08] bg-[rgba(10,10,12,0.96)] p-3 shadow-glass-strong backdrop-blur-xl sm:mx-8 lg:hidden"
+              className="mx-6 mb-4 flex flex-col gap-1 rounded-2xl border border-white/[0.12] bg-[rgba(10,10,12,0.6)] p-3 shadow-glass-strong backdrop-blur-2xl backdrop-saturate-150 sm:mx-8 lg:hidden"
             >
               <a
                 href="#"
