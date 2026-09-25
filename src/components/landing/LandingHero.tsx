@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { ArrowUpRight, Check } from 'lucide-react'
 import { BlackHoleHeroSection } from '@/components/ui/blackhole-hero-section'
 import { SectionCurve } from '@/components/ui/section-curve'
 import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
+import { LandingButton } from '@/components/landing/LandingButton'
 import { fadeInUp, staggerContainer } from '@/motion/variants'
 
 /** Verdadeiro em telas estreitas — controla a troca de enquadramento abaixo. */
@@ -20,7 +20,19 @@ function useNarrow(query = '(max-width: 767px)') {
   return narrow
 }
 
-const trustPoints = ['Grátis para começar', 'Sem cartão de crédito', 'Configuração em minutos']
+const trustLine = ['Criar', 'Encontrar', 'Vender']
+
+// O painel lateral do Hero — jornada real do produto em 6 passos conectados,
+// não um card genérico. Mesma ideia pedida ("ideia → site → empresas → lead
+// → proposta → cliente"), compacta o bastante pra caber ao lado do texto.
+const flowSteps = [
+  { label: 'Ideia', detail: 'Um problema real pra resolver' },
+  { label: 'Site gerado', detail: 'Criado com IA em minutos' },
+  { label: 'Empresas encontradas', detail: 'Code Hunter no radar' },
+  { label: 'Lead qualificado', detail: 'Contato com potencial real' },
+  { label: 'Proposta', detail: 'Escopo, prazo e valor' },
+  { label: 'Cliente', detail: 'Venda fechada', done: true },
+]
 
 export function LandingHero() {
   const navigate = useNavigate()
@@ -49,93 +61,84 @@ export function LandingHero() {
             initial="hidden"
             animate="visible"
             variants={staggerContainer(0.12)}
-            className="relative mx-auto w-full max-w-7xl"
+            className="relative mx-auto w-full max-w-[1280px]"
           >
             <div className="max-w-xl">
               <motion.div variants={fadeInUp}>
-                <LandingEyebrow>CRM para vendedores digitais</LandingEyebrow>
+                <LandingEyebrow>Code Sellers + Code Hunter</LandingEyebrow>
               </motion.div>
 
               <motion.h1
                 variants={fadeInUp}
-                className="mt-6 text-3xl font-bold leading-[1.08] tracking-tight text-landing-text sm:text-4xl lg:text-[2.75rem]"
+                className="mt-6 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-4xl lg:text-[2.75rem]"
               >
-                Prospecte com dados.
-                <br />
-                Feche com o CRM.
-                <br />
-                <span className="text-landing-primary-hover">Cresça com o AutoPilot.</span>
+                Crie com IA. Encontre clientes.{' '}
+                <span className="font-semibold text-landing-primary-hover">Venda com método.</span>
               </motion.h1>
 
               <motion.p
                 variants={fadeInUp}
                 className="mt-4 max-w-md text-sm leading-relaxed text-landing-text-secondary sm:text-base"
               >
-                Organize leads, acompanhe negociações e feche vendas com a ajuda da IA — tudo em um
-                só lugar, do primeiro contato ao pagamento recebido.
+                Transforme ideias em sites e sistemas, encontre empresas que realmente precisam
+                deles e conduza a venda até o fechamento.
               </motion.p>
 
               <motion.div variants={fadeInUp} className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/register')}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-landing-primary px-6 text-base font-semibold text-white shadow-landing-glow transition-colors duration-200 hover:bg-landing-primary-hover active:scale-[0.98]"
-                >
-                  Criar conta grátis
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/login')}
-                  className="inline-flex h-12 items-center justify-center rounded-xl border border-white/15 px-6 text-base font-medium text-landing-text transition-colors duration-200 hover:border-white/25 hover:bg-white/[0.06]"
-                >
-                  Já tenho conta
-                </button>
+                <LandingButton onClick={() => navigate('/register')}>Entrar no grupo</LandingButton>
+                <LandingButton variant="secondary" onClick={() => navigate('/login')}>
+                  Conhecer o método
+                </LandingButton>
               </motion.div>
 
-              {/* Indicador de confiança — sem inventar número de usuários/depoimentos,
-                  só os pontos de atrito reais que já são verdade no cadastro. */}
               <motion.ul
                 variants={fadeInUp}
-                className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-landing-text-muted"
+                className="mt-7 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm font-medium uppercase tracking-[0.1em] text-landing-text-muted"
               >
-                {trustPoints.map((point) => (
-                  <li key={point} className="flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-landing-primary-hover" />
-                    {point}
+                {trustLine.map((word, index) => (
+                  <li key={word} className="flex items-center gap-2">
+                    {index > 0 && <span className="text-landing-primary-hover">·</span>}
+                    {word}
                   </li>
                 ))}
               </motion.ul>
             </div>
 
-            {/* Card lateral — ancorado à direita do container full-width (max-w-7xl),
-                não do bloco de texto (max-w-xl), pra não colidir com o título/parágrafo. */}
+            {/* Painel lateral — jornada do produto, não um card genérico de
+                CTA. Ancorado ao container full-width, não ao bloco de texto. */}
             <motion.div
               variants={fadeInUp}
-              className="pointer-events-auto absolute right-0 top-[26%] hidden w-[300px] rounded-3xl border border-white/10 bg-landing-surface/70 p-6 shadow-landing-card backdrop-blur-xl lg:block xl:right-6"
+              className="pointer-events-auto absolute right-0 top-1/2 hidden w-[300px] -translate-y-1/2 rounded-landing-lg border border-white/10 bg-landing-surface/72 p-5 shadow-landing-card backdrop-blur-xl lg:block xl:right-6"
             >
-              <LandingEyebrow>Code Sellers + AutoPilot</LandingEyebrow>
-              <h4 className="mt-3 text-lg font-bold leading-snug text-landing-text">
-                Do lead ao dinheiro no bolso.
-              </h4>
-              <p className="mt-2 text-sm leading-relaxed text-landing-text-secondary">
-                Prospecte, organize no CRM e feche com a ajuda da IA — do primeiro contato ao
-                pagamento recebido.
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-landing-text-muted">
+                Do lead ao dinheiro no bolso
               </p>
-              <button
-                type="button"
-                onClick={() => navigate('/register')}
-                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-landing-text transition-colors hover:text-landing-primary-hover"
-              >
-                Começar agora
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
+              <ol className="relative mt-4 space-y-0">
+                {flowSteps.map((step, index) => (
+                  <li key={step.label} className="relative flex gap-3 pb-4 last:pb-0">
+                    {index < flowSteps.length - 1 && (
+                      <span className="absolute left-[5px] top-3 h-full w-px bg-white/10" aria-hidden />
+                    )}
+                    <span
+                      className={`relative z-10 mt-1 flex h-[11px] w-[11px] shrink-0 items-center justify-center rounded-full ${
+                        step.done ? 'bg-landing-primary-hover' : 'border border-white/25 bg-landing-surface'
+                      }`}
+                    />
+                    <div>
+                      <p className={`text-[13px] font-semibold ${step.done ? 'text-landing-primary-hover' : 'text-landing-text'}`}>
+                        {step.label}
+                      </p>
+                      <p className="text-xs text-landing-text-muted">{step.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </motion.div>
           </motion.div>
         </div>
 
         {/* Assinatura visual — título gigante quase inteiro visível, só
-            tocando a borda de baixo (igual à referência: antes o
-            translate-y de 42% cortava quase 3/4 da altura das letras). */}
+            tocando a borda de baixo. */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 z-0 select-none overflow-hidden"
@@ -156,9 +159,8 @@ export function LandingHero() {
         </div>
       </BlackHoleHeroSection>
 
-      {/* Saída pra #08080a (landing-bg) — mesma cor da próxima seção, unifica
-          a landing inteira em tons escuros (antes ia pro bege "paper"). */}
-      <SectionCurve toColor="#08080a" />
+      {/* Saída pra #07050b (landing-bg) — mesma cor da próxima seção. */}
+      <SectionCurve toColor="#07050b" />
     </section>
   )
 }
