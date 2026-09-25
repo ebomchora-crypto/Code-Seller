@@ -2,6 +2,7 @@ const footerLinks = [
   { href: '#', label: 'Início' },
   { href: '#metodo', label: 'Método' },
   { href: '#buyershunter', label: 'Buyers Hunter' },
+  { href: '#modulos', label: 'Módulos' },
   { href: '#faq', label: 'FAQ' },
 ]
 

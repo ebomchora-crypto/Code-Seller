@@ -9,6 +9,7 @@ import { duration, easing } from '@/motion/tokens'
 const navLinks = [
   { href: '#metodo', label: 'Método' },
   { href: '#buyershunter', label: 'Buyers Hunter' },
+  { href: '#modulos', label: 'Módulos' },
   { href: '#faq', label: 'FAQ' },
 ]
 

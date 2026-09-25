@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { LandingNavbar } from '@/components/landing/LandingNavbar'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { LandingProblem } from '@/components/landing/LandingProblem'
+import { LandingModules } from '@/components/landing/LandingModules'
 import { LandingBuyersHunter } from '@/components/landing/LandingBuyersHunter'
 import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
@@ -57,6 +58,7 @@ export default function LandingPage() {
       <main>
         <LandingHero />
         <LandingProblem />
+        <LandingModules />
         <LandingBuyersHunter />
         <LandingEcosystem />
         <LandingTimeline />
