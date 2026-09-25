@@ -72,8 +72,7 @@ export default {
         // Paleta "dark premium" isolada da landing pública — não toca em
         // `purple`/`accent` (usados em ~90 arquivos do app autenticado).
         // Reformulação completa pedida: preto/grafite como base editorial,
-        // vermelho como elemento de destaque (referência Code Makers, não
-        // domina a tela inteira).
+        // roxo como elemento de destaque (não domina a tela inteira).
         landing: {
           bg: '#07050b',
           surface: '#0d0815',
@@ -81,12 +80,12 @@ export default {
           'surface-card': '#121018',
           border: 'rgba(255,255,255,0.08)',
           'border-light': 'rgba(17,16,20,0.08)',
-          primary: '#dc2626',
-          'primary-hover': '#ef4444',
-          vivid: '#ff5b5b',
-          deep: '#7f1d1d',
-          highlight: '#fca5a5',
-          'primary-soft': 'rgba(220,38,38,0.12)',
+          primary: '#7c3aed',
+          'primary-hover': '#8b5cf6',
+          vivid: '#9b6cff',
+          deep: '#5b21b6',
+          highlight: '#a78bfa',
+          'primary-soft': 'rgba(124,58,237,0.12)',
           text: '#ffffff',
           'text-secondary': '#a8a3ae',
           'text-muted': '#76717d',
@@ -131,7 +130,7 @@ export default {
         // Sombras grandes e suaves — nunca preto forte, sempre difuso.
         'landing-card': '0 30px 80px rgba(0, 0, 0, 0.18)',
         'landing-card-light': '0 30px 80px rgba(17, 16, 20, 0.08)',
-        'landing-glow': '0 0 0 1px rgba(220, 38, 38, 0.15), 0 8px 30px -6px rgba(239, 68, 68, 0.35)',
+        'landing-glow': '0 0 0 1px rgba(124, 58, 237, 0.15), 0 8px 30px -6px rgba(139, 92, 246, 0.35)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

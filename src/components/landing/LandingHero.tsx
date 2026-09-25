@@ -97,9 +97,9 @@ export function LandingHero() {
         distance={24}
         elevation={narrow ? -7 : -5.5}
         fov={narrow ? 58 : 42}
-        hotColor="#FFE8E8"
-        midColor="#FF3B3B"
-        coolColor="#3D0000"
+        hotColor="#F3E8FF"
+        midColor="#B35CFF"
+        coolColor="#2C0052"
         glow={narrow ? 0.75 : 0.9}
         steps={narrow ? 160 : 220}
         resolution={narrow ? 0.55 : 0.65}

@@ -8,7 +8,7 @@ export function LandingEyebrow({ children, tone = 'dark' }: { children: ReactNod
   return (
     <div className="inline-flex items-center gap-2">
       <span
-        className={`h-1.5 w-1.5 rounded-full ${isLight ? 'bg-landing-deep' : 'bg-landing-primary-hover shadow-[0_0_10px_rgba(239,68,68,0.6)]'}`}
+        className={`h-1.5 w-1.5 rounded-full ${isLight ? 'bg-landing-deep' : 'bg-landing-primary-hover shadow-[0_0_10px_rgba(139,92,246,0.6)]'}`}
       />
       <span
         className={`text-xs font-semibold uppercase tracking-[0.16em] ${isLight ? 'text-landing-deep' : 'text-landing-primary-hover'}`}
