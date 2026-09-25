@@ -58,7 +58,7 @@ export function LandingHero() {
 
               <motion.h1
                 variants={fadeInUp}
-                className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight text-landing-text sm:text-5xl lg:text-[3.4rem]"
+                className="mt-6 text-3xl font-bold leading-[1.08] tracking-tight text-landing-text sm:text-4xl lg:text-[2.75rem]"
               >
                 Prospecte com dados.
                 <br />
@@ -69,7 +69,7 @@ export function LandingHero() {
 
               <motion.p
                 variants={fadeInUp}
-                className="mt-5 max-w-md text-base leading-relaxed text-landing-text-secondary sm:text-lg"
+                className="mt-4 max-w-md text-sm leading-relaxed text-landing-text-secondary sm:text-base"
               >
                 Organize leads, acompanhe negociações e feche vendas com a ajuda da IA — tudo em um
                 só lugar, do primeiro contato ao pagamento recebido.
@@ -111,7 +111,7 @@ export function LandingHero() {
                 não do bloco de texto (max-w-xl), pra não colidir com o título/parágrafo. */}
             <motion.div
               variants={fadeInUp}
-              className="pointer-events-auto absolute right-0 top-[26%] hidden w-[300px] rounded-3xl border border-white/10 bg-landing-surface/80 p-6 shadow-landing-card backdrop-blur-xl lg:block xl:right-6"
+              className="pointer-events-auto absolute right-0 top-[26%] hidden w-[300px] rounded-3xl border border-white/10 bg-landing-surface/70 p-6 shadow-landing-card backdrop-blur-xl lg:block xl:right-6"
             >
               <LandingEyebrow>Code Sellers + AutoPilot</LandingEyebrow>
               <h4 className="mt-3 text-lg font-bold leading-snug text-landing-text">
