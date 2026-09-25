@@ -1,10 +1,6 @@
-import { Fragment } from 'react'
-import { ArrowRight } from 'lucide-react'
 import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
 import { Reveal } from '@/components/motion/Reveal'
 import { fadeInUp } from '@/motion/variants'
-
-const flow = ['Criar', 'Posicionar', 'Encontrar', 'Abordar', 'Demonstrar', 'Propor', 'Fechar']
 
 // Único momento de fundo claro da landing — contraste deliberado com o resto
 // (dark premium), pra marcar a virada de "aprender ferramenta" pra
@@ -33,22 +29,6 @@ export function LandingProblem() {
             A maioria aprende ferramenta. Poucos aprendem a transformar habilidade em oferta,
             oportunidade e venda.
           </p>
-        </Reveal>
-
-        <Reveal
-          variants={fadeInUp}
-          className="mt-16 flex flex-wrap items-center gap-x-1 gap-y-4 rounded-landing-lg border border-landing-border-light bg-white/60 p-6 shadow-landing-card-light sm:p-8"
-        >
-          {flow.map((step, index) => (
-            <Fragment key={step}>
-              <span className="rounded-full border border-landing-text-dark/10 bg-white px-4 py-2 text-sm font-medium text-landing-text-dark">
-                {step}
-              </span>
-              {index < flow.length - 1 && (
-                <ArrowRight className="mx-1 h-4 w-4 shrink-0 text-landing-deep/50" aria-hidden />
-              )}
-            </Fragment>
-          ))}
         </Reveal>
       </div>
     </section>
