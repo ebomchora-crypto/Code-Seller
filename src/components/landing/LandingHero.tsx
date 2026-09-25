@@ -115,7 +115,7 @@ export function LandingHero() {
             variants={staggerContainer(0.12)}
             className="relative mx-auto w-full max-w-[1280px]"
           >
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px] lg:items-start lg:gap-10">
+            <div>
               <div className="max-w-xl">
                 <motion.div variants={fadeInUp}>
                   <LandingEyebrow>Code Sellers + Buyers Hunter</LandingEyebrow>
@@ -156,32 +156,6 @@ export function LandingHero() {
                   ))}
                 </motion.ul>
               </div>
-
-              {/* Card lateral compacto — eyebrow, headline curta, CTA. */}
-              <motion.div
-                variants={fadeInUp}
-                className="hidden rounded-landing-lg border border-white/10 bg-landing-surface/75 p-6 shadow-landing-card backdrop-blur-xl lg:block"
-              >
-                <LandingEyebrow>Da ideia ao dinheiro no bolso</LandingEyebrow>
-                <h2 className="mt-3 text-base font-semibold leading-snug text-landing-text">
-                  Uma rota completa para sair do prompt e chegar ao pagamento.
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-landing-text-secondary">
-                  Você cria a solução, encontra as empresas certas e aprende a conduzir a conversa
-                  até fechar a venda.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/register')}
-                  className="group mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-landing-md bg-landing-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-landing-primary-hover"
-                >
-                  Entrar no grupo oficial
-                  <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                </button>
-                <p className="mt-3 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-landing-text-muted">
-                  Criar · Encontrar · Vender
-                </p>
-              </motion.div>
             </div>
 
             <StaggerGroup delay={0.1} className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3 lg:mt-14">
