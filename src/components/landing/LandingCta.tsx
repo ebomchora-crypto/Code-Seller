@@ -27,13 +27,14 @@ export function LandingCta() {
         className="pointer-events-none absolute -right-10 top-10 h-[260px] w-[260px] rounded-full border border-white/[0.08] sm:right-10"
       />
 
-      <div className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-6 py-24 text-center sm:py-32 lg:px-8">
+      <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-6 py-24 text-center sm:py-32 lg:px-8">
         <Reveal variants={reveal} className="flex flex-col items-center">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
             Crie. Encontre. Venda.
           </span>
-          <h2 className="mt-5 text-3xl font-medium leading-[1.15] tracking-[-0.03em] text-white sm:text-4xl lg:text-5xl">
-            Seu próximo cliente não precisa aparecer por acaso.
+          <h2 className="mt-5 text-4xl font-medium leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl lg:text-6xl">
+            Seu próximo cliente não precisa aparecer por acaso. Encontre. Venda. Coloque dinheiro
+            no bolso.
           </h2>
           <button
             type="button"
