@@ -19,60 +19,58 @@ export function LandingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
-      {/* Barra cheia, fixa no topo — não mais a pílula flutuante com
-          margem. Vidro fosco: fundo bem translúcido, blur forte + saturação,
-          borda clara sutil pra ler como painel de vidro. */}
-      <div className="relative border-b border-white/[0.12] bg-[rgba(10,10,12,0.55)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-[24px] backdrop-saturate-150">
-        <div className="mx-auto w-full max-w-[1280px] px-6 sm:px-8 lg:px-12">
-          <div className="relative flex h-[72px] items-center justify-between">
-            <Link to="/" className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="Code Sellers" className="h-7 w-7 object-contain" />
-              <span className="font-display text-base font-bold text-white">Code Sellers</span>
-            </Link>
+    // Pílula flutuante, absoluta dentro do Hero (não fixa) — vive só ali,
+    // rola junto com a seção, como na referência. Vidro fosco: fundo bem
+    // translúcido, blur forte + saturação, borda clara sutil.
+    <header className="absolute inset-x-0 top-0 z-30 px-4 pt-4 sm:px-6 sm:pt-6">
+      <div className="relative mx-auto w-full max-w-[1280px] rounded-full border border-white/[0.14] bg-[rgba(10,10,12,0.55)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[24px] backdrop-saturate-150">
+        <div className="relative flex h-[64px] items-center justify-between px-5 sm:px-6">
+          <Link to="/" className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Code Sellers" className="h-7 w-7 object-contain" />
+            <span className="font-display text-base font-bold text-white">Code Sellers</span>
+          </Link>
 
-            <nav className="hidden items-center gap-6 text-sm font-medium text-white/80 lg:flex">
-              <a
-                href="#"
-                onClick={(event) => {
-                  event.preventDefault()
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className="transition-colors hover:text-white"
-              >
-                Início
-              </a>
-              {navLinks.map((link) => (
-                <a key={link.href} href={link.href} className="transition-colors hover:text-white">
-                  {link.label}
-                </a>
-              ))}
-              <Link to="/login" className="transition-colors hover:text-white">
-                Entrar
-              </Link>
-            </nav>
-
-            <div className="hidden lg:block">
-              <Button
-                size="sm"
-                magnetic
-                className="!bg-landing-primary !text-white shadow-landing-glow hover:!bg-landing-primary-hover"
-                onClick={() => navigate('/register')}
-              >
-                Entrar no grupo
-              </Button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setMobileOpen((value) => !value)}
-              aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
-              aria-expanded={mobileOpen}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 lg:hidden"
+          <nav className="hidden items-center gap-6 text-sm font-medium text-white/80 lg:flex">
+            <a
+              href="#"
+              onClick={(event) => {
+                event.preventDefault()
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+              className="transition-colors hover:text-white"
             >
-              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </button>
+              Início
+            </a>
+            {navLinks.map((link) => (
+              <a key={link.href} href={link.href} className="transition-colors hover:text-white">
+                {link.label}
+              </a>
+            ))}
+            <Link to="/login" className="transition-colors hover:text-white">
+              Entrar
+            </Link>
+          </nav>
+
+          <div className="hidden lg:block">
+            <Button
+              size="sm"
+              magnetic
+              className="!bg-landing-primary !text-white shadow-landing-glow hover:!bg-landing-primary-hover"
+              onClick={() => navigate('/register')}
+            >
+              Entrar no grupo
+            </Button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen((value) => !value)}
+            aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={mobileOpen}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 lg:hidden"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
         </div>
 
         <AnimatePresence>
@@ -82,7 +80,7 @@ export function LandingNavbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? undefined : { opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: duration.enter, ease: easing.standard }}
-              className="mx-6 mb-4 flex flex-col gap-1 rounded-2xl border border-white/[0.12] bg-[rgba(10,10,12,0.6)] p-3 shadow-glass-strong backdrop-blur-2xl backdrop-saturate-150 sm:mx-8 lg:hidden"
+              className="absolute inset-x-0 top-[72px] mx-2 flex flex-col gap-1 rounded-2xl border border-white/[0.12] bg-[rgba(10,10,12,0.85)] p-3 shadow-glass-strong backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
             >
               <a
                 href="#"

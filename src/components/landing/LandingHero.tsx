@@ -6,6 +6,7 @@ import { BlackHoleHeroSection } from '@/components/ui/blackhole-hero-section'
 import { SectionCurve } from '@/components/ui/section-curve'
 import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
 import { LandingButton } from '@/components/landing/LandingButton'
+import { LandingNavbar } from '@/components/landing/LandingNavbar'
 import { fadeInUp, staggerContainer } from '@/motion/variants'
 
 /** Verdadeiro em telas estreitas — controla a troca de enquadramento abaixo. */
@@ -43,8 +44,14 @@ export function LandingHero() {
         resolution={narrow ? 0.55 : 0.65}
         maxDpr={1.5}
       >
-        {/* Headline + card lateral, dentro do mesmo bloco do buraco negro. */}
-        <div className="relative z-10 px-6 pb-20 pt-28 lg:px-8 lg:pb-24 lg:pt-36">
+        {/* Navbar mora só aqui dentro — pílula flutuante que rola junto com
+            o Hero, não fica fixa nas outras seções. */}
+        <LandingNavbar />
+
+        {/* Headline + card lateral, dentro do mesmo bloco do buraco negro.
+            pb maior pra abrir respiro até o wordmark gigante lá embaixo —
+            antes colava direto nos botões. */}
+        <div className="relative z-10 px-6 pb-40 pt-28 sm:pb-48 lg:px-8 lg:pb-56 lg:pt-36">
           <motion.div
             initial="hidden"
             animate="visible"

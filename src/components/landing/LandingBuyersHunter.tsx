@@ -25,6 +25,13 @@ export function LandingBuyersHunter() {
           className="relative overflow-hidden bg-gradient-to-br from-landing-primary to-landing-deep px-6 py-20 sm:px-10 sm:py-24 lg:px-14"
         >
           <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+            {/* Glow à deriva — o fundo deixa de ser um gradiente parado. */}
+            <span
+              className="absolute -left-1/4 -top-1/4 h-[70%] w-[70%] rounded-full bg-landing-highlight/40 blur-[100px] animate-aurora"
+            />
+            <span
+              className="absolute -bottom-1/4 -right-1/4 h-[70%] w-[70%] rounded-full bg-landing-vivid/40 blur-[110px] animate-aurora-slow"
+            />
             {[0, 1.6, 3.2].map((delay) => (
               <span
                 key={delay}

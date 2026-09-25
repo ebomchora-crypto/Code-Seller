@@ -143,6 +143,10 @@ export default {
         // Feixe de luz cruzando o painel da esquerda pra direita — discreto,
         // respeita prefers-reduced-motion (regra global já existente).
         beam: 'beam-move 5s linear infinite',
+        // Blobs de glow à deriva, por trás do conteúdo do painel BuyersHunter
+        // — o gradiente de fundo deixa de ser estático.
+        aurora: 'aurora-drift 14s ease-in-out infinite alternate',
+        'aurora-slow': 'aurora-drift 20s ease-in-out infinite alternate-reverse',
       },
       keyframes: {
         'beam-move': {
@@ -150,6 +154,11 @@ export default {
           '15%': { opacity: '0.5' },
           '85%': { opacity: '0.5' },
           '100%': { transform: 'translateX(160%) skewX(-20deg)', opacity: '0' },
+        },
+        'aurora-drift': {
+          '0%': { transform: 'translate(-8%, -6%) scale(1)' },
+          '50%': { transform: 'translate(10%, 8%) scale(1.25)' },
+          '100%': { transform: 'translate(-4%, 10%) scale(1.05)' },
         },
         fadeIn: {
           '0%': { opacity: '0' },

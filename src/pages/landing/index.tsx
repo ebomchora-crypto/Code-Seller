@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { LandingNavbar } from '@/components/landing/LandingNavbar'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { LandingProblem } from '@/components/landing/LandingProblem'
 import { LandingModules } from '@/components/landing/LandingModules'
@@ -54,7 +53,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-landing-bg">
-      <LandingNavbar />
       <main>
         <LandingHero />
         <LandingProblem />
