@@ -6,8 +6,7 @@ import { BlackHoleHeroSection } from '@/components/ui/blackhole-hero-section'
 import { SectionCurve } from '@/components/ui/section-curve'
 import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
 import { LandingButton } from '@/components/landing/LandingButton'
-import { StaggerGroup } from '@/components/motion/StaggerGroup'
-import { fadeInUp, staggerContainer, scaleIn } from '@/motion/variants'
+import { fadeInUp, staggerContainer } from '@/motion/variants'
 
 /** Verdadeiro em telas estreitas — controla a troca de enquadramento abaixo. */
 function useNarrow(query = '(max-width: 767px)') {
@@ -23,65 +22,6 @@ function useNarrow(query = '(max-width: 767px)') {
 }
 
 const trustLine = ['Criar', 'Encontrar', 'Vender']
-
-// O ciclo central do método — agora dentro do Hero, logo abaixo do
-// headline, sem vão vazio entre as duas coisas (pedido explícito de
-// composição única, igual à referência).
-const steps = [
-  {
-    number: '01',
-    label: 'Criar',
-    title: 'Crie sites e sistemas com IA.',
-    description: 'Transforme ideias em soluções funcionais, responsivas e prontas para apresentar.',
-  },
-  {
-    number: '02',
-    label: 'Encontrar',
-    title: 'Encontre empresas certas.',
-    description: 'Use o Buyers Hunter para colocar oportunidades qualificadas no seu radar.',
-  },
-  {
-    number: '03',
-    label: 'Vender',
-    title: 'Transforme oportunidade em cliente.',
-    description: 'Aprenda oferta, abordagem, demonstração, proposta e fechamento.',
-  },
-]
-
-function StepCard({ step }: { step: (typeof steps)[number] }) {
-  return (
-    <motion.div
-      variants={scaleIn}
-      className="group relative flex min-h-[220px] flex-col overflow-hidden rounded-landing-lg border border-white/[0.07] bg-landing-surface-card/80 p-7 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.14] sm:min-h-[240px]"
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -bottom-8 -right-3 select-none text-[8rem] font-semibold leading-none tracking-tighter text-white/[0.04]"
-      >
-        {step.number}
-      </span>
-
-      <div className="relative flex items-center justify-between">
-        <span className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-landing-primary-hover/50 text-xs font-bold text-landing-primary-hover">
-            {step.number}
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-landing-primary-hover">
-            {step.label}
-          </span>
-        </span>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/60 transition-all duration-300 group-hover:rotate-45 group-hover:bg-landing-primary group-hover:text-white">
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </span>
-      </div>
-
-      <h3 className="relative mt-auto pt-8 text-lg font-medium leading-snug tracking-[-0.02em] text-landing-text">
-        {step.title}
-      </h3>
-      <p className="relative mt-2.5 text-sm leading-relaxed text-landing-text-secondary">{step.description}</p>
-    </motion.div>
-  )
-}
 
 export function LandingHero() {
   const navigate = useNavigate()
@@ -105,9 +45,7 @@ export function LandingHero() {
         resolution={narrow ? 0.55 : 0.65}
         maxDpr={1.5}
       >
-        {/* Composição única: headline + card lateral + os 3 cards, tudo no
-            mesmo bloco, sem vão vazio entre eles (antes o Hero ocupava
-            100svh sozinho e os cards só apareciam depois de rolar). */}
+        {/* Headline + card lateral, dentro do mesmo bloco do buraco negro. */}
         <div className="relative z-10 px-6 pb-20 pt-28 lg:px-8 lg:pb-24 lg:pt-36">
           <motion.div
             initial="hidden"
@@ -183,12 +121,6 @@ export function LandingHero() {
                 </p>
               </motion.div>
             </div>
-
-            <StaggerGroup delay={0.1} className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3 lg:mt-14">
-              {steps.map((step) => (
-                <StepCard key={step.number} step={step} />
-              ))}
-            </StaggerGroup>
           </motion.div>
         </div>
 
