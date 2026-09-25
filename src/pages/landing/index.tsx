@@ -19,7 +19,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-landing-bg">
       <LandingNavbar />
       <main>
         <LandingHero />

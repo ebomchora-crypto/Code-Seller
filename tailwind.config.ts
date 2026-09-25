@@ -69,6 +69,23 @@ export default {
           secondary: '#fafafa',
           muted: '#f4f4f5',
         },
+        // Paleta "dark premium" isolada da landing pública — não toca em
+        // `purple`/`accent` (usados em ~90 arquivos do app autenticado).
+        // Pedido explícito de redesign: preto/grafite como base, roxo vivo
+        // só como destaque, nunca a página inteira roxa ou preto puro em
+        // toda seção.
+        landing: {
+          bg: '#08080a',
+          surface: '#111114',
+          'surface-2': '#17171c',
+          border: 'rgba(255,255,255,0.08)',
+          primary: '#7c3aed',
+          'primary-hover': '#8b5cf6',
+          'primary-soft': 'rgba(124,58,237,0.12)',
+          text: '#f7f7f8',
+          'text-secondary': '#b4b4be',
+          'text-muted': '#787882',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -93,6 +110,10 @@ export default {
         'glass-strong': '0 16px 48px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
         'glass-purple': '0 0 40px rgba(179, 92, 255, 0.08), inset 0 1px 0 rgba(179, 92, 255, 0.1)',
         'purple-glow': '0 0 60px rgba(179, 92, 255, 0.15)',
+        // Sombras da paleta dark premium da landing — cartão flutuando sobre
+        // fundo quase preto (sem exagero) e glow discreto no CTA principal.
+        'landing-card': '0 24px 60px -24px rgba(0, 0, 0, 0.65)',
+        'landing-glow': '0 0 0 1px rgba(124, 58, 237, 0.15), 0 8px 30px -6px rgba(124, 58, 237, 0.35)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
