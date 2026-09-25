@@ -180,25 +180,25 @@ function ModuleRow({ module, flip }: { module: ModuleEntry; flip: boolean }) {
   return (
     <Reveal
       variants={flip ? fadeInLeft : fadeInUp}
-      className="grid grid-cols-1 items-center gap-10 border-t border-landing-border py-16 first:border-t-0 first:pt-0 sm:py-20 lg:grid-cols-2 lg:gap-16"
+      className="grid grid-cols-1 items-center gap-10 border-t border-landing-border-light py-16 first:border-t-0 first:pt-0 sm:py-20 lg:grid-cols-2 lg:gap-16"
     >
       <div className={flip ? 'lg:order-2' : ''}>
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-landing-primary-hover">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-landing-primary">
             {module.moduleLabel}
           </span>
-          <span className="h-1 w-1 rounded-full bg-landing-text-muted" />
-          <span className="text-xs font-medium uppercase tracking-[0.14em] text-landing-text-muted">
+          <span className="h-1 w-1 rounded-full text-landing-text-muted" />
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-[#8a858f]">
             {module.stageLabel}
           </span>
         </div>
 
-        <h3 className="mt-4 text-2xl font-medium leading-snug tracking-[-0.02em] text-landing-text sm:text-3xl">
+        <h3 className="mt-4 text-2xl font-medium leading-snug tracking-[-0.02em] text-landing-text-dark sm:text-3xl">
           {module.title}
         </h3>
-        <p className="mt-4 max-w-md text-base leading-relaxed text-landing-text-secondary">{module.description}</p>
+        <p className="mt-4 max-w-md text-base leading-relaxed text-[#4a4750]">{module.description}</p>
 
-        <div className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-landing-border bg-white/[0.03] py-2 pl-4 pr-2 text-sm text-landing-text-secondary">
+        <div className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-landing-border-light bg-landing-primary-soft py-2 pl-4 pr-2 text-sm text-landing-text-dark">
           {module.delivery}
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-landing-primary text-white">
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -213,19 +213,36 @@ function ModuleRow({ module, flip }: { module: ModuleEntry; flip: boolean }) {
 
 export function LandingModules() {
   return (
-    <section id="modulos" className="relative overflow-hidden bg-landing-bg py-24 sm:py-32">
+    <section id="modulos" className="relative overflow-hidden bg-landing-bg-light py-24 sm:py-32">
       <div
         aria-hidden
-        className="pointer-events-none absolute right-0 top-0 h-[420px] w-[700px] translate-x-1/3 -translate-y-1/3 rounded-full bg-landing-primary/[0.06] blur-[120px]"
+        className="pointer-events-none absolute inset-0 opacity-[0.5]"
+        style={{
+          backgroundImage: 'linear-gradient(to right, rgba(17,16,20,0.035) 1px, transparent 1px)',
+          backgroundSize: '80px 100%',
+        }}
       />
 
       <div className="relative mx-auto w-full max-w-[1280px] px-6 sm:px-8 lg:px-12">
-        <Reveal variants={fadeInUp} className="max-w-2xl">
-          <LandingEyebrow>Os módulos</LandingEyebrow>
-          <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-4xl">
-            4 entregas. De ideia a cliente pagante.
-          </h2>
-        </Reveal>
+        <div className="grid grid-cols-1 items-start gap-6 border-b border-landing-border-light pb-10 lg:grid-cols-[1fr_320px] lg:gap-8">
+          <Reveal variants={fadeInUp}>
+            <LandingEyebrow tone="light">Os módulos</LandingEyebrow>
+            <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text-dark sm:text-4xl">
+              4 entregas. De ideia a cliente pagante.
+            </h2>
+          </Reveal>
+
+          <Reveal
+            variants={fadeInUp}
+            className="rounded-landing-lg border border-landing-border-light bg-white/70 p-5 shadow-landing-card-light"
+          >
+            <LandingEyebrow tone="light">Aprenda fazendo</LandingEyebrow>
+            <p className="mt-2 text-sm leading-relaxed text-[#4a4750]">
+              Cada etapa termina com algo que você pode usar de verdade — nada fica preso num
+              tutorial.
+            </p>
+          </Reveal>
+        </div>
 
         <div className="mt-4">
           {modules.map((module, index) => (

@@ -19,17 +19,12 @@ export function LandingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
-    <header className="fixed inset-x-0 top-4 z-50 px-4">
-      <div className="mx-auto w-full max-w-5xl">
-        {/* Pílula flutuante — fundo escuro translúcido + blur forte (pedido
-            explícito: nunca um blur/fundo claro que prejudique a leitura). */}
-        <div className="relative overflow-hidden rounded-full border border-white/[0.08] bg-[rgba(10,10,12,0.78)] shadow-glass backdrop-blur-[20px]">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.06] to-transparent"
-          />
-
-          <div className="relative flex h-14 items-center justify-between pl-4 pr-2">
+    <header className="fixed inset-x-0 top-0 z-50">
+      {/* Barra cheia, fixa no topo — não mais a pílula flutuante com
+          margem. Fundo escuro translúcido + blur, borda inferior sutil. */}
+      <div className="relative border-b border-white/[0.08] bg-[rgba(10,10,12,0.85)] backdrop-blur-[20px]">
+        <div className="mx-auto w-full max-w-[1280px] px-6 sm:px-8 lg:px-12">
+          <div className="relative flex h-[72px] items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5">
               <img src="/logo.png" alt="Code Sellers" className="h-7 w-7 object-contain" />
               <span className="font-display text-base font-bold text-white">Code Sellers</span>
@@ -86,7 +81,7 @@ export function LandingNavbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? undefined : { opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: duration.enter, ease: easing.standard }}
-              className="mt-2 flex flex-col gap-1 rounded-2xl border border-white/[0.08] bg-[rgba(10,10,12,0.96)] p-3 shadow-glass-strong backdrop-blur-xl lg:hidden"
+              className="mx-6 mb-4 flex flex-col gap-1 rounded-2xl border border-white/[0.08] bg-[rgba(10,10,12,0.96)] p-3 shadow-glass-strong backdrop-blur-xl sm:mx-8 lg:hidden"
             >
               <a
                 href="#"
