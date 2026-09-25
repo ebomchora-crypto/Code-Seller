@@ -37,7 +37,7 @@ const codeLines: Array<{ tokens: Array<{ text: string; className: string }> }> =
       { text: 'const ', className: 'text-landing-primary-hover' },
       { text: 'empresas', className: 'text-landing-text' },
       { text: ' = ', className: 'text-landing-text-muted' },
-      { text: 'codeHunter.buscar(oferta);', className: 'text-landing-text-secondary' },
+      { text: 'buyersHunter.buscar(oferta);', className: 'text-landing-text-secondary' },
     ],
   },
   {

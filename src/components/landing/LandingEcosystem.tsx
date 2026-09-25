@@ -6,11 +6,11 @@ import { fadeInUp, scaleIn } from '@/motion/variants'
 
 const pillars = [
   { label: 'IA', title: 'Criação', description: 'Transforme ideias em sites e sistemas reais, prontos para apresentar.' },
-  { label: 'Code Hunter', title: 'Prospecção', description: 'Encontre empresas com potencial real de compra, sem tentar no escuro.' },
+  { label: 'Buyers Hunter', title: 'Prospecção', description: 'Encontre empresas com potencial real de compra, sem tentar no escuro.' },
   { label: 'Método Code Sellers', title: 'Venda', description: 'Um processo estruturado pra conduzir cada conversa até o fechamento.' },
 ]
 
-const flow = ['IA', 'Produto', 'Code Hunter', 'Oportunidades', 'Método', 'Cliente']
+const flow = ['IA', 'Produto', 'Buyers Hunter', 'Oportunidades', 'Método', 'Cliente']
 
 export function LandingEcosystem() {
   return (

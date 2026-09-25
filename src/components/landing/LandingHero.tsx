@@ -53,7 +53,7 @@ export function LandingHero() {
           >
             <div className="max-w-xl">
               <motion.div variants={fadeInUp}>
-                <LandingEyebrow>Code Sellers + Code Hunter</LandingEyebrow>
+                <LandingEyebrow>Code Sellers + Buyers Hunter</LandingEyebrow>
               </motion.div>
 
               <motion.h1

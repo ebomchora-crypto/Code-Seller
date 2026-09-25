@@ -7,7 +7,7 @@ interface MockupFrameProps {
 }
 
 // Moldura compartilhada por todos os mockups de UI originais da landing
-// (gerador, pipeline, Code Hunter, proposta...) — mesma "janela" de app
+// (gerador, pipeline, Buyers Hunter, proposta...) — mesma "janela" de app
 // (barra de pontos + label mono), pra tudo parecer parte do mesmo sistema
 // em vez de peças soltas com estilos diferentes.
 export function MockupFrame({ label, children, className = '' }: MockupFrameProps) {

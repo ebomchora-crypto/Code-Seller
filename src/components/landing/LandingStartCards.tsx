@@ -19,7 +19,7 @@ const steps = [
     number: '02',
     label: 'Encontrar',
     title: 'Encontre empresas certas.',
-    description: 'Use o Code Hunter para colocar oportunidades qualificadas no seu radar.',
+    description: 'Use o Buyers Hunter para colocar oportunidades qualificadas no seu radar.',
   },
   {
     number: '03',

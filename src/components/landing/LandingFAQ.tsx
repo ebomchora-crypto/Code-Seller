@@ -23,12 +23,12 @@ const faqItems = [
     answer: 'Sim. Além de sites, o método cobre sistemas e automações mais complexas, voltadas a resolver um problema comercial específico.',
   },
   {
-    question: 'O que é a Code Hunter?',
+    question: 'O que é a Buyers Hunter?',
     answer: 'É a ferramenta de prospecção do ecossistema — encontra empresas com potencial real de compra, pra você não abordar no escuro. Não se confunde com o método Code Sellers.',
   },
   {
     question: 'O método ensina prospecção?',
-    answer: 'Sim. Encontrar as empresas certas é uma etapa do processo, com o Code Hunter como ferramenta de apoio.',
+    answer: 'Sim. Encontrar as empresas certas é uma etapa do processo, com o Buyers Hunter como ferramenta de apoio.',
   },
   {
     question: 'O método ensina venda?',

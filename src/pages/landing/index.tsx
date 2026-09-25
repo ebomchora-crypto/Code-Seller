@@ -5,7 +5,7 @@ import { LandingStartCards } from '@/components/landing/LandingStartCards'
 import { LandingProblem } from '@/components/landing/LandingProblem'
 import { LandingCycle } from '@/components/landing/LandingCycle'
 import { LandingModules } from '@/components/landing/LandingModules'
-import { LandingCodeHunter } from '@/components/landing/LandingCodeHunter'
+import { LandingBuyersHunter } from '@/components/landing/LandingBuyersHunter'
 import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
 import { LandingComparison } from '@/components/landing/LandingComparison'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
@@ -16,7 +16,7 @@ import { LandingFooter } from '@/components/landing/LandingFooter'
 
 const TITLE = 'Code Sellers — Crie com IA. Encontre clientes. Venda.'
 const DESCRIPTION =
-  'Aprenda a criar sites e sistemas com IA, encontrar empresas qualificadas com Code Hunter e transformar projetos em vendas.'
+  'Aprenda a criar sites e sistemas com IA, encontrar empresas qualificadas com Buyers Hunter e transformar projetos em vendas.'
 
 export default function LandingPage() {
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function LandingPage() {
         <LandingProblem />
         <LandingCycle />
         <LandingModules />
-        <LandingCodeHunter />
+        <LandingBuyersHunter />
         <LandingEcosystem />
         <LandingComparison />
         <LandingTimeline />
