@@ -133,13 +133,15 @@ export function LandingHero() {
           </motion.div>
         </div>
 
-        {/* Assinatura visual — título gigante cortado no rodapé do hero */}
+        {/* Assinatura visual — título gigante quase inteiro visível, só
+            tocando a borda de baixo (igual à referência: antes o
+            translate-y de 42% cortava quase 3/4 da altura das letras). */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 z-0 select-none overflow-hidden"
         >
           <div
-            className="translate-y-[42%] whitespace-nowrap text-center font-hero font-black leading-none tracking-tighter text-transparent"
+            className="translate-y-[8%] whitespace-nowrap text-center font-hero font-black leading-none tracking-tighter text-transparent"
             style={{
               fontSize: 'clamp(2.5rem, 13vw, 12rem)',
               backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0))',
