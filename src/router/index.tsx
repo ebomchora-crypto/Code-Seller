@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { PrivateRoute } from '@/router/PrivateRoute'
 import { PublicRoute } from '@/router/PublicRoute'
+import { RootRoute } from '@/router/RootRoute'
 import { Spinner } from '@/components/ui/Spinner'
 import { AppLayout } from '@/layouts/AppLayout'
 
@@ -9,7 +10,6 @@ const LoginPage = lazy(() => import('@/pages/auth/Login'))
 const RegisterPage = lazy(() => import('@/pages/auth/Register'))
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPassword'))
 
-const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const ProspectionPage = lazy(() => import('@/pages/prospection'))
 const CrmPage = lazy(() => import('@/pages/crm'))
 const ContactDetailPage = lazy(() => import('@/pages/crm/[id]'))
@@ -59,8 +59,9 @@ export function AppRouter() {
             }
           />
 
+          <Route path="/" element={<RootRoute />} />
+
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
-            <Route path="/" element={<DashboardPage />} />
             <Route path="/prospection" element={<ProspectionPage />} />
             <Route path="/crm" element={<CrmPage />} />
             <Route path="/crm/:id" element={<ContactDetailPage />} />
