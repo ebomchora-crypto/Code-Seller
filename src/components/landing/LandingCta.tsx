@@ -2,8 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Reveal } from '@/components/motion/Reveal'
 import { reveal } from '@/motion/variants'
 
-// CTA final — o mais forte da página. Gradiente claro → roxo vivo → preto
-// (estático, sem shader), headline escura na faixa clara, botão-pílula
+// CTA final — o mais forte da página. Gradiente claro → vermelho vivo →
+// preto (estático, sem shader), headline escura na faixa clara, botão-pílula
 // escuro sobre a faixa colorida.
 export function LandingCta() {
   const navigate = useNavigate()
@@ -13,7 +13,7 @@ export function LandingCta() {
       className="relative overflow-hidden"
       style={{
         background:
-          'linear-gradient(180deg, #f5f3f5 0%, #f5f3f5 26%, #9b6cff 48%, #5b21b6 66%, #07050b 84%, #07050b 100%)',
+          'linear-gradient(180deg, #f5f3f5 0%, #f5f3f5 26%, #ff3b3b 48%, #7f1d1d 66%, #07050b 84%, #07050b 100%)',
       }}
     >
       <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-24 pt-14 text-center sm:pb-28 sm:pt-16 lg:px-8">
@@ -22,7 +22,7 @@ export function LandingCta() {
             Seu próximo cliente não precisa aparecer por acaso.
           </h2>
           {/* Fica dentro da faixa clara sólida do gradiente (não na transição
-              pra roxo) — texto mais escuro pra manter contraste mesmo assim. */}
+              pro vermelho) — texto mais escuro pra manter contraste mesmo assim. */}
           <p className="mx-auto mt-3 max-w-md text-lg font-medium text-[#3f3f46]">Crie. Encontre. Venda.</p>
           <button
             type="button"
