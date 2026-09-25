@@ -21,10 +21,10 @@ export function LandingNavbar() {
       <div className="mx-auto w-full max-w-5xl">
         {/* Pílula flutuante com gradiente + brilho no topo, sem depender de
             imagem — só CSS (glass/gradient já são a linguagem visual do app). */}
-        <div className="relative overflow-hidden rounded-full border border-white/10 bg-gradient-to-r from-purple-700/85 via-accent/90 to-purple-700/85 shadow-glass-strong backdrop-blur-xl">
+        <div className="relative overflow-hidden rounded-full border border-white/10 bg-white/[0.07] shadow-glass backdrop-blur-lg">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent"
           />
 
           <div className="relative flex h-14 items-center justify-between pl-4 pr-2">
@@ -48,7 +48,9 @@ export function LandingNavbar() {
               <Button
                 size="sm"
                 magnetic
-                className="!bg-white !text-accent hover:!bg-white/90"
+                // bg-[#fff], não bg-white: globals.css remapeia `.dark .bg-white` (inclusive
+                // a variante `!`) pra var(--bg-card), e o tema padrão do site é dark.
+                className="!bg-[#fff] !text-accent hover:!bg-white/90"
                 onClick={() => navigate('/register')}
               >
                 Criar conta
