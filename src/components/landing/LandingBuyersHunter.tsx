@@ -117,7 +117,10 @@ export function LandingBuyersHunter() {
           <button
             type="button"
             onClick={() => navigate('/register')}
-            className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-landing-text-dark transition-colors duration-200 hover:bg-white/90"
+            // bg-[#fff], não bg-white: globals.css remapeia `.dark .bg-white`
+            // pra quase-preto (tema padrão do site é dark), o que deixava o
+            // texto do botão invisível.
+            className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-[#fff] text-sm font-semibold text-landing-text-dark transition-colors duration-200 hover:bg-[#fff]/90"
           >
             Entrar no grupo oficial
           </button>
