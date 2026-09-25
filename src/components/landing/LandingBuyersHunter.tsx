@@ -7,7 +7,7 @@ import { fadeInLeft, fadeInUp } from '@/motion/variants'
 const filters = ['Cidade', 'Nicho', 'Possui site', 'Avaliação', 'Categoria']
 
 // Leads fictícios, só pra demonstração visual da ferramenta — não é uma
-// integração real, é a interface do Code Hunter (produto próprio, distinto
+// integração real, é a interface do Buyers Hunter (produto próprio, distinto
 // do método Code Sellers).
 const leads = [
   { name: 'Clínica Vita', tag: 'Sem site', score: 91 },
@@ -21,9 +21,9 @@ function scoreColor(score: number) {
   return 'text-landing-text-secondary'
 }
 
-export function LandingCodeHunter() {
+export function LandingBuyersHunter() {
   return (
-    <section id="codehunter" className="relative overflow-hidden bg-landing-surface-2 py-24 sm:py-32">
+    <section id="buyershunter" className="relative overflow-hidden bg-landing-surface-2 py-24 sm:py-32">
       <div
         aria-hidden
         className="pointer-events-none absolute right-0 top-1/2 h-[460px] w-[460px] -translate-y-1/2 translate-x-1/3 rounded-full bg-landing-primary/[0.1] blur-[140px]"
@@ -31,7 +31,7 @@ export function LandingCodeHunter() {
 
       <div className="relative mx-auto grid w-full max-w-[1280px] grid-cols-1 items-center gap-14 px-6 sm:px-8 lg:grid-cols-2 lg:px-12">
         <Reveal variants={fadeInLeft}>
-          <LandingEyebrow>Code Hunter</LandingEyebrow>
+          <LandingEyebrow>Buyers Hunter</LandingEyebrow>
           <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-4xl">
             Pare de procurar clientes no escuro.
           </h2>
@@ -42,7 +42,7 @@ export function LandingCodeHunter() {
         </Reveal>
 
         <Reveal variants={fadeInUp}>
-          <MockupFrame label="codehunter.app">
+          <MockupFrame label="buyershunter.app">
             <div className="flex items-center gap-2 rounded-landing-sm border border-white/10 bg-white/[0.03] px-3 py-2.5">
               <Search className="h-4 w-4 shrink-0 text-landing-text-muted" />
               <span className="text-sm text-landing-text-muted">Buscar empresas por nicho ou cidade...</span>

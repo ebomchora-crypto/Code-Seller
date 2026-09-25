@@ -170,7 +170,7 @@ const modules: ModuleEntry[] = [
     moduleLabel: 'Módulo 04',
     stageLabel: 'Etapa vender',
     title: 'Encontre clientes. Conduza a venda.',
-    description: 'Use o Code Hunter para encontrar oportunidades e um processo estruturado para conduzir cada conversa.',
+    description: 'Use o Buyers Hunter para encontrar oportunidades e um processo estruturado para conduzir cada conversa.',
     delivery: 'Pipeline real de potenciais clientes',
     visual: <PipelineMockup />,
   },

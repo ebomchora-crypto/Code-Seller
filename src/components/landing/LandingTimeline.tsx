@@ -7,7 +7,7 @@ const steps = [
   { number: '01', label: 'Ideia', description: 'Um problema real que vale a pena resolver.' },
   { number: '02', label: 'Construção', description: 'A solução criada com IA, funcionando de verdade.' },
   { number: '03', label: 'Oferta', description: 'O projeto embalado como algo que se vende.' },
-  { number: '04', label: 'Prospecção', description: 'Empresas certas, encontradas com o Code Hunter.' },
+  { number: '04', label: 'Prospecção', description: 'Empresas certas, encontradas com o Buyers Hunter.' },
   { number: '05', label: 'Abordagem', description: 'A primeira conversa, sem parecer spam.' },
   { number: '06', label: 'Demo', description: 'Mostrar a solução resolvendo o problema, ao vivo.' },
   { number: '07', label: 'Proposta', description: 'Escopo, prazo e valor, por escrito.' },
