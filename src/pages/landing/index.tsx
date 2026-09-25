@@ -7,6 +7,7 @@ import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
 import { LandingBenefits } from '@/components/landing/LandingBenefits'
 import { LandingFAQ } from '@/components/landing/LandingFAQ'
+import { LandingCtaBanner } from '@/components/landing/LandingCtaBanner'
 import { LandingCta } from '@/components/landing/LandingCta'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 
@@ -62,6 +63,7 @@ export default function LandingPage() {
         <LandingTimeline />
         <LandingBenefits />
         <LandingFAQ />
+        <LandingCtaBanner />
         <LandingCta />
       </main>
       <LandingFooter />
