@@ -19,12 +19,12 @@ export function LandingNavbar() {
   return (
     <header className="fixed inset-x-0 top-4 z-50 px-4">
       <div className="mx-auto w-full max-w-5xl">
-        {/* Pílula flutuante com gradiente + brilho no topo, sem depender de
-            imagem — só CSS (glass/gradient já são a linguagem visual do app). */}
-        <div className="relative overflow-hidden rounded-full border border-white/10 bg-white/[0.07] shadow-glass backdrop-blur-lg">
+        {/* Pílula flutuante — fundo escuro translúcido + blur forte (pedido
+            explícito: nunca um blur/fundo claro que prejudique a leitura). */}
+        <div className="relative overflow-hidden rounded-full border border-white/[0.08] bg-[rgba(10,10,12,0.78)] shadow-glass backdrop-blur-[20px]">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.06] to-transparent"
           />
 
           <div className="relative flex h-14 items-center justify-between pl-4 pr-2">
@@ -48,9 +48,7 @@ export function LandingNavbar() {
               <Button
                 size="sm"
                 magnetic
-                // bg-[#fff], não bg-white: globals.css remapeia `.dark .bg-white` (inclusive
-                // a variante `!`) pra var(--bg-card), e o tema padrão do site é dark.
-                className="!bg-[#fff] !text-accent hover:!bg-white/90"
+                className="!bg-landing-primary !text-white shadow-landing-glow hover:!bg-landing-primary-hover"
                 onClick={() => navigate('/register')}
               >
                 Criar conta
@@ -76,7 +74,7 @@ export function LandingNavbar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reducedMotion ? undefined : { opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: duration.enter, ease: easing.standard }}
-              className="mt-2 flex flex-col gap-1 rounded-2xl border border-white/10 bg-accent-ink/95 p-3 shadow-glass-strong backdrop-blur-xl md:hidden"
+              className="mt-2 flex flex-col gap-1 rounded-2xl border border-white/[0.08] bg-[rgba(10,10,12,0.96)] p-3 shadow-glass-strong backdrop-blur-xl md:hidden"
             >
               {navLinks.map((link) => (
                 <a
@@ -95,7 +93,10 @@ export function LandingNavbar() {
               >
                 Entrar
               </Link>
-              <Button className="mt-1 w-full" onClick={() => navigate('/register')}>
+              <Button
+                className="mt-1 w-full !bg-landing-primary !text-white hover:!bg-landing-primary-hover"
+                onClick={() => navigate('/register')}
+              >
                 Criar conta
               </Button>
             </motion.div>

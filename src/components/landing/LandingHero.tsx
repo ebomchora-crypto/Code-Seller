@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, Check } from 'lucide-react'
 import { BlackHoleHeroSection } from '@/components/ui/blackhole-hero-section'
 import { SectionCurve } from '@/components/ui/section-curve'
-import { Eyebrow } from '@/components/ui/eyebrow'
-import { Button } from '@/components/ui/Button'
+import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
 import { fadeInUp, staggerContainer } from '@/motion/variants'
 
 /** Verdadeiro em telas estreitas — controla a troca de enquadramento abaixo. */
@@ -21,36 +20,31 @@ function useNarrow(query = '(max-width: 767px)') {
   return narrow
 }
 
+const trustPoints = ['Grátis para começar', 'Sem cartão de crédito', 'Configuração em minutos']
+
 export function LandingHero() {
   const navigate = useNavigate()
   const narrow = useNarrow()
 
   return (
     <section className="relative w-full overflow-x-hidden">
+      {/* BlackHoleHeroSection (WebGL) intocado — só o conteúdo por cima muda. */}
       <BlackHoleHeroSection
-        // Empurra o buraco negro pra direita/baixo e escurece o lado do texto
-        // — mesma receita do componente original, só reposicionada pro nosso
-        // layout (texto à esquerda, sempre).
         focus={narrow ? [0.5, 0.8] : [0.72, 0.48]}
         scrim={narrow ? 'top' : 'left'}
         scrimStrength={0.92}
         distance={24}
         elevation={narrow ? -7 : -5.5}
         fov={narrow ? 58 : 42}
-        // Paleta do disco de acreção na identidade roxa do Code Sellers, em
-        // vez do laranja padrão do componente.
         hotColor="#F3E8FF"
         midColor="#B35CFF"
         coolColor="#2C0052"
-        // Ajustes conservadores de performance — é a home pública, precisa
-        // rodar bem em qualquer aparelho, não só no nosso.
         glow={narrow ? 0.75 : 0.9}
         steps={narrow ? 160 : 220}
         resolution={narrow ? 0.55 : 0.65}
         maxDpr={1.5}
       >
-        {/* Altura = viewport, pra o título gigante cortar exatamente na borda de baixo da tela */}
-        <div className="relative z-10 flex h-full min-h-[max(640px,100svh)] items-center px-6 lg:px-8">
+        <div className="relative z-10 flex h-full min-h-[max(680px,100svh)] items-center px-6 lg:px-8">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -59,46 +53,78 @@ export function LandingHero() {
           >
             <div className="max-w-xl">
               <motion.div variants={fadeInUp}>
-                <Eyebrow variant="dark">CRM para vendedores digitais</Eyebrow>
+                <LandingEyebrow>CRM para vendedores digitais</LandingEyebrow>
               </motion.div>
 
-              <motion.div
+              <motion.h1
                 variants={fadeInUp}
-                className="mt-6 max-w-xs font-hero text-lg font-medium leading-snug text-white sm:text-xl"
+                className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight text-landing-text sm:text-5xl lg:text-[3.4rem]"
               >
-                <p>Prospecte com dados.</p>
-                <p>Feche com o CRM.</p>
-                <p className="text-purple-400">Cresça com o AutoPilot.</p>
-              </motion.div>
+                Prospecte com dados.
+                <br />
+                Feche com o CRM.
+                <br />
+                <span className="text-landing-primary-hover">Cresça com o AutoPilot.</span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeInUp}
+                className="mt-5 max-w-md text-base leading-relaxed text-landing-text-secondary sm:text-lg"
+              >
+                Organize leads, acompanhe negociações e feche vendas com a ajuda da IA — tudo em um
+                só lugar, do primeiro contato ao pagamento recebido.
+              </motion.p>
 
               <motion.div variants={fadeInUp} className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <Button size="lg" magnetic className="shadow-purple-glow" onClick={() => navigate('/register')}>
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-landing-primary px-6 text-base font-semibold text-white shadow-landing-glow transition-colors duration-200 hover:bg-landing-primary-hover active:scale-[0.98]"
+                >
                   Criar conta grátis
-                </Button>
-                <Button size="lg" variant="ghost" className="text-white hover:bg-white/[0.06]" onClick={() => navigate('/login')}>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="inline-flex h-12 items-center justify-center rounded-xl border border-white/15 px-6 text-base font-medium text-landing-text transition-colors duration-200 hover:border-white/25 hover:bg-white/[0.06]"
+                >
                   Já tenho conta
-                </Button>
+                </button>
               </motion.div>
+
+              {/* Indicador de confiança — sem inventar número de usuários/depoimentos,
+                  só os pontos de atrito reais que já são verdade no cadastro. */}
+              <motion.ul
+                variants={fadeInUp}
+                className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-landing-text-muted"
+              >
+                {trustPoints.map((point) => (
+                  <li key={point} className="flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5 text-landing-primary-hover" />
+                    {point}
+                  </li>
+                ))}
+              </motion.ul>
             </div>
 
             {/* Card lateral — ancorado à direita do container full-width (max-w-7xl),
                 não do bloco de texto (max-w-xl), pra não colidir com o título/parágrafo. */}
             <motion.div
               variants={fadeInUp}
-              className="pointer-events-auto absolute right-0 top-[28%] hidden w-[300px] rounded-2xl border border-white/10 bg-gradient-to-b from-accent-ink/75 to-accent-deep/65 p-6 shadow-glass-strong backdrop-blur-xl lg:block xl:right-6"
+              className="pointer-events-auto absolute right-0 top-[26%] hidden w-[300px] rounded-3xl border border-white/10 bg-landing-surface/80 p-6 shadow-landing-card backdrop-blur-xl lg:block xl:right-6"
             >
-              <Eyebrow variant="dark">Code Sellers + AutoPilot</Eyebrow>
-              <h4 className="mt-3 font-hero text-lg font-bold leading-snug text-white">
+              <LandingEyebrow>Code Sellers + AutoPilot</LandingEyebrow>
+              <h4 className="mt-3 text-lg font-bold leading-snug text-landing-text">
                 Do lead ao dinheiro no bolso.
               </h4>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-400">
+              <p className="mt-2 text-sm leading-relaxed text-landing-text-secondary">
                 Prospecte, organize no CRM e feche com a ajuda da IA — do primeiro contato ao
                 pagamento recebido.
               </p>
               <button
                 type="button"
                 onClick={() => navigate('/register')}
-                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-white transition-colors hover:text-accent-bright"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-landing-text transition-colors hover:text-landing-primary-hover"
               >
                 Começar agora
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -114,8 +140,6 @@ export function LandingHero() {
         >
           <div
             className="translate-y-[42%] whitespace-nowrap text-center font-hero font-black leading-none tracking-tighter text-transparent"
-            // backgroundImage, não o shorthand `background`: o shorthand reseta
-            // background-clip e o gradiente vaza como um retângulo cinza.
             style={{
               fontSize: 'clamp(2.5rem, 13vw, 12rem)',
               backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0))',
@@ -130,7 +154,9 @@ export function LandingHero() {
         </div>
       </BlackHoleHeroSection>
 
-      <SectionCurve toColor="#f5f3f2" />
+      {/* Saída pra #08080a (landing-bg) — mesma cor da próxima seção, unifica
+          a landing inteira em tons escuros (antes ia pro bege "paper"). */}
+      <SectionCurve toColor="#08080a" />
     </section>
   )
 }
