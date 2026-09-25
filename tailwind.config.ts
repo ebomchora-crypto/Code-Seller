@@ -71,20 +71,27 @@ export default {
         },
         // Paleta "dark premium" isolada da landing pública — não toca em
         // `purple`/`accent` (usados em ~90 arquivos do app autenticado).
-        // Pedido explícito de redesign: preto/grafite como base, roxo vivo
-        // só como destaque, nunca a página inteira roxa ou preto puro em
-        // toda seção.
+        // Reformulação completa pedida: preto/grafite como base editorial,
+        // roxo como elemento de destaque (não domina a tela inteira).
         landing: {
-          bg: '#08080a',
-          surface: '#111114',
-          'surface-2': '#17171c',
+          bg: '#07050b',
+          surface: '#0d0815',
+          'surface-2': '#110a1a',
+          'surface-card': '#121018',
           border: 'rgba(255,255,255,0.08)',
+          'border-light': 'rgba(17,16,20,0.08)',
           primary: '#7c3aed',
           'primary-hover': '#8b5cf6',
+          vivid: '#9b6cff',
+          deep: '#5b21b6',
+          highlight: '#a78bfa',
           'primary-soft': 'rgba(124,58,237,0.12)',
-          text: '#f7f7f8',
-          'text-secondary': '#b4b4be',
-          'text-muted': '#787882',
+          text: '#ffffff',
+          'text-secondary': '#a8a3ae',
+          'text-muted': '#76717d',
+          'bg-light': '#f7f5f8',
+          'bg-light-2': '#faf9fb',
+          'text-dark': '#111014',
         },
       },
       fontFamily: {
@@ -97,6 +104,16 @@ export default {
       },
       letterSpacing: {
         tightest: '-0.04em',
+        editorial: '-0.045em',
+      },
+      borderRadius: {
+        // Sistema de radius contextual da landing — nunca "arredonda tudo
+        // em 40px": pequeno pra chips/badges, médio pra botões/inputs,
+        // grande pra cards, display só pros painéis/mockups grandes.
+        'landing-sm': '8px',
+        'landing-md': '14px',
+        'landing-lg': '20px',
+        'landing-display': '28px',
       },
       backdropBlur: {
         xs: '2px',
@@ -110,10 +127,10 @@ export default {
         'glass-strong': '0 16px 48px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
         'glass-purple': '0 0 40px rgba(179, 92, 255, 0.08), inset 0 1px 0 rgba(179, 92, 255, 0.1)',
         'purple-glow': '0 0 60px rgba(179, 92, 255, 0.15)',
-        // Sombras da paleta dark premium da landing — cartão flutuando sobre
-        // fundo quase preto (sem exagero) e glow discreto no CTA principal.
-        'landing-card': '0 24px 60px -24px rgba(0, 0, 0, 0.65)',
-        'landing-glow': '0 0 0 1px rgba(124, 58, 237, 0.15), 0 8px 30px -6px rgba(124, 58, 237, 0.35)',
+        // Sombras grandes e suaves — nunca preto forte, sempre difuso.
+        'landing-card': '0 30px 80px rgba(0, 0, 0, 0.18)',
+        'landing-card-light': '0 30px 80px rgba(17, 16, 20, 0.08)',
+        'landing-glow': '0 0 0 1px rgba(124, 58, 237, 0.15), 0 8px 30px -6px rgba(139, 92, 246, 0.35)',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
+import { MockupFrame } from '@/components/landing/MockupFrame'
 import { Reveal } from '@/components/motion/Reveal'
 import { fadeInLeft, fadeInUp } from '@/motion/variants'
 
@@ -10,156 +12,224 @@ interface ModuleEntry {
   title: string
   description: string
   delivery: string
-  image: string
-  imageAlt: string
+  visual: ReactNode
 }
 
-// Réplica da estrutura "4 entregas" da referência — cada módulo é um passo
-// real do produto (não texto genérico), com a anatomia: painel com print
-// real do produto + painel de texto, ambos dentro do mesmo card dark.
+// Mockup 01 — gerador: prompt → preview → deploy.
+function GeneratorMockup() {
+  return (
+    <MockupFrame label="gerador.app">
+      <div className="space-y-4">
+        <div className="rounded-landing-sm border border-white/10 bg-white/[0.03] px-4 py-3">
+          <p className="text-[11px] uppercase tracking-wide text-landing-text-muted">Prompt</p>
+          <p className="mt-1.5 text-sm text-landing-text">
+            "Site institucional pra clínica odontológica, com agendamento online."
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 rounded-landing-sm border border-white/10 bg-white/[0.02] p-3">
+          <div className="col-span-3 h-2 w-2/3 rounded-full bg-white/10" />
+          <div className="h-14 rounded-landing-sm bg-landing-primary/25" />
+          <div className="h-14 rounded-landing-sm bg-white/[0.05]" />
+          <div className="h-14 rounded-landing-sm bg-white/[0.05]" />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-landing-text-muted">Preview pronto</span>
+          <span className="rounded-full bg-landing-primary-hover/15 px-3 py-1 text-xs font-medium text-landing-primary-hover">
+            Deploy concluído
+          </span>
+        </div>
+      </div>
+    </MockupFrame>
+  )
+}
+
+// Mockup 02 — valorizar: percepção de valor antes/depois, em barras.
+function ValueMockup() {
+  const bars = [
+    { label: 'Design', value: 92 },
+    { label: 'Copy', value: 88 },
+    { label: 'Apresentação', value: 95 },
+  ]
+  return (
+    <MockupFrame label="apresentacao.pdf">
+      <div className="space-y-5">
+        {bars.map((bar) => (
+          <div key={bar.label}>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-landing-text-muted">{bar.label}</span>
+              <span className="font-medium text-landing-primary-hover">{bar.value}%</span>
+            </div>
+            <div className="mt-2 h-1.5 rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-landing-primary to-landing-primary-hover"
+                style={{ width: `${bar.value}%` }}
+              />
+            </div>
+          </div>
+        ))}
+        <p className="pt-1 text-xs text-landing-text-muted">
+          Projeto pronto pra ser apresentado, não só entregue.
+        </p>
+      </div>
+    </MockupFrame>
+  )
+}
+
+// Mockup 03 — resolver: dor real → sistema → resultado, em nós conectados.
+function SystemMockup() {
+  const nodes = [
+    { label: 'Dor real', detail: 'Processo manual' },
+    { label: 'Sistema', detail: 'Automação com IA', highlight: true },
+    { label: 'Resultado', detail: 'Horas economizadas' },
+  ]
+  return (
+    <MockupFrame label="sistema.flow">
+      <div className="flex items-stretch justify-between gap-2">
+        {nodes.map((node, index) => (
+          <div key={node.label} className="flex items-center gap-2">
+            <div
+              className={`w-[104px] rounded-landing-sm border p-3 text-center sm:w-[120px] ${
+                node.highlight
+                  ? 'border-landing-primary-hover/50 bg-landing-primary-soft'
+                  : 'border-white/10 bg-white/[0.03]'
+              }`}
+            >
+              <p className={`text-[13px] font-semibold ${node.highlight ? 'text-landing-primary-hover' : 'text-landing-text'}`}>
+                {node.label}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-landing-text-muted">{node.detail}</p>
+            </div>
+            {index < nodes.length - 1 && <span className="h-px w-4 shrink-0 bg-white/15 sm:w-6" aria-hidden />}
+          </div>
+        ))}
+      </div>
+    </MockupFrame>
+  )
+}
+
+// Mockup 04 — vender: pipeline Novo → Contato → Reunião → Proposta → Fechado.
+function PipelineMockup() {
+  const stages = [
+    { label: 'Novo', count: 12 },
+    { label: 'Contato', count: 8 },
+    { label: 'Reunião', count: 5 },
+    { label: 'Proposta', count: 3 },
+    { label: 'Fechado', count: 2, highlight: true },
+  ]
+  return (
+    <MockupFrame label="pipeline.crm">
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2.5">
+        {stages.map((stage) => (
+          <div
+            key={stage.label}
+            className={`flex flex-col items-center gap-2 rounded-landing-sm border p-2 text-center sm:p-3 ${
+              stage.highlight ? 'border-landing-primary-hover/50 bg-landing-primary-soft' : 'border-white/10 bg-white/[0.03]'
+            }`}
+          >
+            <span className={`text-lg font-semibold sm:text-xl ${stage.highlight ? 'text-landing-primary-hover' : 'text-landing-text'}`}>
+              {stage.count}
+            </span>
+            <span className="text-[9px] uppercase tracking-wide text-landing-text-muted sm:text-[10px]">{stage.label}</span>
+          </div>
+        ))}
+      </div>
+    </MockupFrame>
+  )
+}
+
 const modules: ModuleEntry[] = [
   {
     number: '01',
     moduleLabel: 'Módulo 01',
-    stageLabel: 'Etapa organizar',
-    title: 'Organize seus leads com o CRM.',
-    description:
-      'Cadastre contatos, adicione tags e acompanhe o histórico completo de cada relacionamento — sem planilha paralela.',
-    delivery: 'Sua base de leads organizada e pronta pra trabalhar',
-    image: '/landing/modules/module-01-crm.webp',
-    imageAlt: 'Tela do módulo de Leads do Code Sellers, com métricas e lista de contatos',
+    stageLabel: 'Etapa criar',
+    title: 'Crie sites com IA em minutos.',
+    description: 'Transforme prompts em soluções reais, responsivas e prontas para apresentar.',
+    delivery: 'Primeiro projeto funcionando',
+    visual: <GeneratorMockup />,
   },
   {
     number: '02',
     moduleLabel: 'Módulo 02',
-    stageLabel: 'Etapa acompanhar',
-    title: 'Acompanhe cada negociação no Kanban.',
-    description:
-      'Mova negócios pelas etapas do funil conforme a conversa avança, sem perder o timing de follow-up.',
-    delivery: 'Pipeline visual com cada negociação no lugar certo',
-    image: '/landing/modules/module-02-pipeline.webp',
-    imageAlt: 'Tela do pipeline de Negócios do Code Sellers em Kanban',
+    stageLabel: 'Etapa valorizar',
+    title: 'Faça seu projeto parecer premium.',
+    description: 'Aprenda design, copy e apresentação para aumentar a percepção de valor.',
+    delivery: 'Projeto profissional pronto para vender',
+    visual: <ValueMockup />,
   },
   {
     number: '03',
     moduleLabel: 'Módulo 03',
-    stageLabel: 'Etapa receber',
-    title: 'Controle recebíveis sem sair do CRM.',
-    description:
-      'Registre pagamentos, acompanhe recorrências e saiba exatamente quando o dinheiro entra.',
-    delivery: 'Financeiro integrado, dinheiro rastreado',
-    image: '/landing/modules/module-03-financeiro.webp',
-    imageAlt: 'Tela do módulo Financeiro do Code Sellers com recebimentos',
+    stageLabel: 'Etapa resolver',
+    title: 'Construa sistemas que empresas realmente precisam.',
+    description: 'Encontre dores reais e transforme-as em sistemas, automações e soluções.',
+    delivery: 'Demo resolvendo um problema comercial real',
+    visual: <SystemMockup />,
   },
   {
     number: '04',
     moduleLabel: 'Módulo 04',
     stageLabel: 'Etapa vender',
-    title: 'Feche mais rápido com o AutoPilot.',
-    description:
-      'A IA analisa seu pipeline, sugere o próximo passo e ajuda a conduzir a conversa até o fechamento.',
-    delivery: 'Clientes no radar e um processo claro para fechar vendas',
-    image: '/landing/modules/module-04-autopilot.webp',
-    imageAlt: 'Tela do AutoPilot do Code Sellers sugerindo próximos passos com IA',
+    title: 'Encontre clientes. Conduza a venda.',
+    description: 'Use o Code Hunter para encontrar oportunidades e um processo estruturado para conduzir cada conversa.',
+    delivery: 'Pipeline real de potenciais clientes',
+    visual: <PipelineMockup />,
   },
 ]
 
-function ModulePanel({ module, flip }: { module: ModuleEntry; flip: boolean }) {
-  const visual = (
-    <div
-      className={`relative min-h-[300px] overflow-hidden bg-landing-bg sm:min-h-[380px] ${flip ? 'sm:order-2' : ''}`}
-    >
-      <img
-        src={module.image}
-        alt={module.imageAlt}
-        className="absolute inset-0 h-full w-full object-cover"
-        loading="lazy"
-      />
-      {/* Overlay bem discreto — só o suficiente pra dar contraste ao badge,
-          sem "lavar" a imagem (pedido explícito: nada de overlay forte). */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent"
-      />
-      {/* Borda interna sutil — separa a foto do card sem precisar de moldura pesada */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/[0.06]" />
-      <span className="absolute left-5 top-5 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-md">
-        {module.number} / {module.stageLabel.replace('Etapa ', '')}
-      </span>
-    </div>
-  )
-
-  const text = (
-    <div className={`flex flex-col justify-center bg-[#101014] p-8 sm:p-10 ${flip ? 'sm:order-1' : ''}`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-landing-primary-hover">
-          {module.moduleLabel}
-        </span>
-        <span className="text-xs font-medium uppercase tracking-wide text-landing-text-muted">
-          {module.stageLabel}
-        </span>
-      </div>
-
-      <h3 className="mt-3 text-2xl font-bold leading-snug tracking-tight text-landing-text">{module.title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-landing-text-secondary">{module.description}</p>
-
-      <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-landing-primary/20 bg-landing-primary-soft px-4 py-3">
-        <span className="text-xs font-medium leading-snug text-landing-text">{module.delivery}</span>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-landing-primary text-white">
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </span>
-      </div>
-    </div>
-  )
-
+function ModuleRow({ module, flip }: { module: ModuleEntry; flip: boolean }) {
   return (
     <Reveal
       variants={flip ? fadeInLeft : fadeInUp}
-      className="group overflow-hidden rounded-3xl border border-white/[0.07] shadow-landing-card transition-colors duration-300 hover:border-white/[0.12]"
+      className="grid grid-cols-1 items-center gap-10 border-t border-landing-border py-16 first:border-t-0 first:pt-0 sm:py-20 lg:grid-cols-2 lg:gap-16"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2">
-        {visual}
-        {text}
+      <div className={flip ? 'lg:order-2' : ''}>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-landing-primary-hover">
+            {module.moduleLabel}
+          </span>
+          <span className="h-1 w-1 rounded-full bg-landing-text-muted" />
+          <span className="text-xs font-medium uppercase tracking-[0.14em] text-landing-text-muted">
+            {module.stageLabel}
+          </span>
+        </div>
+
+        <h3 className="mt-4 text-2xl font-medium leading-snug tracking-[-0.02em] text-landing-text sm:text-3xl">
+          {module.title}
+        </h3>
+        <p className="mt-4 max-w-md text-base leading-relaxed text-landing-text-secondary">{module.description}</p>
+
+        <div className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-landing-border bg-white/[0.03] py-2 pl-4 pr-2 text-sm text-landing-text-secondary">
+          {module.delivery}
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-landing-primary text-white">
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </span>
+        </div>
       </div>
+
+      <div className={flip ? 'lg:order-1' : ''}>{module.visual}</div>
     </Reveal>
   )
 }
 
-// Seção "N entregas" — cabeçalho (headline + card "aprenda fazendo") seguido
-// da pilha de painéis alternados. Fundo volta pro landing-bg (#08080a),
-// criando o ritmo claro/escuro-de-tom entre seções (surface-2 → bg).
 export function LandingModules() {
   return (
-    <section id="funcionalidades" className="relative overflow-hidden bg-landing-bg py-24">
+    <section id="modulos" className="relative overflow-hidden bg-landing-bg py-24 sm:py-32">
       <div
         aria-hidden
         className="pointer-events-none absolute right-0 top-0 h-[420px] w-[700px] translate-x-1/3 -translate-y-1/3 rounded-full bg-landing-primary/[0.06] blur-[120px]"
       />
 
-      <div className="relative mx-auto w-full max-w-7xl px-6 lg:px-8">
-        <div className="grid grid-cols-1 items-start gap-6 border-b border-white/[0.08] pb-10 lg:grid-cols-[1fr_320px] lg:gap-8">
-          <Reveal variants={fadeInLeft}>
-            <LandingEyebrow>Da ideia ao dinheiro</LandingEyebrow>
-            <h2 className="mt-4 text-4xl font-bold leading-[1.08] tracking-tight text-landing-text sm:text-5xl">
-              4 entregas. De leads organizados a vendas fechadas.
-            </h2>
-          </Reveal>
+      <div className="relative mx-auto w-full max-w-[1280px] px-6 sm:px-8 lg:px-12">
+        <Reveal variants={fadeInUp} className="max-w-2xl">
+          <LandingEyebrow>Os módulos</LandingEyebrow>
+          <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-4xl">
+            4 entregas. De ideia a cliente pagante.
+          </h2>
+        </Reveal>
 
-          <Reveal
-            variants={fadeInUp}
-            className="rounded-3xl border border-white/[0.07] bg-[#101014] p-5 shadow-landing-card"
-          >
-            <LandingEyebrow>Aprenda fazendo</LandingEyebrow>
-            <p className="mt-2 text-sm leading-relaxed text-landing-text-secondary">
-              Cada etapa termina com algo que você pode usar de verdade — nada fica preso num
-              tutorial.
-            </p>
-          </Reveal>
-        </div>
-
-        <div className="mt-10 flex flex-col gap-6">
+        <div className="mt-4">
           {modules.map((module, index) => (
-            <ModulePanel key={module.number} module={module} flip={index % 2 === 1} />
+            <ModuleRow key={module.number} module={module} flip={index % 2 === 1} />
           ))}
         </div>
       </div>
