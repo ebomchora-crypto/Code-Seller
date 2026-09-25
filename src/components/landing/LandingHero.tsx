@@ -62,7 +62,7 @@ export function LandingHero() {
 
               <motion.h1
                 variants={fadeInUp}
-                className="mt-6 font-display text-5xl font-bold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl"
+                className="mt-6 font-hero text-5xl font-black leading-[0.98] tracking-[-0.02em] text-white sm:text-6xl lg:text-7xl"
               >
                 Prospecte. Feche.{' '}
                 <span className="text-purple-400">Cresça.</span>

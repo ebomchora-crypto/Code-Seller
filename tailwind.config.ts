@@ -73,6 +73,10 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         display: ['Sora', 'sans-serif'],
+        // Geométrica/arredondada, bem mais pesada que a Sora — reservada
+        // para o headline do Hero da landing (referência visual pedida),
+        // não substitui a font-display usada no resto do app.
+        hero: ['Outfit', 'sans-serif'],
       },
       letterSpacing: {
         tightest: '-0.04em',

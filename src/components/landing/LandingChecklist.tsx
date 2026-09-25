@@ -4,6 +4,7 @@ import { Check, Sparkles } from 'lucide-react'
 import { Eyebrow } from '@/components/ui/eyebrow'
 import { Button } from '@/components/ui/Button'
 import { SectionCurve } from '@/components/ui/section-curve'
+import { ShaderBackground, PURPLE_MESH_UNIFORMS } from '@/components/ui/mesh-gradient'
 import { Reveal } from '@/components/motion/Reveal'
 import { StaggerGroup } from '@/components/motion/StaggerGroup'
 import { fadeInLeft, bounceIn } from '@/motion/variants'
@@ -21,10 +22,13 @@ export function LandingChecklist() {
   return (
     <section className="relative overflow-hidden bg-accent-ink">
       <SectionCurve fromColor="#f5f3f2" toColor="#0b0014" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-40 top-0 h-[560px] w-[560px] rounded-full bg-purple-700/25 blur-[140px]"
-      />
+
+      {/* Fundo animado (mesh gradient) — só nas seções "de próxima página" da
+          landing, nunca no Hero (que mantém o buraco negro). */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <ShaderBackground className="absolute inset-0 opacity-60" uniforms={PURPLE_MESH_UNIFORMS} />
+        <div className="absolute inset-0 bg-accent-ink/55" />
+      </div>
 
       <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 gap-12 px-6 py-24 lg:grid-cols-2 lg:items-center lg:px-8">
         <Reveal variants={fadeInLeft}>
