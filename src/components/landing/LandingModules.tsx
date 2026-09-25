@@ -1,8 +1,6 @@
-import type { ComponentType, SVGProps } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { Eyebrow } from '@/components/ui/eyebrow'
 import { Reveal } from '@/components/motion/Reveal'
-import { CrmIcon, DealsIcon, FinancialIcon, AutopilotIcon } from '@/components/layout/navIcons'
 import { fadeInLeft, fadeInUp } from '@/motion/variants'
 
 interface ModuleEntry {
@@ -12,12 +10,13 @@ interface ModuleEntry {
   title: string
   description: string
   delivery: string
-  icon: ComponentType<SVGProps<SVGSVGElement>>
+  image: string
+  imageAlt: string
 }
 
 // Réplica da estrutura "4 entregas" da referência — cada módulo é um passo
 // real do produto (não texto genérico), com a mesma anatomia visual: painel
-// escuro com badge numerado + painel claro com título, descrição e "entrega".
+// com print real do produto + painel claro com título, descrição e "entrega".
 const modules: ModuleEntry[] = [
   {
     number: '01',
@@ -27,7 +26,8 @@ const modules: ModuleEntry[] = [
     description:
       'Cadastre contatos, adicione tags e acompanhe o histórico completo de cada relacionamento — sem planilha paralela.',
     delivery: 'Sua base de leads organizada e pronta pra trabalhar',
-    icon: CrmIcon,
+    image: '/landing/modules/module-01-crm.webp',
+    imageAlt: 'Tela do módulo de Leads do Code Sellers, com métricas e lista de contatos',
   },
   {
     number: '02',
@@ -37,7 +37,8 @@ const modules: ModuleEntry[] = [
     description:
       'Mova negócios pelas etapas do funil conforme a conversa avança, sem perder o timing de follow-up.',
     delivery: 'Pipeline visual com cada negociação no lugar certo',
-    icon: DealsIcon,
+    image: '/landing/modules/module-02-pipeline.webp',
+    imageAlt: 'Tela do pipeline de Negócios do Code Sellers em Kanban',
   },
   {
     number: '03',
@@ -47,7 +48,8 @@ const modules: ModuleEntry[] = [
     description:
       'Registre pagamentos, acompanhe recorrências e saiba exatamente quando o dinheiro entra.',
     delivery: 'Financeiro integrado, dinheiro rastreado',
-    icon: FinancialIcon,
+    image: '/landing/modules/module-03-financeiro.webp',
+    imageAlt: 'Tela do módulo Financeiro do Code Sellers com recebimentos',
   },
   {
     number: '04',
@@ -57,41 +59,33 @@ const modules: ModuleEntry[] = [
     description:
       'A IA analisa seu pipeline, sugere o próximo passo e ajuda a conduzir a conversa até o fechamento.',
     delivery: 'Clientes no radar e um processo claro para fechar vendas',
-    icon: AutopilotIcon,
+    image: '/landing/modules/module-04-autopilot.webp',
+    imageAlt: 'Tela do AutoPilot do Code Sellers sugerindo próximos passos com IA',
   },
 ]
 
 function ModulePanel({ module, flip }: { module: ModuleEntry; flip: boolean }) {
-  const Icon = module.icon
-
   const visual = (
     <div
-      className={`relative flex min-h-[220px] items-center justify-center overflow-hidden bg-accent-ink p-8 sm:min-h-[280px] ${
-        flip ? 'sm:order-2' : ''
-      }`}
+      className={`relative min-h-[220px] overflow-hidden bg-accent-ink sm:min-h-[280px] ${flip ? 'sm:order-2' : ''}`}
     >
+      <img src={module.image} alt={module.imageAlt} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(circle at 30% 30%, rgba(179,92,255,0.28), transparent 65%)' }}
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-accent-ink/70 via-transparent to-transparent"
       />
-      <span className="absolute left-5 top-5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/80 backdrop-blur-sm">
+      <span className="absolute left-5 top-5 rounded-full border border-white/15 bg-white/[0.08] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
         {module.number} / {module.stageLabel.replace('Etapa ', '')}
-      </span>
-      <span className="relative flex h-20 w-20 items-center justify-center rounded-2xl border border-accent-bright/30 bg-accent-500/15 text-accent-bright">
-        <Icon className="h-9 w-9" />
-      </span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -bottom-8 -right-4 select-none font-display text-[9rem] font-black leading-none text-white/[0.04]"
-      >
-        {module.number}
       </span>
     </div>
   )
 
+  // bg-[#fff], não bg-white: globals.css remapeia `.dark .bg-white` pra
+  // var(--bg-card) (quase preto), e o tema padrão do site é dark — com
+  // bg-white o painel virava fundo escuro + texto escuro (ilegível). Mesmo
+  // escape já usado no LandingNavbar.
   const text = (
-    <div className="flex flex-col justify-center bg-white p-8 sm:p-10">
+    <div className={`flex flex-col justify-center bg-[#fff] p-8 sm:p-10 ${flip ? 'sm:order-1' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-accent-500">{module.moduleLabel}</span>
         <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">{module.stageLabel}</span>
@@ -133,7 +127,8 @@ export function LandingModules() {
             </h2>
           </Reveal>
 
-          <Reveal variants={fadeInUp} className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+          {/* bg-[#fff] pelo mesmo motivo do painel de texto acima */}
+          <Reveal variants={fadeInUp} className="rounded-2xl border border-neutral-200 bg-[#fff] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
             <Eyebrow>Aprenda fazendo</Eyebrow>
             <p className="mt-2 text-sm leading-relaxed text-neutral-600">
               Cada etapa termina com algo que você pode usar de verdade — nada fica preso num
