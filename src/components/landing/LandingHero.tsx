@@ -22,18 +22,6 @@ function useNarrow(query = '(max-width: 767px)') {
 
 const trustLine = ['Criar', 'Encontrar', 'Vender']
 
-// O painel lateral do Hero — jornada real do produto em 6 passos conectados,
-// não um card genérico. Mesma ideia pedida ("ideia → site → empresas → lead
-// → proposta → cliente"), compacta o bastante pra caber ao lado do texto.
-const flowSteps = [
-  { label: 'Ideia', detail: 'Um problema real pra resolver' },
-  { label: 'Site gerado', detail: 'Criado com IA em minutos' },
-  { label: 'Empresas encontradas', detail: 'Code Hunter no radar' },
-  { label: 'Lead qualificado', detail: 'Contato com potencial real' },
-  { label: 'Proposta', detail: 'Escopo, prazo e valor' },
-  { label: 'Cliente', detail: 'Venda fechada', done: true },
-]
-
 export function LandingHero() {
   const navigate = useNavigate()
   const narrow = useNarrow()
@@ -103,37 +91,6 @@ export function LandingHero() {
                 ))}
               </motion.ul>
             </div>
-
-            {/* Painel lateral — jornada do produto, não um card genérico de
-                CTA. Ancorado ao container full-width, não ao bloco de texto. */}
-            <motion.div
-              variants={fadeInUp}
-              className="pointer-events-auto absolute right-0 top-1/2 hidden w-[300px] -translate-y-1/2 rounded-landing-lg border border-white/10 bg-landing-surface/72 p-5 shadow-landing-card backdrop-blur-xl lg:block xl:right-6"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-landing-text-muted">
-                Do lead ao dinheiro no bolso
-              </p>
-              <ol className="relative mt-4 space-y-0">
-                {flowSteps.map((step, index) => (
-                  <li key={step.label} className="relative flex gap-3 pb-4 last:pb-0">
-                    {index < flowSteps.length - 1 && (
-                      <span className="absolute left-[5px] top-3 h-full w-px bg-white/10" aria-hidden />
-                    )}
-                    <span
-                      className={`relative z-10 mt-1 flex h-[11px] w-[11px] shrink-0 items-center justify-center rounded-full ${
-                        step.done ? 'bg-landing-primary-hover' : 'border border-white/25 bg-landing-surface'
-                      }`}
-                    />
-                    <div>
-                      <p className={`text-[13px] font-semibold ${step.done ? 'text-landing-primary-hover' : 'text-landing-text'}`}>
-                        {step.label}
-                      </p>
-                      <p className="text-xs text-landing-text-muted">{step.detail}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </motion.div>
           </motion.div>
         </div>
 
