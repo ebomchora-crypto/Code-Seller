@@ -1,13 +1,10 @@
 import { useEffect } from 'react'
 import { LandingNavbar } from '@/components/landing/LandingNavbar'
 import { LandingHero } from '@/components/landing/LandingHero'
-import { LandingStartCards } from '@/components/landing/LandingStartCards'
 import { LandingProblem } from '@/components/landing/LandingProblem'
-import { LandingCycle } from '@/components/landing/LandingCycle'
 import { LandingModules } from '@/components/landing/LandingModules'
 import { LandingBuyersHunter } from '@/components/landing/LandingBuyersHunter'
 import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
-import { LandingComparison } from '@/components/landing/LandingComparison'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
 import { LandingBenefits } from '@/components/landing/LandingBenefits'
 import { LandingFAQ } from '@/components/landing/LandingFAQ'
@@ -60,13 +57,10 @@ export default function LandingPage() {
       <LandingNavbar />
       <main>
         <LandingHero />
-        <LandingStartCards />
         <LandingProblem />
-        <LandingCycle />
         <LandingModules />
         <LandingBuyersHunter />
         <LandingEcosystem />
-        <LandingComparison />
         <LandingTimeline />
         <LandingBenefits />
         <LandingFAQ />

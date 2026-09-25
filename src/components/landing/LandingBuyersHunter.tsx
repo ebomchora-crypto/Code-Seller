@@ -1,82 +1,129 @@
-import { Search } from 'lucide-react'
-import { LandingEyebrow } from '@/components/landing/LandingEyebrow'
-import { MockupFrame } from '@/components/landing/MockupFrame'
+import { useNavigate } from 'react-router-dom'
+import { Check, Radar } from 'lucide-react'
 import { Reveal } from '@/components/motion/Reveal'
-import { fadeInLeft, fadeInUp } from '@/motion/variants'
+import { fadeInLeft, fadeInRight } from '@/motion/variants'
 
-const filters = ['Cidade', 'Nicho', 'Possui site', 'Avaliação', 'Categoria']
-
-// Leads fictícios, só pra demonstração visual da ferramenta — não é uma
-// integração real, é a interface do Buyers Hunter (produto próprio, distinto
-// do método Code Sellers).
-const leads = [
-  { name: 'Clínica Vita', tag: 'Sem site', score: 91 },
-  { name: 'Advocacia Almeida', tag: 'Site desatualizado', score: 86 },
-  { name: 'Studio Move', tag: 'Baixa presença digital', score: 82 },
+const checklist = [
+  'Método Code Sellers para criar soluções com IA',
+  'Buyers Hunter para encontrar clientes qualificados',
+  'Playbook de venda com oferta, abordagem e fechamento',
+  'Kit de execução com prompts, scripts e proposta',
 ]
 
-function scoreColor(score: number) {
-  if (score >= 88) return 'text-landing-primary-hover'
-  if (score >= 80) return 'text-landing-highlight'
-  return 'text-landing-text-secondary'
-}
-
+// Painel dividido — réplica estrutural da referência (esquerda colorida com
+// feixes de luz cruzando a tela, direita escura com o callout da ferramenta
+// + checklist + CTA), na paleta e nomes do Code Sellers.
 export function LandingBuyersHunter() {
-  return (
-    <section id="buyershunter" className="relative overflow-hidden bg-landing-surface-2 py-24 sm:py-32">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute right-0 top-1/2 h-[460px] w-[460px] -translate-y-1/2 translate-x-1/3 rounded-full bg-landing-primary/[0.1] blur-[140px]"
-      />
+  const navigate = useNavigate()
 
-      <div className="relative mx-auto grid w-full max-w-[1280px] grid-cols-1 items-center gap-14 px-6 sm:px-8 lg:grid-cols-2 lg:px-12">
-        <Reveal variants={fadeInLeft}>
-          <LandingEyebrow>Buyers Hunter</LandingEyebrow>
-          <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-4xl">
-            Pare de procurar clientes no escuro.
-          </h2>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-landing-text-secondary">
-            Encontre empresas com potencial real para comprar o que você está construindo — a
-            ferramenta que coloca oportunidades qualificadas no seu radar.
-          </p>
+  return (
+    <section id="buyershunter" className="relative overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-2">
+        {/* Esquerda — painel colorido com feixes animados */}
+        <Reveal
+          variants={fadeInLeft}
+          className="relative overflow-hidden bg-gradient-to-br from-landing-primary to-landing-deep px-6 py-20 sm:px-10 sm:py-24 lg:px-14"
+        >
+          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+            {[0, 1.6, 3.2].map((delay) => (
+              <span
+                key={delay}
+                className="absolute top-0 h-full w-1/3 bg-gradient-to-r from-transparent via-white/25 to-transparent"
+                style={{ animation: 'beam-move 5s linear infinite', animationDelay: `${delay}s` }}
+              />
+            ))}
+          </div>
+
+          <div className="relative">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+              O ecossistema completo
+            </span>
+            <h2 className="mt-4 text-4xl font-medium leading-[1.05] tracking-[-0.03em] text-white sm:text-5xl">
+              Crie.
+              <br />
+              Encontre.
+              <br />
+              Venda.
+            </h2>
+            <p className="mt-5 max-w-sm text-base leading-relaxed text-white/80">
+              IA para construir. Buyers Hunter para encontrar. Método para fechar. Um único
+              caminho para transformar habilidade em dinheiro no bolso.
+            </p>
+
+            <div className="mt-16">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">
+                Da ideia ao dinheiro no bolso.
+              </span>
+              <p className="mt-3 text-2xl font-semibold uppercase leading-snug tracking-[-0.01em] text-white/90 sm:text-3xl">
+                Você cria. Você encontra. Você vende.
+              </p>
+            </div>
+          </div>
         </Reveal>
 
-        <Reveal variants={fadeInUp}>
-          <MockupFrame label="buyershunter.app">
-            <div className="flex items-center gap-2 rounded-landing-sm border border-white/10 bg-white/[0.03] px-3 py-2.5">
-              <Search className="h-4 w-4 shrink-0 text-landing-text-muted" />
-              <span className="text-sm text-landing-text-muted">Buscar empresas por nicho ou cidade...</span>
-            </div>
+        {/* Direita — escura, com o callout da ferramenta + checklist + CTA */}
+        <Reveal variants={fadeInRight} className="bg-landing-bg px-6 py-20 sm:px-10 sm:py-24 lg:px-14">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-landing-text-muted">
+            Tudo o que entra no seu arsenal
+          </p>
 
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {filters.map((filter) => (
-                <span
-                  key={filter}
-                  className="rounded-full border border-white/10 bg-white/[0.02] px-3 py-1 text-[11px] text-landing-text-muted"
-                >
-                  {filter}
+          <div className="mt-6 rounded-landing-lg border border-landing-border bg-landing-surface-card p-6">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-landing-primary-hover" />
+                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-landing-primary-hover">
+                  Buyers Hunter
                 </span>
-              ))}
+              </span>
+              <span className="rounded-full border border-landing-border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-landing-text-muted">
+                Nova ferramenta
+              </span>
             </div>
 
-            <div className="mt-4 space-y-2">
-              {leads.map((lead) => (
-                <div
-                  key={lead.name}
-                  className="flex items-center justify-between rounded-landing-sm border border-white/[0.06] bg-white/[0.02] px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-landing-text">{lead.name}</p>
-                    <p className="text-xs text-landing-text-muted">{lead.tag}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-semibold ${scoreColor(lead.score)}`}>{lead.score}</p>
-                    <p className="text-[10px] uppercase tracking-wide text-landing-text-muted">Score</p>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-4 flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-landing-primary-soft text-landing-primary-hover">
+                <Radar className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-base font-semibold leading-snug text-landing-text">
+                  Clientes qualificados na mira.
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-landing-text-secondary">
+                  Busque empresas qualificadas e coloque oportunidades reais no seu radar.
+                </p>
+              </div>
             </div>
-          </MockupFrame>
+          </div>
+
+          <p className="mt-6 text-sm leading-relaxed text-landing-text-secondary">
+            Você não entra apenas para aprender. Entra para executar o ciclo completo e chegar à
+            venda.
+          </p>
+
+          <ul className="mt-6 space-y-3">
+            {checklist.map((item) => (
+              <li
+                key={item}
+                className="flex items-start gap-3 rounded-landing-md border border-landing-border bg-white/[0.02] px-4 py-3 text-sm text-landing-text-secondary"
+              >
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-landing-primary-hover">
+                  <Check className="h-3 w-3 text-white" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <button
+            type="button"
+            onClick={() => navigate('/register')}
+            className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-white text-sm font-semibold text-landing-text-dark transition-colors duration-200 hover:bg-white/90"
+          >
+            Entrar no grupo oficial
+          </button>
+          <p className="mt-3 text-center text-xs text-landing-text-muted">
+            Você será direcionado para o grupo oficial do Code Sellers.
+          </p>
         </Reveal>
       </div>
     </section>
