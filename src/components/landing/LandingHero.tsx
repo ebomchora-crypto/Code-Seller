@@ -141,7 +141,7 @@ export function LandingHero() {
           className="pointer-events-none absolute inset-x-0 bottom-0 z-0 select-none overflow-hidden"
         >
           <div
-            className="translate-y-[8%] whitespace-nowrap text-center font-hero font-black leading-none tracking-tighter text-transparent"
+            className="translate-y-[8%] whitespace-nowrap text-center font-hero font-thin leading-none tracking-tighter text-transparent"
             style={{
               fontSize: 'clamp(2.5rem, 13vw, 12rem)',
               backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0))',
