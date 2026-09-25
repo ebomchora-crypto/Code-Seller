@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { LandingNavbar } from '@/components/landing/LandingNavbar'
 import { LandingHero } from '@/components/landing/LandingHero'
+import { LandingValueProps } from '@/components/landing/LandingValueProps'
 import { LandingFeatures } from '@/components/landing/LandingFeatures'
-import { LandingHowItWorks } from '@/components/landing/LandingHowItWorks'
+import { LandingChecklist } from '@/components/landing/LandingChecklist'
 import { LandingCta } from '@/components/landing/LandingCta'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 
@@ -22,8 +23,9 @@ export default function LandingPage() {
       <LandingNavbar />
       <main>
         <LandingHero />
+        <LandingValueProps />
         <LandingFeatures />
-        <LandingHowItWorks />
+        <LandingChecklist />
         <LandingCta />
       </main>
       <LandingFooter />
