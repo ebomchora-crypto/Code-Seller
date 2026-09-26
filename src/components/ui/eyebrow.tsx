@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 interface EyebrowProps {
   children: ReactNode
-  /** dark = sobre fundo escuro (texto claro, ex: AutoPilot); light = sobre
+  /** dark = sobre fundo escuro (texto claro, ex: CS Copilot); light = sobre
    * fundo claro (texto accent, resto do app). */
   variant?: 'light' | 'dark'
 }

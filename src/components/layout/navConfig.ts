@@ -28,7 +28,7 @@ const crmItem: NavItem = { label: 'CRM', path: '/crm', icon: CrmIcon }
 const dealsItem: NavItem = { label: 'Negócios', path: '/deals', icon: DealsIcon }
 const financialItem: NavItem = { label: 'Financeiro', path: '/financial', icon: FinancialIcon }
 const tasksItem: NavItem = { label: 'Tarefas', path: '/tasks', icon: TasksIcon }
-const autopilotItem: NavItem = { label: 'AutoPilot', path: '/autopilot', icon: AutopilotIcon }
+const autopilotItem: NavItem = { label: 'CS Copilot', path: '/copilot', icon: AutopilotIcon }
 const settingsItem: NavItem = { label: 'Configurações', path: '/settings', icon: SettingsIcon }
 const supportItem: NavItem = { label: 'Suporte', path: '/support', icon: SupportIcon }
 

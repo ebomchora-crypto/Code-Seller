@@ -47,7 +47,7 @@ export function useAutoPilot() {
       const result = await buildAutoPilotContext()
       setContext(result)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível carregar o contexto do AutoPilot.')
+      toast.error(err instanceof Error ? err.message : 'Não foi possível carregar o contexto do CS Copilot.')
     }
   }, [])
 
@@ -181,7 +181,7 @@ export function useAutoPilot() {
           )
         }
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Não foi possível obter resposta do AutoPilot.'
+        const message = err instanceof Error ? err.message : 'Não foi possível obter resposta do CS Copilot.'
         setError(message)
         toast.error(message)
       } finally {

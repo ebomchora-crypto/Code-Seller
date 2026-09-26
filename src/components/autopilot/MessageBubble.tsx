@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Check, Copy, Sparkles } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { ActionBlock } from '@/components/autopilot/ActionBlock'
+import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import type { AutoPilotMessage } from '@/types'
 
 interface MessageBubbleProps {
@@ -31,9 +32,11 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction }: Mess
   if (isUser) {
     return (
       <div className="flex animate-float-up justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-sm border border-purple-500/30 bg-purple-600/80 px-4 py-3 text-white shadow-glass-purple backdrop-blur-sm">
-          <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-          <p className="mt-1 text-right text-[11px] text-purple-200">{formatTime(message.created_at)}</p>
+        <div className="max-w-[85%] sm:max-w-[75%]">
+          <div className="rounded-[20px] rounded-br-md bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-4 py-3 text-white shadow-[0_12px_30px_-14px_rgba(124,58,237,0.9)]">
+            <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed">{message.content}</p>
+          </div>
+          <p className="mt-1 px-1 text-right text-[11px] text-[var(--text-muted)]">{formatTime(message.created_at)}</p>
         </div>
       </div>
     )
@@ -45,12 +48,14 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction }: Mess
 
   return (
     <div className="group flex animate-float-up justify-start gap-3">
-      <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-purple-500/30 bg-purple-500/20 p-1.5 text-purple-300">
-        <Sparkles className="h-3.5 w-3.5" />
-      </span>
+      <CopilotOrb size="sm" />
 
-      <div className="max-w-[85%] flex-1">
-        <div className="rounded-2xl rounded-bl-sm border border-white/[0.10] bg-white/[0.06] px-4 py-3 text-white shadow-[0_12px_40px_rgba(11,0,20,0.32)] backdrop-blur-xl">
+      <div className="min-w-0 flex-1">
+        <p className="mb-1.5 flex items-center gap-2 text-[12.5px]">
+          <span className="font-semibold text-[var(--text-primary)]">CS Copilot</span>
+          <span className="text-[var(--text-muted)]">{formatTime(message.created_at)}</span>
+        </p>
+        <div className="text-[var(--text-primary)]">
           {segments.map((segment, index) => {
             if (index % 2 === 1) {
               const actionIndex = Number(segment)
@@ -70,26 +75,26 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction }: Mess
             if (!segment.trim()) return null
 
             return (
-              <div key={`text-${index}`} className="autopilot-markdown text-sm">
+              <div key={`text-${index}`} className="autopilot-markdown text-[14.5px] leading-relaxed">
                 <ReactMarkdown>{segment}</ReactMarkdown>
               </div>
             )
           })}
         </div>
 
-        <div className="mt-1 flex items-center gap-3 px-1">
-          <span className="text-[11px] text-[var(--text-muted)]">{formatTime(message.created_at)}</span>
+        <div className="mt-2 flex items-center gap-3">
           <button
             type="button"
             onClick={handleCopy}
-            className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] p-1.5 opacity-0 transition-all duration-150 hover:bg-[var(--bg-card-hover)] group-hover:opacity-100"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11.5px] text-[var(--text-muted)] opacity-0 transition-all duration-150 hover:text-[var(--text-primary)] focus:opacity-100 group-hover:opacity-100"
             aria-label="Copiar mensagem"
           >
             {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
+              <Check className="size-3 text-emerald-500" />
             ) : (
-              <Copy className="h-3 w-3 text-[var(--text-secondary)]" />
+              <Copy className="size-3" />
             )}
+            {copied ? 'Copiado' : 'Copiar'}
           </button>
         </div>
       </div>

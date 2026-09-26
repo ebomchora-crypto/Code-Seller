@@ -8,6 +8,6 @@ test('maps each route to a navigation group instead of repeating the page title'
   assert.equal(getPageSection('/crm'), 'Vendas')
   assert.equal(getPageSection('/crm/contact-id'), 'Vendas')
   assert.equal(getPageSection('/financial'), 'Gestão')
-  assert.equal(getPageSection('/autopilot'), 'IA')
+  assert.equal(getPageSection('/copilot'), 'IA')
   assert.equal(getPageSection('/support'), 'Conta')
 })

@@ -11,7 +11,7 @@ interface GlassCardProps {
 // variant='default' → glass sutil para contextos claros
 // variant='strong'  → glass mais opaco para modais sobre fundos escuros
 // variant='purple'  → glass com tint roxo para elementos de IA/destaque
-// variant='dark'    → glass escuro para o AutoPilot e AuthLayout
+// variant='dark'    → glass escuro para o CS Copilot e AuthLayout
 export function GlassCard({ children, className, variant = 'default', hover = false }: GlassCardProps) {
   return (
     <div

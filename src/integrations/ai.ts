@@ -77,10 +77,10 @@ export async function generateProposal(payload: ProposalGenerationPayload): Prom
 }
 
 // ============================================================================
-// AutoPilot — assistente de IA integrado ao sistema
+// CS Copilot — assistente de IA integrado ao sistema
 // ============================================================================
 
-const AUTOPILOT_SYSTEM_PROMPT = `Você é o AutoPilot, o assistente de IA integrado ao Code Sellers.
+const AUTOPILOT_SYSTEM_PROMPT = `Você é o CS Copilot, o assistente de IA integrado ao Code Sellers.
 
 O Code Sellers é um CRM para criadores de sites, freelancers e pequenas agências que vendem serviços digitais como sites institucionais, landing pages, lojas virtuais, sistemas e automações.
 

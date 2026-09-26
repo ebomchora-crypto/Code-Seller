@@ -1,12 +1,13 @@
 export interface AppSurface {
-  dark: boolean
+  /** Tela que ocupa a altura toda do painel e rola por dentro (chat). */
+  immersive: boolean
   animateOpacity: boolean
 }
 
 export function getAppSurface(pathname: string): AppSurface {
-  const dark = pathname === '/autopilot' || pathname.startsWith('/autopilot/')
+  const immersive = pathname === '/copilot' || pathname.startsWith('/copilot/')
   return {
-    dark,
-    animateOpacity: !dark,
+    immersive,
+    animateOpacity: !immersive,
   }
 }

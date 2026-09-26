@@ -83,8 +83,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         <main
           ref={mainRef}
           className={cn(
-            'relative flex-1 overflow-y-auto transition-colors duration-300',
-            surface.dark && 'bg-accent-ink',
+            'relative flex-1 transition-colors duration-300',
+            surface.immersive ? 'overflow-hidden' : 'overflow-y-auto',
           )}
         >
           {/* Brilho roxo estático no topo do painel — só no dark mode. */}
@@ -93,7 +93,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             aria-hidden="true"
           />
           <SmoothScrollProvider wrapperRef={mainRef} contentRef={contentRef}>
-            <div ref={contentRef} className="relative">
+            <div ref={contentRef} className={cn('relative', surface.immersive && 'h-full')}>
               {/* Page transition real: AppLayout persiste entre rotas (ver comentário
                   acima), então o exit abaixo realmente roda antes do próximo `key`
                   entrar — fade + translateY mínimo, rápido o bastante para não atrasar
@@ -101,6 +101,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={pathname}
+                  className={surface.immersive ? 'h-full' : undefined}
                   initial={reducedMotion || !surface.animateOpacity ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={reducedMotion || !surface.animateOpacity ? undefined : { opacity: 0, y: -6 }}

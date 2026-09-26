@@ -1,4 +1,4 @@
-import { V0AiChat } from '@/components/ui/v0-ai-chat'
+import { CopilotComposer } from '@/components/autopilot/CopilotComposer'
 
 interface MessageInputProps {
   onSend: (content: string) => void
@@ -7,5 +7,9 @@ interface MessageInputProps {
 }
 
 export function MessageInput({ onSend, sending, hasContext }: MessageInputProps) {
-  return <V0AiChat onSend={onSend} sending={sending} hasContext={hasContext} variant="compact" />
+  return (
+    <div className="mx-auto w-full max-w-3xl px-4 pb-4 pt-2 sm:px-8 sm:pb-6">
+      <CopilotComposer onSend={onSend} sending={sending} hasContext={hasContext} />
+    </div>
+  )
 }

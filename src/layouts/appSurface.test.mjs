@@ -3,24 +3,24 @@ import test from 'node:test'
 
 import { getAppSurface } from './appSurface.ts'
 
-test('AutoPilot usa fundo escuro estável e não anima a opacidade da rota', () => {
-  assert.deepEqual(getAppSurface('/autopilot'), {
-    dark: true,
+test('CS Copilot ocupa o painel inteiro e não anima a opacidade da rota', () => {
+  assert.deepEqual(getAppSurface('/copilot'), {
+    immersive: true,
     animateOpacity: false,
   })
-  assert.deepEqual(getAppSurface('/autopilot/conversa/123'), {
-    dark: true,
+  assert.deepEqual(getAppSurface('/copilot/conversa/123'), {
+    immersive: true,
     animateOpacity: false,
   })
 })
 
 test('demais páginas preservam a superfície e a transição normais', () => {
   assert.deepEqual(getAppSurface('/'), {
-    dark: false,
+    immersive: false,
     animateOpacity: true,
   })
   assert.deepEqual(getAppSurface('/crm'), {
-    dark: false,
+    immersive: false,
     animateOpacity: true,
   })
 })

@@ -41,7 +41,7 @@ export const FAQ_ITEMS: FAQItem[] = [
     category: 'Negócios',
     question: 'Como gero uma proposta com IA?',
     answer:
-      'Abra um deal > aba Proposta > botão "Gerar com IA". O AutoPilot usará os dados do deal e do contato para criar uma proposta personalizada.',
+      'Abra um deal > aba Proposta > botão "Gerar com IA". O CS Copilot usará os dados do deal e do contato para criar uma proposta personalizada.',
   },
   // CATEGORIA: Financeiro
   {
@@ -57,20 +57,20 @@ export const FAQ_ITEMS: FAQItem[] = [
     answer:
       'Quando você fecha um negócio (deal ganho), o sistema cria automaticamente uma conta a receber. Acesse Financeiro > Contas a Receber para acompanhar e registrar pagamentos.',
   },
-  // CATEGORIA: AutoPilot
+  // CATEGORIA: CS Copilot
   {
     id: 'faq-9',
-    category: 'AutoPilot',
-    question: 'O AutoPilot tem acesso aos meus dados?',
+    category: 'CS Copilot',
+    question: 'O CS Copilot tem acesso aos meus dados?',
     answer:
-      'Sim. O AutoPilot recebe um snapshot dos seus dados (contatos, deals, tarefas, financeiro) para contextualizar as respostas. Nenhum dado é enviado para terceiros além da API da Anthropic.',
+      'Sim. O CS Copilot recebe um snapshot dos seus dados (contatos, deals, tarefas, financeiro) para contextualizar as respostas. Nenhum dado é enviado para terceiros além da API da Anthropic.',
   },
   {
     id: 'faq-10',
-    category: 'AutoPilot',
-    question: 'As ações sugeridas pelo AutoPilot são automáticas?',
+    category: 'CS Copilot',
+    question: 'As ações sugeridas pelo CS Copilot são automáticas?',
     answer:
-      'Não. O AutoPilot sempre pede confirmação antes de criar ou editar qualquer dado. Você aprova ou rejeita cada ação sugerida.',
+      'Não. O CS Copilot sempre pede confirmação antes de criar ou editar qualquer dado. Você aprova ou rejeita cada ação sugerida.',
   },
   // CATEGORIA: Planos
   {

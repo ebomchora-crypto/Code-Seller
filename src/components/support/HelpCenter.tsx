@@ -16,7 +16,7 @@ const TOPICS: Topic[] = [
   { id: 'deals', title: 'Negócios e Pipeline', description: 'Gerencie propostas e o funil de vendas.', icon: ListChecks, category: 'Negócios' },
   { id: 'financial', title: 'Financeiro', description: 'Receitas, despesas e contas a receber.', icon: DollarSign, category: 'Financeiro' },
   { id: 'tasks', title: 'Tarefas', description: 'Organize seu dia a dia e não perca prazos.', icon: ListChecks, category: 'Tarefas' },
-  { id: 'autopilot', title: 'AutoPilot', description: 'Seu assistente de IA para vendas.', icon: Bot, category: 'AutoPilot' },
+  { id: 'autopilot', title: 'CS Copilot', description: 'Seu assistente de IA para vendas.', icon: Bot, category: 'CS Copilot' },
   { id: 'billing', title: 'Planos e Cobrança', description: 'Assinaturas, upgrades e pagamentos.', icon: CreditCard, category: 'Planos' },
 ]
 

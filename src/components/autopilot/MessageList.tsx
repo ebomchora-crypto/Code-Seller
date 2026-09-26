@@ -42,28 +42,32 @@ export function MessageList({ messages, sending, onConfirmAction, onRejectAction
   )
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 sm:px-8">
-      {itemsWithSeparators.map(({ message, label, showSeparator }) => {
-        return (
-          <div key={message.id} className="flex flex-col gap-4">
-            {showSeparator && (
-              <div className="my-4 flex items-center gap-3">
-                <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-                <span className="px-1 text-xs text-[var(--text-muted)]">{label}</span>
-                <span className="h-px flex-1 bg-[var(--border-subtle)]" />
-              </div>
-            )}
-            <MessageBubble
-              message={message}
-              onConfirmAction={(actionIndex) => onConfirmAction(message.id, actionIndex)}
-              onRejectAction={(actionIndex) => onRejectAction(message.id, actionIndex)}
-            />
-          </div>
-        )
-      })}
+    <div data-lenis-prevent className="flex-1 overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-8">
+        {itemsWithSeparators.map(({ message, label, showSeparator }) => {
+          return (
+            <div key={message.id} className="flex flex-col gap-6">
+              {showSeparator && (
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+                  <span className="rounded-full border border-[var(--border-subtle)] px-2.5 py-0.5 text-[11.5px] text-[var(--text-muted)]">
+                    {label}
+                  </span>
+                  <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+                </div>
+              )}
+              <MessageBubble
+                message={message}
+                onConfirmAction={(actionIndex) => onConfirmAction(message.id, actionIndex)}
+                onRejectAction={(actionIndex) => onRejectAction(message.id, actionIndex)}
+              />
+            </div>
+          )
+        })}
 
-      {sending && <TypingIndicator />}
-      <div ref={bottomRef} />
+        {sending && <TypingIndicator />}
+        <div ref={bottomRef} />
+      </div>
     </div>
   )
 }

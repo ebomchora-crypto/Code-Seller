@@ -4,12 +4,12 @@ export const CHANGELOG: ChangelogItem[] = [
   {
     version: '1.3.0',
     date: '2026-09-24',
-    title: 'AutoPilot com ações confirmadas',
-    description: 'O AutoPilot agora pode criar tarefas, atualizar deals e registrar interações — sempre com confirmação do usuário.',
+    title: 'CS Copilot com ações confirmadas',
+    description: 'O CS Copilot agora pode criar tarefas, atualizar deals e registrar interações — sempre com confirmação do usuário.',
     type: 'feature',
     items: [
-      'AutoPilot pode criar tarefas via chat',
-      'AutoPilot pode mover deals entre etapas',
+      'CS Copilot pode criar tarefas via chat',
+      'CS Copilot pode mover deals entre etapas',
       'Histórico de conversas salvo no banco',
       'Contexto do sistema injetado automaticamente',
     ],

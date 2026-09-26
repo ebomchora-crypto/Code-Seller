@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { getChatSubmission, shouldSubmitChat } from './v0-ai-chat.utils.ts'
+import { getChatSubmission, shouldSubmitChat } from './composer.utils.ts'
 
 test('normaliza a mensagem antes do envio e rejeita conteúdo vazio', () => {
   assert.equal(getChatSubmission('  analisar pipeline  '), 'analisar pipeline')

@@ -5,7 +5,7 @@ import { staggerContainer } from '@/utils/animations'
 
 // Revela um elemento uma única vez ao entrar na viewport — nunca reanima ao
 // subir/descer a página (isso é o que evita o travamento de animações
-// contínuas já identificado no AutoPilot).
+// contínuas já identificado no CS Copilot).
 export function useRevealOnScroll<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T>(null)
   const reducedMotion = useReducedMotion()

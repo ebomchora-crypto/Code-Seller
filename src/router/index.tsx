@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
 import { PrivateRoute } from '@/router/PrivateRoute'
 import { PublicRoute } from '@/router/PublicRoute'
 import { RootRoute } from '@/router/RootRoute'
@@ -17,7 +17,7 @@ const DealsPage = lazy(() => import('@/pages/deals'))
 const DealDetailPage = lazy(() => import('@/pages/deals/[id]'))
 const FinancialPage = lazy(() => import('@/pages/financial'))
 const TasksPage = lazy(() => import('@/pages/tasks'))
-const AutopilotPage = lazy(() => import('@/pages/autopilot'))
+const CopilotPage = lazy(() => import('@/pages/autopilot'))
 const SettingsPage = lazy(() => import('@/pages/settings'))
 const SupportPage = lazy(() => import('@/pages/support'))
 
@@ -69,7 +69,8 @@ export function AppRouter() {
             <Route path="/deals/:id" element={<DealDetailPage />} />
             <Route path="/financial" element={<FinancialPage />} />
             <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/autopilot" element={<AutopilotPage />} />
+            <Route path="/copilot" element={<CopilotPage />} />
+            <Route path="/autopilot" element={<Navigate to="/copilot" replace />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
           </Route>

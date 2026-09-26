@@ -28,12 +28,12 @@ function initialsFromUser(name?: string, email?: string): string {
   return source.slice(0, 2).toUpperCase()
 }
 
-// Card do AutoPilot no rodapé do menu: mesmo tecido roxo das telas de acesso,
+// Card do CS Copilot no rodapé do menu: mesmo tecido roxo das telas de acesso,
 // liga o app à identidade visual e leva pro módulo de IA.
-function AutopilotCard({ onNavigate }: { onNavigate: () => void }) {
+function CopilotCard({ onNavigate }: { onNavigate: () => void }) {
   return (
     <Link
-      to="/autopilot"
+      to="/copilot"
       onClick={onNavigate}
       className="group relative mb-3 block overflow-hidden rounded-[18px] p-4 text-white shadow-[0_18px_40px_-22px_rgba(91,33,182,0.9)] ring-1 ring-white/10"
     >
@@ -41,7 +41,7 @@ function AutopilotCard({ onNavigate }: { onNavigate: () => void }) {
       <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,6,13,0.15),rgba(8,6,13,0.75))]" />
       <span className="relative flex items-start justify-between gap-2">
         <span>
-          <span className="block text-[13px] font-semibold leading-tight">AutoPilot IA</span>
+          <span className="block text-[13px] font-semibold leading-tight">CS Copilot</span>
           <span className="mt-1 block text-[11.5px] leading-snug text-white/75">
             Propostas, follow-ups e mensagens escritos pela IA.
           </span>
@@ -172,9 +172,9 @@ export function DashboardSidebar({
 
         <div className="shrink-0 px-3 pb-3">
           {/* Em telas baixas (notebooks) o card some pra não esconder o menu. */}
-          {!collapsed && !isSidebarRouteActive('/autopilot', currentPath) && (
+          {!collapsed && !isSidebarRouteActive('/copilot', currentPath) && (
             <div className="[@media(max-height:860px)]:hidden">
-              <AutopilotCard onNavigate={onCloseMobile} />
+              <CopilotCard onNavigate={onCloseMobile} />
             </div>
           )}
 

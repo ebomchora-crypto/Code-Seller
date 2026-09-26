@@ -1,12 +1,9 @@
 import { useState } from 'react'
-import { FloatingPathsBackground } from '@/components/ui/floating-paths'
-import { AmbientBackground } from '@/components/motion/AmbientBackground'
-import { AmbientParticles } from '@/components/motion/AmbientParticles'
 import { ConversationSidebar } from '@/components/autopilot/ConversationSidebar'
 import { ChatInterface } from '@/components/autopilot/ChatInterface'
 import { useAutoPilot } from '@/hooks/useAutoPilot'
 
-export default function AutopilotPage() {
+export default function CopilotPage() {
   const {
     conversations,
     activeConversation,
@@ -27,64 +24,57 @@ export default function AutopilotPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   return (
-    <FloatingPathsBackground
-        position={-1}
-        pathOpacity={0.25}
-        pathCount={10}
-        className="autopilot-theme h-[calc(100vh-4rem)] min-h-[640px] bg-accent-ink"
+    <div className="relative flex h-full overflow-hidden">
+      {/* Brilho roxo atrás do chat, igual ao topo das outras telas. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-56 left-1/2 h-[460px] w-[760px] -translate-x-1/3 rounded-full bg-[#7c3aed]/[0.08] blur-[130px]"
+      />
+
+      <div
+        className={`absolute inset-y-0 left-0 z-30 w-[280px] transition-transform duration-300 lg:static lg:translate-x-0 ${
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
       >
-        <AmbientBackground src="/backgrounds/autopilot-bg.png" opacity={0.5} />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-48 left-1/2 h-[520px] w-[760px] -translate-x-1/2 rounded-full bg-accent-bright/[0.12] blur-[140px]"
+        <ConversationSidebar
+          conversations={conversations}
+          activeConversationId={activeConversation?.id ?? null}
+          loading={loading}
+          onSelect={(id) => {
+            void selectConversation(id)
+            setMobileSidebarOpen(false)
+          }}
+          onCreate={() => {
+            void createNewConversation()
+            setMobileSidebarOpen(false)
+          }}
+          onDelete={(id) => void deleteConversation(id)}
         />
-        <AmbientParticles count={14} />
-        <div className="flex h-full">
-          <div
-            className={`fixed inset-y-0 left-0 z-30 w-72 transform transition-transform duration-200 lg:static lg:z-auto lg:w-72 lg:translate-x-0 ${
-              mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
-          >
-            <ConversationSidebar
-              conversations={conversations}
-              activeConversationId={activeConversation?.id ?? null}
-              loading={loading}
-              onSelect={(id) => {
-                void selectConversation(id)
-                setMobileSidebarOpen(false)
-              }}
-              onCreate={() => {
-                void createNewConversation()
-                setMobileSidebarOpen(false)
-              }}
-              onDelete={(id) => void deleteConversation(id)}
-            />
-          </div>
+      </div>
 
-          {mobileSidebarOpen && (
-            <button
-              type="button"
-              aria-label="Fechar menu de conversas"
-              onClick={() => setMobileSidebarOpen(false)}
-              className="fixed inset-0 z-20 bg-accent-ink/70 backdrop-blur-sm lg:hidden"
-            />
-          )}
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Fechar lista de conversas"
+          onClick={() => setMobileSidebarOpen(false)}
+          className="absolute inset-0 z-20 bg-[#08060d]/50 backdrop-blur-sm lg:hidden"
+        />
+      )}
 
-          <ChatInterface
-            conversation={activeConversation}
-            messages={messages}
-            context={context}
-            sending={sending}
-            onSendMessage={(content) => void sendMessage(content)}
-            onConfirmAction={(messageId, actionIndex) => void confirmAction(messageId, actionIndex)}
-            onRejectAction={(messageId, actionIndex) => void rejectAction(messageId, actionIndex)}
-            onRefreshContext={refreshContext}
-            onRenameConversation={(title) => {
-              if (activeConversation) void renameConversation(activeConversation.id, title)
-            }}
-            onOpenSidebar={() => setMobileSidebarOpen(true)}
-          />
-        </div>
-    </FloatingPathsBackground>
+      <ChatInterface
+        conversation={activeConversation}
+        messages={messages}
+        context={context}
+        sending={sending}
+        onSendMessage={(content) => void sendMessage(content)}
+        onConfirmAction={(messageId, actionIndex) => void confirmAction(messageId, actionIndex)}
+        onRejectAction={(messageId, actionIndex) => void rejectAction(messageId, actionIndex)}
+        onRefreshContext={refreshContext}
+        onRenameConversation={(title) => {
+          if (activeConversation) void renameConversation(activeConversation.id, title)
+        }}
+        onOpenSidebar={() => setMobileSidebarOpen(true)}
+      />
+    </div>
   )
 }

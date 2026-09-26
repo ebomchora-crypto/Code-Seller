@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu } from 'lucide-react'
+import { Menu, Pencil } from 'lucide-react'
 import { ContextBadge } from '@/components/autopilot/ContextBadge'
 import { MessageList } from '@/components/autopilot/MessageList'
 import { MessageInput } from '@/components/autopilot/MessageInput'
@@ -52,16 +52,16 @@ export function ChatInterface({
   }
 
   return (
-    <div className="relative flex h-full flex-1 flex-col">
-      <div className="relative z-10 flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-4 sm:px-8">
-        <div className="flex min-w-0 items-center gap-3">
+    <div className="relative flex h-full min-w-0 flex-1 flex-col">
+      <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
             onClick={onOpenSidebar}
             aria-label="Abrir conversas"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] lg:hidden"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] lg:hidden"
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="size-4" />
           </button>
           {editingTitle ? (
             <input
@@ -70,7 +70,8 @@ export function ChatInterface({
               onChange={(event) => setTitleValue(event.target.value)}
               onBlur={handleTitleBlur}
               onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
-              className="min-w-0 flex-1 border-b border-purple-500/50 bg-transparent text-base font-medium text-[var(--text-primary)] outline-none"
+              aria-label="Nome da conversa"
+              className="min-w-0 flex-1 rounded-lg border border-[var(--accent-ring)] bg-[var(--field-bg)] px-2.5 py-1 text-[14.5px] font-semibold text-[var(--text-primary)] outline-none"
             />
           ) : (
             <button
@@ -79,9 +80,13 @@ export function ChatInterface({
                 setTitleValue(conversation?.title ?? 'Nova conversa')
                 if (conversation) setEditingTitle(true)
               }}
-              className="truncate font-display text-base font-semibold text-white hover:text-accent-bright"
+              title={conversation ? 'Renomear conversa' : undefined}
+              className="group flex min-w-0 items-center gap-2 rounded-lg px-2 py-1 text-left transition-colors hover:bg-[var(--bg-muted)]"
             >
-              {conversation?.title ?? 'Nova conversa'}
+              <span className="truncate font-display text-[15px] font-semibold text-[var(--text-primary)]">
+                {conversation?.title ?? 'Nova conversa'}
+              </span>
+              {conversation && <Pencil className="size-3.5 shrink-0 text-[var(--text-muted)] opacity-0 transition group-hover:opacity-100" />}
             </button>
           )}
         </div>
@@ -90,24 +95,21 @@ export function ChatInterface({
       </div>
 
       {messages.length === 0 ? (
-        <div className="relative z-10 flex flex-1 flex-col justify-center overflow-y-auto">
-          <QuickPrompts onSelect={onSendMessage} sending={sending} hasContext={context !== null} />
+        <div data-lenis-prevent className="flex flex-1 flex-col overflow-y-auto">
+          <QuickPrompts onSelect={onSendMessage} sending={sending} hasContext={context !== null} context={context} />
         </div>
       ) : (
-        <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
-          <MessageList
-            messages={messages}
-            sending={sending}
-            onConfirmAction={onConfirmAction}
-            onRejectAction={onRejectAction}
-          />
-        </div>
-      )}
-
-      {messages.length > 0 && (
-        <div className="relative z-10">
+        <>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <MessageList
+              messages={messages}
+              sending={sending}
+              onConfirmAction={onConfirmAction}
+              onRejectAction={onRejectAction}
+            />
+          </div>
           <MessageInput onSend={onSendMessage} sending={sending} hasContext={context !== null} />
-        </div>
+        </>
       )}
     </div>
   )

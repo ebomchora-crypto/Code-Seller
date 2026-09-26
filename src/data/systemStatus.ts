@@ -7,7 +7,7 @@ export const SYSTEM_STATUS: SystemStatus[] = [
   { service: 'Banco de Dados', status: 'operational' },
   { service: 'Autenticação', status: 'operational' },
   { service: 'Storage (Arquivos)', status: 'operational' },
-  { service: 'AutoPilot (IA)', status: 'operational' },
+  { service: 'CS Copilot (IA)', status: 'operational' },
 ]
 
 // TODO: integrar com Statuspage, BetterUptime ou similar em produção

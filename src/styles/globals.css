@@ -40,7 +40,7 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.12);
 
-  /* Glass tokens (independentes de tema — usados por AutoPilot/AuthLayout,
+  /* Glass tokens (independentes de tema — usados por CS Copilot/AuthLayout,
      que são sempre escuros) */
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-bg-hover: rgba(255, 255, 255, 0.07);
@@ -137,26 +137,6 @@
   h6 {
     font-family: 'Sora', sans-serif;
   }
-}
-
-/* AutoPilot is deliberately independent from the global light/dark toggle. */
-.autopilot-theme {
-  --bg-primary: #0b0014;
-  --bg-secondary: #0b0014;
-  --bg-muted: rgba(255, 255, 255, 0.06);
-  --bg-card: rgba(255, 255, 255, 0.06);
-  --bg-card-hover: rgba(255, 255, 255, 0.09);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --text-primary: #ffffff;
-  --text-secondary: #d4d4d8;
-  --text-muted: #a1a1aa;
-  --purple-soft: rgba(179, 92, 255, 0.1);
-  --purple-border: rgba(179, 92, 255, 0.25);
-  --shadow-card: 0 8px 32px rgba(11, 0, 20, 0.35);
-  --shadow-modal: 0 20px 60px rgba(11, 0, 20, 0.65);
-  color-scheme: dark;
 }
 
 @layer utilities {
@@ -316,7 +296,7 @@
     @apply font-medium text-neutral-900;
   }
 
-  /* Markdown das mensagens do AutoPilot — mesma estrutura de .proposal-markdown,
+  /* Markdown das mensagens do CS Copilot — mesma estrutura de .proposal-markdown,
      mas com cores por variável para acompanhar o toggle de tema (claro/escuro). */
   .autopilot-markdown h1,
   .autopilot-markdown h2,
@@ -332,14 +312,14 @@
   }
 
   .autopilot-markdown p {
-    @apply mb-3 leading-relaxed;
-    color: var(--text-secondary);
+    @apply mb-3 leading-relaxed last:mb-0;
+    color: var(--text-primary);
   }
 
   .autopilot-markdown ul,
   .autopilot-markdown ol {
-    @apply mb-3 ml-5 list-disc space-y-1;
-    color: var(--text-secondary);
+    @apply mb-3 ml-5 list-disc space-y-1 last:mb-0;
+    color: var(--text-primary);
   }
 
   .autopilot-markdown ol {
@@ -347,16 +327,18 @@
   }
 
   .autopilot-markdown strong {
-    @apply font-medium;
+    @apply font-semibold;
     color: var(--text-primary);
   }
 
   .autopilot-markdown a {
-    @apply text-purple-500 hover:text-purple-400;
+    color: var(--accent-text);
+    @apply underline underline-offset-4;
   }
 
   .autopilot-markdown code {
-    @apply rounded px-1.5 py-0.5 font-mono text-sm text-purple-500;
+    @apply rounded px-1.5 py-0.5 font-mono text-sm;
+    color: var(--accent-text);
     background-color: var(--bg-muted);
   }
 

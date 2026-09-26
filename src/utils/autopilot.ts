@@ -36,7 +36,7 @@ function parseActionBlock(raw: string): Omit<ProposedAction, 'status'> | null {
     }
   } catch {
     // JSON malformado — ignoramos a action em vez de quebrar o chat.
-    console.warn('[AutoPilot] Bloco <action> malformado, ignorado:', raw)
+    console.warn('[CS Copilot] Bloco <action> malformado, ignorado:', raw)
     return null
   }
 }
