@@ -286,13 +286,13 @@ export default function PortfolioPage() {
           <ErrorState message={error} onRetry={() => void load()} />
         </div>
       ) : loading || !form ? (
-        <div className="mt-8 grid gap-6 lg:grid-cols-5">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Skeleton className="h-[520px] w-full rounded-[22px] lg:col-span-2" />
           <Skeleton className="h-[520px] w-full rounded-[22px] lg:col-span-3" />
         </div>
       ) : (
-        <div className="mt-8 grid gap-6 lg:grid-cols-5 lg:items-start">
-          <Card className="lg:col-span-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-5 lg:items-start">
+          <Card className="min-w-0 lg:col-span-2">
             <PanelHeader title="Sua página" subtitle={portfolio ? 'Como você aparece para o cliente' : 'Crie sua página em 1 minuto'} />
 
             {link && (
@@ -361,7 +361,7 @@ export default function PortfolioPage() {
             </div>
           </Card>
 
-          <Card className="lg:col-span-3">
+          <Card className="min-w-0 lg:col-span-3">
             <PanelHeader
               title="Projetos"
               subtitle={`${projects.length} ${projects.length === 1 ? 'projeto' : 'projetos'} · ${visibleCount} ${visibleCount === 1 ? 'visível' : 'visíveis'}`}

@@ -29,6 +29,7 @@ const AcademyKitPage = lazyPage(() => import('@/pages/academy/kit'))
 const PublicPortfolioPage = lazyPage(() => import('@/pages/public-portfolio'))
 const PublicProposalPage = lazyPage(() => import('@/pages/public-proposal'))
 const RevenueRoomPage = lazyPage(() => import('@/pages/revenue-room'))
+const NotFoundPage = lazyPage(() => import('@/pages/not-found'))
 
 function RouteFallback() {
   return (
@@ -101,6 +102,8 @@ export function AppRouter() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
           </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
