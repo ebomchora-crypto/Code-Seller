@@ -1,53 +1,33 @@
 import { useNavigate } from 'react-router-dom'
-import { ArrowUpRight } from 'lucide-react'
-import { Reveal } from '@/components/motion/Reveal'
-import { reveal } from '@/motion/variants'
+import { LandingFadeIn } from '@/components/landing/LandingFadeIn'
 
-// Bloco penúltimo — réplica estrutural da referência (fundo sólido cheio,
-// glow radial no canto superior, anéis decorativos, eyebrow pequeno +
-// headline branca gigante + botão-pílula preto), na paleta roxa do Code
-// Sellers. O LandingCta (fade claro→roxo→preto) continua sendo a última
-// seção antes do rodapé.
+// Bloco roxo penúltimo — encaixa por cima do fim do "O que você leva" com uma
+// língua de papel curva (mesmo papel + grid da seção de cima), e a FAQ
+// encaixa por baixo dele do mesmo jeito. Por isso o margin negativo e o
+// padding extra em cima e embaixo (profundidade do encaixe: 62px / 120px).
 export function LandingCtaBanner() {
   const navigate = useNavigate()
 
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{
-        background:
-          'radial-gradient(140% 120% at 18% 8%, #b79cff 0%, #8b5cf6 22%, #7c3aed 42%, #4c1d95 68%, #1a0b30 88%, #07050b 100%)',
-      }}
-    >
-      {/* Anel decorativo no canto superior direito — discreto, corta na borda. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full border border-white/[0.12] sm:-right-16 sm:-top-16"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 top-10 h-[260px] w-[260px] rounded-full border border-white/[0.08] sm:right-10"
-      />
+    <section className="cs-final-push relative z-[1] -mt-[62px] overflow-hidden px-5 pb-[158px] pt-[158px] text-white lg:-mt-[120px] lg:px-8 lg:pb-[230px] lg:pt-[230px]">
+      <div aria-hidden className="cs-interlock-down cs-paper absolute inset-x-0 top-0 z-[5] h-[62px] lg:h-[120px]" />
+      <div aria-hidden className="cs-final-orbit" />
 
-      <div className="relative mx-auto flex w-full max-w-4xl flex-col items-center px-6 py-24 text-center sm:py-32 lg:px-8">
-        <Reveal variants={reveal} className="flex flex-col items-center">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-            Crie. Encontre. Venda.
-          </span>
-          <h2 className="mt-5 text-4xl font-medium leading-[1.15] tracking-[-0.03em] text-white sm:text-5xl lg:text-6xl">
-            Seu próximo cliente não precisa aparecer por acaso. Encontre. Venda. Coloque dinheiro
-            no bolso.
-          </h2>
-          <button
-            type="button"
-            onClick={() => navigate('/register')}
-            className="group mt-9 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[#0b0b0f] px-7 text-base font-semibold text-white transition-colors duration-200 hover:bg-black active:scale-[0.98]"
-          >
-            Entrar no grupo oficial
-            <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </button>
-        </Reveal>
-      </div>
+      <LandingFadeIn className="relative z-10 mx-auto w-full max-w-[1200px] text-center">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-white/[0.58]">Crie. Encontre. Venda.</p>
+        <h2 className="mx-auto mt-7 max-w-[1000px] text-[44px] font-normal leading-[0.96] tracking-[-0.06em] sm:text-[58px] lg:text-[78px] lg:leading-[0.94] lg:tracking-[-0.065em]">
+          Seu próximo cliente não precisa aparecer por acaso. Encontre. Venda. Coloque dinheiro no
+          bolso.
+        </h2>
+        <button
+          type="button"
+          onClick={() => navigate('/register')}
+          className="cs-dark-button mt-10 inline-flex min-h-[60px] items-center gap-6 rounded-full bg-black px-9 text-[16px] font-medium text-white"
+        >
+          Entrar no grupo oficial
+          <span aria-hidden>↗</span>
+        </button>
+      </LandingFadeIn>
     </section>
   )
 }

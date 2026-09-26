@@ -6,20 +6,20 @@ interface MockupFrameProps {
   className?: string
 }
 
-// Moldura compartilhada por todos os mockups de UI originais da landing
-// (gerador, pipeline, Buyers Hunter, proposta...) — mesma "janela" de app
-// (barra de pontos + label mono), pra tudo parecer parte do mesmo sistema
-// em vez de peças soltas com estilos diferentes.
+// Janela de app dos mockups dos módulos — mesma linguagem da janela de
+// código da referência (um ponto aceso + dois apagados, label em caixa alta).
 export function MockupFrame({ label, children, className = '' }: MockupFrameProps) {
   return (
-    <div className={`overflow-hidden rounded-landing-lg border border-white/10 bg-[#0b0710] shadow-landing-card ${className}`}>
-      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3.5">
-        <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
-          <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
-          <span className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
+    <div
+      className={`overflow-hidden rounded-[18px] border border-white/[0.12] bg-[rgba(14,10,24,0.88)] shadow-[0_30px_80px_rgba(0,0,0,0.55),0_0_60px_rgba(124,58,237,0.2)] backdrop-blur-md ${className}`}
+    >
+      <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-3.5">
+        <div className="flex gap-2">
+          <span className="size-2.5 rounded-full bg-[#a78bfa]" />
+          <span className="size-2.5 rounded-full bg-white/20" />
+          <span className="size-2.5 rounded-full bg-white/20" />
         </div>
-        <span className="font-mono text-[11px] uppercase tracking-wide text-landing-text-muted">{label}</span>
+        <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/40">{label}</span>
       </div>
       <div className="p-5 sm:p-6">{children}</div>
     </div>

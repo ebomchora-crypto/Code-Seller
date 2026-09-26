@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import '@/styles/landing-sections.css'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { LandingProblem } from '@/components/landing/LandingProblem'
 import { LandingModules } from '@/components/landing/LandingModules'
@@ -62,8 +63,8 @@ export default function LandingPage() {
         <LandingEcosystem />
         <LandingTimeline />
         <LandingBenefits />
-        <LandingFAQ />
         <LandingCtaBanner />
+        <LandingFAQ />
         <LandingCta />
       </main>
       <LandingFooter />

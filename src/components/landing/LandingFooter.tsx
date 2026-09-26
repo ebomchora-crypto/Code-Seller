@@ -6,23 +6,23 @@ const footerLinks = [
   { href: '#faq', label: 'FAQ' },
 ]
 
+// Rodapé continua o preto do fim do CTA com fade — sem corte entre os dois.
 export function LandingFooter() {
   return (
     <footer className="bg-landing-bg">
-      <div className="mx-auto w-full max-w-[1280px] px-6 pt-14 sm:px-8 lg:px-12">
+      <div className="mx-auto w-full max-w-[1040px] px-6 sm:px-8">
         <div className="flex flex-col gap-10 sm:flex-row sm:justify-between">
-          <div className="max-w-xs">
-            <div className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="Code Sellers" className="h-7 w-7 object-contain" />
-              <span className="text-sm font-semibold text-landing-text">Code Sellers</span>
+          <div className="max-w-[300px]">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Code Sellers" className="h-8 w-8 object-contain" />
+              <span className="font-display text-[24px] tracking-[-0.03em] text-white">Code Sellers</span>
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-landing-text-secondary">
-              Crie soluções com IA, encontre empresas qualificadas e transforme projetos em
-              vendas.
+            <p className="mt-5 text-sm leading-6 text-white/[0.66]">
+              Crie com IA, encontre empresas qualificadas e transforme projetos em vendas.
             </p>
           </div>
 
-          <nav className="flex flex-col gap-2.5 text-sm text-landing-text-secondary">
+          <nav className="grid grid-cols-2 gap-x-16 gap-y-2.5 text-sm text-white/[0.78]">
             {footerLinks.map((link) => (
               <a
                 key={link.label}
@@ -33,7 +33,7 @@ export function LandingFooter() {
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }
                 }}
-                className="transition-colors hover:text-landing-text"
+                className="transition-colors hover:text-white"
               >
                 {link.label}
               </a>
@@ -41,8 +41,8 @@ export function LandingFooter() {
           </nav>
         </div>
 
-        <div className="mt-10 border-t border-white/[0.08] py-6 text-center">
-          <p className="text-sm text-landing-text-muted">© 2026 Code Sellers.</p>
+        <div className="mt-12 border-t border-white/[0.12] py-7 text-center">
+          <p className="text-sm text-white/40">© 2026 Code Sellers. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

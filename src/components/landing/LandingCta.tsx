@@ -1,10 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { Reveal } from '@/components/motion/Reveal'
-import { reveal } from '@/motion/variants'
+import { LandingFadeIn } from '@/components/landing/LandingFadeIn'
 
-// CTA final — o mais forte da página. Gradiente claro → roxo vivo → preto
-// (estático, sem shader), headline escura na faixa clara, botão-pílula
-// escuro sobre a faixa colorida.
+// CTA final com fade — papel claro no topo, horizonte roxo curvo no meio e
+// preto embaixo (onde o rodapé continua), como o fechamento da referência.
+// Copy diferente do bloco roxo acima pra não repetir a mesma frase duas vezes.
 export function LandingCta() {
   const navigate = useNavigate()
 
@@ -13,26 +12,27 @@ export function LandingCta() {
       className="relative overflow-hidden"
       style={{
         background:
-          'linear-gradient(180deg, #f5f3f5 0%, #f5f3f5 26%, #9b6cff 48%, #5b21b6 66%, #07050b 84%, #07050b 100%)',
+          'radial-gradient(ellipse 130% 90% at 50% 105%, #07050b 0%, #0b0616 44%, #3b0d8f 58%, #7c3aed 66%, #b79cff 73%, #e9e3fb 80%, #f5f3f5 86%)',
       }}
     >
-      <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-24 pt-14 text-center sm:pb-28 sm:pt-16 lg:px-8">
-        <Reveal variants={reveal} className="flex flex-col items-center">
-          <h2 className="text-3xl font-medium leading-[1.12] tracking-[-0.03em] text-[#0b0b0f] sm:text-4xl lg:text-5xl">
-            Seu próximo cliente não precisa aparecer por acaso.
-          </h2>
-          {/* Fica dentro da faixa clara sólida do gradiente (não na transição
-              pra roxo) — texto mais escuro pra manter contraste mesmo assim. */}
-          <p className="mx-auto mt-3 max-w-md text-lg font-medium text-[#3f3f46]">Crie. Encontre. Venda.</p>
-          <button
-            type="button"
-            onClick={() => navigate('/register')}
-            className="mt-9 inline-flex h-12 items-center justify-center rounded-full bg-[#0b0b0f] px-7 text-base font-semibold text-white transition-colors duration-200 hover:bg-black active:scale-[0.98]"
-          >
-            Entrar no grupo
-          </button>
-        </Reveal>
-      </div>
+      <LandingFadeIn className="relative mx-auto flex w-full max-w-3xl flex-col items-center px-6 pb-40 pt-16 text-center sm:pb-48 lg:px-8 lg:pb-56 lg:pt-20">
+        <h2 className="text-[40px] font-normal leading-[1.08] tracking-[-0.045em] text-[#0b0b0f] sm:text-[48px] lg:text-[56px]">
+          Seu próximo projeto
+          <br />
+          precisa virar venda.
+        </h2>
+        <p className="mx-auto mt-5 max-w-[440px] text-[15px] leading-6 text-[#2a2533]">
+          Entre no grupo pra aprender a criar com IA, encontrar clientes com o Buyers Hunter e
+          vender com o método Code Sellers.
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/register')}
+          className="cs-dark-button mt-8 inline-flex h-12 items-center justify-center rounded-full bg-[#0b0b0f] px-7 text-[15px] font-medium text-white"
+        >
+          Entrar no grupo oficial
+        </button>
+      </LandingFadeIn>
     </section>
   )
 }
