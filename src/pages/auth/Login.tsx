@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import {
@@ -12,6 +12,7 @@ import {
   PasswordField,
 } from '@/components/auth/AuthForm'
 import { setRememberSession } from '@/lib/supabaseClient'
+import { getOAuthErrorFromUrl } from '@/services/supabase/auth'
 import { useAuthContext } from '@/stores/AuthContext'
 
 export default function LoginPage() {
@@ -23,6 +24,14 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Erro vindo do retorno do Google: mostra e limpa a URL.
+  useEffect(() => {
+    const oauthError = getOAuthErrorFromUrl()
+    if (!oauthError) return
+    setError(oauthError)
+    window.history.replaceState(null, '', '/login')
+  }, [])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()

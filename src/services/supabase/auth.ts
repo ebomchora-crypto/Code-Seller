@@ -16,7 +16,21 @@ const AUTH_ERROR_MESSAGES: Array<[RegExp, string]> = [
   [/rate limit|too many requests/i, 'Muitas tentativas seguidas. Aguarde um pouco e tente de novo.'],
   [/provider is not enabled|unsupported provider/i, 'Login com Google ainda não está ativado.'],
   [/failed to fetch|network/i, 'Sem conexão com o servidor. Verifique sua internet e tente de novo.'],
+  [/database error saving new user/i, 'Não foi possível criar sua conta com o Google (erro ao salvar no banco de dados).'],
+  [/access_denied|access denied/i, 'O login com Google foi cancelado.'],
 ]
+
+// Quando o Supabase volta do Google com erro, ele coloca error/error_description
+// na query ou no hash da URL (fluxo implicit). Sem ler isso, o usuário só cai
+// na landing deslogado, sem saber o porquê.
+export function getOAuthErrorFromUrl(): string | null {
+  const search = new URLSearchParams(window.location.search)
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const description = search.get('error_description') ?? hash.get('error_description')
+  const code = search.get('error') ?? hash.get('error')
+  if (!description && !code) return null
+  return translateAuthError(description ?? code ?? '')
+}
 
 function translateAuthError(message: string): string {
   const match = AUTH_ERROR_MESSAGES.find(([pattern]) => pattern.test(message))

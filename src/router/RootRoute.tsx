@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '@/stores/AuthContext'
+import { getOAuthErrorFromUrl } from '@/services/supabase/auth'
 import { Spinner } from '@/components/ui/Spinner'
 import { AppLayout } from '@/layouts/AppLayout'
 
@@ -20,6 +22,7 @@ function RouteFallback() {
 // home autenticada (navConfig, PublicRoute, redirects de login/registro).
 export function RootRoute() {
   const { user, loading } = useAuthContext()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -27,6 +30,11 @@ export function RootRoute() {
         <Spinner size="lg" className="text-purple-600" />
       </div>
     )
+  }
+
+  // Voltou do Google com erro: manda pro login, que mostra a mensagem.
+  if (!user && getOAuthErrorFromUrl()) {
+    return <Navigate to={`/login${location.search}${location.hash}`} replace />
   }
 
   return (
