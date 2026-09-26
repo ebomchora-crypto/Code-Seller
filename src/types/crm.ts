@@ -35,6 +35,8 @@ export interface Contact {
   notes: string | null
   current_site: string | null
   assigned_to: string | null
+  // Empresa de origem no Buyers Hunter (evita importar a mesma duas vezes)
+  place_id?: string | null
   created_at: string
   updated_at: string
   // Relações opcionais (join)
@@ -84,6 +86,7 @@ export const NICHE_SUGGESTIONS = [
 ]
 
 export const ORIGIN_SUGGESTIONS = [
+  'Buyers Hunter',
   'Instagram',
   'Indicação',
   'Cold Call',

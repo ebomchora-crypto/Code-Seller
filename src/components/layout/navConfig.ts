@@ -23,7 +23,7 @@ export interface NavGroup {
 }
 
 const dashboardItem: NavItem = { label: 'Início', path: '/', icon: DashboardIcon }
-const prospectionItem: NavItem = { label: 'Prospecção', path: '/prospection', icon: ProspectionIcon }
+const prospectionItem: NavItem = { label: 'Buyers Hunter', path: '/prospection', icon: ProspectionIcon }
 const crmItem: NavItem = { label: 'CRM', path: '/crm', icon: CrmIcon }
 const dealsItem: NavItem = { label: 'Negócios', path: '/deals', icon: DealsIcon }
 const financialItem: NavItem = { label: 'Financeiro', path: '/financial', icon: FinancialIcon }

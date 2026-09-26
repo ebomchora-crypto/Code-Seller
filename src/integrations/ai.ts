@@ -131,3 +131,38 @@ export async function sendAutoPilotMessage(
     { role: 'user', content: userMessage },
   ])
 }
+
+// ============================================================================
+// Buyers Hunter — primeira mensagem de abordagem
+// ============================================================================
+
+export interface OutreachPayload {
+  business_name: string
+  category: string | null
+  city: string | null
+  website_situation: string
+  reviews: number
+  rating: number | null
+  offer_label: string
+  user_name: string
+  company_name: string | null
+}
+
+export async function generateOutreachMessage(payload: OutreachPayload): Promise<string> {
+  const prompt = `Você ajuda freelancers brasileiros que vendem sites e sistemas a fazer o primeiro contato com empresas locais pelo WhatsApp.
+
+Escreva UMA mensagem curta (no máximo 5 frases, até 600 caracteres), em português do Brasil, tom humano e respeitoso, sem parecer spam, sem emojis em excesso e sem prometer resultados.
+
+Dados:
+- Quem envia: ${payload.user_name}${payload.company_name ? ` (${payload.company_name})` : ''}
+- O que oferece: ${payload.offer_label}
+- Empresa: ${payload.business_name}
+- Ramo: ${payload.category ?? 'não informado'}
+- Cidade: ${payload.city ?? 'não informada'}
+- Presença online: ${payload.website_situation}
+- Avaliações públicas: ${payload.reviews}${payload.rating ? `, nota média ${payload.rating.toFixed(1)}` : ''}
+
+Use só essas informações — não invente fatos sobre a empresa. Termine com uma pergunta simples que convide a responder. Responda apenas com o texto da mensagem, sem aspas nem comentários.`
+
+  return (await chatCompletion([{ role: 'user', content: prompt }])).trim()
+}

@@ -25,6 +25,4 @@ export * from './tasks'
 export * from './autopilot'
 export * from './settings'
 export * from './support'
-
-// TODO: adicionar tipos de domínio conforme os módulos forem implementados
-// (Prospecção, etc.)
+export * from './prospection'
