@@ -171,7 +171,12 @@ export function DashboardSidebar({
         </nav>
 
         <div className="shrink-0 px-3 pb-3">
-          {!collapsed && !isSidebarRouteActive('/autopilot', currentPath) && <AutopilotCard onNavigate={onCloseMobile} />}
+          {/* Em telas baixas (notebooks) o card some pra não esconder o menu. */}
+          {!collapsed && !isSidebarRouteActive('/autopilot', currentPath) && (
+            <div className="[@media(max-height:860px)]:hidden">
+              <AutopilotCard onNavigate={onCloseMobile} />
+            </div>
+          )}
 
           <div
             className={cn(

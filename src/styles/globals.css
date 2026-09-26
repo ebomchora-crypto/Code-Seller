@@ -160,6 +160,14 @@
 }
 
 @layer utilities {
+  /* Rolagem sem barra visível (menu lateral, chips de filtro). */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   .label-caps {
     @apply text-xs font-medium uppercase tracking-widest;
     color: var(--text-muted);

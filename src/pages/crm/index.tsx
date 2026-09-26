@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Columns3, List, Plus, Upload } from 'lucide-react'
+import { Columns3, List, Plus, Upload, Users } from 'lucide-react'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
@@ -125,6 +125,29 @@ export default function CrmPage() {
         <div className="mt-6">
           {error ? (
             <ErrorState message={error} onRetry={refetch} />
+          ) : !loading && total === 0 && !hasActiveFilters ? (
+            <div className="flex flex-col items-center rounded-[var(--card-radius)] border border-dashed border-[var(--border-default)] px-6 py-16 text-center">
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-[var(--accent-tint)] text-[var(--accent-text)]">
+                <Users className="size-6" />
+              </span>
+              <h2 className="mt-5 font-display text-[20px] font-semibold tracking-tight text-[var(--text-primary)]">
+                Seu CRM ainda está vazio
+              </h2>
+              <p className="mt-2 max-w-md text-[14px] leading-relaxed text-[var(--text-muted)]">
+                Cadastre seu primeiro lead ou traga sua lista de uma planilha. Daqui você acompanha cada conversa até
+                virar cliente.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+                <Button className="h-11 rounded-full px-5" onClick={openCreateForm}>
+                  <Plus className="size-4" strokeWidth={2.4} />
+                  Novo contato
+                </Button>
+                <Button variant="secondary" className="h-11 rounded-full px-4" onClick={() => setImportOpen(true)}>
+                  <Upload className="size-4" />
+                  Importar CSV
+                </Button>
+              </div>
+            </div>
           ) : view === 'list' ? (
             <ContactList
               contacts={contacts}
