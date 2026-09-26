@@ -77,10 +77,10 @@ export function LandingProblem() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/login')}
             className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-landing-text-dark px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-black"
           >
-            Entrar no grupo oficial
+            Login
             <ArrowUpRight className="h-4 w-4" />
           </button>
         </Reveal>

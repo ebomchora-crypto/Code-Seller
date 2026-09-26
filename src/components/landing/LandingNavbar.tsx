@@ -46,9 +46,6 @@ export function LandingNavbar() {
                 {link.label}
               </a>
             ))}
-            <Link to="/login" className="transition-colors hover:text-white">
-              Entrar
-            </Link>
           </nav>
 
           <div className="hidden lg:block">
@@ -56,9 +53,9 @@ export function LandingNavbar() {
               size="sm"
               magnetic
               className="!bg-landing-primary !text-white shadow-landing-glow hover:!bg-landing-primary-hover"
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/login')}
             >
-              Entrar no grupo
+              Login
             </Button>
           </div>
 
@@ -103,18 +100,11 @@ export function LandingNavbar() {
                   {link.label}
                 </a>
               ))}
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
-              >
-                Entrar
-              </Link>
               <Button
                 className="mt-1 w-full !bg-landing-primary !text-white hover:!bg-landing-primary-hover"
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/login')}
               >
-                Entrar no grupo
+                Login
               </Button>
             </motion.div>
           )}

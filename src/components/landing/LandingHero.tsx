@@ -81,7 +81,7 @@ export function LandingHero() {
                 </motion.p>
 
                 <motion.div variants={fadeInUp} className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                  <LandingButton onClick={() => navigate('/register')}>Entrar no grupo</LandingButton>
+                  <LandingButton onClick={() => navigate('/login')}>Login</LandingButton>
                   <LandingButton variant="secondary" onClick={() => navigate('/login')}>
                     Conhecer o método
                   </LandingButton>
@@ -103,10 +103,10 @@ export function LandingHero() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate('/login')}
                   className="group mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-landing-md bg-landing-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-landing-primary-hover"
                 >
-                  Entrar no grupo oficial
+                  Login
                   <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </button>
                 <p className="mt-3 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-landing-text-muted">

@@ -40,7 +40,7 @@ const faqItems = [
   },
   {
     question: 'Como participo?',
-    answer: 'Pelo botão "Entrar no grupo" nesta página — é o ponto de entrada pro ecossistema Code Sellers.',
+    answer: 'Pelo botão "Login" nesta página — é por ali que você entra no ecossistema Code Sellers.',
   },
 ]
 

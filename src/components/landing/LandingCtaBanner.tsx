@@ -21,10 +21,10 @@ export function LandingCtaBanner() {
         </h2>
         <button
           type="button"
-          onClick={() => navigate('/register')}
+          onClick={() => navigate('/login')}
           className="cs-dark-button mt-10 inline-flex min-h-[60px] items-center gap-6 rounded-full bg-black px-9 text-[16px] font-medium text-white"
         >
-          Entrar no grupo oficial
+          Login
           <span aria-hidden>↗</span>
         </button>
       </LandingFadeIn>
