@@ -22,6 +22,9 @@ const SettingsPage = lazy(() => import('@/pages/settings'))
 const SupportPage = lazy(() => import('@/pages/support'))
 const ReportsPage = lazy(() => import('@/pages/reports'))
 const PortfolioPage = lazy(() => import('@/pages/portfolio'))
+const AcademyPage = lazy(() => import('@/pages/academy'))
+const AcademyLessonPage = lazy(() => import('@/pages/academy/lesson'))
+const AcademyKitPage = lazy(() => import('@/pages/academy/kit'))
 const PublicPortfolioPage = lazy(() => import('@/pages/public-portfolio'))
 const RevenueRoomPage = lazy(() => import('@/pages/revenue-room'))
 
@@ -78,6 +81,9 @@ export function AppRouter() {
           />
 
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
+            <Route path="/aluno" element={<AcademyPage />} />
+            <Route path="/aluno/licao/:id" element={<AcademyLessonPage />} />
+            <Route path="/aluno/kit" element={<AcademyKitPage />} />
             <Route path="/prospection" element={<ProspectionPage />} />
             <Route path="/crm" element={<CrmPage />} />
             <Route path="/crm/:id" element={<ContactDetailPage />} />

@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
-import { ChartColumnBig, GalleryHorizontalEnd } from 'lucide-react'
+import { ChartColumnBig, GalleryHorizontalEnd, GraduationCap } from 'lucide-react'
 import {
   AutopilotIcon,
   CrmIcon,
@@ -24,6 +24,7 @@ export interface NavGroup {
 }
 
 const dashboardItem: NavItem = { label: 'Início', path: '/', icon: DashboardIcon }
+const academyItem: NavItem = { label: 'Área do aluno', path: '/aluno', icon: GraduationCap }
 const prospectionItem: NavItem = { label: 'Buyers Hunter', path: '/prospection', icon: ProspectionIcon }
 const crmItem: NavItem = { label: 'CRM', path: '/crm', icon: CrmIcon }
 const portfolioItem: NavItem = { label: 'Sellers Portfolio', path: '/portfolio', icon: GalleryHorizontalEnd }
@@ -36,7 +37,7 @@ const settingsItem: NavItem = { label: 'Configurações', path: '/settings', ico
 const supportItem: NavItem = { label: 'Suporte', path: '/support', icon: SupportIcon }
 
 export const navGroups: NavGroup[] = [
-  { label: 'Principal', items: [dashboardItem] },
+  { label: 'Principal', items: [dashboardItem, academyItem] },
   { label: 'Vendas', items: [prospectionItem, crmItem, portfolioItem, dealsItem] },
   { label: 'Gestão', items: [financialItem, tasksItem, reportsItem] },
   { label: 'IA', items: [autopilotItem] },

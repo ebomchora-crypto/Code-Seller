@@ -417,3 +417,54 @@
   }
 }
 
+
+/* Área do aluno — texto das lições. */
+.academy-markdown {
+  color: var(--text-secondary);
+  font-size: 15.5px;
+  line-height: 1.8;
+}
+.academy-markdown h2 {
+  margin: 1.8em 0 0.6em;
+  font-family: Sora, Inter, sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.academy-markdown h1 {
+  margin: 0 0 0.6em;
+  font-family: Sora, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+.academy-markdown h2:first-child {
+  margin-top: 0;
+}
+.academy-markdown p {
+  margin: 0.8em 0;
+}
+.academy-markdown ul,
+.academy-markdown ol {
+  margin: 0.8em 0;
+  padding-left: 1.3em;
+}
+.academy-markdown ul {
+  list-style: disc;
+}
+.academy-markdown ol {
+  list-style: decimal;
+}
+.academy-markdown li {
+  margin: 0.35em 0;
+  padding-left: 0.2em;
+}
+.academy-markdown li::marker {
+  color: var(--accent-text);
+}
+.academy-markdown strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}

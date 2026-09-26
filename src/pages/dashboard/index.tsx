@@ -13,6 +13,7 @@ import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { FocusToday } from '@/components/dashboard/FocusToday'
 import { InsightsRow } from '@/components/dashboard/InsightsRow'
 import { GettingStarted } from '@/components/dashboard/GettingStarted'
+import { AcademyProgressCard } from '@/components/dashboard/AcademyProgressCard'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useAuthContext } from '@/stores/AuthContext'
 
@@ -52,6 +53,8 @@ export default function DashboardPage() {
           />
 
           <GettingStarted refreshKey={refreshKey} />
+
+          <AcademyProgressCard />
 
           <MetricsGrid metrics={metrics.data.slice(1)} loading={metrics.loading} error={metrics.error} onRetry={refetch} />
 
