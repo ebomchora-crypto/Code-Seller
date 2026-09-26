@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { getContacts } from '@/services/supabase/contacts'
 import { getDeals } from '@/services/supabase/deals'
 import { getTaskMetrics } from '@/services/supabase/tasks'
+import { selectWonDeals, wonDate } from '@/services/supabase/revenue'
 import { DEAL_STAGES } from '@/utils/deals'
 import type {
   ActivityFeedItem,
@@ -51,6 +52,7 @@ interface LeanDeal {
   value: number | null
   created_at: string
   updated_at: string
+  won_at?: string | null
 }
 
 interface LeanContact {
@@ -58,11 +60,15 @@ interface LeanContact {
   created_at: string
 }
 
-async function fetchLeanDeals(): Promise<LeanDeal[]> {
-  const { data, error } = await supabase
-    .from('deals')
-    .select('id, status, stage, value, created_at, updated_at')
+const LEAN_DEAL_COLUMNS = 'id, status, stage, value, created_at, updated_at'
 
+// Inclui won_at quando a migração 0012 já rodou; senão segue sem ela.
+async function fetchLeanDeals(): Promise<LeanDeal[]> {
+  const withWonAt = await supabase.from('deals').select(`${LEAN_DEAL_COLUMNS}, won_at`)
+  if (!withWonAt.error) return (withWonAt.data ?? []) as LeanDeal[]
+  if (withWonAt.error.code !== '42703') throw new Error(withWonAt.error.message)
+
+  const { data, error } = await supabase.from('deals').select(LEAN_DEAL_COLUMNS)
   if (error) throw new Error(error.message)
   return data ?? []
 }
@@ -81,16 +87,16 @@ export async function getDashboardMetrics(): Promise<DashboardMetric[]> {
 
   const [deals, contacts, taskMetrics] = await Promise.all([fetchLeanDeals(), fetchLeanContacts(), getTaskMetrics()])
 
-  // Métrica 1 — Receita do mês (deals won, agrupado por updated_at)
+  // Métrica 1 — Receita do mês (deals won, pela data do ganho)
   const revenueThisMonth = deals
-    .filter((deal) => deal.status === 'won' && new Date(deal.updated_at) >= currentMonthStart)
+    .filter((deal) => deal.status === 'won' && new Date(wonDate(deal)) >= currentMonthStart)
     .reduce((sum, deal) => sum + (deal.value ?? 0), 0)
   const revenuePreviousMonth = deals
     .filter(
       (deal) =>
         deal.status === 'won' &&
-        new Date(deal.updated_at) >= previousMonthStart &&
-        new Date(deal.updated_at) < currentMonthStart,
+        new Date(wonDate(deal)) >= previousMonthStart &&
+        new Date(wonDate(deal)) < currentMonthStart,
     )
     .reduce((sum, deal) => sum + (deal.value ?? 0), 0)
 
@@ -106,7 +112,9 @@ export async function getDashboardMetrics(): Promise<DashboardMetric[]> {
 
   // Métrica 4 — Taxa de conversão nos últimos 90 dias
   const recentResolved = deals.filter(
-    (deal) => (deal.status === 'won' || deal.status === 'lost') && new Date(deal.updated_at) >= ninetyDaysAgo,
+    (deal) =>
+      (deal.status === 'won' && new Date(wonDate(deal)) >= ninetyDaysAgo) ||
+      (deal.status === 'lost' && new Date(deal.updated_at) >= ninetyDaysAgo),
   )
   const recentWon = recentResolved.filter((deal) => deal.status === 'won').length
   const conversionRate = recentResolved.length > 0 ? (recentWon / recentResolved.length) * 100 : 0
@@ -170,13 +178,10 @@ export async function getRevenueChart(months = 6): Promise<RevenueDataPoint[]> {
   const now = new Date()
   const rangeStart = startOfMonth(new Date(now.getFullYear(), now.getMonth() - (months - 1), 1))
 
-  const { data, error } = await supabase
-    .from('deals')
-    .select('value, updated_at')
-    .eq('status', 'won')
-    .gte('updated_at', rangeStart.toISOString())
-
-  if (error) throw new Error(error.message)
+  const data = await selectWonDeals<{ value: number | null; updated_at: string; won_at?: string | null }>(
+    'value, updated_at',
+    rangeStart,
+  )
 
   const buckets: RevenueDataPoint[] = []
   for (let i = months - 1; i >= 0; i--) {
@@ -184,8 +189,8 @@ export async function getRevenueChart(months = 6): Promise<RevenueDataPoint[]> {
     buckets.push({ month: monthLabel(monthDate), month_full: monthFullLabel(monthDate), value: 0 })
   }
 
-  for (const row of data ?? []) {
-    const rowDate = new Date(row.updated_at)
+  for (const row of data) {
+    const rowDate = new Date(wonDate(row))
     const monthIndex = months - 1 - (now.getFullYear() * 12 + now.getMonth() - (rowDate.getFullYear() * 12 + rowDate.getMonth()))
     if (monthIndex >= 0 && monthIndex < months) {
       buckets[monthIndex].value += row.value ?? 0

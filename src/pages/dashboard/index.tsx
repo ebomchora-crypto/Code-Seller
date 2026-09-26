@@ -10,6 +10,7 @@ import { PipelineChart } from '@/components/dashboard/PipelineChart'
 import { RecentDealsList } from '@/components/dashboard/RecentDealsList'
 import { RecentContactsList } from '@/components/dashboard/RecentContactsList'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
+import { FocusToday } from '@/components/dashboard/FocusToday'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useAuthContext } from '@/stores/AuthContext'
 
@@ -21,12 +22,14 @@ export default function DashboardPage() {
   const [contactFormOpen, setContactFormOpen] = useState(false)
   const [dealFormOpen, setDealFormOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const userName = (user?.name ?? user?.email ?? 'por aqui').split(' ')[0]
   const isInitialLoading = metrics.loading && !lastUpdated
 
   async function handleRefresh() {
     setRefreshing(true)
+    setRefreshKey((key) => key + 1)
     await refetch()
     setRefreshing(false)
   }
@@ -47,6 +50,8 @@ export default function DashboardPage() {
           />
 
           <MetricsGrid metrics={metrics.data.slice(1)} loading={metrics.loading} error={metrics.error} onRetry={refetch} />
+
+          <FocusToday refreshKey={refreshKey} />
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
             <div className="xl:col-span-3">

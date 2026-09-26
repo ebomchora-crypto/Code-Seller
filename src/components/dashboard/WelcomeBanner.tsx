@@ -1,7 +1,8 @@
-import { Plus, RefreshCw, UserPlus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { MonitorPlay, Plus, RefreshCw, UserPlus } from 'lucide-react'
 import { motion } from 'motion/react'
 import { SilkRibbons } from '@/components/auth/SilkRibbons'
-import { AnimatedCounter } from '@/components/ui/animated-counter'
+import { RevenueGlass } from '@/components/dashboard/RevenueGlass'
 import { EASE_PREMIUM } from '@/utils/animations'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import type { DashboardMetric, RevenueDataPoint } from '@/types'
@@ -32,84 +33,6 @@ function formatDate(date: Date): string {
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
-}
-
-const SPARK_WIDTH = 248
-const SPARK_HEIGHT = 56
-
-// Linha suave dos últimos meses de receita, desenhada à mão (sem recharts) —
-// é só um traço decorativo dentro do card de vidro.
-function sparkPaths(series: RevenueDataPoint[]) {
-  const values = series.map((point) => point.value)
-  const max = Math.max(...values, 1)
-  const step = values.length > 1 ? SPARK_WIDTH / (values.length - 1) : SPARK_WIDTH
-  const points = values.map((value, index) => ({
-    x: index * step,
-    y: SPARK_HEIGHT - 6 - (value / max) * (SPARK_HEIGHT - 14),
-  }))
-  const line = points.reduce((path, point, index) => {
-    if (index === 0) return `M ${point.x} ${point.y}`
-    const previous = points[index - 1]
-    const midX = (previous.x + point.x) / 2
-    return `${path} C ${midX} ${previous.y}, ${midX} ${point.y}, ${point.x} ${point.y}`
-  }, '')
-  return { line, area: `${line} L ${SPARK_WIDTH} ${SPARK_HEIGHT} L 0 ${SPARK_HEIGHT} Z`, last: points[points.length - 1] }
-}
-
-function RevenueGlass({ revenue, series, loading }: { revenue?: DashboardMetric; series: RevenueDataPoint[]; loading?: boolean }) {
-  const hasSeries = series.some((point) => point.value > 0)
-  const spark = hasSeries ? sparkPaths(series) : null
-  const change = revenue?.change
-
-  return (
-    <div className="w-full rounded-[22px] border border-white/15 bg-white/[0.08] p-5 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:w-[296px]">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] font-medium text-white/70">Receita do mês</p>
-        {change && change.direction !== 'neutral' && (
-          <span
-            className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${
-              change.direction === 'up' ? 'bg-emerald-400/15 text-emerald-300' : 'bg-red-400/15 text-red-300'
-            }`}
-          >
-            {change.direction === 'up' ? '↑' : '↓'} {change.value}%
-          </span>
-        )}
-      </div>
-
-      {loading || !revenue ? (
-        <div className="mt-3 h-9 w-40 animate-pulse rounded-lg bg-white/10" />
-      ) : (
-        <p className="mt-2 font-display text-[34px] font-bold leading-none tracking-tight">
-          <AnimatedCounter value={revenue.raw_value} duration={900} format={formatBRL} />
-        </p>
-      )}
-
-      <div className="mt-4 h-14">
-        {spark && (
-          <svg viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`} className="h-full w-full overflow-visible" preserveAspectRatio="none" aria-hidden>
-            <defs>
-              <linearGradient id="hero-spark-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#ffffff" stopOpacity="0.28" />
-                <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path d={spark.area} fill="url(#hero-spark-fill)" />
-            <path d={spark.line} fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-            <circle cx={spark.last.x} cy={spark.last.y} r="4" fill="#ffffff" />
-          </svg>
-        )}
-      </div>
-
-      <p className="mt-2 text-[12px] text-white/55">
-        {change ? change.label : 'Negócios ganhos neste mês'}
-        {hasSeries && ` · últimos ${series.length} meses`}
-      </p>
-    </div>
-  )
 }
 
 // Topo do Dashboard: mesmo tecido roxo das telas de acesso, com a saudação,
@@ -191,11 +114,18 @@ export function WelcomeBanner({
               <UserPlus className="size-4" />
               Novo contato
             </button>
+            <Link
+              to="/sala-de-receita"
+              className="inline-flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-medium text-white/75 transition hover:bg-white/10 hover:text-white active:scale-[0.98]"
+            >
+              <MonitorPlay className="size-4" />
+              Sala de receita
+            </Link>
           </motion.div>
         </div>
 
         <motion.div {...reveal(0.3)}>
-          <RevenueGlass revenue={revenue} series={revenueSeries} loading={loading} />
+          <RevenueGlass revenue={revenue} monthlySeries={revenueSeries} loading={loading} />
         </motion.div>
       </div>
     </section>
