@@ -140,17 +140,8 @@ export default {
         'dot-bounce': 'dot-bounce 1s ease-in-out infinite',
         shimmer: 'shimmer 2s linear infinite',
         'radar-ping': 'radar-ping 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
-        // Feixe de luz cruzando o painel da esquerda pra direita — discreto,
-        // respeita prefers-reduced-motion (regra global já existente).
-        beam: 'beam-move 5s linear infinite',
       },
       keyframes: {
-        'beam-move': {
-          '0%': { transform: 'translateX(-60%) skewX(-20deg)', opacity: '0' },
-          '15%': { opacity: '0.5' },
-          '85%': { opacity: '0.5' },
-          '100%': { transform: 'translateX(160%) skewX(-20deg)', opacity: '0' },
-        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },

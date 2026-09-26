@@ -1,0 +1,667 @@
+/* Seções pós-hero da landing — mesmo sistema visual da referência
+   (codemakers.com.br), traduzido pra paleta roxa. Fundos, pseudo-elementos
+   e keyframes ficam aqui; layout e tipografia seguem em Tailwind. */
+
+/* ---------- Papel com grid vertical ---------- */
+.cs-paper {
+  background:
+    linear-gradient(90deg, rgba(24, 16, 40, 0.042) 1px, transparent 1px) 0 0 / 112px 100%,
+    #f2f0f5;
+}
+.cs-paper-soft {
+  background:
+    linear-gradient(90deg, rgba(24, 16, 40, 0.034) 1px, transparent 1px) 0 0 / 112px 100%,
+    #f5f3f5;
+}
+@media (max-width: 1023px) {
+  .cs-paper,
+  .cs-paper-soft {
+    background-size: 48px 100%, auto;
+  }
+}
+
+/* ---------- Encaixes curvos entre seções ---------- */
+/* Língua de papel descendo no bloco roxo / aba de papel subindo na FAQ.
+   Máscara SVG esticada pra largura da tela; o fundo do div repete o papel
+   (com o grid) da seção vizinha, então as linhas continuam alinhadas. */
+.cs-interlock-down {
+  -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 120' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1920V12C1750 8 1640 -6 1550 38C1510 58 1488 120 1400 120H520C432 120 410 58 370 38C280 -6 170 8 0 12Z'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 120' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1920V12C1750 8 1640 -6 1550 38C1510 58 1488 120 1400 120H520C432 120 410 58 370 38C280 -6 170 8 0 12Z'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+}
+.cs-interlock-up {
+  -webkit-mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 120' preserveAspectRatio='none'%3E%3Cpath d='M0 120V108C170 112 280 126 370 82C410 62 432 0 520 0H1400C1488 0 1510 62 1550 82C1640 126 1750 112 1920 108V120Z'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 120' preserveAspectRatio='none'%3E%3Cpath d='M0 120V108C170 112 280 126 370 82C410 62 432 0 520 0H1400C1488 0 1510 62 1550 82C1640 126 1750 112 1920 108V120Z'/%3E%3C/svg%3E")
+    0 0 / 100% 100% no-repeat;
+}
+
+/* ---------- Módulos (4 entregas) ---------- */
+.cs-curriculum {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 96% 58%, rgba(139, 92, 246, 0.11), transparent 26%),
+    #f1eff5;
+  border-block: 1px solid rgba(40, 24, 64, 0.08);
+}
+.cs-curriculum::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(112deg, transparent 0 48%, rgba(109, 40, 217, 0.05) 48.1% 48.25%, transparent 48.35%),
+    radial-gradient(circle at 85% 8%, transparent 0 126px, rgba(109, 40, 217, 0.1) 127px 128px, transparent 129px);
+}
+.cs-route-summary {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  background: rgba(253, 252, 255, 0.74);
+  border: 1px solid rgba(46, 26, 80, 0.13);
+  border-radius: 22px;
+  padding: 28px 30px;
+  box-shadow: 0 24px 70px rgba(46, 22, 90, 0.08);
+}
+@media (max-width: 1023px) {
+  .cs-route-summary {
+    border-radius: 18px;
+    padding: 22px;
+  }
+}
+
+.cs-module-row {
+  position: relative;
+  overflow: hidden;
+  background: rgba(253, 252, 255, 0.92);
+  border: 1px solid rgba(48, 28, 80, 0.13);
+  box-shadow:
+    0 30px 90px rgba(46, 22, 90, 0.1),
+    inset 0 1px rgba(255, 255, 255, 0.9);
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.6s,
+    box-shadow 0.6s;
+}
+.cs-module-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 34px;
+  z-index: 4;
+  width: 112px;
+  height: 4px;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(90deg, #6d28d9, #a78bfa);
+  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.3);
+}
+.cs-module-row:hover {
+  border-color: rgba(109, 40, 217, 0.32);
+  transform: translateY(-5px);
+  box-shadow:
+    0 40px 110px rgba(46, 22, 90, 0.16),
+    inset 0 1px #fff;
+}
+
+/* Painel visual escuro — "estúdio" roxo com o mockup flutuando. */
+.cs-module-visual {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 16% 8%, rgba(167, 139, 250, 0.42), transparent 44%),
+    radial-gradient(80% 60% at 70% 112%, rgba(124, 58, 237, 0.55), transparent 58%),
+    linear-gradient(160deg, #1d1236 0%, #0f0a1b 52%, #07050b 100%);
+}
+.cs-module-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 44px 44px;
+  -webkit-mask-image: radial-gradient(circle at 50% 55%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 55%, #000 0%, transparent 72%);
+}
+.cs-module-visual::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -12%;
+  width: 70%;
+  height: 90%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(196, 181, 253, 0.34), transparent);
+  filter: blur(18px);
+  transition: opacity 0.8s;
+  opacity: 0.8;
+}
+.cs-module-row:hover .cs-module-visual::after {
+  opacity: 1;
+}
+.cs-module-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 70%, rgba(253, 252, 255, 0.22) 100%);
+}
+@media (min-width: 1024px) {
+  .cs-module-shade {
+    background: linear-gradient(90deg, transparent 80%, rgba(253, 252, 255, 0.26) 100%);
+  }
+  .cs-module-shade-flip {
+    background: linear-gradient(270deg, transparent 80%, rgba(253, 252, 255, 0.26) 100%);
+  }
+}
+.cs-module-label {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 4;
+  padding: 10px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(109, 40, 217, 0.22);
+  background: rgba(253, 252, 255, 0.9);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  color: #5b21b6;
+  font-family: Inter, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.17em;
+  box-shadow: 0 12px 32px rgba(20, 8, 44, 0.18);
+}
+.cs-module-brand {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px 7px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(10, 6, 22, 0.45);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+  color: rgba(255, 255, 255, 0.84);
+  font-family: Inter, sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  line-height: 1;
+  box-shadow:
+    0 10px 30px rgba(10, 0, 30, 0.2),
+    inset 0 1px rgba(255, 255, 255, 0.08);
+}
+@media (min-width: 1024px) {
+  .cs-module-label {
+    top: 28px;
+    left: 28px;
+  }
+}
+.cs-module-mock {
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cs-module-row:hover .cs-module-mock {
+  transform: scale(1.04);
+}
+.cs-module-copy {
+  position: relative;
+  background:
+    radial-gradient(circle at 100% 0, rgba(139, 92, 246, 0.08), transparent 32%),
+    rgba(253, 252, 255, 0.84);
+}
+.cs-module-outcome {
+  background: linear-gradient(100deg, rgba(109, 40, 217, 0.09), rgba(167, 139, 250, 0.04));
+  border: 1px solid rgba(109, 40, 217, 0.18);
+}
+.cs-module-arrow {
+  box-shadow: 0 12px 26px rgba(109, 40, 217, 0.26);
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.3s;
+}
+.cs-module-row:hover .cs-module-arrow {
+  background-color: #7c3aed;
+  transform: translate(2px, -2px) rotate(8deg);
+}
+
+/* ---------- Ecossistema (Buyers Hunter) ---------- */
+.cs-offer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(at 50% 36%, rgba(124, 58, 237, 0.92), transparent 58%),
+    linear-gradient(128deg, #140632 0%, #5b21b6 38%, #3b0d8f 67%, #0b0418 100%);
+}
+.cs-offer::before,
+.cs-offer::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  transform-origin: 50%;
+  will-change: transform, opacity;
+}
+.cs-offer::before {
+  z-index: 1;
+  inset: -28%;
+  filter: blur(36px);
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(at 5% 22%, #000 0%, rgba(0, 0, 0, 0.94) 12%, transparent 30%),
+    radial-gradient(at 94% 18%, #000 0%, rgba(0, 0, 0, 0.92) 13%, transparent 31%),
+    radial-gradient(at 91% 91%, #000 0%, rgba(0, 0, 0, 0.9) 12%, transparent 30%),
+    radial-gradient(at 18% 86%, #000 0%, rgba(0, 0, 0, 0.88) 11%, transparent 28%);
+  animation: cs-offer-a 4.8s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+.cs-offer::after {
+  z-index: 0;
+  inset: -42%;
+  filter: blur(58px) saturate(1.3);
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(at 18% 18%, rgba(221, 208, 255, 0.85) 0%, rgba(139, 92, 246, 0.72) 14%, transparent 38%),
+    radial-gradient(at 82% 72%, rgba(155, 108, 255, 0.8) 0%, rgba(109, 40, 217, 0.62) 16%, transparent 40%),
+    radial-gradient(at 47% 94%, rgba(124, 58, 237, 0.68) 0%, rgba(76, 29, 149, 0.5) 15%, transparent 36%);
+  animation: cs-offer-b 6.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+.cs-offer > * {
+  position: relative;
+  z-index: 2;
+}
+@keyframes cs-offer-a {
+  0% {
+    opacity: 0.88;
+    transform: translate(-14%, -9%) scale(0.92) rotate(-9deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(14%, 13%) scale(1.1) rotate(7deg);
+  }
+  to {
+    opacity: 0.94;
+    transform: translate(28%, -11%) scale(0.98) rotate(15deg);
+  }
+}
+@keyframes cs-offer-b {
+  0% {
+    opacity: 0.76;
+    transform: translate(11%, 8%) scale(1.04) rotate(6deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-10%, -12%) scale(1.14) rotate(-8deg);
+  }
+  to {
+    opacity: 0.84;
+    transform: translate(-22%, 6%) scale(0.98) rotate(-14deg);
+  }
+}
+.cs-offer-frame {
+  box-shadow:
+    0 50px 140px rgba(0, 0, 0, 0.42),
+    0 0 90px rgba(124, 58, 237, 0.14);
+}
+
+/* Painel de destaque roxo com feixe de luz diagonal + brilho à deriva. */
+.cs-accent-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(150deg, #7c3aed 0%, #6d28d9 46%, #4c1d95 100%);
+}
+.cs-accent-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background:
+    linear-gradient(126deg, transparent 0 49.3%, rgba(255, 255, 255, 0.26) 49.65%, rgba(255, 255, 255, 0.5) 49.85%, rgba(255, 255, 255, 0.2) 50.15%, transparent 50.7%),
+    linear-gradient(126deg, transparent 0 36%, rgba(255, 255, 255, 0.1) 50%, transparent 64%),
+    radial-gradient(70% 55% at 20% 100%, rgba(10, 4, 24, 0.32), transparent 70%);
+}
+.cs-accent-card::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 46%);
+  animation: cs-after-drift 6.4s ease-in-out infinite alternate;
+}
+@keyframes cs-after-drift {
+  0% {
+    transform: translate(-14%, -10%) scale(0.9);
+  }
+  to {
+    transform: translate(18%, 14%) scale(1.12);
+  }
+}
+
+.cs-console {
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.055),
+    0 24px 70px rgba(0, 0, 0, 0.2);
+}
+.cs-live-dot {
+  box-shadow:
+    0 0 0 5px rgba(167, 139, 250, 0.1),
+    0 0 18px rgba(167, 139, 250, 0.88);
+  animation: cs-live 1.8s ease-in-out infinite;
+}
+@keyframes cs-live {
+  0%,
+  to {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.cs-radar {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.34);
+  background-image:
+    linear-gradient(rgba(167, 139, 250, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167, 139, 250, 0.18) 1px, transparent 1px),
+    repeating-radial-gradient(circle, transparent 0 17%, rgba(167, 139, 250, 0.19) 18% 19%, transparent 20% 34%),
+    radial-gradient(circle, rgba(124, 58, 237, 0.2), rgba(8, 6, 14, 0.92) 68%);
+  background-size:
+    50% 50%,
+    50% 50%,
+    auto,
+    auto;
+  background-position: 50%;
+  box-shadow:
+    inset 0 0 28px rgba(139, 92, 246, 0.12),
+    0 0 30px rgba(124, 58, 237, 0.12);
+}
+.cs-radar-sweep {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, transparent 0 75%, rgba(167, 139, 250, 0.46) 94%, rgba(196, 181, 253, 0.06) 100%);
+  animation: cs-scan 3.6s linear infinite;
+}
+.cs-radar-target {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #c4b5fd;
+  box-shadow:
+    0 0 0 4px rgba(196, 181, 253, 0.12),
+    0 0 12px #a78bfa;
+}
+@keyframes cs-scan {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.cs-enroll-button {
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.42s;
+}
+.cs-enroll-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 48px rgba(124, 58, 237, 0.32);
+}
+
+/* ---------- O ciclo completo (trilho escuro) ---------- */
+.cs-rail {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(at 48% 28%, rgba(124, 58, 237, 0.2), transparent 38%),
+    radial-gradient(at 90% 86%, rgba(76, 29, 149, 0.18), transparent 28%),
+    linear-gradient(118deg, #050408 0%, #09070e 46%, #130a24 62%, #060509 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.36);
+}
+.cs-rail::before {
+  content: '';
+  position: absolute;
+  top: -360px;
+  right: -230px;
+  width: 720px;
+  height: 720px;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  box-shadow:
+    0 0 0 110px rgba(124, 58, 237, 0.035),
+    0 0 0 220px rgba(124, 58, 237, 0.02);
+  pointer-events: none;
+}
+.cs-rail-signal {
+  position: absolute;
+  inset-block: 0;
+  left: -40%;
+  width: 40%;
+  pointer-events: none;
+  opacity: 0.65;
+  filter: blur(24px);
+  background: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.05) 18%, rgba(139, 92, 246, 0.24) 50%, rgba(124, 58, 237, 0.04) 82%, transparent 100%);
+  transform: skew(-18deg);
+  animation: cs-signal-pass 6.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes cs-signal-pass {
+  0%,
+  16% {
+    opacity: 0;
+    transform: translate(0) skew(-18deg);
+  }
+  26% {
+    opacity: 0.72;
+  }
+  72% {
+    opacity: 0.5;
+  }
+  86%,
+  to {
+    opacity: 0;
+    transform: translate(440%) skew(-18deg);
+  }
+}
+.cs-glass-card {
+  position: relative;
+  overflow: hidden;
+  padding: 26px 28px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at 100% 0, rgba(139, 92, 246, 0.16), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.05),
+    0 30px 80px rgba(0, 0, 0, 0.3);
+}
+.cs-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 28px;
+  width: 86px;
+  height: 2px;
+  background: linear-gradient(90deg, #a78bfa, transparent);
+  box-shadow: 0 0 18px rgba(167, 139, 250, 0.72);
+}
+.cs-steps-line {
+  position: absolute;
+  top: -25px;
+  left: 1.5%;
+  right: 1.5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.32) 10%, #7c3aed 50%, rgba(167, 139, 250, 0.32) 90%, transparent);
+  box-shadow: 0 0 14px rgba(124, 58, 237, 0.34);
+}
+.cs-step {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(124, 58, 237, 0.14), transparent 34%),
+    linear-gradient(155deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.45s;
+}
+.cs-step:hover {
+  transform: translateY(-8px);
+  border-color: rgba(167, 139, 250, 0.42);
+}
+.cs-step-node {
+  position: relative;
+  z-index: 2;
+  color: #fff;
+  background: #5b21b6;
+  border: 1px solid rgba(167, 139, 250, 0.55);
+  box-shadow:
+    0 0 0 7px #0a0810,
+    0 0 28px rgba(124, 58, 237, 0.58);
+}
+.cs-step-ghost {
+  position: absolute;
+  right: -0.02em;
+  bottom: -0.18em;
+  pointer-events: none;
+  font-family: Sora, sans-serif;
+  font-size: 170px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.028);
+}
+
+/* ---------- O que você leva (cards claros) ---------- */
+.cs-paper-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(48, 28, 80, 0.12);
+  background:
+    radial-gradient(circle at 100% 0, rgba(139, 92, 246, 0.07), transparent 38%),
+    rgba(253, 252, 255, 0.9);
+  box-shadow:
+    0 24px 70px rgba(46, 22, 90, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.9);
+  transition:
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.6s,
+    box-shadow 0.6s;
+}
+.cs-paper-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 28px;
+  width: 72px;
+  height: 3px;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(90deg, #6d28d9, #a78bfa);
+  box-shadow: 0 6px 18px rgba(109, 40, 217, 0.3);
+}
+.cs-paper-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(109, 40, 217, 0.3);
+  box-shadow:
+    0 34px 90px rgba(46, 22, 90, 0.14),
+    inset 0 1px #fff;
+}
+.cs-icon-badge {
+  background: linear-gradient(145deg, #8b5cf6, #5b21b6);
+  box-shadow:
+    0 12px 26px rgba(109, 40, 217, 0.28),
+    inset 0 1px rgba(255, 255, 255, 0.28);
+}
+
+/* ---------- Bloco roxo (penúltimo) ---------- */
+.cs-final-push {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(200, 176, 255, 0.5), transparent 28%),
+    radial-gradient(circle at 82% 85%, rgba(20, 6, 48, 0.5), transparent 36%),
+    linear-gradient(135deg, #8b5cf6 0%, #6d28d9 48%, #3b0d8f 100%);
+}
+.cs-final-push::before {
+  content: '//';
+  position: absolute;
+  top: -0.34em;
+  left: -0.18em;
+  pointer-events: none;
+  font-family: Sora, sans-serif;
+  font-size: clamp(18rem, 40vw, 44rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.26em;
+  color: rgba(255, 255, 255, 0.08);
+}
+.cs-final-orbit {
+  position: absolute;
+  top: -200px;
+  right: -120px;
+  width: 560px;
+  height: 560px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  box-shadow:
+    0 0 0 70px rgba(255, 255, 255, 0.035),
+    0 0 0 140px rgba(255, 255, 255, 0.02);
+  animation: cs-orbit 7s ease-in-out infinite alternate;
+}
+@keyframes cs-orbit {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}
+@media (max-width: 1023px) {
+  .cs-final-orbit {
+    top: -100px;
+    right: -240px;
+    width: 430px;
+    height: 430px;
+  }
+}
+.cs-dark-button {
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.28);
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.42s;
+}
+.cs-dark-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 26px 60px rgba(10, 0, 30, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-offer::before,
+  .cs-offer::after,
+  .cs-accent-card::after,
+  .cs-live-dot,
+  .cs-radar-sweep,
+  .cs-rail-signal,
+  .cs-final-orbit {
+    animation: none;
+  }
+}

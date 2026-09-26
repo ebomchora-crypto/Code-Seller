@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { LandingNavbar } from '@/components/landing/LandingNavbar'
+import '@/styles/landing-sections.css'
 import { LandingHero } from '@/components/landing/LandingHero'
 import { LandingProblem } from '@/components/landing/LandingProblem'
 import { LandingModules } from '@/components/landing/LandingModules'
@@ -8,6 +8,7 @@ import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
 import { LandingBenefits } from '@/components/landing/LandingBenefits'
 import { LandingFAQ } from '@/components/landing/LandingFAQ'
+import { LandingCtaBanner } from '@/components/landing/LandingCtaBanner'
 import { LandingCta } from '@/components/landing/LandingCta'
 import { LandingFooter } from '@/components/landing/LandingFooter'
 
@@ -54,7 +55,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-landing-bg">
-      <LandingNavbar />
       <main>
         <LandingHero />
         <LandingProblem />
@@ -63,6 +63,7 @@ export default function LandingPage() {
         <LandingEcosystem />
         <LandingTimeline />
         <LandingBenefits />
+        <LandingCtaBanner />
         <LandingFAQ />
         <LandingCta />
       </main>
