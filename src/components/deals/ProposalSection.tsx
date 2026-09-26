@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/Button'
+import { Eye, FileText, Loader2, Paperclip, Sparkles, Trash2 } from 'lucide-react'
+import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { ProposalGenerator } from '@/components/deals/ProposalGenerator'
 import { getSignedProposalUrl } from '@/services/supabase/proposals'
@@ -75,78 +77,89 @@ export function ProposalSection({
   }
 
   return (
-    <div className="rounded-xl border border-purple-200 bg-white p-4">
-      <p className="label-caps mb-3">Proposta</p>
+    <Card>
+      <PanelHeader
+        title="Proposta"
+        subtitle={deal.proposal_url ? 'Arquivo anexado a este negócio' : 'Gere com IA ou anexe um PDF/DOCX'}
+      />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) void handleFileSelected(file)
+          event.target.value = ''
+        }}
+      />
 
       {!deal.proposal_url ? (
-        <div className="flex flex-wrap gap-3">
-          <Button variant="secondary" size="sm" onClick={() => setGeneratorOpen(true)}>
-            Gerar com IA
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            loading={uploadingProposal}
-            onClick={() => fileInputRef.current?.click()}
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setGeneratorOpen(true)}
+            className="group flex items-center gap-3 rounded-[18px] border border-[var(--accent-ring)] bg-[var(--accent-tint)] p-3.5 text-left transition hover:brightness-110"
           >
-            Anexar proposta
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx"
-            className="hidden"
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              if (file) void handleFileSelected(file)
-              event.target.value = ''
-            }}
-          />
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white">
+              <Sparkles className="size-4" />
+            </span>
+            <span>
+              <span className="block text-[13.5px] font-semibold text-[var(--text-primary)]">Gerar com IA</span>
+              <span className="block text-[12px] text-[var(--text-muted)]">Usa os dados do negócio</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingProposal}
+            className="flex items-center gap-3 rounded-[18px] border border-[var(--border-default)] p-3.5 text-left transition hover:border-[var(--border-strong)] disabled:opacity-60"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-muted)] text-[var(--text-secondary)]">
+              {uploadingProposal ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
+            </span>
+            <span>
+              <span className="block text-[13.5px] font-semibold text-[var(--text-primary)]">Anexar arquivo</span>
+              <span className="block text-[12px] text-[var(--text-muted)]">PDF ou DOCX</span>
+            </span>
+          </button>
         </div>
       ) : (
-        <div className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-5 w-5 text-purple-600">
-              <path d="M9 3v2m6-2v2M5 8h14M6 8v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8" />
-            </svg>
-            <span className="max-w-[160px] truncate text-sm text-neutral-700">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--border-default)] p-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--accent-text)]">
+              <FileText className="size-4" />
+            </span>
+            <span className="min-w-0 truncate text-[13.5px] font-medium text-[var(--text-primary)]">
               {fileNameFromPath(deal.proposal_url)}
             </span>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-1">
             <button
               type="button"
               onClick={handleView}
               disabled={viewing}
-              className="text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium text-[var(--accent-text)] transition hover:bg-[var(--accent-tint)] disabled:opacity-50"
             >
-              Visualizar
+              <Eye className="size-3.5" />
+              Abrir
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
+              className="inline-flex h-8 items-center rounded-full px-3 text-[12.5px] font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-muted)]"
             >
               Substituir
             </button>
             <button
               type="button"
               onClick={() => setDeleteOpen(true)}
-              className="text-xs font-medium text-neutral-500 hover:text-red-600"
+              aria-label="Remover proposta"
+              title="Remover"
+              className="flex size-8 items-center justify-center rounded-full text-[var(--text-muted)] transition hover:bg-red-500/10 hover:text-red-500"
             >
-              Remover
+              <Trash2 className="size-3.5" />
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.docx"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) void handleFileSelected(file)
-                event.target.value = ''
-              }}
-            />
           </div>
         </div>
       )}
@@ -168,6 +181,6 @@ export function ProposalSection({
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteOpen(false)}
       />
-    </div>
+    </Card>
   )
 }

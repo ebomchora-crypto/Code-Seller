@@ -24,6 +24,7 @@ import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { PanelHeader } from '@/components/ui/PanelHeader'
 import { StageBadge } from '@/components/deals/StageBadge'
 import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
+import { siteUrl, whatsappUrl } from '@/utils/contactLinks'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteContact } from '@/services/supabase/contacts'
@@ -59,19 +60,6 @@ function formatCurrency(value: number | null): string {
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-}
-
-// Link do WhatsApp a partir do telefone salvo; assume Brasil (55) quando o
-// número vem só com DDD.
-function whatsappUrl(phone: string | null): string | null {
-  const digits = phone?.replace(/\D/g, '') ?? ''
-  if (digits.length === 10 || digits.length === 11) return `https://wa.me/55${digits}`
-  if (digits.length >= 12 && digits.length <= 13) return `https://wa.me/${digits}`
-  return null
-}
-
-function siteUrl(site: string): string {
-  return /^https?:\/\//i.test(site) ? site : `https://${site}`
 }
 
 export function ContactDetail({

@@ -15,7 +15,7 @@ interface ProposalGeneratorProps {
 }
 
 function ShimmerLine({ width }: { width: string }) {
-  return <div className={`h-3 animate-pulse rounded bg-neutral-200/70`} style={{ width }} />
+  return <div className="h-3 animate-pulse rounded bg-[var(--bg-muted)]" style={{ width }} />
 }
 
 export function ProposalGenerator({ open, onClose, basePayload, generating, onGenerate }: ProposalGeneratorProps) {
@@ -68,7 +68,7 @@ export function ProposalGenerator({ open, onClose, basePayload, generating, onGe
 
       {generating && (
         <div className="flex flex-col items-center gap-4 py-10">
-          <p className="text-sm font-medium text-purple-600">Gerando sua proposta…</p>
+          <p className="text-sm font-medium text-[var(--accent-text)]">Gerando sua proposta…</p>
           <div className="w-full space-y-3">
             <ShimmerLine width="60%" />
             <ShimmerLine width="90%" />

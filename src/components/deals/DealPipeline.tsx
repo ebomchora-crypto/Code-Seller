@@ -25,11 +25,6 @@ interface DealPipelineProps {
   onStageChange: (id: string, stage: DealStage) => void
 }
 
-const columnBackground: Partial<Record<DealStage, string>> = {
-  won: 'bg-emerald-50/60',
-  lost: 'bg-red-50/60',
-}
-
 function DealDraggable({ deal, index }: { deal: Deal; index: number }) {
   const reducedMotion = useReducedMotion()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: deal.id })
@@ -66,29 +61,40 @@ function PipelineColumn({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   const config = DEAL_STAGES.find((item) => item.key === stage)!
   const totalValue = deals.reduce((sum, deal) => sum + (deal.value ?? 0), 0)
+  const closed = stage === 'won' || stage === 'lost'
 
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-2xl border border-[var(--border-subtle)] p-3 transition-all duration-200 ${
-        columnBackground[stage] ?? 'bg-[var(--bg-secondary)]'
-      } ${isOver ? 'scale-[1.01] ring-2 ring-purple-300 shadow-[0_0_24px_rgba(179,92,255,0.12)]' : ''}`}
+      className={`flex w-[288px] shrink-0 flex-col rounded-[22px] border p-2.5 transition-all duration-200 ${
+        isOver
+          ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] shadow-[0_0_0_4px_var(--accent-tint)]'
+          : 'border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.02]'
+      }`}
+      style={closed && !isOver ? { backgroundColor: `${config.color}0d`, borderColor: `${config.color}33` } : undefined}
     >
-      <div className="mb-1 flex items-center justify-between px-1">
-        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: config.color }} />
-          <span style={{ color: config.color }}>{config.label}</span>
-        </h3>
-        <span className="rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-xs font-medium text-[var(--text-muted)]">
-          {deals.length}
-        </span>
+      <div className="px-2 pb-3 pt-1.5">
+        <div className="flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-[13.5px] font-semibold text-[var(--text-primary)]">
+            <span className="size-2.5 rounded-full" style={{ backgroundColor: config.color, boxShadow: `0 0 10px ${config.color}` }} />
+            {config.label}
+          </h3>
+          <span className="rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--text-secondary)] ring-1 ring-[var(--border-subtle)]">
+            {deals.length}
+          </span>
+        </div>
+        <p className="mt-1 pl-[18px] text-[12.5px] tabular-nums text-[var(--text-muted)]">{formatCurrency(totalValue)}</p>
       </div>
-      <p className="mb-3 px-1 text-xs text-[var(--text-muted)]">{formatCurrency(totalValue)}</p>
 
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="flex min-h-24 flex-1 flex-col gap-2.5">
         {deals.map((deal, index) => (
           <DealDraggable key={deal.id} deal={deal} index={index} />
         ))}
+        {deals.length === 0 && (
+          <p className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[var(--border-default)] px-4 py-8 text-center text-[12.5px] text-[var(--text-muted)]">
+            Arraste um negócio pra cá
+          </p>
+        )}
       </div>
     </div>
   )
@@ -117,12 +123,12 @@ export function DealPipeline({ deals, loading, onStageChange }: DealPipelineProp
 
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {DEAL_STAGES.map((stage) => (
-          <div key={stage.key} className="flex w-72 shrink-0 flex-col gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-28 w-full" />
+          <div key={stage.key} className="flex w-[288px] shrink-0 flex-col gap-2.5 rounded-[22px] border border-[var(--border-subtle)] p-2.5">
+            <Skeleton className="m-1.5 h-5 w-24" />
+            <Skeleton className="h-36 w-full rounded-[18px]" />
+            <Skeleton className="h-36 w-full rounded-[18px]" />
           </div>
         ))}
       </div>
@@ -140,7 +146,7 @@ export function DealPipeline({ deals, loading, onStageChange }: DealPipelineProp
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {DEAL_STAGES.map((stage) => (
           <PipelineColumn key={stage.key} stage={stage.key} deals={deals.filter((deal) => deal.stage === stage.key)} />
         ))}

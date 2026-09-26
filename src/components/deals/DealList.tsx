@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
+import { ChevronDown, Pencil, Trash2 } from 'lucide-react'
+import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { FlipItem } from '@/components/motion/FlipItem'
 import { StageBadge } from '@/components/deals/StageBadge'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -18,48 +20,32 @@ interface DealListProps {
 type SortColumn = 'title' | 'value' | 'expected_close_date' | 'probability'
 type SortDirection = 'asc' | 'desc'
 
-const columns: { key: SortColumn | null; label: string; align?: 'right' }[] = [
-  { key: 'title', label: 'Título' },
-  { key: null, label: 'Contato' },
+const columns: { key: SortColumn | null; label: string; align?: 'right'; className?: string }[] = [
+  { key: 'title', label: 'Negócio' },
   { key: null, label: 'Etapa' },
   { key: 'value', label: 'Valor', align: 'right' },
-  { key: null, label: 'Serviço' },
-  { key: 'probability', label: 'Probabilidade' },
-  { key: 'expected_close_date', label: 'Fechamento previsto' },
-  { key: null, label: 'Ações' },
+  { key: 'probability', label: 'Chance' },
+  { key: 'expected_close_date', label: 'Previsão' },
+  { key: null, label: '', className: 'w-24' },
 ]
 
 function formatDate(value: string | null): string {
   if (!value) return '—'
-  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR')
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
 }
 
-function SortIcon({ direction }: { direction: SortDirection }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      className={`h-3 w-3 transition-transform ${direction === 'asc' ? 'rotate-180' : ''}`}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-    </svg>
-  )
-}
+const iconButton =
+  'flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]'
 
-function SkeletonRows() {
+function RowActions({ deal, onEdit, onDeleteRequest }: Pick<DealListProps, 'onEdit' | 'onDeleteRequest'> & { deal: Deal }) {
   return (
     <>
-      {Array.from({ length: 6 }).map((_, index) => (
-        <tr key={index} className="border-b border-neutral-100">
-          {columns.map((_column, columnIndex) => (
-            <td key={columnIndex} className="px-4 py-3">
-              <Skeleton className="h-4 w-full max-w-[120px]" />
-            </td>
-          ))}
-        </tr>
-      ))}
+      <button type="button" onClick={() => onEdit(deal)} aria-label={`Editar ${deal.title}`} title="Editar" className={`${iconButton} hover:text-[var(--accent-text)]`}>
+        <Pencil className="size-4" />
+      </button>
+      <button type="button" onClick={() => onDeleteRequest(deal)} aria-label={`Excluir ${deal.title}`} title="Excluir" className={`${iconButton} hover:text-red-500`}>
+        <Trash2 className="size-4" />
+      </button>
     </>
   )
 }
@@ -98,27 +84,33 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+    <div className="overflow-hidden rounded-[var(--card-radius)] border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-card)]">
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-[13.5px]">
           <thead>
-            <tr className="border-b border-neutral-100">
+            <tr className="border-b border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.02]">
               {columns.map((column) => (
                 <th
-                  key={column.label}
-                  className={`px-4 py-3 font-medium text-neutral-500 ${column.align === 'right' ? 'text-right' : ''}`}
+                  key={column.label || 'actions'}
+                  className={`whitespace-nowrap px-4 py-3 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)] first:pl-5 ${
+                    column.align === 'right' ? 'text-right' : ''
+                  } ${column.className ?? ''}`}
                 >
                   {column.key ? (
                     <button
                       type="button"
                       onClick={() => handleSort(column.key as SortColumn)}
-                      className={`flex items-center gap-1 transition-colors hover:text-neutral-900 ${column.align === 'right' ? 'ml-auto' : ''}`}
+                      className={`inline-flex items-center gap-1 uppercase transition-colors hover:text-[var(--text-primary)] ${
+                        sortColumn === column.key ? 'text-[var(--text-secondary)]' : ''
+                      }`}
                     >
                       {column.label}
-                      {sortColumn === column.key && <SortIcon direction={sortDirection} />}
+                      {sortColumn === column.key && (
+                        <ChevronDown className={`size-3.5 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} />
+                      )}
                     </button>
                   ) : (
-                    column.label
+                    column.label || <span className="sr-only">Ações</span>
                   )}
                 </th>
               ))}
@@ -126,47 +118,57 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
           </thead>
           <tbody>
             {loading ? (
-              <SkeletonRows />
+              Array.from({ length: 6 }).map((_, index) => (
+                <tr key={index} className="border-b border-[var(--border-subtle)] last:border-0">
+                  {columns.map((_column, columnIndex) => (
+                    <td key={columnIndex} className="px-4 py-4 first:pl-5">
+                      <Skeleton className="h-4 w-full max-w-[140px]" />
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : (
               <AnimatePresence initial={false}>
                 {sortedDeals.map((deal) => (
-                <FlipItem
-                  as="tr"
-                  key={deal.id}
-                  className="group border-b border-neutral-100 transition-colors duration-150 last:border-0 hover:bg-purple-50/60"
-                >
-                  <td className="px-4 py-3">
-                    <Link to={`/deals/${deal.id}`} className="font-medium text-neutral-900 hover:text-purple-700">
-                      {deal.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">{deal.contact?.name ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <StageBadge stage={deal.stage} />
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium text-neutral-800">{formatCurrency(deal.value)}</td>
-                  <td className="px-4 py-3 text-neutral-600">{deal.service ?? '—'}</td>
-                  <td className="px-4 py-3 text-neutral-600">{deal.probability}%</td>
-                  <td className="px-4 py-3 text-neutral-500">{formatDate(deal.expected_close_date)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(deal)}
-                        className="text-xs font-medium text-neutral-500 hover:text-purple-700"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteRequest(deal)}
-                        className="text-xs font-medium text-neutral-500 hover:text-red-600"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </FlipItem>
+                  <FlipItem
+                    as="tr"
+                    key={deal.id}
+                    className="group border-b border-[var(--border-subtle)] transition-colors duration-150 last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/[0.03]"
+                  >
+                    <td className="py-3 pl-5 pr-4">
+                      <Link to={`/deals/${deal.id}`} className="flex min-w-0 items-center gap-3">
+                        <InitialsAvatar name={deal.contact?.name ?? deal.title} size="sm" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-text)]">
+                            {deal.title}
+                          </span>
+                          <span className="block max-w-[260px] truncate text-[12px] text-[var(--text-muted)]">
+                            {[deal.contact?.name, deal.service].filter(Boolean).join(' · ') || 'Sem contato'}
+                          </span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StageBadge stage={deal.stage} />
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-display font-semibold tabular-nums text-[var(--text-primary)]">
+                      {formatCurrency(deal.value)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--bg-muted)]">
+                          <div className="h-full rounded-full bg-[var(--accent-solid)]" style={{ width: `${deal.probability}%` }} />
+                        </div>
+                        <span className="tabular-nums text-[var(--text-secondary)]">{deal.probability}%</span>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[var(--text-muted)]">{formatDate(deal.expected_close_date)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+                        <RowActions deal={deal} onEdit={onEdit} onDeleteRequest={onDeleteRequest} />
+                      </div>
+                    </td>
+                  </FlipItem>
                 ))}
               </AnimatePresence>
             )}
@@ -174,38 +176,37 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
         </table>
       </div>
 
-      <div className="flex flex-col gap-3 p-3 md:hidden">
+      <ul className="flex flex-col divide-y divide-[var(--border-subtle)] md:hidden">
         {loading
-          ? Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-32 w-full" />)
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <li key={index} className="flex items-center gap-3 p-4">
+                <Skeleton className="size-10 rounded-xl" />
+                <Skeleton className="h-4 flex-1" />
+              </li>
+            ))
           : sortedDeals.map((deal) => (
-              <div key={deal.id} className="rounded-lg border border-neutral-200 p-4">
-                <div className="flex items-center justify-between">
-                  <Link to={`/deals/${deal.id}`} className="font-medium text-neutral-900">
-                    {deal.title}
-                  </Link>
-                  <StageBadge stage={deal.stage} />
+              <li key={deal.id} className="flex items-start gap-3 p-4">
+                <InitialsAvatar name={deal.contact?.name ?? deal.title} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link to={`/deals/${deal.id}`} className="min-w-0 truncate font-medium text-[var(--text-primary)]">
+                      {deal.title}
+                    </Link>
+                    <span className="shrink-0 font-display font-semibold tabular-nums text-[var(--text-primary)]">
+                      {formatCurrency(deal.value)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 truncate text-[12.5px] text-[var(--text-muted)]">{deal.contact?.name ?? 'Sem contato vinculado'}</p>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <StageBadge stage={deal.stage} />
+                    <div className="-mr-2 flex gap-1">
+                      <RowActions deal={deal} onEdit={onEdit} onDeleteRequest={onDeleteRequest} />
+                    </div>
+                  </div>
                 </div>
-                <p className="mt-1 text-xs text-neutral-500">{deal.contact?.name ?? 'Sem contato vinculado'}</p>
-                <p className="mt-1 text-sm font-medium text-neutral-800">{formatCurrency(deal.value)}</p>
-                <div className="mt-3 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(deal)}
-                    className="text-xs font-medium text-neutral-500 hover:text-purple-700"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteRequest(deal)}
-                    className="text-xs font-medium text-neutral-500 hover:text-red-600"
-                  >
-                    Excluir
-                  </button>
-                </div>
-              </div>
+              </li>
             ))}
-      </div>
+      </ul>
     </div>
   )
 }

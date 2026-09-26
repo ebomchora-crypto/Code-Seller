@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Drawer } from '@/components/ui/Drawer'
+import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
 import { DealDetail } from '@/components/deals/DealDetail'
 import { DealForm } from '@/components/deals/DealForm'
 import { ActivityList } from '@/components/deals/ActivityList'
@@ -37,12 +40,10 @@ export default function DealDetailPage() {
     <PageWrapper>
         <Link
           to="/deals"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 transition-colors hover:text-purple-700"
+          className="mb-5 inline-flex items-center gap-1.5 rounded-full py-1 pr-3 text-[13.5px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
-          </svg>
-          Voltar para Negócios
+          <ChevronLeft className="size-4" />
+          Negócios
         </Link>
 
         {loading && (
@@ -58,36 +59,34 @@ export default function DealDetailPage() {
         )}
 
         {!loading && deal && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <DealDetail
-                deal={deal}
-                userName={userName}
-                onUpdate={updateDeal}
-                onEdit={() => setEditOpen(true)}
-                uploadProposal={uploadProposal}
-                uploadingProposal={uploadingProposal}
-                deleteProposal={deleteProposal}
-                generateProposal={generateProposal}
-                generatingProposal={generatingProposal}
-              />
-              <div className="mt-6">
-                <LinkedTasksSection dealId={deal.id} dealTitle={deal.title} />
-              </div>
-            </div>
-
-            <div className="lg:col-span-3">
-              <p className="label-caps mb-3">Histórico de atividades</p>
-              <div className="mb-4">
+          <DealDetail
+            deal={deal}
+            userName={userName}
+            onUpdate={updateDeal}
+            onEdit={() => setEditOpen(true)}
+            uploadProposal={uploadProposal}
+            uploadingProposal={uploadingProposal}
+            deleteProposal={deleteProposal}
+            generateProposal={generateProposal}
+            generatingProposal={generatingProposal}
+            extra={<LinkedTasksSection dealId={deal.id} dealTitle={deal.title} />}
+            history={
+              <Card>
+                <PanelHeader
+                  title="Histórico"
+                  subtitle={`${deal.activities?.length ?? 0} ${deal.activities?.length === 1 ? 'registro' : 'registros'}`}
+                />
                 <ActivityForm
                   onSubmit={async (data) => {
                     await addActivity(data)
                   }}
                 />
-              </div>
-              <ActivityList activities={deal.activities ?? []} onDelete={deleteActivity} />
-            </div>
-          </div>
+                <div className="mt-6">
+                  <ActivityList activities={deal.activities ?? []} onDelete={deleteActivity} />
+                </div>
+              </Card>
+            }
+          />
         )}
 
         <Drawer open={editOpen} onClose={() => setEditOpen(false)} title="Editar negócio">

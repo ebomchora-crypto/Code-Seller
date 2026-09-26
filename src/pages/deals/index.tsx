@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { PageWrapper } from '@/components/ui/PageWrapper'
-import { SectionLabel } from '@/components/ui/section-label'
+import { Briefcase, Columns3, List, Plus } from 'lucide-react'
+import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -13,36 +13,6 @@ import { DealForm } from '@/components/deals/DealForm'
 import { PipelineMetrics } from '@/components/deals/PipelineMetrics'
 import { useDeals } from '@/hooks/useDeals'
 import type { Deal } from '@/types'
-
-function PipelineIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className={`h-4 w-4 ${active ? 'text-purple-600' : 'text-neutral-400'}`}
-    >
-      <rect x="3" y="4" width="5" height="16" rx="1" />
-      <rect x="9.5" y="4" width="5" height="10" rx="1" />
-      <rect x="16" y="4" width="5" height="13" rx="1" />
-    </svg>
-  )
-}
-
-function ListIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className={`h-4 w-4 ${active ? 'text-purple-600' : 'text-neutral-400'}`}
-    >
-      <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  )
-}
 
 export default function DealsPage() {
   const { deals, metrics, loading, error, filters, setFilters, clearFilters, hasActiveFilters, view, setView, refetch, deleteDeal, updateStage } =
@@ -96,45 +66,53 @@ export default function DealsPage() {
 
   return (
     <PageWrapper>
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <SectionLabel>Negócios</SectionLabel>
-            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-[var(--text-primary)]">
-              {view === 'pipeline' ? 'Pipeline' : 'Negócios'}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white p-1">
-              <button
-                type="button"
-                aria-label="Visualização em pipeline"
-                aria-pressed={view === 'pipeline'}
-                onClick={() => setView('pipeline')}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'pipeline' ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
+        <PageHeader
+          title="Negócios"
+          count={deals.length}
+          subtitle="Cada proposta em andamento, da primeira conversa ao fechamento."
+          actions={
+            <>
+              <div
+                role="group"
+                aria-label="Modo de visualização"
+                className="flex h-11 items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] p-1"
               >
-                <PipelineIcon active={view === 'pipeline'} />
-              </button>
-              <button
-                type="button"
-                aria-label="Visualização em lista"
-                aria-pressed={view === 'list'}
-                onClick={() => setView('list')}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'list' ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
-              >
-                <ListIcon active={view === 'list'} />
-              </button>
-            </div>
+                {(
+                  [
+                    { value: 'pipeline', label: 'Pipeline', icon: Columns3 },
+                    { value: 'list', label: 'Lista', icon: List },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={view === option.value}
+                    onClick={() => setView(option.value)}
+                    className={`flex h-full items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors ${
+                      view === option.value
+                        ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <option.icon className="size-4" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
 
-            <Button magnetic onClick={openCreateForm}>+ Novo Negócio</Button>
-          </div>
-        </div>
+              <Button magnetic className="h-11 rounded-full px-5" onClick={openCreateForm}>
+                <Plus className="size-4" strokeWidth={2.4} />
+                Novo negócio
+              </Button>
+            </>
+          }
+        />
 
-        <div className="mt-6">
+        <div className="mt-8">
           <PipelineMetrics metrics={metrics} activeDealsCount={activeDealsCount} />
         </div>
 
-        <div className="mt-6">
+        <div className="mt-8">
           <DealFilters
             filters={filters}
             onChange={setFilters}
@@ -148,6 +126,22 @@ export default function DealsPage() {
         <div className="mt-6">
           {error ? (
             <ErrorState message={error} onRetry={refetch} />
+          ) : !loading && deals.length === 0 && !hasActiveFilters ? (
+            <div className="flex flex-col items-center rounded-[var(--card-radius)] border border-dashed border-[var(--border-default)] px-6 py-16 text-center">
+              <span className="flex size-14 items-center justify-center rounded-2xl bg-[var(--accent-tint)] text-[var(--accent-text)]">
+                <Briefcase className="size-6" />
+              </span>
+              <h2 className="mt-5 font-display text-[20px] font-semibold tracking-tight text-[var(--text-primary)]">
+                Nenhum negócio ainda
+              </h2>
+              <p className="mt-2 max-w-md text-[14px] leading-relaxed text-[var(--text-muted)]">
+                Crie um negócio para cada proposta que você está negociando e acompanhe tudo pelo pipeline, etapa por etapa.
+              </p>
+              <Button className="mt-6 h-11 rounded-full px-5" onClick={openCreateForm}>
+                <Plus className="size-4" strokeWidth={2.4} />
+                Novo negócio
+              </Button>
+            </div>
           ) : view === 'list' ? (
             <DealList deals={deals} loading={loading} onEdit={openEditForm} onDeleteRequest={setDeletingDeal} />
           ) : (

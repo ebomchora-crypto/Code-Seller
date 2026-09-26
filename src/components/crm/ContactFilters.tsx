@@ -1,4 +1,5 @@
 import { Search, X } from 'lucide-react'
+import { FilterChips, type FilterChipOption } from '@/components/ui/FilterChips'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
@@ -21,7 +22,7 @@ interface ContactFiltersProps {
   loading: boolean
 }
 
-const STATUS_OPTIONS: { value: ContactFiltersType['status']; label: string; color?: string }[] = [
+const STATUS_OPTIONS: FilterChipOption<ContactFiltersType['status']>[] = [
   { value: 'all', label: 'Todos' },
   ...CONTACT_STATUSES.map((status) => ({
     value: status,
@@ -42,28 +43,12 @@ export function ContactFilters({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Filtrar por status" className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1">
-          {STATUS_OPTIONS.map((option) => {
-            const active = filters.status === option.value
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onChange({ status: option.value })}
-                className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium transition-all duration-200 ${
-                  active
-                    ? 'border-[var(--nav-active-border)] text-[var(--text-primary)] shadow-[var(--nav-active-shadow)]'
-                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]'
-                }`}
-                style={active ? { background: 'var(--nav-active-bg)' } : undefined}
-              >
-                {option.color && <span className="size-2 rounded-full" style={{ backgroundColor: option.color }} />}
-                {option.label}
-              </button>
-            )
-          })}
-        </div>
+        <FilterChips
+          label="Filtrar por status"
+          options={STATUS_OPTIONS}
+          value={filters.status}
+          onChange={(value) => onChange({ status: value })}
+        />
 
         <p className="text-[13px] text-[var(--text-muted)]" aria-live="polite">
           {loading ? 'Buscando contatos…' : `${resultCount} ${resultCount === 1 ? 'contato encontrado' : 'contatos encontrados'}`}
