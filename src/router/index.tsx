@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyPage } from '@/utils/lazyPage'
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
 import { PrivateRoute } from '@/router/PrivateRoute'
 import { PublicRoute } from '@/router/PublicRoute'
@@ -6,27 +7,27 @@ import { RootRoute } from '@/router/RootRoute'
 import { Spinner } from '@/components/ui/Spinner'
 import { AppLayout } from '@/layouts/AppLayout'
 
-const LoginPage = lazy(() => import('@/pages/auth/Login'))
-const RegisterPage = lazy(() => import('@/pages/auth/Register'))
-const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPassword'))
+const LoginPage = lazyPage(() => import('@/pages/auth/Login'))
+const RegisterPage = lazyPage(() => import('@/pages/auth/Register'))
+const ForgotPasswordPage = lazyPage(() => import('@/pages/auth/ForgotPassword'))
 
-const ProspectionPage = lazy(() => import('@/pages/prospection'))
-const CrmPage = lazy(() => import('@/pages/crm'))
-const ContactDetailPage = lazy(() => import('@/pages/crm/[id]'))
-const DealsPage = lazy(() => import('@/pages/deals'))
-const DealDetailPage = lazy(() => import('@/pages/deals/[id]'))
-const FinancialPage = lazy(() => import('@/pages/financial'))
-const TasksPage = lazy(() => import('@/pages/tasks'))
-const CopilotPage = lazy(() => import('@/pages/autopilot'))
-const SettingsPage = lazy(() => import('@/pages/settings'))
-const SupportPage = lazy(() => import('@/pages/support'))
-const ReportsPage = lazy(() => import('@/pages/reports'))
-const PortfolioPage = lazy(() => import('@/pages/portfolio'))
-const AcademyPage = lazy(() => import('@/pages/academy'))
-const AcademyLessonPage = lazy(() => import('@/pages/academy/lesson'))
-const AcademyKitPage = lazy(() => import('@/pages/academy/kit'))
-const PublicPortfolioPage = lazy(() => import('@/pages/public-portfolio'))
-const RevenueRoomPage = lazy(() => import('@/pages/revenue-room'))
+const ProspectionPage = lazyPage(() => import('@/pages/prospection'))
+const CrmPage = lazyPage(() => import('@/pages/crm'))
+const ContactDetailPage = lazyPage(() => import('@/pages/crm/[id]'))
+const DealsPage = lazyPage(() => import('@/pages/deals'))
+const DealDetailPage = lazyPage(() => import('@/pages/deals/[id]'))
+const FinancialPage = lazyPage(() => import('@/pages/financial'))
+const TasksPage = lazyPage(() => import('@/pages/tasks'))
+const CopilotPage = lazyPage(() => import('@/pages/autopilot'))
+const SettingsPage = lazyPage(() => import('@/pages/settings'))
+const SupportPage = lazyPage(() => import('@/pages/support'))
+const ReportsPage = lazyPage(() => import('@/pages/reports'))
+const PortfolioPage = lazyPage(() => import('@/pages/portfolio'))
+const AcademyPage = lazyPage(() => import('@/pages/academy'))
+const AcademyLessonPage = lazyPage(() => import('@/pages/academy/lesson'))
+const AcademyKitPage = lazyPage(() => import('@/pages/academy/kit'))
+const PublicPortfolioPage = lazyPage(() => import('@/pages/public-portfolio'))
+const RevenueRoomPage = lazyPage(() => import('@/pages/revenue-room'))
 
 function RouteFallback() {
   return (

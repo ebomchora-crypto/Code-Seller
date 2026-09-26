@@ -1,12 +1,13 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyPage } from '@/utils/lazyPage'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '@/stores/AuthContext'
 import { getOAuthErrorFromUrl } from '@/services/supabase/auth'
 import { Spinner } from '@/components/ui/Spinner'
 import { AppLayout } from '@/layouts/AppLayout'
 
-const DashboardPage = lazy(() => import('@/pages/dashboard'))
-const LandingPage = lazy(() => import('@/pages/landing'))
+const DashboardPage = lazyPage(() => import('@/pages/dashboard'))
+const LandingPage = lazyPage(() => import('@/pages/landing'))
 
 function RouteFallback() {
   return (
