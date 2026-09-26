@@ -30,7 +30,7 @@ export function LandingCta() {
           onClick={() => navigate('/login')}
           className="cs-dark-button mt-8 inline-flex h-12 items-center justify-center rounded-full bg-[#0b0b0f] px-7 text-[15px] font-medium text-white"
         >
-          Login
+          Começar a vender
         </button>
       </LandingFadeIn>
     </section>

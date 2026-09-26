@@ -22,9 +22,9 @@ export function LandingCtaBanner() {
         <button
           type="button"
           onClick={() => navigate('/login')}
-          className="cs-dark-button mt-10 inline-flex min-h-[60px] items-center gap-6 rounded-full bg-black px-9 text-[16px] font-medium text-white"
+          className="cs-dark-button mt-10 inline-flex min-h-[60px] items-center gap-3 whitespace-nowrap rounded-full bg-black px-6 text-[15px] font-medium text-white sm:gap-6 sm:px-9 sm:text-[16px]"
         >
-          Login
+          Encontrar meu próximo cliente
           <span aria-hidden>↗</span>
         </button>
       </LandingFadeIn>

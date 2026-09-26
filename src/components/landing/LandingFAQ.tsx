@@ -40,7 +40,7 @@ const faqItems = [
   },
   {
     question: 'Como participo?',
-    answer: 'Pelo botão "Login" nesta página — é por ali que você entra no ecossistema Code Sellers.',
+    answer: 'Clique em "Acessar a plataforma" ou em "Login", no topo da página — é por ali que você entra no ecossistema Code Sellers.',
   },
 ]
 

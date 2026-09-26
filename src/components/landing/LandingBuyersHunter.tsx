@@ -107,7 +107,7 @@ export function LandingBuyersHunter() {
                 onClick={() => navigate('/login')}
                 className="cs-enroll-button mt-7 flex min-h-[58px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-full bg-[#fff] px-5 text-center text-[14px] font-semibold uppercase text-[#151318] shadow-[0_16px_45px_rgba(255,255,255,0.1)] sm:gap-5 sm:px-7 sm:text-[15px]"
               >
-                Login
+                Acessar o ecossistema
                 <span aria-hidden>↗</span>
               </button>
             </div>

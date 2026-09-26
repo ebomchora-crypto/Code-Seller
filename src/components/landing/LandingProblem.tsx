@@ -80,7 +80,7 @@ export function LandingProblem() {
             onClick={() => navigate('/login')}
             className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-landing-text-dark px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-black"
           >
-            Login
+            Quero transformar em venda
             <ArrowUpRight className="h-4 w-4" />
           </button>
         </Reveal>

@@ -101,7 +101,7 @@ function PhaseCard({ phase }: { phase: Phase }) {
 
 export function LandingTimeline() {
   return (
-    <section className="cs-rail py-24 text-white lg:py-28">
+    <section id="metodo" className="cs-rail scroll-mt-6 py-24 text-white lg:py-28">
       <span aria-hidden className="cs-rail-signal" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1280px] px-5 sm:px-8 lg:px-12">
