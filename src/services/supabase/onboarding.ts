@@ -2,8 +2,15 @@ import { supabase } from '@/lib/supabaseClient'
 
 // Contagens usadas pelos "Primeiros passos" do Início. Tabela que ainda não
 // existe (migração pendente) conta como zero.
+//
+// Usa GET com limit(1) em vez de HEAD: alguns navegadores, extensões e redes
+// corporativas bloqueiam ou cortam respostas HEAD sem Content-Length (visto
+// em teste real de produção: as mesmas chamadas com HEAD falhavam com
+// net::ERR_ABORTED, enquanto GET com o mesmo filtro funcionava sempre). O
+// total exato continua vindo do cabeçalho Content-Range, então o custo extra
+// é de no máximo 1 linha por chamada.
 async function countRows(table: string, filter?: { column: string; value: string }): Promise<number> {
-  let query = supabase.from(table).select('id', { count: 'exact', head: true })
+  let query = supabase.from(table).select('id', { count: 'exact' }).limit(1)
   if (filter) query = query.eq(filter.column, filter.value)
   const { count, error } = await query
   if (error) return 0

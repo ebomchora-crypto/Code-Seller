@@ -40,7 +40,7 @@ async function fetchStageChanges() {
 }
 
 async function countSince(table: string, column: string, start: Date, end: Date, extra?: (query: any) => any) {
-  let query = supabase.from(table).select('id', { count: 'exact', head: true }).gte(column, start.toISOString()).lt(column, end.toISOString())
+  let query = supabase.from(table).select('id', { count: 'exact' }).limit(1).gte(column, start.toISOString()).lt(column, end.toISOString())
   if (extra) query = extra(query)
   const { count } = await query
   return count ?? 0

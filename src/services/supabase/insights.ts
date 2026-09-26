@@ -75,7 +75,8 @@ export async function getHunterResult(): Promise<HunterResult> {
   let searchesThisMonth: number | null = null
   const searches = await supabase
     .from('prospect_searches')
-    .select('id', { count: 'exact', head: true })
+    .select('id', { count: 'exact' })
+    .limit(1)
     .gte('created_at', start.toISOString())
   if (!searches.error) searchesThisMonth = searches.count ?? 0
 
