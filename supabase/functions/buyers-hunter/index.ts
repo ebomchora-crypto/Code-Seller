@@ -7,6 +7,8 @@
 //   supabase functions deploy buyers-hunter
 //   supabase secrets set BUYERS_HUNTER_PLACES_KEY=...
 //   supabase secrets set BUYERS_HUNTER_MONTHLY_LIMIT=50   (opcional, padrão 50)
+// Alternativa aos secrets: linhas 'buyers_hunter_places_key' e
+// 'buyers_hunter_monthly_limit' na tabela public.app_config (só o servidor lê).
 //
 // Ações (POST com JSON):
 //   { action: 'usage' }                                  → { configured, used, limit }
@@ -147,8 +149,15 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const placesKey = Deno.env.get('BUYERS_HUNTER_PLACES_KEY')
-    const limit = Number(Deno.env.get('BUYERS_HUNTER_MONTHLY_LIMIT')) || DEFAULT_MONTHLY_LIMIT
+    const admin = createClient(supabaseUrl, serviceKey)
+    const { data: configRows } = await admin
+      .from('app_config')
+      .select('key, value')
+      .in('key', ['buyers_hunter_places_key', 'buyers_hunter_monthly_limit'])
+    const config = new Map((configRows ?? []).map((row) => [row.key as string, row.value as string]))
+    const placesKey = Deno.env.get('BUYERS_HUNTER_PLACES_KEY') ?? config.get('buyers_hunter_places_key')
+    const limit =
+      Number(Deno.env.get('BUYERS_HUNTER_MONTHLY_LIMIT') ?? config.get('buyers_hunter_monthly_limit')) || DEFAULT_MONTHLY_LIMIT
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
@@ -157,7 +166,6 @@ Deno.serve(async (req: Request) => {
     if (userError || !userData.user) return fail('unauthorized', 'Sessão expirada. Entre novamente.', 401)
     const userId = userData.user.id
 
-    const admin = createClient(supabaseUrl, serviceKey)
     const { count, error: countError } = await admin
       .from('prospect_searches')
       .select('id', { count: 'exact', head: true })

@@ -7,11 +7,14 @@
 //                             tarefa, resumo diário e resumo semanal
 //
 // Deploy (a função é chamada pelo cron, sem login — por isso sem verificação de JWT;
-// a ação 'dispatch' é protegida pelo CRON_SECRET e as outras exigem usuário logado):
+// a ação 'dispatch' é protegida pelo segredo do cron e 'test' exige usuário logado):
 //   supabase functions deploy notifications-dispatch --no-verify-jwt
-//   supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
-//     VAPID_SUBJECT=mailto:voce@exemplo.com CRON_SECRET=um-segredo-longo
-// Gerar as chaves VAPID: npx web-push generate-vapid-keys
+//
+// Configuração: lida primeiro dos secrets da função (VAPID_PUBLIC_KEY,
+// VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET) e, na falta deles, da tabela
+// public.app_config (RLS ligado, sem acesso para anon/authenticated). Sem
+// chaves VAPID em nenhum dos dois, a função gera um par na primeira chamada e
+// guarda em app_config — assim nenhum segredo precisa passar por fora.
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -289,25 +292,52 @@ async function sendSummaries(admin: SupabaseClient, subs: Map<string, Subscripti
   return sent
 }
 
+async function readConfig(admin: SupabaseClient): Promise<Map<string, string>> {
+  const { data } = await admin.from('app_config').select('key, value')
+  return new Map((data ?? []).map((row) => [row.key as string, row.value as string]))
+}
+
+// Chaves VAPID: secrets da função ou app_config; se não houver, gera e guarda.
+async function getVapidKeys(admin: SupabaseClient, config: Map<string, string>) {
+  const envPublic = Deno.env.get('VAPID_PUBLIC_KEY')
+  const envPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
+  if (envPublic && envPrivate) return { publicKey: envPublic, privateKey: envPrivate }
+
+  const storedPublic = config.get('vapid_public_key')
+  const storedPrivate = config.get('vapid_private_key')
+  if (storedPublic && storedPrivate) return { publicKey: storedPublic, privateKey: storedPrivate }
+
+  const generated = webpush.generateVAPIDKeys()
+  // ignoreDuplicates: se duas chamadas gerarem ao mesmo tempo, vale a primeira.
+  await admin.from('app_config').upsert(
+    [
+      { key: 'vapid_public_key', value: generated.publicKey },
+      { key: 'vapid_private_key', value: generated.privateKey },
+    ],
+    { onConflict: 'key', ignoreDuplicates: true },
+  )
+  const fresh = await readConfig(admin)
+  return {
+    publicKey: fresh.get('vapid_public_key') ?? generated.publicKey,
+    privateKey: fresh.get('vapid_private_key') ?? generated.privateKey,
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const publicKey = Deno.env.get('VAPID_PUBLIC_KEY')
-    const privateKey = Deno.env.get('VAPID_PRIVATE_KEY')
-    const subject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:contato@codesellers.com.br'
     const body = (await req.json().catch(() => ({}))) as { action?: string }
-
-    if (body.action === 'config') {
-      return json({ publicKey: publicKey ?? null })
-    }
-    if (!publicKey || !privateKey) {
-      return json({ error: 'As notificações ainda não estão configuradas.' }, 503)
-    }
-    webpush.setVapidDetails(subject, publicKey, privateKey)
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const config = await readConfig(admin)
+    const { publicKey, privateKey } = await getVapidKeys(admin, config)
+    const subject = Deno.env.get('VAPID_SUBJECT') ?? config.get('vapid_subject') ?? 'mailto:contato@codesellers.com.br'
+
+    if (body.action === 'config') {
+      return json({ publicKey })
+    }
+    webpush.setVapidDetails(subject, publicKey, privateKey)
 
     if (body.action === 'test') {
       const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
@@ -330,7 +360,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action === 'dispatch') {
-      const cronSecret = Deno.env.get('CRON_SECRET')
+      const cronSecret = Deno.env.get('CRON_SECRET') ?? config.get('cron_secret')
       if (!cronSecret || req.headers.get('x-cron-secret') !== cronSecret) {
         return json({ error: 'Não autorizado.' }, 401)
       }

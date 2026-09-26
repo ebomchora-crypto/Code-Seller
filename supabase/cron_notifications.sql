@@ -1,10 +1,5 @@
 -- Code Sellers — Agenda o envio das notificações (a cada 5 minutos)
---
--- Antes de rodar:
---   1. Database → Extensions: ative pg_cron e pg_net.
---   2. Troque SEU_PROJETO pelo ID do projeto (o que aparece na URL do Supabase:
---      https://SEU_PROJETO.supabase.co).
---   3. Troque SEU_SEGREDO pelo mesmo valor salvo no secret CRON_SECRET da função.
+-- (já aplicado no projeto). O segredo do cron vem de public.app_config.
 
 select cron.unschedule('code-sellers-notifications')
 where exists (select 1 from cron.job where jobname = 'code-sellers-notifications');
@@ -12,11 +7,14 @@ where exists (select 1 from cron.job where jobname = 'code-sellers-notifications
 select cron.schedule(
   'code-sellers-notifications',
   '*/5 * * * *',
-  $$
+  $job$
   select net.http_post(
-    url := 'https://SEU_PROJETO.supabase.co/functions/v1/notifications-dispatch',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', 'SEU_SEGREDO'),
+    url := 'https://mfzlwynqjbusyudstdds.supabase.co/functions/v1/notifications-dispatch',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-cron-secret', (select value from public.app_config where key = 'cron_secret')
+    ),
     body := '{"action":"dispatch"}'::jsonb
   );
-  $$
+  $job$
 );
