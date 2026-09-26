@@ -51,7 +51,7 @@ Evite gastar tempo com quem tem poucas avaliações e nenhum sinal de atividade 
 Melhor **10 leads bem escolhidos por semana** do que 100 importados e esquecidos. Cada lead importado precisa de uma primeira mensagem nas próximas 24 horas.`,
     example: {
       title: 'Uma sessão de 20 minutos',
-      text: 'Busca "estética" em Campinas → filtro Sem site + 50+ avaliações → 12 resultados → 10 importados → 10 primeiras mensagens enviadas com "Mensagem pronta" → follow-ups agendados sozinhos.',
+      text: 'Busca por "estética" na sua cidade → filtro Sem site + 50+ avaliações → 12 resultados → 10 importados → 10 primeiras mensagens enviadas com "Mensagem pronta" → follow-ups agendados sozinhos.',
     },
     checklist: [
       'Fiz uma busca no Buyers Hunter com filtros',

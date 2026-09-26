@@ -20,9 +20,9 @@ export const LESSONS_VENDER: AcademyLesson[] = [
 
 **Ruim:** "Olá! Sou desenvolvedor web e crio sites profissionais com os melhores preços do mercado. Tenho vários pacotes. Tem interesse?"
 
-**Bom:** "Oi, tudo bem? Vi que a Clínica Sorriso tem ótimas avaliações, mas ainda não tem um site para quem procura no Google. Fiz um para outra clínica aqui da cidade com agendamento online. Posso te mandar para você ver?"
+**Bom:** "Oi, tudo bem? Vi que vocês têm ótimas avaliações, mas ainda não têm um site para quem procura no Google. Fiz um para outra clínica aqui da cidade, com agendamento online. Posso te mandar para você ver?"
 
-Use **Mensagem pronta** no contato: os modelos já preenchem o nome, a cidade e a sua assinatura.`,
+No **Kit**, a aba Scripts de mensagem tem abordagens prontas para cada situação. Salve as que mais combinam com você como modelo e use em **Mensagem pronta** no contato.`,
     checklist: [
       'Personalizei meu modelo de primeira abordagem',
       'Enviei 10 primeiras mensagens usando "Mensagem pronta"',
@@ -69,7 +69,7 @@ O **follow-up automático** do app cria essas tarefas com lembrete e a mensagem 
 ## Perguntas que funcionam
 
 1. Como os clientes chegam até vocês hoje?
-2. O que acontece quando alguém procura [serviço] em [cidade] no Google?
+2. O que acontece quando alguém procura pelo serviço de vocês no Google?
 3. Quanto tempo a equipe gasta respondendo as mesmas perguntas no WhatsApp?
 4. Quanto vale, em média, um cliente novo para vocês?
 5. Já tentaram ter um site antes? O que aconteceu?
@@ -125,7 +125,7 @@ O **follow-up automático** do app cria essas tarefas com lembrete e a mensagem 
 ## As mais comuns
 
 **"Tá caro."**
-"Entendo. Me conta: comparado com o quê?" Depois, volte ao valor: "Se o site trouxer [X] clientes por mês, quanto isso representa para vocês?" Se precisar, ofereça o pacote Essencial — nunca o mesmo pacote com desconto.
+"Entendo. Me conta: comparado com o quê?" Depois, volte ao valor: "Se o site trouxer alguns clientes novos por mês, quanto isso representa para vocês?" Se precisar, ofereça o pacote Essencial — nunca o mesmo pacote com desconto.
 
 **"Vou pensar."**
 "Claro. Ficou alguma dúvida sobre o que conversamos? Prefere que eu te chame na quinta para decidirmos?" Combine uma data.
@@ -134,7 +134,7 @@ O **follow-up automático** do app cria essas tarefas com lembrete e a mensagem 
 "O Instagram é ótimo para quem já te segue. O site é para quem ainda não te conhece e procura no Google."
 
 **"Meu sobrinho faz."**
-"Perfeito! Se ele puder, ótimo. Se quiser algo pronto em [prazo], com agendamento e ajustes incluídos, estou aqui."
+"Perfeito! Se ele puder, ótimo. Se quiser algo pronto em poucas semanas, com agendamento e ajustes incluídos, estou aqui."
 
 ## Fechamento
 

@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from 'react'
 import Lenis from 'lenis'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { SCROLL_TOP_EVENT } from '@/utils/appScroll'
 
 // Easing expo-out — mesma curva usada nas animações de entrada (EASE_PREMIUM),
 // para o scroll suave "combinar" com o resto das transições do app.
@@ -34,7 +35,15 @@ export function useLenis(wrapperRef: RefObject<HTMLElement | null>, contentRef: 
     }
     frameId = requestAnimationFrame(raf)
 
+    function handleScrollTop(event: Event) {
+      event.preventDefault()
+      const smooth = (event as CustomEvent<{ smooth: boolean }>).detail?.smooth
+      lenis.scrollTo(0, { immediate: !smooth, force: true })
+    }
+    window.addEventListener(SCROLL_TOP_EVENT, handleScrollTop)
+
     return () => {
+      window.removeEventListener(SCROLL_TOP_EVENT, handleScrollTop)
       cancelAnimationFrame(frameId)
       lenis.destroy()
     }

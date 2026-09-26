@@ -13,6 +13,7 @@ import { duration, easing } from '@/motion/tokens'
 import { getUpcomingReminders } from '@/services/supabase/tasks'
 import { cn } from '@/lib/utils'
 import { getAppSurface } from '@/layouts/appSurface'
+import { scrollAppToTop } from '@/utils/appScroll'
 
 interface AppLayoutProps {
   children?: ReactNode
@@ -68,8 +69,13 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useReminderCheck()
 
+  // Cada página nova começa do topo (o scroll fica no <main>, não na window).
+  useEffect(() => {
+    scrollAppToTop()
+  }, [pathname])
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--shell-bg)] transition-colors duration-300">
+    <div className="flex h-dvh overflow-hidden bg-[var(--shell-bg)] transition-colors duration-300">
       <Sidebar
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((value) => !value)}

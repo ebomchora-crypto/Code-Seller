@@ -42,7 +42,7 @@ O nicho vencedor é o que tem **mais empresas movimentadas sem site**. Comece po
 ## Perguntas que revelam o problema
 
 - Como os clientes chegam hoje? (indicação, Instagram, passando na frente)
-- O que acontece quando alguém procura "[serviço] em [cidade]" no Google?
+- O que acontece quando alguém procura pelo serviço de vocês no Google?
 - Quanto tempo se perde respondendo as mesmas perguntas no WhatsApp?
 - Quanto vale um cliente novo para esse negócio?
 

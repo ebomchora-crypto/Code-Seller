@@ -1,12 +1,13 @@
 import { Link, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronLeft, Clock, Lightbulb } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronLeft, Clock, Lightbulb, PartyPopper } from 'lucide-react'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useAcademyProgress } from '@/hooks/useAcademyProgress'
 import { ACADEMY_LESSONS, ACADEMY_MODULES, checkKey, lessonKey } from '@/data/academy'
+import { scrollAppToTop } from '@/utils/appScroll'
 
 function youtubeEmbed(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/)
@@ -15,7 +16,7 @@ function youtubeEmbed(url: string): string | null {
 
 export default function AcademyLessonPage() {
   const { id } = useParams<{ id: string }>()
-  const { done, toggle } = useAcademyProgress()
+  const { done, loading, setItems } = useAcademyProgress()
   const index = ACADEMY_LESSONS.findIndex((lesson) => lesson.id === id)
   const lesson = ACADEMY_LESSONS[index]
 
@@ -32,6 +33,24 @@ export default function AcademyLessonPage() {
   const next = ACADEMY_LESSONS[index + 1]
   const completed = done.has(lessonKey(lesson.id))
   const checksDone = lesson.checklist.filter((_, itemIndex) => done.has(checkKey(lesson.id, itemIndex))).length
+  const checksLeft = lesson.checklist.length - checksDone
+  const canComplete = checksLeft === 0
+
+  function toggleCheck(key: string) {
+    if (!lesson) return
+    if (done.has(key)) {
+      // Desmarcar um item reabre a lição: ela só fica concluída com o checklist completo.
+      void setItems(completed ? [key, lessonKey(lesson.id)] : [key], false)
+    } else {
+      void setItems([key], true)
+    }
+  }
+
+  async function completeLesson() {
+    if (!lesson || !canComplete) return
+    const saved = await setItems([lessonKey(lesson.id)], true)
+    if (saved) scrollAppToTop({ smooth: true })
+  }
   const video = lesson.videoUrl ? youtubeEmbed(lesson.videoUrl) : null
 
   return (
@@ -65,6 +84,25 @@ export default function AcademyLessonPage() {
         </div>
         <h1 className="mt-3 font-display text-[30px] font-bold leading-tight tracking-tight text-[var(--text-primary)] sm:text-[36px]">{lesson.title}</h1>
         <p className="mt-2 text-[16px] text-[var(--text-muted)]">{lesson.summary}</p>
+
+        {completed && (
+          <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.08] p-5 sm:flex-row sm:items-center">
+            <PartyPopper className="size-6 shrink-0 text-emerald-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold text-[var(--text-primary)]">Lição concluída!</p>
+              <p className="text-[13.5px] text-[var(--text-muted)]">
+                {next ? `Próxima: ${next.title}` : 'Você chegou ao fim do método. Agora é colocar em prática com o Kit.'}
+              </p>
+            </div>
+            <Link
+              to={next ? `/aluno/licao/${next.id}` : '/aluno/kit'}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-5 text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              {next ? 'Próxima lição' : 'Abrir o Kit'}
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        )}
 
         {video && (
           <div className="mt-6 aspect-video overflow-hidden rounded-2xl border border-[var(--border-default)]">
@@ -103,7 +141,8 @@ export default function AcademyLessonPage() {
                     type="button"
                     role="checkbox"
                     aria-checked={checked}
-                    onClick={() => void toggle(key)}
+                    onClick={() => toggleCheck(key)}
+                    disabled={loading}
                     className="flex w-full items-start gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span
@@ -119,15 +158,25 @@ export default function AcademyLessonPage() {
               )
             })}
           </ul>
-          <div className="mt-5 border-t border-[var(--border-subtle)] pt-5">
-            <Button
-              className="w-full rounded-full sm:w-auto"
-              variant={completed ? 'secondary' : 'primary'}
-              onClick={() => void toggle(lessonKey(lesson.id))}
-            >
-              {completed ? <CheckCircle2 className="size-4 text-emerald-500" /> : <Check className="size-4" />}
-              {completed ? 'Lição concluída' : 'Marcar lição como concluída'}
-            </Button>
+          <div className="mt-5 flex flex-col gap-3 border-t border-[var(--border-subtle)] pt-5 sm:flex-row sm:items-center">
+            {completed ? (
+              <p className="flex items-center gap-2 text-[14px] font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-4" />
+                Lição concluída
+              </p>
+            ) : (
+              <>
+                <Button className="w-full rounded-full sm:w-auto" disabled={!canComplete || loading} onClick={() => void completeLesson()}>
+                  <Check className="size-4" />
+                  Concluir lição
+                </Button>
+                {!canComplete && (
+                  <p className="text-[13px] text-[var(--text-muted)]">
+                    {checksLeft === 1 ? 'Marque o último item para concluir.' : `Marque os ${checksLeft} itens acima para concluir.`}
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </Card>
 

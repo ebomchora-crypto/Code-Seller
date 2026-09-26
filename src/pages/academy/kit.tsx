@@ -10,8 +10,7 @@ import { Modal } from '@/components/ui/Modal'
 import { FilterChips } from '@/components/ui/FilterChips'
 import { createTemplate } from '@/services/supabase/templates'
 import { markdownToHtml, openPrintWindow } from '@/utils/printDocument'
-import { TEMPLATE_CATEGORY_LABELS } from '@/utils/templates'
-import { KIT_PROMPTS, KIT_PROPOSALS, KIT_SCRIPTS, type KitProposal } from '@/data/academy'
+import { KIT_PROMPTS, KIT_PROPOSALS, KIT_SCRIPTS, type KitPromptCategory, type KitProposal, type KitScript } from '@/data/academy'
 
 type KitTab = 'prompts' | 'scripts' | 'propostas'
 
@@ -21,12 +20,33 @@ const TABS: { value: KitTab; label: string }[] = [
   { value: 'propostas', label: `Modelos de proposta (${KIT_PROPOSALS.length})` },
 ]
 
-const PROMPT_CATEGORY_LABELS = {
+const PROMPT_CATEGORY_LABELS: Record<KitPromptCategory, string> = {
   site: 'Site',
   landing: 'Landing page',
   sistema: 'Sistema',
   revisao: 'Revisão',
-} as const
+  vendas: 'Vendas',
+}
+
+const SCRIPT_CATEGORY_LABELS: Record<KitScript['category'], string> = {
+  abordagem: 'Primeira abordagem',
+  follow_up: 'Follow-up',
+  proposta: 'Proposta e fechamento',
+  cobranca: 'Cobrança',
+  outro: 'Pós-venda',
+}
+
+function categoryOptions<K extends string>(labels: Record<K, string>, items: { category: K }[]) {
+  return [
+    { value: 'todos' as const, label: 'Todos' },
+    ...(Object.keys(labels) as K[])
+      .filter((key) => items.some((item) => item.category === key))
+      .map((key) => ({ value: key, label: labels[key] })),
+  ]
+}
+
+const PROMPT_FILTERS = categoryOptions(PROMPT_CATEGORY_LABELS, KIT_PROMPTS)
+const SCRIPT_FILTERS = categoryOptions(SCRIPT_CATEGORY_LABELS, KIT_SCRIPTS)
 
 function isTab(value: string | null): value is KitTab {
   return value === 'prompts' || value === 'scripts' || value === 'propostas'
@@ -68,12 +88,16 @@ export default function AcademyKitPage() {
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<Set<string>>(new Set())
   const [preview, setPreview] = useState<KitProposal | null>(null)
+  const [promptFilter, setPromptFilter] = useState<KitPromptCategory | 'todos'>('todos')
+  const [scriptFilter, setScriptFilter] = useState<KitScript['category'] | 'todos'>('todos')
+  const prompts = promptFilter === 'todos' ? KIT_PROMPTS : KIT_PROMPTS.filter((prompt) => prompt.category === promptFilter)
+  const scripts = scriptFilter === 'todos' ? KIT_SCRIPTS : KIT_SCRIPTS.filter((script) => script.category === scriptFilter)
 
   function changeTab(next: KitTab) {
     setParams({ aba: next }, { replace: true })
   }
 
-  async function saveAsTemplate(script: (typeof KIT_SCRIPTS)[number]) {
+  async function saveAsTemplate(script: KitScript) {
     setSaving(script.id)
     try {
       await createTemplate({ name: script.title, category: script.category, body: script.text, position: 999 })
@@ -103,18 +127,21 @@ export default function AcademyKitPage() {
         <ChevronLeft className="size-4" />
         Área do aluno
       </Link>
-      <PageHeader title="Kit de execução" subtitle="Copie, adapte com os dados do cliente e use no mesmo dia." />
+      <PageHeader title="Kit de execução" subtitle="Prompts, mensagens e propostas prontos para usar no mesmo dia." />
 
       <div className="mt-6">
         <FilterChips label="Seção do kit" options={TABS} value={tab} onChange={changeTab} />
       </div>
 
       {tab === 'prompts' && (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <p className="text-[13.5px] text-[var(--text-muted)] lg:col-span-2">
-            Use em qualquer IA. Troque os trechos entre [colchetes] pelos dados do cliente.
-          </p>
-          {KIT_PROMPTS.map((prompt) => (
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-3 lg:col-span-2">
+            <p className="text-[13.5px] text-[var(--text-muted)]">
+              Cole em qualquer IA. Ela mesma pergunta o que precisa saber sobre o cliente antes de começar.
+            </p>
+            <FilterChips label="Categoria dos prompts" options={PROMPT_FILTERS} value={promptFilter} onChange={setPromptFilter} />
+          </div>
+          {prompts.map((prompt) => (
             <Card key={prompt.id} className="flex flex-col">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -136,15 +163,18 @@ export default function AcademyKitPage() {
       )}
 
       {tab === 'scripts' && (
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <p className="text-[13.5px] text-[var(--text-muted)] lg:col-span-2">
-            As variáveis entre {'{chaves}'} são preenchidas sozinhas quando você usa o modelo em um contato ou negócio.
-          </p>
-          {KIT_SCRIPTS.map((script) => {
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-3 lg:col-span-2">
+            <p className="text-[13.5px] text-[var(--text-muted)]">
+              Mensagens prontas para enviar. Salve as suas favoritas como modelo e use em "Mensagem pronta" nos contatos.
+            </p>
+            <FilterChips label="Categoria das mensagens" options={SCRIPT_FILTERS} value={scriptFilter} onChange={setScriptFilter} />
+          </div>
+          {scripts.map((script) => {
             const isSaved = saved.has(script.id)
             return (
               <Card key={script.id} className="flex flex-col">
-                <Chip>{TEMPLATE_CATEGORY_LABELS[script.category]}</Chip>
+                <Chip>{SCRIPT_CATEGORY_LABELS[script.category]}</Chip>
                 <h3 className="mt-2 text-[15.5px] font-semibold text-[var(--text-primary)]">{script.title}</h3>
                 <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">
                   <span className="font-medium text-[var(--text-secondary)]">Quando usar:</span> {script.whenToUse}
@@ -172,9 +202,9 @@ export default function AcademyKitPage() {
       )}
 
       {tab === 'propostas' && (
-        <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          <p className="text-[13.5px] text-[var(--text-muted)] lg:col-span-3">
-            Troque os trechos entre [colchetes], ajuste escopo e valores, e envie em PDF.
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <p className="text-[13.5px] text-[var(--text-muted)] sm:col-span-2 lg:col-span-3">
+            Propostas completas, prontas para enviar em PDF. Os valores e prazos são sugestões: ajuste ao seu trabalho antes de enviar.
           </p>
           {KIT_PROPOSALS.map((proposal) => (
             <Card key={proposal.id} className="flex flex-col">

@@ -7,9 +7,9 @@ import { useAcademyProgress } from '@/hooks/useAcademyProgress'
 import { ACADEMY_LESSONS, ACADEMY_MODULES, KIT_PROMPTS, KIT_PROPOSALS, KIT_SCRIPTS, lessonKey } from '@/data/academy'
 
 const KIT_CARDS = [
-  { tab: 'prompts', title: 'Prompts', description: 'Para criar sites e sistemas com IA', count: KIT_PROMPTS.length, icon: Sparkles },
-  { tab: 'scripts', title: 'Scripts de mensagem', description: 'Abordagem, follow-up, proposta e cobrança', count: KIT_SCRIPTS.length, icon: MessageSquareText },
-  { tab: 'propostas', title: 'Modelos de proposta', description: 'Site, landing page e sistema', count: KIT_PROPOSALS.length, icon: FileText },
+  { tab: 'prompts', title: 'Prompts', description: 'Para criar sites, sistemas e vender com IA', count: KIT_PROMPTS.length, icon: Sparkles },
+  { tab: 'scripts', title: 'Scripts de mensagem', description: 'Abordagem, follow-up, fechamento, cobrança e pós-venda', count: KIT_SCRIPTS.length, icon: MessageSquareText },
+  { tab: 'propostas', title: 'Modelos de proposta', description: 'Site, agendamento, cardápio, loja, sistema e mais', count: KIT_PROPOSALS.length, icon: FileText },
 ]
 
 // Área do aluno: o método em lições curtas (Criar, Encontrar, Vender) e o Kit.

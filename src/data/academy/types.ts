@@ -25,7 +25,7 @@ export interface AcademyLesson {
   videoUrl?: string
 }
 
-export type KitPromptCategory = 'site' | 'landing' | 'sistema' | 'revisao'
+export type KitPromptCategory = 'site' | 'landing' | 'sistema' | 'revisao' | 'vendas'
 
 export interface KitPrompt {
   id: string
@@ -38,7 +38,7 @@ export interface KitPrompt {
 export interface KitScript {
   id: string
   title: string
-  category: 'abordagem' | 'follow_up' | 'proposta' | 'cobranca'
+  category: 'abordagem' | 'follow_up' | 'proposta' | 'cobranca' | 'outro'
   whenToUse: string
   text: string
 }
@@ -47,6 +47,6 @@ export interface KitProposal {
   id: string
   title: string
   description: string
-  /** Markdown com campos entre colchetes para preencher. */
+  /** Markdown pronto para enviar (sem campos para preencher). */
   body: string
 }
