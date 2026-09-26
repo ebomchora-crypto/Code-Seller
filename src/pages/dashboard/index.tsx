@@ -11,6 +11,8 @@ import { RecentDealsList } from '@/components/dashboard/RecentDealsList'
 import { RecentContactsList } from '@/components/dashboard/RecentContactsList'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { FocusToday } from '@/components/dashboard/FocusToday'
+import { InsightsRow } from '@/components/dashboard/InsightsRow'
+import { GettingStarted } from '@/components/dashboard/GettingStarted'
 import { useDashboard } from '@/hooks/useDashboard'
 import { useAuthContext } from '@/stores/AuthContext'
 
@@ -49,9 +51,13 @@ export default function DashboardPage() {
             onNewDeal={() => setDealFormOpen(true)}
           />
 
+          <GettingStarted refreshKey={refreshKey} />
+
           <MetricsGrid metrics={metrics.data.slice(1)} loading={metrics.loading} error={metrics.error} onRetry={refetch} />
 
           <FocusToday refreshKey={refreshKey} />
+
+          <InsightsRow soldThisMonth={metrics.loading && !lastUpdated ? null : (metrics.data[0]?.raw_value ?? 0)} refreshKey={refreshKey} />
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
             <div className="xl:col-span-3">

@@ -1,5 +1,6 @@
-import { useLocation } from 'react-router-dom'
-import { Bell, Moon, Sun } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Bell, Moon, Search, Sun } from 'lucide-react'
+import { openCommandPalette } from '@/components/layout/commandPaletteEvents'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { getPageTitle } from '@/components/layout/navConfig'
 import { getPageSection } from '@/components/layout/pageMeta'
@@ -40,6 +41,22 @@ export function Header({ onOpenMobileMenu, theme, onToggleTheme }: HeaderProps) 
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          aria-label="Busca rápida"
+          className="hidden h-10 items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--bg-card)] pl-3.5 pr-2 text-[13px] text-[var(--text-muted)] transition-all duration-200 hover:border-[var(--accent-ring)] hover:text-[var(--text-primary)] md:flex"
+        >
+          <Search className="size-4" />
+          <span className="pr-6">Buscar…</span>
+          <kbd className="rounded-md border border-[var(--border-default)] px-1.5 py-0.5 font-sans text-[11px]">
+            {typeof navigator !== 'undefined' && /mac/i.test(navigator.platform) ? '⌘K' : 'Ctrl K'}
+          </kbd>
+        </button>
+        <button type="button" onClick={openCommandPalette} aria-label="Busca rápida" className={`${iconButton} md:hidden`}>
+          <Search className="size-4" />
+        </button>
+
         <Tooltip content="Alternar tema">
           <button type="button" onClick={onToggleTheme} aria-label="Alternar tema" className={iconButton}>
             <span className="relative flex size-4 items-center justify-center">
@@ -53,10 +70,11 @@ export function Header({ onOpenMobileMenu, theme, onToggleTheme }: HeaderProps) 
           </button>
         </Tooltip>
 
-        {/* Notificações — placeholder visual por agora, sem lógica ainda. */}
-        <button type="button" aria-label="Notificações" className={iconButton}>
-          <Bell className="size-4" />
-        </button>
+        <Tooltip content="Notificações">
+          <Link to="/settings#notificações" aria-label="Notificações" className={iconButton}>
+            <Bell className="size-4" />
+          </Link>
+        </Tooltip>
       </div>
     </header>
   )

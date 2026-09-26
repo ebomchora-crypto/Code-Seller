@@ -13,6 +13,7 @@ import { DealForm } from '@/components/deals/DealForm'
 import { PipelineMetrics } from '@/components/deals/PipelineMetrics'
 import { useDeals } from '@/hooks/useDeals'
 import type { Deal } from '@/types'
+import { useOpenOnParam } from '@/hooks/useOpenOnParam'
 
 export default function DealsPage() {
   const { deals, metrics, loading, error, filters, setFilters, clearFilters, hasActiveFilters, view, setView, refetch, deleteDeal, updateStage } =
@@ -39,6 +40,8 @@ export default function DealsPage() {
     setEditingDeal(null)
     setFormOpen(true)
   }
+  useOpenOnParam(openCreateForm)
+
 
   function openEditForm(deal: Deal) {
     setEditingDeal(deal)

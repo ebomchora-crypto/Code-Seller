@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { SettingsNav } from '@/components/settings/SettingsNav'
 import { ProfileSection } from '@/components/settings/ProfileSection'
@@ -39,6 +41,15 @@ export default function SettingsPage() {
     connectIntegration,
     disconnectIntegration,
   } = useSettings()
+  const location = useLocation()
+
+  // Links como /settings#notificações abrem já na seção certa.
+  useEffect(() => {
+    if (!location.hash || loading) return
+    const id = decodeURIComponent(location.hash.slice(1))
+    const timer = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    return () => window.clearTimeout(timer)
+  }, [location.hash, loading])
 
   function handleCreatePipelineStage() {
     void createPipelineStage({

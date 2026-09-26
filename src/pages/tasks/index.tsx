@@ -14,6 +14,7 @@ import { TaskDetail } from '@/components/tasks/TaskDetail'
 import { useTasks } from '@/hooks/useTasks'
 import { useTask } from '@/hooks/useTask'
 import type { Task, TaskStatus } from '@/types'
+import { useOpenOnParam } from '@/hooks/useOpenOnParam'
 
 export default function TasksPage() {
   const {
@@ -84,6 +85,8 @@ export default function TasksPage() {
     setStatusForNewTask(undefined)
     setFormOpen(true)
   }
+  useOpenOnParam(openCreateForm)
+
 
   function openCreateInColumn(status: TaskStatus) {
     setEditingTask(null)

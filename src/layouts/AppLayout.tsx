@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Bell } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { CommandPalette } from '@/components/layout/CommandPalette'
 import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvider'
 import { useTheme } from '@/hooks/useTheme'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
@@ -114,6 +115,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </SmoothScrollProvider>
         </main>
       </div>
+      <CommandPalette />
     </div>
   )
 }

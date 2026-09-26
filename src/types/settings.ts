@@ -15,6 +15,9 @@ export interface UserProfile {
   timezone: string
   language: Language
   theme: Theme
+  // Migração 0013
+  monthly_goal?: number | null
+  onboarding_dismissed_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -51,6 +54,9 @@ export interface NotificationPreferences {
   overdue_tasks: boolean
   stalled_deals: boolean
   weekly_summary: boolean
+  // Migração 0013
+  daily_summary?: boolean
+  daily_summary_hour?: number
   created_at: string
   updated_at: string
 }

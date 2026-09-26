@@ -13,6 +13,7 @@ import { ImportCSVModal } from '@/components/crm/ImportCSVModal'
 import { useCRM } from '@/hooks/useCRM'
 import { useTags } from '@/hooks/useTags'
 import type { Contact } from '@/types'
+import { useOpenOnParam } from '@/hooks/useOpenOnParam'
 
 export default function CrmPage() {
   const {
@@ -48,6 +49,8 @@ export default function CrmPage() {
     setEditingContact(null)
     setFormOpen(true)
   }
+  useOpenOnParam(openCreateForm)
+
 
   function openEditForm(contact: Contact) {
     setEditingContact(contact)

@@ -1,4 +1,5 @@
-import { ArrowUpRight, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowUpRight, ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import type { NavGroup } from '@/components/layout/navConfig'
@@ -66,6 +67,23 @@ export function DashboardSidebar({
   onCloseMobile,
   onSignOut,
 }: DashboardSidebarProps) {
+  const navRef = useRef<HTMLElement>(null)
+  const [canScrollDown, setCanScrollDown] = useState(false)
+
+  const updateScrollHint = useCallback(() => {
+    const nav = navRef.current
+    if (!nav) return
+    setCanScrollDown(nav.scrollHeight - nav.scrollTop - nav.clientHeight > 4)
+  }, [])
+
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav) return
+    const observer = new ResizeObserver(updateScrollHint)
+    observer.observe(nav)
+    return () => observer.disconnect()
+  }, [updateScrollHint, collapsed])
+
   return (
     <>
       {mobileOpen && (
@@ -121,11 +139,20 @@ export function DashboardSidebar({
           </button>
         )}
 
-        <nav className={cn('scrollbar-none flex flex-1 flex-col overflow-y-auto px-3 pb-4', collapsed ? 'mt-3 gap-3' : 'mt-2 gap-6')}>
+        <div className="relative flex min-h-0 flex-1 flex-col">
+        <nav
+          ref={navRef}
+          onScroll={updateScrollHint}
+          data-lenis-prevent
+          className={cn(
+            'scrollbar-none flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4',
+            collapsed ? 'mt-3 gap-3' : 'mt-2 gap-6 [@media(max-height:780px)]:gap-3',
+          )}
+        >
           {groups.map((group) => (
             <section key={group.label} className="flex flex-col gap-1" aria-label={group.label}>
               {!collapsed && (
-                <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] [@media(max-height:780px)]:mb-0">
                   {group.label}
                 </p>
               )}
@@ -141,7 +168,7 @@ export function DashboardSidebar({
                     aria-current={isActive ? 'page' : undefined}
                     onClick={onCloseMobile}
                     className={cn(
-                      'group relative flex h-10 items-center rounded-xl text-[13.5px] transition-colors duration-150',
+                      'group relative flex h-10 items-center rounded-xl text-[13.5px] transition-colors duration-150 [@media(max-height:780px)]:h-9',
                       collapsed ? 'mx-auto w-10 justify-center' : 'gap-3 px-3',
                       isActive
                         ? 'font-semibold text-[var(--text-primary)]'
@@ -169,6 +196,17 @@ export function DashboardSidebar({
             </section>
           ))}
         </nav>
+          {/* Em telas baixas o menu rola: o degradê avisa que tem mais embaixo. */}
+          <div
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-0 flex h-12 items-end justify-center bg-gradient-to-t from-[var(--shell-bg)] to-transparent pb-1 transition-opacity duration-200',
+              canScrollDown ? 'opacity-100' : 'opacity-0',
+            )}
+          >
+            <ChevronDown className="size-4 animate-bounce text-[var(--text-muted)]" />
+          </div>
+        </div>
 
         <div className="shrink-0 px-3 pb-3">
           {/* Em telas baixas (notebooks) o card some pra não esconder o menu. */}
