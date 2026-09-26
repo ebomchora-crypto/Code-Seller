@@ -1,5 +1,5 @@
 -- Code Sellers — Buyers Hunter (prospecção)
--- Execute este arquivo no Supabase SQL Editor.
+-- Execute este arquivo no Supabase SQL Editor (pode rodar mais de uma vez).
 --
 -- Os resultados das buscas NÃO são gravados no banco: a Edge Function
 -- buyers-hunter devolve as empresas direto para a tela. Aqui ficam só o
@@ -9,7 +9,7 @@
 
 -- Histórico de buscas. Só a Edge Function (service role) insere; o usuário
 -- apenas lê as próprias — assim ninguém apaga linhas para zerar o limite.
-create table prospect_searches (
+create table if not exists prospect_searches (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   niche text not null,
@@ -19,15 +19,16 @@ create table prospect_searches (
   created_at timestamptz not null default now()
 );
 
-create index prospect_searches_user_created_idx on prospect_searches(user_id, created_at desc);
+create index if not exists prospect_searches_user_created_idx on prospect_searches(user_id, created_at desc);
 
 alter table prospect_searches enable row level security;
+drop policy if exists "prospect_searches: leitura do próprio usuário" on prospect_searches;
 create policy "prospect_searches: leitura do próprio usuário"
   on prospect_searches for select
   using (auth.uid() = user_id);
 
 -- Empresas que o usuário marcou como "ignorar" (somem das próximas buscas).
-create table prospect_dismissed (
+create table if not exists prospect_dismissed (
   user_id uuid not null references auth.users(id) on delete cascade,
   place_id text not null,
   created_at timestamptz not null default now(),
@@ -35,6 +36,7 @@ create table prospect_dismissed (
 );
 
 alter table prospect_dismissed enable row level security;
+drop policy if exists "prospect_dismissed: acesso do próprio usuário" on prospect_dismissed;
 create policy "prospect_dismissed: acesso do próprio usuário"
   on prospect_dismissed for all
   using (auth.uid() = user_id)
