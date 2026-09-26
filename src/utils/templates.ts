@@ -17,6 +17,7 @@ export const TEMPLATE_VARIABLES: { key: string; description: string }[] = [
   { key: 'meu_nome', description: 'Seu primeiro nome' },
   { key: 'minha_empresa', description: 'Nome da sua empresa' },
   { key: 'assinatura', description: '"Seu nome, da sua empresa" (ou só o nome)' },
+  { key: 'portfolio', description: 'Link do seu Sellers Portfolio (se estiver publicado)' },
 ]
 
 export const DEFAULT_TEMPLATES: { name: string; category: TemplateCategory; body: string }[] = [
@@ -71,6 +72,7 @@ export function fillTemplate(body: string, context: TemplateContext): string {
     meu_nome: firstName,
     minha_empresa: company,
     assinatura: firstName && company ? `${firstName}, da ${company}` : firstName || company,
+    portfolio: context.portfolio?.trim() ?? '',
   }
 
   return body

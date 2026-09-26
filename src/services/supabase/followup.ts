@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { getTemplates } from '@/services/supabase/templates'
+import { getMyPublishedPortfolioLink } from '@/services/supabase/portfolio'
 import { DEFAULT_FOLLOWUP_DAYS, followUpDates } from '@/utils/followup'
 import { fillTemplate } from '@/utils/templates'
 
@@ -49,9 +50,10 @@ export async function startFollowUp(target: FollowUpTarget, options: { force?: b
     .limit(1)
   if (open && open.length > 0) return 0
 
-  const [{ data: profile }, templates] = await Promise.all([
+  const [{ data: profile }, templates, portfolio] = await Promise.all([
     supabase.from('user_profiles').select('full_name, company_name').eq('id', userId).maybeSingle(),
     getTemplates().catch(() => []),
+    getMyPublishedPortfolioLink(),
   ])
   const followUps = templates.filter((template) => template.category === 'follow_up')
   const context = {
@@ -62,6 +64,7 @@ export async function startFollowUp(target: FollowUpTarget, options: { force?: b
     valor: target.deal?.value,
     meu_nome: profile?.full_name,
     minha_empresa: profile?.company_name,
+    portfolio,
   }
 
   const dates = followUpDates(settings.days)

@@ -9,6 +9,7 @@ import { useTemplates } from '@/hooks/useTemplates'
 import { useAuthContext } from '@/stores/AuthContext'
 import { createInteraction } from '@/services/supabase/interactions'
 import { createActivity } from '@/services/supabase/dealActivities'
+import { getMyPublishedPortfolioLink } from '@/services/supabase/portfolio'
 import { whatsappUrl } from '@/utils/contactLinks'
 import { fillTemplate, TEMPLATE_CATEGORY_LABELS } from '@/utils/templates'
 import type { TemplateCategory } from '@/types'
@@ -34,6 +35,11 @@ export function SendMessageModal({ open, onClose, target, initialCategory, onSen
   const { templates, loading } = useTemplates()
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [portfolioLink, setPortfolioLink] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (open) void getMyPublishedPortfolioLink().then(setPortfolioLink)
+  }, [open])
 
   const context = useMemo(
     () => ({
@@ -44,8 +50,9 @@ export function SendMessageModal({ open, onClose, target, initialCategory, onSen
       valor: target.deal?.value,
       meu_nome: profile?.full_name || user?.name,
       minha_empresa: profile?.company_name,
+      portfolio: portfolioLink,
     }),
-    [target, profile, user],
+    [target, profile, user, portfolioLink],
   )
 
   useEffect(() => {
@@ -58,7 +65,7 @@ export function SendMessageModal({ open, onClose, target, initialCategory, onSen
     setMessage(fillTemplate(initial.body, context))
     // Recalcula só ao abrir ou quando os modelos chegam.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, loading, templates.length])
+  }, [open, loading, templates.length, portfolioLink])
 
   function pick(id: string) {
     const template = templates.find((item) => item.id === id)

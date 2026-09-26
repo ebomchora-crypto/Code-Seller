@@ -21,4 +21,5 @@ export interface TemplateContext {
   valor?: number | null
   meu_nome?: string | null
   minha_empresa?: string | null
+  portfolio?: string | null
 }

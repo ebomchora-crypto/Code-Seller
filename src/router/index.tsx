@@ -21,6 +21,8 @@ const CopilotPage = lazy(() => import('@/pages/autopilot'))
 const SettingsPage = lazy(() => import('@/pages/settings'))
 const SupportPage = lazy(() => import('@/pages/support'))
 const ReportsPage = lazy(() => import('@/pages/reports'))
+const PortfolioPage = lazy(() => import('@/pages/portfolio'))
+const PublicPortfolioPage = lazy(() => import('@/pages/public-portfolio'))
 const RevenueRoomPage = lazy(() => import('@/pages/revenue-room'))
 
 function RouteFallback() {
@@ -63,6 +65,9 @@ export function AppRouter() {
 
           <Route path="/" element={<RootRoute />} />
 
+          {/* Página pública do Sellers Portfolio — abre com ou sem login. */}
+          <Route path="/p/:slug" element={<PublicPortfolioPage />} />
+
           <Route
             path="/sala-de-receita"
             element={
@@ -76,6 +81,7 @@ export function AppRouter() {
             <Route path="/prospection" element={<ProspectionPage />} />
             <Route path="/crm" element={<CrmPage />} />
             <Route path="/crm/:id" element={<ContactDetailPage />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/deals/:id" element={<DealDetailPage />} />
             <Route path="/financial" element={<FinancialPage />} />
