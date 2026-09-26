@@ -1,24 +1,36 @@
-import { useState } from 'react'
-import { Bot, CreditCard, DollarSign, ListChecks, Search, Users } from 'lucide-react'
-import { SectionLabel } from '@/components/ui/section-label'
-import { PurpleDivider } from '@/components/ui/purple-divider'
+import { Bot, CreditCard, ListChecks, Search, UserCog, Users, Wallet, type LucideIcon } from 'lucide-react'
+import { SilkRibbons } from '@/components/auth/SilkRibbons'
+import { OVERALL_STATUS } from '@/data/systemStatus'
 
 interface Topic {
-  id: string
   title: string
   description: string
-  icon: typeof Users
+  icon: LucideIcon
+  color: string
+  /** Categoria do FAQ que o tópico abre. */
   category: string
 }
 
 const TOPICS: Topic[] = [
-  { id: 'crm', title: 'CRM e Contatos', description: 'Organize e acompanhe seus contatos e leads.', icon: Users, category: 'CRM' },
-  { id: 'deals', title: 'Negócios e Pipeline', description: 'Gerencie propostas e o funil de vendas.', icon: ListChecks, category: 'Negócios' },
-  { id: 'financial', title: 'Financeiro', description: 'Receitas, despesas e contas a receber.', icon: DollarSign, category: 'Financeiro' },
-  { id: 'tasks', title: 'Tarefas', description: 'Organize seu dia a dia e não perca prazos.', icon: ListChecks, category: 'Tarefas' },
-  { id: 'autopilot', title: 'CS Copilot', description: 'Seu assistente de IA para vendas.', icon: Bot, category: 'CS Copilot' },
-  { id: 'billing', title: 'Planos e Cobrança', description: 'Assinaturas, upgrades e pagamentos.', icon: CreditCard, category: 'Planos' },
+  { title: 'CRM e contatos', description: 'Organize e acompanhe seus leads.', icon: Users, color: '#a78bfa', category: 'CRM' },
+  { title: 'Negócios e pipeline', description: 'Propostas e o funil de vendas.', icon: ListChecks, color: '#818cf8', category: 'Negócios' },
+  { title: 'Financeiro', description: 'Receitas, despesas e a receber.', icon: Wallet, color: '#34d399', category: 'Financeiro' },
+  { title: 'CS Copilot', description: 'Seu assistente de IA para vendas.', icon: Bot, color: '#e879f9', category: 'CS Copilot' },
+  { title: 'Planos e cobrança', description: 'Assinatura, upgrade e pagamento.', icon: CreditCard, color: '#fbbf24', category: 'Planos' },
+  { title: 'Conta e acesso', description: 'E-mail, senha e cancelamento.', icon: UserCog, color: '#60a5fa', category: 'Conta' },
 ]
+
+const STATUS_LABEL = {
+  operational: 'Todos os sistemas operacionais',
+  degraded: 'Alguns sistemas com lentidão',
+  outage: 'Instabilidade em um ou mais sistemas',
+}
+
+const STATUS_DOT = {
+  operational: 'bg-emerald-400 shadow-[0_0_10px_#34d399]',
+  degraded: 'bg-amber-400 shadow-[0_0_10px_#fbbf24]',
+  outage: 'bg-red-400 shadow-[0_0_10px_#f87171]',
+}
 
 interface HelpCenterProps {
   search: string
@@ -26,61 +38,61 @@ interface HelpCenterProps {
   onSelectTopic: (category: string) => void
 }
 
+// Topo do Suporte: o mesmo tecido roxo do Dashboard, com a busca no centro e
+// o status dos sistemas; embaixo, os tópicos que abrem o FAQ filtrado.
 export function HelpCenter({ search, onSearchChange, onSelectTopic }: HelpCenterProps) {
-  const [focused, setFocused] = useState(false)
-
   return (
-    <section id="ajuda" className="scroll-mt-24 py-12">
-      <div className="text-center">
-        <div className="flex justify-center">
-          <SectionLabel>Central de ajuda</SectionLabel>
+    <div className="flex flex-col gap-4">
+      <section className="relative isolate overflow-hidden rounded-[28px] bg-[#0f0a1c] px-6 py-12 text-center text-white ring-1 ring-white/[0.07] sm:px-10 sm:py-14">
+        <div className="absolute inset-0 opacity-70" aria-hidden>
+          <SilkRibbons className="h-full w-full animate-silk-drift" />
         </div>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight text-[var(--text-primary)]">Como podemos ajudar?</h2>
-        <div className="mt-3 flex justify-center">
-          <PurpleDivider />
-        </div>
-      </div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(15,10,28,0.92)_25%,rgba(15,10,28,0.55)_70%,rgba(15,10,28,0.3))]" aria-hidden />
 
-      <div className="mx-auto mt-8 w-full max-w-xl">
-        <div
-          className={`flex items-center gap-3 rounded-2xl border bg-[var(--bg-muted)] px-5 py-4 transition-colors ${
-            focused ? 'border-purple-400' : 'border-[var(--border-default)]'
-          }`}
-        >
-          <Search className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
-          <input
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            placeholder="Busque artigos, tutoriais..."
-            className="w-full bg-transparent text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
-          />
-        </div>
-      </div>
+        <div className="relative mx-auto max-w-2xl">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-[12.5px] text-white/80 backdrop-blur-md">
+            <span className={`size-1.5 rounded-full ${STATUS_DOT[OVERALL_STATUS]}`} />
+            {STATUS_LABEL[OVERALL_STATUS]}
+          </span>
+          <h1 className="mt-5 font-display text-[32px] font-bold leading-tight tracking-tight sm:text-[42px]">Como podemos ajudar?</h1>
+          <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-white/65">
+            Busque nas perguntas frequentes ou fale direto com a gente pelo WhatsApp.
+          </p>
 
-      <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {TOPICS.map((topic) => {
-          const Icon = topic.icon
-          return (
-            <button
-              key={topic.id}
-              type="button"
-              onClick={() => onSelectTopic(topic.category)}
-              className="flex flex-col items-start gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-5 text-left transition-all duration-200 hover:border-[var(--border-default)] hover:shadow-[var(--shadow-card)]"
+          <label className="mx-auto mt-7 flex max-w-xl items-center gap-3 rounded-full border border-white/20 bg-white/[0.1] px-5 py-3.5 backdrop-blur-xl transition focus-within:border-white/40 focus-within:bg-white/[0.14]">
+            <Search className="size-[18px] shrink-0 text-white/60" />
+            <span className="sr-only">Buscar na ajuda</span>
+            <input
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Busque sua dúvida…"
+              className="w-full bg-transparent text-[15px] text-white outline-none placeholder:text-white/45"
+            />
+          </label>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {TOPICS.map((topic) => (
+          <button
+            key={topic.category}
+            type="button"
+            onClick={() => onSelectTopic(topic.category)}
+            className="group flex items-center gap-3 rounded-[20px] border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 text-left shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-ring)]"
+          >
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl"
+              style={{ backgroundColor: `${topic.color}1f`, color: topic.color }}
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--bg-muted)] text-[var(--text-secondary)]">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{topic.title}</p>
-                <p className="mt-0.5 text-xs text-[var(--text-muted)]">{topic.description}</p>
-              </div>
-              <span className="text-xs font-medium text-purple-500">Ver perguntas →</span>
-            </button>
-          )
-        })}
+              <topic.icon className="size-[18px]" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-semibold leading-tight text-[var(--text-primary)] sm:truncate sm:text-[14px]">{topic.title}</span>
+              <span className="hidden truncate text-[12.5px] text-[var(--text-muted)] sm:block">{topic.description}</span>
+            </span>
+          </button>
+        ))}
       </div>
-    </section>
+    </div>
   )
 }

@@ -2,6 +2,21 @@ import type { ChangelogItem } from '@/types'
 
 export const CHANGELOG: ChangelogItem[] = [
   {
+    version: '1.4.0',
+    date: '2026-09-26',
+    title: 'Novo visual e CS Copilot',
+    description: 'O app inteiro ganhou um visual novo, escuro por padrão, e o assistente de IA agora se chama CS Copilot.',
+    type: 'improvement',
+    items: [
+      'Login e cadastro com Google',
+      'Novo Dashboard com resumo de receita',
+      'CRM e Negócios redesenhados',
+      'Mudança de etapa direto na página do negócio',
+      'Atalhos de WhatsApp e e-mail nos contatos',
+      'AutoPilot virou CS Copilot, com nova tela',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-09-24',
     title: 'CS Copilot com ações confirmadas',

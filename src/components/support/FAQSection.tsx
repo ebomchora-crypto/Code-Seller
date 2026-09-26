@@ -1,53 +1,48 @@
 import { useMemo, useState } from 'react'
-import { SectionLabel } from '@/components/ui/section-label'
-import { PurpleDivider } from '@/components/ui/purple-divider'
+import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
+import { FilterChips } from '@/components/ui/FilterChips'
 import { FAQItem } from '@/components/support/FAQItem'
 import { FAQ_CATEGORIES, FAQ_ITEMS } from '@/data/faq'
 
 interface FAQSectionProps {
   search: string
+  category: string
+  onCategoryChange: (category: string) => void
 }
 
-export function FAQSection({ search }: FAQSectionProps) {
-  const [activeCategory, setActiveCategory] = useState('Todos')
+export function FAQSection({ search, category, onCategoryChange }: FAQSectionProps) {
   const [openId, setOpenId] = useState<string | null>(null)
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase()
     return FAQ_ITEMS.filter((item) => {
-      const matchesCategory = activeCategory === 'Todos' || item.category === activeCategory
+      const matchesCategory = category === 'Todos' || item.category === category
       const matchesSearch =
         query === '' || item.question.toLowerCase().includes(query) || item.answer.toLowerCase().includes(query)
       return matchesCategory && matchesSearch
     })
-  }, [activeCategory, search])
+  }, [category, search])
 
   return (
-    <section id="faq" className="scroll-mt-24 py-12">
-      <SectionLabel>Perguntas frequentes</SectionLabel>
-      <h2 className="mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">Dúvidas comuns</h2>
-      <PurpleDivider className="mt-3" />
+    <Card id="faq" className="scroll-mt-6">
+      <PanelHeader
+        title="Perguntas frequentes"
+        subtitle={search.trim() ? `${filteredItems.length} resultado(s) para "${search.trim()}"` : 'As dúvidas mais comuns, por assunto'}
+      />
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {FAQ_CATEGORIES.map((category) => (
-          <button
-            key={category}
-            type="button"
-            onClick={() => setActiveCategory(category)}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 ${
-              activeCategory === category
-                ? 'bg-purple-500 text-white'
-                : 'bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:bg-[var(--purple-soft)] hover:text-purple-500'
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
+      <FilterChips
+        label="Filtrar por assunto"
+        options={FAQ_CATEGORIES.map((value) => ({ value, label: value }))}
+        value={category}
+        onChange={onCategoryChange}
+      />
 
-      <div className="mt-4">
+      <div className="-mx-2 mt-4 flex flex-col gap-1">
         {filteredItems.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[var(--text-muted)]">Nenhuma pergunta encontrada para essa busca.</p>
+          <p className="rounded-2xl border border-dashed border-[var(--border-default)] px-4 py-10 text-center text-[13.5px] text-[var(--text-muted)]">
+            Nenhuma pergunta encontrada. Tente outra palavra ou fale com a gente pelo WhatsApp.
+          </p>
         ) : (
           filteredItems.map((item) => (
             <FAQItem
@@ -59,6 +54,6 @@ export function FAQSection({ search }: FAQSectionProps) {
           ))
         )}
       </div>
-    </section>
+    </Card>
   )
 }
