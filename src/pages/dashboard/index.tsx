@@ -4,7 +4,6 @@ import { Drawer } from '@/components/ui/Drawer'
 import { ContactForm } from '@/components/crm/ContactForm'
 import { DealForm } from '@/components/deals/DealForm'
 import { WelcomeBanner } from '@/components/dashboard/WelcomeBanner'
-import { QuickActions } from '@/components/dashboard/QuickActions'
 import { MetricsGrid } from '@/components/dashboard/MetricsGrid'
 import { RevenueChart } from '@/components/dashboard/RevenueChart'
 import { PipelineChart } from '@/components/dashboard/PipelineChart'
@@ -34,26 +33,23 @@ export default function DashboardPage() {
 
   return (
     <PageWrapper>
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex-1">
-              <WelcomeBanner
-                userName={userName}
-                lastUpdated={lastUpdated}
-                onRefresh={handleRefresh}
-                refreshing={refreshing}
-                loading={isInitialLoading}
-              />
-            </div>
-            {!isInitialLoading && (
-              <QuickActions onNewContact={() => setContactFormOpen(true)} onNewDeal={() => setDealFormOpen(true)} />
-            )}
-          </div>
+        <div className="flex flex-col gap-6">
+          <WelcomeBanner
+            userName={userName}
+            lastUpdated={lastUpdated}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+            loading={isInitialLoading}
+            revenue={metrics.data[0]}
+            revenueSeries={revenueChart.data}
+            onNewContact={() => setContactFormOpen(true)}
+            onNewDeal={() => setDealFormOpen(true)}
+          />
 
-          <MetricsGrid metrics={metrics.data} loading={metrics.loading} error={metrics.error} onRetry={refetch} />
+          <MetricsGrid metrics={metrics.data.slice(1)} loading={metrics.loading} error={metrics.error} onRetry={refetch} />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-3">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+            <div className="xl:col-span-3">
               <RevenueChart
                 data={revenueChart.data}
                 loading={revenueChart.loading}
@@ -61,7 +57,7 @@ export default function DashboardPage() {
                 onRetry={refetch}
               />
             </div>
-            <div className="lg:col-span-2">
+            <div className="xl:col-span-2">
               <PipelineChart
                 data={pipelineChart.data}
                 loading={pipelineChart.loading}

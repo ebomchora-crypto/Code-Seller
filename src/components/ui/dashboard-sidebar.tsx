@@ -1,7 +1,8 @@
-import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ArrowUpRight, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import type { NavGroup } from '@/components/layout/navConfig'
+import { SilkRibbons } from '@/components/auth/SilkRibbons'
 import { cn } from '@/lib/utils'
 import { EASE_PREMIUM } from '@/utils/animations'
 import { isSidebarRouteActive } from './dashboard-sidebar.utils'
@@ -27,6 +28,32 @@ function initialsFromUser(name?: string, email?: string): string {
   return source.slice(0, 2).toUpperCase()
 }
 
+// Card do AutoPilot no rodapé do menu: mesmo tecido roxo das telas de acesso,
+// liga o app à identidade visual e leva pro módulo de IA.
+function AutopilotCard({ onNavigate }: { onNavigate: () => void }) {
+  return (
+    <Link
+      to="/autopilot"
+      onClick={onNavigate}
+      className="group relative mb-3 block overflow-hidden rounded-[18px] p-4 text-white shadow-[0_18px_40px_-22px_rgba(91,33,182,0.9)] ring-1 ring-white/10"
+    >
+      <SilkRibbons className="absolute inset-0 h-full w-full transition-transform duration-700 ease-out group-hover:scale-110" />
+      <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,6,13,0.15),rgba(8,6,13,0.75))]" />
+      <span className="relative flex items-start justify-between gap-2">
+        <span>
+          <span className="block text-[13px] font-semibold leading-tight">AutoPilot IA</span>
+          <span className="mt-1 block text-[11.5px] leading-snug text-white/75">
+            Propostas, follow-ups e mensagens escritos pela IA.
+          </span>
+        </span>
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-md transition group-hover:bg-white/25">
+          <ArrowUpRight className="size-3.5" />
+        </span>
+      </span>
+    </Link>
+  )
+}
+
 export function DashboardSidebar({
   groups,
   collapsed,
@@ -46,44 +73,39 @@ export function DashboardSidebar({
           type="button"
           aria-label="Fechar menu"
           onClick={onCloseMobile}
-          className="fixed inset-0 z-30 bg-accent-ink/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-[#08060d]/60 backdrop-blur-sm lg:hidden"
         />
       )}
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] font-sans shadow-[1px_0_0_rgba(11,0,20,0.02)] transition-[width,transform] duration-300 ease-out lg:static lg:translate-x-0',
-          collapsed ? 'w-[76px]' : 'w-[260px]',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex h-full flex-col bg-[var(--shell-bg)] font-sans transition-[width,transform] duration-300 ease-out lg:static lg:translate-x-0',
+          collapsed ? 'w-[84px]' : 'w-[264px]',
+          mobileOpen ? 'translate-x-0 shadow-[var(--shadow-modal)]' : '-translate-x-full lg:translate-x-0',
         )}
       >
-        <div className={cn('flex h-[72px] shrink-0 items-center p-3', collapsed ? 'justify-center' : 'justify-between')}>
-          <div className={cn('flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3 px-2')}>
+        <div className={cn('flex h-[76px] shrink-0 items-center px-4', collapsed ? 'justify-center' : 'justify-between')}>
+          <Link to="/" onClick={onCloseMobile} className={cn('flex min-w-0 items-center', !collapsed && 'gap-3 px-1')}>
             <img
               src="/logo.png"
               alt="Code Sellers"
-              className="h-8 w-8 shrink-0 rounded-[7px] object-cover shadow-[0_6px_18px_rgba(95,0,178,0.22)]"
+              className="size-9 shrink-0 rounded-[11px] object-cover shadow-[0_8px_22px_-6px_rgba(124,58,237,0.7)] ring-1 ring-white/10"
             />
             {!collapsed && (
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate font-display text-[14px] font-bold leading-none tracking-tight text-[var(--text-primary)]">
-                  Code Sellers
-                </span>
-                <span className="mt-1 truncate text-[10px] uppercase leading-none tracking-[0.14em] text-[var(--text-muted)]">
-                  CRM para vendedores
-                </span>
+              <span className="truncate font-display text-[15px] font-bold tracking-tight text-[var(--text-primary)]">
+                Code Sellers
               </span>
             )}
-          </div>
+          </Link>
 
           {!collapsed && (
             <button
               type="button"
               onClick={onToggleCollapse}
               aria-label="Recolher menu"
-              className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)] lg:flex"
+              className="hidden size-8 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)] lg:flex"
             >
-              <PanelLeftClose className="h-[17px] w-[17px]" strokeWidth={1.5} />
+              <PanelLeftClose className="size-[17px]" strokeWidth={1.6} />
             </button>
           )}
         </div>
@@ -93,17 +115,17 @@ export function DashboardSidebar({
             type="button"
             onClick={onToggleCollapse}
             aria-label="Expandir menu"
-            className="mx-auto hidden h-8 w-8 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)] lg:flex"
+            className="mx-auto hidden size-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)] lg:flex"
           >
-            <PanelLeftOpen className="h-[17px] w-[17px]" strokeWidth={1.5} />
+            <PanelLeftOpen className="size-[17px]" strokeWidth={1.6} />
           </button>
         )}
 
-        <nav className={cn('scrollbar-none flex flex-1 flex-col overflow-y-auto px-3 pb-4', collapsed ? 'mt-3 gap-4' : 'mt-1 gap-5')}>
+        <nav className={cn('scrollbar-none flex flex-1 flex-col overflow-y-auto px-3 pb-4', collapsed ? 'mt-3 gap-3' : 'mt-2 gap-6')}>
           {groups.map((group) => (
-            <section key={group.label} className="flex flex-col gap-0.5" aria-label={group.label}>
+            <section key={group.label} className="flex flex-col gap-1" aria-label={group.label}>
               {!collapsed && (
-                <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]/70">
+                <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
                   {group.label}
                 </p>
               )}
@@ -119,27 +141,28 @@ export function DashboardSidebar({
                     aria-current={isActive ? 'page' : undefined}
                     onClick={onCloseMobile}
                     className={cn(
-                      'group relative flex h-9 items-center rounded-[7px] text-[13px] tracking-[0.01em] transition-colors duration-150',
-                      collapsed ? 'justify-center px-0' : 'gap-2.5 px-2.5',
+                      'group relative flex h-10 items-center rounded-xl text-[13.5px] transition-colors duration-150',
+                      collapsed ? 'mx-auto w-10 justify-center' : 'gap-3 px-3',
                       isActive
-                        ? 'bg-accent-soft/55 font-semibold text-accent-700 dark:bg-white/[0.08] dark:text-accent-bright'
-                        : 'text-[var(--text-secondary)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)]',
+                        ? 'font-semibold text-[var(--text-primary)]'
+                        : 'font-medium text-[var(--text-secondary)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)]',
                     )}
                   >
                     {isActive && (
                       <motion.span
                         layoutId="dashboard-sidebar-active"
-                        className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-accent"
-                        transition={{ duration: 0.3, ease: EASE_PREMIUM }}
+                        className="absolute inset-0 rounded-xl border border-[var(--nav-active-border)] shadow-[var(--nav-active-shadow)]"
+                        style={{ background: 'var(--nav-active-bg)' }}
+                        transition={{ duration: 0.35, ease: EASE_PREMIUM }}
                       />
                     )}
                     <item.icon
                       className={cn(
-                        'h-4 w-4 shrink-0 transition-colors',
-                        isActive ? 'text-accent dark:text-accent-bright' : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]',
+                        'relative size-[18px] shrink-0 transition-colors',
+                        isActive ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]',
                       )}
                     />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
+                    {!collapsed && <span className="relative truncate">{item.label}</span>}
                   </Link>
                 )
               })}
@@ -147,20 +170,27 @@ export function DashboardSidebar({
           ))}
         </nav>
 
-        <div className="shrink-0 border-t border-[var(--sidebar-border)] p-3">
-          <div className={cn('flex items-center rounded-lg py-1', collapsed ? 'flex-col gap-2' : 'gap-2.5 px-1')}>
+        <div className="shrink-0 px-3 pb-3">
+          {!collapsed && !isSidebarRouteActive('/autopilot', currentPath) && <AutopilotCard onNavigate={onCloseMobile} />}
+
+          <div
+            className={cn(
+              'flex items-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-2',
+              collapsed ? 'flex-col gap-2' : 'gap-2.5',
+            )}
+          >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-accent/15" />
+              <img src={avatarUrl} alt="" className="size-9 shrink-0 rounded-xl object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[11px] font-semibold text-accent-700 ring-1 ring-accent/10">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#5b21b6)] text-[12px] font-semibold text-white">
                 {initialsFromUser(displayName, email)}
               </span>
             )}
 
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium leading-tight text-[var(--text-primary)]">{displayName || 'Usuário'}</p>
-                <p className="mt-0.5 truncate text-[11px] leading-tight text-[var(--text-muted)]">{email}</p>
+                <p className="truncate text-[13px] font-semibold leading-tight text-[var(--text-primary)]">{displayName || 'Usuário'}</p>
+                <p className="mt-0.5 truncate text-[11.5px] leading-tight text-[var(--text-muted)]">{email}</p>
               </div>
             )}
 
@@ -169,9 +199,9 @@ export function DashboardSidebar({
               onClick={onSignOut}
               title="Sair"
               aria-label="Sair"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-500"
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-red-500/10 hover:text-red-400"
             >
-              <LogOut className="h-4 w-4" strokeWidth={1.5} />
+              <LogOut className="size-4" strokeWidth={1.6} />
             </button>
           </div>
         </div>

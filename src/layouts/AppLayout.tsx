@@ -68,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   useReminderCheck()
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-secondary)] transition-colors duration-300">
+    <div className="flex h-screen overflow-hidden bg-[var(--shell-bg)] transition-colors duration-300">
       <Sidebar
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((value) => !value)}
@@ -76,7 +76,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         onCloseMobile={() => setMobileOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Painel de conteúdo: um cartão grande e arredondado "apoiado" na casca,
+          com o menu do lado de fora — no mobile ocupa a tela toda. */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--panel-bg)] transition-colors duration-300 lg:my-2.5 lg:mr-2.5 lg:rounded-[26px] lg:border lg:border-[var(--panel-border)] lg:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.55)]">
         <Header onOpenMobileMenu={() => setMobileOpen(true)} theme={resolvedTheme} onToggleTheme={toggleTheme} />
         <main
           ref={mainRef}
@@ -85,10 +87,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             surface.dark && 'bg-accent-ink',
           )}
         >
-          {/* Glow estático (sem animação JS) — só no dark mode, custo de render
-              desprezível: uma única div com blur, nada por frame. */}
+          {/* Brilho roxo estático no topo do painel — só no dark mode. */}
           <div
-            className="pointer-events-none absolute -top-40 left-1/2 hidden h-[400px] w-[800px] -translate-x-1/2 rounded-full bg-purple-600/[0.06] blur-[120px] dark:block"
+            className="pointer-events-none absolute -top-48 left-1/3 hidden h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[#7c3aed]/[0.07] blur-[120px] dark:block"
             aria-hidden="true"
           />
           <SmoothScrollProvider wrapperRef={mainRef} contentRef={contentRef}>

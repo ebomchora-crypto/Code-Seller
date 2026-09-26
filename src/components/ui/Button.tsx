@@ -21,7 +21,8 @@ interface ButtonProps extends NativeButtonProps {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-purple-600 text-white hover:bg-purple-500 shadow-[0_0_20px_rgba(179,92,255,0.2)] focus-visible:ring-purple-300',
+  primary:
+    'bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-[0_8px_22px_-10px_rgba(124,58,237,0.9),inset_0_1px_0_rgba(255,255,255,0.18)] hover:brightness-110 focus-visible:ring-[var(--accent-ring)]',
   secondary:
     'bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-card-hover)] focus-visible:ring-neutral-300',
   ghost: 'bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)] focus-visible:ring-neutral-200',

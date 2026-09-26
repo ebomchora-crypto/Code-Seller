@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/dashboard/PanelHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -45,15 +46,17 @@ function ActivityItem({ item }: { item: ActivityFeedItem }) {
   const Icon = TYPE_ICONS[item.type] ?? StickyNote
 
   return (
-    <motion.li variants={fadeInUp} className="relative pb-6 pl-8 last:pb-0">
-      <span className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--bg-muted)] text-[var(--text-secondary)]">
-        <Icon className="h-3.5 w-3.5" />
+    <motion.li variants={fadeInUp} className="relative pb-6 pl-14 last:pb-0">
+      <span className="absolute left-0 top-0 z-10 flex size-9 items-center justify-center rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] text-[var(--accent-text)]">
+        <Icon className="size-4" />
       </span>
 
       <div className="flex items-center gap-2">
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
-            item.source === 'crm' ? 'bg-[var(--purple-soft)] text-purple-500' : 'bg-blue-500/10 text-blue-500'
+            item.source === 'crm'
+              ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]'
+              : 'bg-sky-500/10 text-sky-500 dark:text-sky-300'
           }`}
         >
           {item.source === 'crm' ? 'CRM' : 'Negócios'}
@@ -64,13 +67,13 @@ function ActivityItem({ item }: { item: ActivityFeedItem }) {
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}
-        className={`mt-1 block text-left text-sm leading-snug text-[var(--text-secondary)] ${expanded ? '' : 'line-clamp-2'}`}
+        className={`mt-1.5 block text-left text-[14px] leading-snug text-[var(--text-primary)] ${expanded ? '' : 'line-clamp-2'}`}
       >
         {item.content}
       </button>
 
       {(item.contact_name || item.deal_title) && (
-        <p className="mt-1 text-xs text-[var(--text-muted)]">
+        <p className="mt-1 text-[12.5px] text-[var(--text-muted)]">
           {item.contact_id && item.contact_name && (
             <Link to={`/crm/${item.contact_id}`} className="hover:text-purple-500">
               {item.contact_name}
@@ -88,41 +91,44 @@ function ActivityItem({ item }: { item: ActivityFeedItem }) {
 }
 
 export function ActivityFeed({ items, loading, error, onRetry }: ActivityFeedProps) {
-  const { ref, isInView } = useRevealOnScroll<HTMLOListElement>()
+  // O ref fica no wrapper, que existe desde o primeiro render: a lista só
+  // monta depois do loading e o observer não se prende a elementos novos.
+  const { ref, isInView } = useRevealOnScroll<HTMLDivElement>()
 
   return (
-    <Card>
-      <h3 className="mb-4 text-base font-semibold text-[var(--text-primary)]">Atividades Recentes</h3>
+    <div ref={ref}>
+      <Card>
+        <PanelHeader title="Atividades recentes" subtitle="Ligações, mensagens e mudanças de etapa, em ordem" />
 
-      {loading ? (
-        <div className="flex flex-col gap-4">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div key={index} className="flex gap-3 pl-1">
-              <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
-              <div className="flex-1">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="mt-2 h-4 w-full" />
+        {loading ? (
+          <div className="flex flex-col gap-4">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="flex gap-3 pl-1">
+                <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="mt-2 h-4 w-full" />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : error ? (
-        <ErrorState message={error} onRetry={onRetry} />
-      ) : items.length === 0 ? (
-        <EmptyState title="Nenhuma atividade registrada ainda" />
-      ) : (
-        <motion.ol
-          ref={ref}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          variants={staggerContainer(0.06)}
-          className="relative border-l border-[var(--border-subtle)] pl-0"
-        >
-          {items.map((item) => (
-            <ActivityItem key={`${item.source}-${item.id}`} item={item} />
-          ))}
-        </motion.ol>
-      )}
-    </Card>
+            ))}
+          </div>
+        ) : error ? (
+          <ErrorState message={error} onRetry={onRetry} />
+        ) : items.length === 0 ? (
+          <EmptyState title="Nenhuma atividade registrada ainda" />
+        ) : (
+          <motion.ol
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+            variants={staggerContainer(0.06)}
+            className="relative before:absolute before:bottom-4 before:left-[17.5px] before:top-4 before:w-px before:bg-[var(--border-default)]"
+          >
+            {items.map((item) => (
+              <ActivityItem key={`${item.source}-${item.id}`} item={item} />
+            ))}
+          </motion.ol>
+        )}
+      </Card>
+    </div>
   )
 }

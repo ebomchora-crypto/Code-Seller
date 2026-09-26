@@ -54,38 +54,63 @@
   --glass-purple-bg: rgba(179, 92, 255, 0.06);
   --glass-purple-border: rgba(179, 92, 255, 0.15);
   --glass-purple-glow: 0 0 40px rgba(179, 92, 255, 0.08);
+
+  /* Casca do app (menu + painel de conteúdo) e roxo de destaque legível */
+  --shell-bg: #efedf3;
+  --panel-bg: #fbfafd;
+  --panel-border: rgba(17, 16, 20, 0.07);
+  --accent-text: #6d28d9;
+  --accent-solid: #7c3aed;
+  --accent-tint: rgba(124, 58, 237, 0.08);
+  --accent-ring: rgba(124, 58, 237, 0.22);
+  --nav-active-bg: #ffffff;
+  --nav-active-border: rgba(124, 58, 237, 0.18);
+  --nav-active-shadow: 0 1px 2px rgba(17, 16, 20, 0.06), 0 6px 18px -8px rgba(124, 58, 237, 0.35);
+  --card-radius: 22px;
 }
 
 /* ============================================
    TOKENS DE TEMA — DARK
    ============================================ */
 .dark {
-  --bg-primary: #0a0a0c;
-  --bg-secondary: #0b0014;
-  --bg-muted: #131316;
-  --bg-card: #131316;
-  --bg-card-hover: #2c0052;
+  --bg-primary: #0d0a14;
+  --bg-secondary: #08060d;
+  --bg-muted: #1a1624;
+  --bg-card: #120f1a;
+  --bg-card-hover: #181421;
 
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
 
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #52525b;
+  --text-primary: #f6f4fa;
+  --text-secondary: #aba5b8;
+  --text-muted: #736c85;
   --text-inverse: #0a0a0c;
 
-  --purple-soft: rgba(179, 92, 255, 0.1);
-  --purple-border: rgba(179, 92, 255, 0.25);
-  --purple-glow: rgba(179, 92, 255, 0.2);
+  --purple-soft: rgba(139, 92, 246, 0.14);
+  --purple-border: rgba(167, 139, 250, 0.28);
+  --purple-glow: rgba(139, 92, 246, 0.25);
 
-  --sidebar-bg: #0b0014;
+  --sidebar-bg: #08060d;
   --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-item-hover: rgba(179, 92, 255, 0.08);
-  --sidebar-item-active: rgba(179, 92, 255, 0.15);
+  --sidebar-item-hover: rgba(255, 255, 255, 0.045);
+  --sidebar-item-active: rgba(139, 92, 246, 0.16);
 
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  --shadow-modal: 0 24px 70px rgba(0, 0, 0, 0.65);
+
+  --shell-bg: #08060d;
+  --panel-bg: #0d0a14;
+  --panel-border: rgba(255, 255, 255, 0.07);
+  --accent-text: #b79cff;
+  --accent-solid: #8b5cf6;
+  --accent-tint: rgba(139, 92, 246, 0.14);
+  --accent-ring: rgba(167, 139, 250, 0.3);
+  --nav-active-bg: linear-gradient(100deg, rgba(139, 92, 246, 0.26), rgba(139, 92, 246, 0.08));
+  --nav-active-border: rgba(167, 139, 250, 0.28);
+  --nav-active-shadow: 0 10px 30px -14px rgba(139, 92, 246, 0.8);
+  color-scheme: dark;
 }
 
 @layer base {
@@ -185,6 +210,31 @@
   .dark .text-neutral-500 { color: var(--text-secondary); }
   .dark .text-neutral-400,
   .dark .text-neutral-300 { color: var(--text-muted); }
+
+  /* O roxo da marca (#5f00b2 e tons mais escuros) some sobre fundo escuro —
+     no dark ele vira um lilás legível, sem mexer em cada componente. */
+  .dark .text-purple-500,
+  .dark .text-purple-600,
+  .dark .text-purple-700,
+  .dark .text-accent,
+  .dark .text-accent-500,
+  .dark .text-accent-700 { color: var(--accent-text); }
+  .dark .bg-purple-50,
+  .dark .bg-purple-100,
+  .dark .bg-accent-soft { background-color: var(--accent-tint); }
+  .dark .border-purple-100,
+  .dark .border-purple-200 { border-color: var(--purple-border); }
+  .dark .bg-red-50,
+  .dark .bg-red-50\/40 { background-color: rgba(248, 113, 113, 0.08); }
+  .dark .border-red-100 { border-color: rgba(248, 113, 113, 0.18); }
+  .dark [class*='hover:text-purple']:hover { color: #d6c8ff; }
+
+  /* Badges de status (amber/emerald/red 50 + 700) pensados pro claro. */
+  .dark .bg-amber-50 { background-color: rgba(245, 158, 11, 0.12); }
+  .dark .text-amber-700 { color: #fbbf24; }
+  .dark .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.12); }
+  .dark .text-emerald-700 { color: #34d399; }
+  .dark .text-red-700 { color: #f87171; }
 }
 
 /* Scrollbar fina e elegante, ciente do tema */

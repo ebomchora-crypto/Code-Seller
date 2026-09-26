@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 // Fitas de seda roxas do painel das telas de acesso. Cada fita é uma curva
 // grossa em S com um degradê atravessando a largura (escuro → brilho →
 // escuro), o que lê como tecido dobrado; como o degradê segue a linha reta e
@@ -77,6 +79,8 @@ function frame(tiltDeg: number) {
 const fmt = (p: { x: number; y: number }) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`
 
 export function SilkRibbons({ className = '' }: { className?: string }) {
+  // IDs únicos: o menu e o Dashboard desenham fitas na mesma página.
+  const uid = `s${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
   return (
     <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="xMidYMid slice" className={className} aria-hidden>
       <defs>
@@ -87,7 +91,7 @@ export function SilkRibbons({ className = '' }: { className?: string }) {
           return (
             <linearGradient
               key={index}
-              id={`silk-${index}`}
+              id={`${uid}-silk-${index}`}
               gradientUnits="userSpaceOnUse"
               x1={from.x}
               y1={from.y}
@@ -100,10 +104,10 @@ export function SilkRibbons({ className = '' }: { className?: string }) {
             </linearGradient>
           )
         })}
-        <filter id="silk-shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <filter id={`${uid}-shadow`} x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="-8" dy="-12" stdDeviation="16" floodColor="#07021a" floodOpacity="0.5" />
         </filter>
-        <radialGradient id="silk-sheen" cx="72%" cy="28%" r="75%">
+        <radialGradient id={`${uid}-sheen`} cx="72%" cy="28%" r="75%">
           <stop offset="0" stopColor="#ffffff" stopOpacity="0.18" />
           <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
@@ -122,14 +126,14 @@ export function SilkRibbons({ className = '' }: { className?: string }) {
             key={index}
             d={`M ${fmt(start)} C ${fmt(control1)}, ${fmt(control2)}, ${fmt(end)}`}
             fill="none"
-            stroke={`url(#silk-${index})`}
+            stroke={`url(#${uid}-silk-${index})`}
             strokeWidth={ribbon.thickness}
-            filter="url(#silk-shadow)"
+            filter={`url(#${uid}-shadow)`}
           />
         )
       })}
 
-      <rect width={WIDTH} height={HEIGHT} fill="url(#silk-sheen)" />
+      <rect width={WIDTH} height={HEIGHT} fill={`url(#${uid}-sheen)`} />
     </svg>
   )
 }

@@ -12,13 +12,17 @@ interface MetricsGridProps {
   onRetry?: () => void
 }
 
+const GRID =
+  'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:[&>*:last-child]:col-span-2 xl:grid-cols-5 xl:[&>*:last-child]:col-span-1'
+
+// A receita do mês fica no card de vidro do topo; aqui entram as demais.
 export function MetricsGrid({ metrics, loading, error, onRetry }: MetricsGridProps) {
   const reducedMotion = useReducedMotion()
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <MetricCard key={index} metric={metrics[index]} loading />
+      <div className={GRID}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <MetricCard key={index} loading />
         ))}
       </div>
     )
@@ -29,15 +33,10 @@ export function MetricsGrid({ metrics, loading, error, onRetry }: MetricsGridPro
   }
 
   return (
-    <motion.div
-      initial={reducedMotion ? false : 'hidden'}
-      animate="visible"
-      variants={staggerContainer(0.08)}
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-    >
-      {metrics.map((metric, index) => (
-        <motion.div key={metric.label} variants={scaleIn}>
-          <MetricCard metric={metric} highlight={index === 0} />
+    <motion.div initial={reducedMotion ? false : 'hidden'} animate="visible" variants={staggerContainer(0.06)} className={GRID}>
+      {metrics.map((metric) => (
+        <motion.div key={metric.label} variants={scaleIn} className="h-full">
+          <MetricCard metric={metric} />
         </motion.div>
       ))}
     </motion.div>
