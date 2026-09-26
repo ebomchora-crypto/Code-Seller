@@ -468,3 +468,47 @@
   font-weight: 600;
   color: var(--text-primary);
 }
+
+/* Proposta online (página pública, sempre clara). */
+.public-proposal-markdown {
+  color: #4a4560;
+  font-size: 15.5px;
+  line-height: 1.8;
+}
+.public-proposal-markdown h1,
+.public-proposal-markdown h2,
+.public-proposal-markdown h3 {
+  margin: 1.6em 0 0.5em;
+  font-family: Sora, Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #171325;
+}
+.public-proposal-markdown > :first-child {
+  margin-top: 0;
+}
+.public-proposal-markdown p {
+  margin: 0.7em 0;
+}
+.public-proposal-markdown ul,
+.public-proposal-markdown ol {
+  margin: 0.7em 0;
+  padding-left: 1.3em;
+}
+.public-proposal-markdown ul {
+  list-style: disc;
+}
+.public-proposal-markdown ol {
+  list-style: decimal;
+}
+.public-proposal-markdown li {
+  margin: 0.3em 0;
+}
+.public-proposal-markdown li::marker {
+  color: #7c3aed;
+}
+.public-proposal-markdown strong {
+  font-weight: 600;
+  color: #171325;
+}

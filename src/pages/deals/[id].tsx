@@ -16,6 +16,7 @@ import { useDeal } from '@/hooks/useDeal'
 import { useAuthContext } from '@/stores/AuthContext'
 import { SendMessageButton } from '@/components/messages/SendMessageButton'
 import { ContractButton } from '@/components/contracts/ContractButton'
+import { OnlineProposalButton } from '@/components/proposals/OnlineProposalButton'
 import { AddToPortfolioButton } from '@/components/portfolio/AddToPortfolioButton'
 
 export default function DealDetailPage() {
@@ -82,6 +83,7 @@ export default function DealDetailPage() {
                   }}
                   onSent={() => void refetch()}
                 />
+                <OnlineProposalButton className={buttonClass} deal={deal} onChanged={() => void refetch()} />
                 <ContractButton className={buttonClass} deal={deal} />
                 {deal.status === 'won' && <AddToPortfolioButton className={buttonClass} deal={deal} />}
               </>

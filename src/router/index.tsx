@@ -27,6 +27,7 @@ const AcademyPage = lazyPage(() => import('@/pages/academy'))
 const AcademyLessonPage = lazyPage(() => import('@/pages/academy/lesson'))
 const AcademyKitPage = lazyPage(() => import('@/pages/academy/kit'))
 const PublicPortfolioPage = lazyPage(() => import('@/pages/public-portfolio'))
+const PublicProposalPage = lazyPage(() => import('@/pages/public-proposal'))
 const RevenueRoomPage = lazyPage(() => import('@/pages/revenue-room'))
 
 function RouteFallback() {
@@ -71,6 +72,7 @@ export function AppRouter() {
 
           {/* Página pública do Sellers Portfolio — abre com ou sem login. */}
           <Route path="/p/:slug" element={<PublicPortfolioPage />} />
+          <Route path="/proposta/:token" element={<PublicProposalPage />} />
 
           <Route
             path="/sala-de-receita"
