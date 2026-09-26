@@ -34,24 +34,24 @@ export function SubtaskList({ subtasks, onAdd, onToggle, onRename, onDelete }: S
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <p className="label-caps">Subtarefas</p>
+        <p className="text-[12px] text-[var(--text-muted)]">Subtarefas</p>
         {progress.total > 0 && (
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-[var(--text-muted)]">
             {progress.done} de {progress.total} concluídas
           </span>
         )}
       </div>
 
       {progress.total > 0 && (
-        <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-neutral-100">
+        <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]">
           <div
-            className="h-full rounded-full bg-purple-400 transition-all duration-300"
+            className="h-full rounded-full bg-[var(--accent-solid)] transition-all duration-300"
             style={{ width: `${progress.percentage}%` }}
           />
         </div>
       )}
 
-      <div className="divide-y divide-neutral-100">
+      <div className="divide-y divide-[var(--border-subtle)]">
         {subtasks.map((subtask) => (
           <SubtaskItem
             key={subtask.id}

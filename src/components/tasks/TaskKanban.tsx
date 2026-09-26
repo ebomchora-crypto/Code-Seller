@@ -12,6 +12,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Plus } from 'lucide-react'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -82,17 +83,23 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-xl p-3 transition-all duration-200 ${isOver ? 'scale-[1.01] ring-2 ring-purple-300 shadow-[0_0_24px_rgba(179,92,255,0.12)]' : ''}`}
-      style={{ backgroundColor: config.bg }}
+      className={`flex w-[288px] shrink-0 flex-col rounded-[22px] border p-2.5 transition-all duration-200 ${
+        isOver
+          ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] shadow-[0_0_0_4px_var(--accent-tint)]'
+          : 'border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.02]'
+      }`}
     >
-      <div className="mb-3 flex items-center justify-between px-1">
-        <h3 className="text-sm font-medium" style={{ color: config.color }}>
+      <div className="mb-2.5 flex items-center justify-between px-2 pt-1.5">
+        <h3 className="flex items-center gap-2 text-[13.5px] font-semibold text-[var(--text-primary)]">
+          <span className="size-2.5 rounded-full" style={{ backgroundColor: config.color, boxShadow: `0 0 10px ${config.color}` }} />
           {config.label}
         </h3>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-neutral-500">{tasks.length}</span>
+        <span className="rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--text-secondary)] ring-1 ring-[var(--border-subtle)]">
+          {tasks.length}
+        </span>
       </div>
 
-      <div className="flex max-h-[calc(100vh-320px)] flex-1 flex-col gap-3 overflow-y-auto pr-1">
+      <div data-lenis-prevent className="flex max-h-[calc(100vh-340px)] min-h-16 flex-1 flex-col gap-2.5 overflow-y-auto">
         <SortableContext items={tasks.map((task) => task.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task, index) => (
             <SortableTaskCard key={task.id} task={task} onOpenTask={onOpenTask} index={index} />
@@ -103,9 +110,10 @@ function KanbanColumn({
       <button
         type="button"
         onClick={() => onCreateInColumn(status)}
-        className="mt-3 rounded-lg border border-dashed border-neutral-300 py-2 text-xs font-medium text-neutral-500 transition-colors hover:border-purple-300 hover:text-purple-600"
+        className="mt-2.5 flex h-9 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--border-default)] text-[12.5px] font-medium text-[var(--text-muted)] transition-colors hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
       >
-        + Tarefa
+        <Plus className="size-3.5" />
+        Tarefa
       </button>
     </div>
   )
@@ -159,12 +167,12 @@ export function TaskKanban({ tasksByStatus, loading, onOpenTask, onStatusChange,
 
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {KANBAN_STATUSES.map((status) => (
-          <div key={status} className="flex w-72 shrink-0 flex-col gap-3 rounded-xl bg-neutral-50 p-3">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+          <div key={status} className="flex w-[288px] shrink-0 flex-col gap-2.5 rounded-[22px] border border-[var(--border-subtle)] p-2.5">
+            <Skeleton className="m-1.5 h-5 w-24" />
+            <Skeleton className="h-28 w-full rounded-[18px]" />
+            <Skeleton className="h-28 w-full rounded-[18px]" />
           </div>
         ))}
       </div>
@@ -182,7 +190,7 @@ export function TaskKanban({ tasksByStatus, loading, onOpenTask, onStatusChange,
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {KANBAN_STATUSES.map((status) => (
           <KanbanColumn
             key={status}

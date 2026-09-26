@@ -14,7 +14,7 @@ export function PriorityBadge({ priority, onClick }: PriorityBadgeProps) {
     <Component
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11.5px] font-medium ${
         priority === 'urgent' ? 'animate-pulse' : ''
       } ${onClick ? 'cursor-pointer hover:brightness-95' : ''}`}
       style={{ backgroundColor: `${config.color}1a`, color: config.color }}

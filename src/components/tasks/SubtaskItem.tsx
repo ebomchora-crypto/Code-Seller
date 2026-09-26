@@ -42,14 +42,14 @@ export function SubtaskItem({ subtask, onToggle, onRename, onDelete }: SubtaskIt
               setEditing(false)
             }
           }}
-          className="flex-1 rounded border-b border-purple-300 bg-transparent text-sm text-neutral-800 outline-none"
+          className="flex-1 rounded-lg border border-[var(--accent-ring)] bg-[var(--field-bg)] px-2 py-0.5 text-sm text-[var(--text-primary)] outline-none"
         />
       ) : (
         <button
           type="button"
           onClick={() => setEditing(true)}
           className={`flex-1 text-left text-sm transition-colors duration-150 ${
-            isDone ? 'text-neutral-400 line-through' : 'text-neutral-700'
+            isDone ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]'
           }`}
         >
           {subtask.title}
@@ -60,7 +60,7 @@ export function SubtaskItem({ subtask, onToggle, onRename, onDelete }: SubtaskIt
         type="button"
         onClick={onDelete}
         aria-label="Remover subtarefa"
-        className="opacity-0 text-neutral-400 transition-opacity duration-150 hover:text-red-600 group-hover:opacity-100"
+        className="text-[var(--text-muted)] opacity-0 transition-opacity duration-150 hover:text-red-500 focus:opacity-100 group-hover:opacity-100"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>

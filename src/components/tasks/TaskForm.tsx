@@ -242,7 +242,7 @@ export function TaskForm({
       </Select>
 
       <div>
-        <label className="text-sm font-medium text-neutral-700">Prioridade</label>
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Prioridade</label>
         <div className="mt-1.5 grid grid-cols-4 gap-1">
           {(Object.entries(TASK_PRIORITY_CONFIG) as [TaskPriority, (typeof TASK_PRIORITY_CONFIG)[TaskPriority]][]).map(
             ([value, config]) => (
@@ -251,7 +251,7 @@ export function TaskForm({
                 type="button"
                 onClick={() => updateField('priority', value)}
                 className={`rounded-md py-2 text-xs font-medium transition-colors duration-150 ${
-                  form.priority === value ? 'text-white' : 'bg-neutral-100 text-neutral-500'
+                  form.priority === value ? 'text-white' : 'bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
                 style={form.priority === value ? { backgroundColor: config.color } : undefined}
               >
@@ -279,7 +279,7 @@ export function TaskForm({
       </div>
 
       <div ref={contactBoxRef} className="relative flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-neutral-700">Contato vinculado</label>
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Contato vinculado</label>
         <Input
           placeholder="Buscar contato do CRM"
           value={form.contactName}
@@ -291,12 +291,12 @@ export function TaskForm({
           onFocus={() => setContactDropdownOpen(true)}
         />
         {contactDropdownOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
-            <button type="button" onClick={() => selectContact(null)} className="block w-full px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50">
+          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]">
+            <button type="button" onClick={() => selectContact(null)} className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-muted)]">
               Nenhum contato
             </button>
             {filteredContacts.map((contact) => (
-              <button key={contact.id} type="button" onClick={() => selectContact(contact)} className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-purple-50">
+              <button key={contact.id} type="button" onClick={() => selectContact(contact)} className="block w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]">
                 {contact.name}
               </button>
             ))}
@@ -305,7 +305,7 @@ export function TaskForm({
       </div>
 
       <div ref={dealBoxRef} className="relative flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-neutral-700">Negócio vinculado</label>
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Negócio vinculado</label>
         <Input
           placeholder="Buscar negócio"
           value={form.dealTitle}
@@ -317,12 +317,12 @@ export function TaskForm({
           onFocus={() => setDealDropdownOpen(true)}
         />
         {dealDropdownOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
-            <button type="button" onClick={() => selectDeal(null)} className="block w-full px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50">
+          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]">
+            <button type="button" onClick={() => selectDeal(null)} className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-muted)]">
               Nenhum negócio
             </button>
             {filteredDeals.map((deal) => (
-              <button key={deal.id} type="button" onClick={() => selectDeal(deal)} className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-purple-50">
+              <button key={deal.id} type="button" onClick={() => selectDeal(deal)} className="block w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]">
                 {deal.title}
               </button>
             ))}
@@ -331,7 +331,7 @@ export function TaskForm({
       </div>
 
       <div>
-        <label className="text-sm font-medium text-neutral-700">Tags</label>
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Tags</label>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
           {tags.map((tag) => {
             const selected = form.tagIds.includes(tag.id)
@@ -354,7 +354,7 @@ export function TaskForm({
           <button
             type="button"
             onClick={handleCreateTag}
-            className="rounded-full border border-dashed border-neutral-300 px-2.5 py-1 text-xs font-medium text-neutral-500 hover:border-purple-300 hover:text-purple-600"
+            className="rounded-full border border-dashed border-[var(--border-strong)] px-2.5 py-1 text-xs font-medium text-[var(--text-muted)] hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
           >
             + Criar tag
           </button>
@@ -384,7 +384,7 @@ export function TaskForm({
             error={errors.recurrenceEndDate}
           />
           {form.recurrenceEndDate && (
-            <p className="rounded-lg bg-purple-50 px-3 py-2 text-xs text-purple-700">
+            <p className="rounded-xl border border-[var(--accent-ring)] bg-[var(--accent-tint)] px-3 py-2 text-xs text-[var(--text-secondary)]">
               Serão criadas tarefas recorrentes até {new Date(`${form.recurrenceEndDate}T00:00:00`).toLocaleDateString('pt-BR')}.
             </p>
           )}

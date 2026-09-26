@@ -8,12 +8,12 @@ interface DueDateLabelProps {
 }
 
 const variantClasses: Record<DueDateDisplay['variant'], string> = {
-  overdue: 'text-red-600',
-  today: 'text-amber-600',
-  soon: 'text-amber-500',
-  normal: 'text-neutral-500',
-  none: 'text-neutral-400',
-  completed: 'text-emerald-600',
+  overdue: 'text-red-600 dark:text-red-400',
+  today: 'text-amber-600 dark:text-amber-400',
+  soon: 'text-amber-600 dark:text-amber-300',
+  normal: 'text-[var(--text-muted)]',
+  none: 'text-[var(--text-muted)]',
+  completed: 'text-emerald-600 dark:text-emerald-400',
 }
 
 const variantIcons: Record<DueDateDisplay['variant'], typeof AlertCircle | null> = {
@@ -31,7 +31,7 @@ export function DueDateLabel({ due_date, completed_at, size = 'md' }: DueDateLab
 
   const Icon = variantIcons[variant]
   const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'
-  const textSize = size === 'sm' ? 'text-xs' : 'text-sm'
+  const textSize = size === 'sm' ? 'text-[12px]' : 'text-sm'
 
   return (
     <span className={`inline-flex items-center gap-1 font-medium ${textSize} ${variantClasses[variant]}`}>

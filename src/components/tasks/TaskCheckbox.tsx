@@ -8,7 +8,7 @@ interface TaskCheckboxProps {
 }
 
 export function TaskCheckbox({ checked, onToggle, size = 'md', ariaLabel }: TaskCheckboxProps) {
-  const dimension = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'
+  const dimension = size === 'sm' ? 'size-[18px]' : 'size-[22px]'
 
   return (
     <button
@@ -20,14 +20,14 @@ export function TaskCheckbox({ checked, onToggle, size = 'md', ariaLabel }: Task
         event.stopPropagation()
         onToggle()
       }}
-      className={`flex shrink-0 items-center justify-center rounded-md border-2 transition-colors duration-200 ${dimension} ${
+      className={`flex shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${dimension} ${
         checked
-          ? 'border-purple-500 bg-purple-500'
-          : 'border-[var(--border-default)] bg-[var(--bg-card)] hover:border-purple-400'
+          ? 'border-transparent bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] shadow-[0_4px_12px_-4px_rgba(124,58,237,0.9)]'
+          : 'border-[var(--border-strong)] bg-transparent hover:border-[var(--accent-solid)]'
       }`}
     >
       <Check
-        className={`h-3 w-3 text-white transition-transform duration-200 ${checked ? 'scale-100' : 'scale-0'}`}
+        className={`size-3 text-white transition-transform duration-200 ${checked ? 'scale-100' : 'scale-0'}`}
         strokeWidth={3}
       />
     </button>

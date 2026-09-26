@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Button } from '@/components/ui/Button'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { FilterChips } from '@/components/ui/FilterChips'
 import { getContacts } from '@/services/supabase/contacts'
 import { getDeals } from '@/services/supabase/deals'
 import { useTags } from '@/hooks/useTags'
@@ -18,9 +19,9 @@ interface TaskFiltersProps {
 const QUICK_TABS: { key: TaskFiltersType['due']; label: string }[] = [
   { key: 'all', label: 'Todas' },
   { key: 'today', label: 'Hoje' },
-  { key: 'week', label: 'Esta Semana' },
+  { key: 'week', label: 'Esta semana' },
   { key: 'overdue', label: 'Vencidas' },
-  { key: 'no_date', label: 'Sem Data' },
+  { key: 'no_date', label: 'Sem data' },
 ]
 
 export function TaskFilters({ filters, onChange, onClear, hasActiveFilters }: TaskFiltersProps) {
@@ -36,50 +37,52 @@ export function TaskFilters({ filters, onChange, onClear, hasActiveFilters }: Ta
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex gap-1 overflow-x-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-1">
-        {QUICK_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => onChange({ due: tab.key })}
-            className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-              filters.due === tab.key
-                ? 'bg-[var(--purple-soft)] text-purple-500'
-                : 'text-[var(--text-muted)] hover:bg-[var(--bg-muted)]'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <FilterChips
+        label="Filtrar por prazo"
+        options={QUICK_TABS.map((tab) => ({ value: tab.key, label: tab.label }))}
+        value={filters.due}
+        onChange={(due) => onChange({ due })}
+      />
 
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
-        <div className="flex items-center gap-3">
+      <div>
+        <div className="flex items-center gap-2">
           <div className="flex-1">
             <Input
+              aria-label="Buscar tarefas"
               placeholder="Buscar por título ou descrição"
               value={filters.search}
               onChange={(event) => onChange({ search: event.target.value })}
-              icon={
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-4 w-4">
-                  <circle cx="11" cy="11" r="7" />
-                  <path strokeLinecap="round" d="m21 21-4.3-4.3" />
-                </svg>
-              }
+              icon={<Search className="size-4" />}
             />
           </div>
-          <Button variant="ghost" onClick={() => setExpanded((value) => !value)}>
-            Filtros {expanded ? '▲' : '▼'}
-          </Button>
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
+            className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-medium transition ${
+              expanded || hasActiveFilters
+                ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] text-[var(--accent-text)]'
+                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <SlidersHorizontal className="size-4" />
+            <span className="hidden sm:inline">Filtros</span>
+          </button>
           {hasActiveFilters && (
-            <Button variant="ghost" onClick={onClear}>
-              Limpar filtros
-            </Button>
+            <button
+              type="button"
+              onClick={onClear}
+              aria-label="Limpar filtros"
+              title="Limpar filtros"
+              className="flex size-11 shrink-0 items-center justify-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            >
+              <X className="size-4" />
+            </button>
           )}
         </div>
 
         {expanded && (
-          <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[var(--border-subtle)] pt-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid grid-cols-1 gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3 sm:grid-cols-2 lg:grid-cols-5">
             <Select label="Prioridade" value={filters.priority} onChange={(event) => onChange({ priority: event.target.value as TaskFiltersType['priority'] })}>
               <option value="all">Todas</option>
               {Object.entries(TASK_PRIORITY_CONFIG).map(([value, config]) => (

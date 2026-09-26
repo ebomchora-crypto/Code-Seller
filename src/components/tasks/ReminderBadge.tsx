@@ -17,7 +17,7 @@ export function ReminderBadge({ reminder_at }: ReminderBadgeProps) {
 
   return (
     <Tooltip content={`Lembrete em ${formatted}`}>
-      <span className="inline-flex items-center justify-center rounded-full bg-purple-50 p-1 text-purple-500">
+      <span className="inline-flex items-center justify-center rounded-full bg-[var(--accent-tint)] p-1 text-[var(--accent-text)]">
         <Bell className="h-3 w-3" />
       </span>
     </Tooltip>

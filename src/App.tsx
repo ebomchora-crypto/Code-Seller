@@ -1,12 +1,12 @@
-import { Toaster } from 'sonner'
 import { AuthProvider } from '@/stores/AuthContext'
 import { AppRouter } from '@/router'
+import { ThemedToaster } from '@/components/ui/ThemedToaster'
 
 function App() {
   return (
     <AuthProvider>
       <AppRouter />
-      <Toaster position="top-right" richColors closeButton />
+      <ThemedToaster />
     </AuthProvider>
   )
 }
