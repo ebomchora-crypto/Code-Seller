@@ -1,9 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AtSign } from 'lucide-react'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import {
+  AuthCheckbox,
+  AuthDivider,
+  AuthError,
+  AuthField,
+  AuthHeading,
+  AuthSubmit,
+  GoogleButton,
+  PasswordField,
+} from '@/components/auth/AuthForm'
+import { setRememberSession } from '@/lib/supabaseClient'
 import { useAuthContext } from '@/stores/AuthContext'
 
 export default function LoginPage() {
@@ -12,6 +20,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,6 +33,7 @@ export default function LoginPage() {
       return
     }
 
+    setRememberSession(remember)
     setLoading(true)
     const { error: signInError } = await signIn(email, password)
     setLoading(false)
@@ -38,50 +48,47 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Entrar</h1>
-        <p className="mt-1 text-sm text-neutral-400">Acesse sua conta para continuar</p>
-      </div>
+      <AuthHeading title="Boas-vindas" subtitle="Acesse sua conta e continue de onde parou." />
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-        <Input
+      <form className="mt-9 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+        <AuthField
           type="email"
           label="E-mail"
-          placeholder="voce@empresa.com"
+          placeholder="Digite seu e-mail"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           autoComplete="email"
-          icon={<AtSign className="size-4" />}
-          labelClassName="text-neutral-300"
-          className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
         />
-        <Input
-          type="password"
+        <PasswordField
           label="Senha"
-          placeholder="••••••••"
+          placeholder="Digite sua senha"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="current-password"
-          labelClassName="text-neutral-300"
-          className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
         />
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
-
-        <div className="flex justify-end">
-          <Link to="/forgot-password" className="text-sm font-medium text-purple-400 hover:text-purple-300">
+        <div className="flex items-center justify-between gap-4">
+          <AuthCheckbox checked={remember} onChange={setRemember}>
+            Manter conectado
+          </AuthCheckbox>
+          <Link to="/forgot-password" className="text-[14px] font-medium text-[#7c3aed] transition hover:text-[#5b21b6]">
             Esqueceu a senha?
           </Link>
         </div>
 
-        <Button type="submit" loading={loading} className="w-full shadow-purple-glow">
-          Entrar
-        </Button>
+        <AuthError message={error} />
+
+        <AuthSubmit loading={loading}>Entrar</AuthSubmit>
       </form>
 
-      <p className="mt-6 text-center text-sm text-neutral-400">
-        Ainda não tem conta?{' '}
-        <Link to="/register" className="font-medium text-purple-400 hover:text-purple-300">
+      <div className="mt-7 flex flex-col gap-5">
+        <AuthDivider>Ou continue com</AuthDivider>
+        <GoogleButton onBeforeRedirect={() => setRememberSession(remember)} onError={setError} />
+      </div>
+
+      <p className="mt-8 text-center text-[14px] text-[#6b6875]">
+        Novo por aqui?{' '}
+        <Link to="/register" className="font-medium text-[#7c3aed] transition hover:text-[#5b21b6]">
           Criar conta
         </Link>
       </p>

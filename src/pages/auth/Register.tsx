@@ -1,9 +1,16 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AtSign } from 'lucide-react'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import {
+  AuthDivider,
+  AuthError,
+  AuthField,
+  AuthHeading,
+  AuthSubmit,
+  GoogleButton,
+  PasswordField,
+} from '@/components/auth/AuthForm'
+import { setRememberSession } from '@/lib/supabaseClient'
 import { useAuthContext } from '@/stores/AuthContext'
 
 export default function RegisterPage() {
@@ -36,6 +43,7 @@ export default function RegisterPage() {
       return
     }
 
+    setRememberSession(true)
     setLoading(true)
     const { error: signUpError } = await signUp(email, password, name)
     setLoading(false)
@@ -50,63 +58,52 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Criar conta</h1>
-        <p className="mt-1 text-sm text-neutral-400">Comece a organizar suas vendas hoje</p>
-      </div>
+      <AuthHeading title="Crie sua conta" subtitle="Organize suas vendas do primeiro contato ao pagamento." />
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-        <Input
+      <form className="mt-9 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+        <AuthField
           label="Nome"
-          placeholder="Seu nome"
+          placeholder="Digite seu nome"
           value={name}
           onChange={(event) => setName(event.target.value)}
           autoComplete="name"
-          labelClassName="text-neutral-300"
-          className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
         />
-        <Input
+        <AuthField
           type="email"
           label="E-mail"
-          placeholder="voce@empresa.com"
+          placeholder="Digite seu e-mail"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           autoComplete="email"
-          icon={<AtSign className="size-4" />}
-          labelClassName="text-neutral-300"
-          className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
         />
-        <Input
-          type="password"
+        <PasswordField
           label="Senha"
-          placeholder="••••••••"
+          placeholder="Mínimo de 6 caracteres"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="new-password"
-          labelClassName="text-neutral-300"
-          className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
         />
-        <Input
-          type="password"
+        <PasswordField
           label="Confirmar senha"
-          placeholder="••••••••"
+          placeholder="Repita a senha"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           autoComplete="new-password"
-          labelClassName="text-neutral-300"
-          className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
         />
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        <AuthError message={error} />
 
-        <Button type="submit" loading={loading} className="w-full shadow-purple-glow">
-          Criar conta
-        </Button>
+        <AuthSubmit loading={loading}>Criar conta</AuthSubmit>
       </form>
 
-      <p className="mt-6 text-center text-sm text-neutral-400">
+      <div className="mt-7 flex flex-col gap-5">
+        <AuthDivider>Ou continue com</AuthDivider>
+        <GoogleButton onBeforeRedirect={() => setRememberSession(true)} onError={setError} />
+      </div>
+
+      <p className="mt-8 text-center text-[14px] text-[#6b6875]">
         Já tem conta?{' '}
-        <Link to="/login" className="font-medium text-purple-400 hover:text-purple-300">
+        <Link to="/login" className="font-medium text-[#7c3aed] transition hover:text-[#5b21b6]">
           Entrar
         </Link>
       </p>

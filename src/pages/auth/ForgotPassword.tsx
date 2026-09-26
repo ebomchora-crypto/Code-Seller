@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { AtSign } from 'lucide-react'
+import { MailCheck } from 'lucide-react'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { AuthError, AuthField, AuthHeading, AuthSubmit } from '@/components/auth/AuthForm'
 import { resetPasswordForEmail } from '@/services/supabase/auth'
 
 export default function ForgotPasswordPage() {
@@ -35,43 +34,34 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Recuperar senha</h1>
-        <p className="mt-1 text-sm text-neutral-400">
-          Enviaremos um link de redefinição para o seu e-mail
-        </p>
-      </div>
+      <AuthHeading title="Recuperar senha" subtitle="Enviaremos um link de redefinição para o seu e-mail." />
 
       {sent ? (
-        <div className="rounded-lg border border-purple-500/20 bg-purple-500/10 px-4 py-3 text-sm text-purple-300">
-          Se existir uma conta com o e-mail informado, você receberá um link para redefinir sua
-          senha em instantes.
+        <div className="mt-9 flex gap-3 rounded-2xl border border-[#e4dcfb] bg-[#f6f2ff] p-4 text-[14px] leading-6 text-[#4c1d95]">
+          <MailCheck className="mt-0.5 size-5 shrink-0 text-[#7c3aed]" />
+          Se existir uma conta com o e-mail informado, você receberá um link para redefinir sua senha
+          em instantes.
         </div>
       ) : (
-        <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-          <Input
+        <form className="mt-9 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+          <AuthField
             type="email"
             label="E-mail"
-            placeholder="voce@empresa.com"
+            placeholder="Digite seu e-mail"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             autoComplete="email"
-            icon={<AtSign className="size-4" />}
-            labelClassName="text-neutral-300"
-            className="border-white/[0.10] bg-white/[0.06] text-white placeholder:text-neutral-500 focus:border-purple-500/50 focus:bg-white/[0.08] focus:ring-purple-500/20"
           />
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          <AuthError message={error} />
 
-          <Button type="submit" loading={loading} className="w-full shadow-purple-glow">
-            Enviar link
-          </Button>
+          <AuthSubmit loading={loading}>Enviar link</AuthSubmit>
         </form>
       )}
 
-      <p className="mt-6 text-center text-sm text-neutral-400">
+      <p className="mt-8 text-center text-[14px] text-[#6b6875]">
         Lembrou a senha?{' '}
-        <Link to="/login" className="font-medium text-purple-400 hover:text-purple-300">
+        <Link to="/login" className="font-medium text-[#7c3aed] transition hover:text-[#5b21b6]">
           Voltar ao login
         </Link>
       </p>

@@ -140,8 +140,14 @@ export default {
         'dot-bounce': 'dot-bounce 1s ease-in-out infinite',
         shimmer: 'shimmer 2s linear infinite',
         'radar-ping': 'radar-ping 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
+        // Fitas do painel das telas de acesso deslizando devagar.
+        'silk-drift': 'silk-drift 16s ease-in-out infinite alternate',
       },
       keyframes: {
+        'silk-drift': {
+          '0%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+          '100%': { transform: 'translate3d(-3%, 2%, 0) scale(1.04)' },
+        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },

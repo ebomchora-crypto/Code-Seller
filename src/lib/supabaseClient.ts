@@ -16,7 +16,55 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
+// "Manter conectado" no login: marcado (padrão) guarda a sessão no
+// localStorage como sempre; desmarcado guarda no sessionStorage, que some ao
+// fechar a aba. A escolha vale pro próximo login e fica salva em REMEMBER_KEY.
+const REMEMBER_KEY = 'code-sellers-remember-session'
+
+function readStore(store: () => Storage, key: string): string | null {
+  try {
+    return store().getItem(key)
+  } catch {
+    return null
+  }
+}
+
+const authStorage = {
+  getItem: (key: string) => readStore(() => localStorage, key) ?? readStore(() => sessionStorage, key),
+  setItem: (key: string, value: string) => {
+    const remember = readStore(() => localStorage, REMEMBER_KEY) !== 'false'
+    try {
+      if (remember) {
+        localStorage.setItem(key, value)
+        sessionStorage.removeItem(key)
+      } else {
+        sessionStorage.setItem(key, value)
+        localStorage.removeItem(key)
+      }
+    } catch {
+      // Storage bloqueado (modo privado restrito) — a sessão vive só em memória.
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      localStorage.removeItem(key)
+      sessionStorage.removeItem(key)
+    } catch {
+      // idem
+    }
+  },
+}
+
+export function setRememberSession(remember: boolean) {
+  try {
+    localStorage.setItem(REMEMBER_KEY, remember ? 'true' : 'false')
+  } catch {
+    // idem
+  }
+}
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-anon-key',
+  { auth: { storage: authStorage } },
 )
