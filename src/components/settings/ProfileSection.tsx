@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Card } from '@/components/ui/Card'
+import { User } from 'lucide-react'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
@@ -74,15 +75,15 @@ export function ProfileSection({
     }
   }
 
-  const initials = (profile?.full_name ?? userEmail).slice(0, 2).toUpperCase()
+  const nameWords = (profile?.full_name ?? '').trim().split(/\s+/).filter(Boolean)
+  const initials = (
+    nameWords.length > 1 ? `${nameWords[0][0]}${nameWords[nameWords.length - 1][0]}` : (profile?.full_name || userEmail).slice(0, 2)
+  ).toUpperCase()
 
   return (
-    <section id="perfil" className="scroll-mt-6">
-      <Card>
-        <span className="label-caps">Sua conta</span>
-        <h2 className="mt-1 text-2xl font-medium tracking-tightest text-neutral-900">Perfil</h2>
-
-        <div className="mt-6 border-b border-neutral-100 pb-6">
+    <>
+      <SettingsSection id="perfil" icon={User} title="Perfil" description="Seus dados e os da sua empresa.">
+        <div className="rounded-[20px] border border-[var(--border-subtle)] bg-black/[0.015] p-4 dark:bg-white/[0.02]">
           <AvatarUpload
             imageUrl={profile?.avatar_url ?? null}
             fallbackText={initials}
@@ -97,12 +98,16 @@ export function ProfileSection({
           <Input label="Nome completo" value={fullName} onChange={(event) => setFullName(event.target.value)} />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-neutral-700">E-mail</label>
-            <div className="flex items-center gap-2">
-              <Input value={userEmail} readOnly className="bg-neutral-50 text-neutral-500" />
-              <Button variant="ghost" size="md" onClick={() => setEmailModalOpen(true)}>
+            <span className="text-[13px] font-medium text-[var(--text-secondary)]">E-mail</span>
+            <div className="flex h-11 items-center justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-black/[0.02] pl-4 pr-1.5 dark:bg-white/[0.03]">
+              <span className="truncate text-sm text-[var(--text-secondary)]">{userEmail}</span>
+              <button
+                type="button"
+                onClick={() => setEmailModalOpen(true)}
+                className="h-8 shrink-0 rounded-lg px-3 text-[12.5px] font-medium text-[var(--accent-text)] transition hover:bg-[var(--accent-tint)]"
+              >
                 Alterar
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -116,8 +121,8 @@ export function ProfileSection({
           />
         </div>
 
-        <div className="mt-6 border-t border-neutral-100 pt-6">
-          <p className="mb-3 text-sm font-medium text-neutral-700">Logo da empresa</p>
+        <div className="mt-6 border-t border-[var(--border-subtle)] pt-6">
+          <p className="mb-3 text-[13px] font-medium text-[var(--text-secondary)]">Logo da empresa</p>
           <AvatarUpload
             imageUrl={profile?.company_logo_url ?? null}
             fallbackText={(companyName || 'CS').slice(0, 2).toUpperCase()}
@@ -129,21 +134,22 @@ export function ProfileSection({
           />
         </div>
 
-        <div className="mt-6 border-t border-neutral-100 pt-6">
+        <div className="mt-6 border-t border-[var(--border-subtle)] pt-6">
           <Textarea
             label="Bio"
+            placeholder="Conte em poucas linhas o que você faz."
             value={bio}
             onChange={(event) => event.target.value.length <= MAX_BIO_LENGTH && setBio(event.target.value)}
             helperText={`${bio.length}/${MAX_BIO_LENGTH} caracteres`}
           />
         </div>
 
-        <div className="mt-6 flex justify-end border-t border-neutral-100 pt-6">
-          <Button onClick={handleSave} loading={saving}>
+        <div className="mt-6 flex justify-end border-t border-[var(--border-subtle)] pt-6">
+          <Button onClick={handleSave} loading={saving} className="h-11 rounded-full px-5">
             Salvar alterações
           </Button>
         </div>
-      </Card>
+      </SettingsSection>
 
       <Modal open={emailModalOpen} onClose={() => setEmailModalOpen(false)} title="Alterar e-mail" size="sm">
         <div className="flex flex-col gap-4">
@@ -153,7 +159,7 @@ export function ProfileSection({
             value={newEmail}
             onChange={(event) => setNewEmail(event.target.value)}
           />
-          <p className="text-xs text-neutral-500">Um e-mail de confirmação será enviado para o novo endereço.</p>
+          <p className="text-xs text-[var(--text-muted)]">Um e-mail de confirmação será enviado para o novo endereço.</p>
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setEmailModalOpen(false)}>
               Cancelar
@@ -164,6 +170,6 @@ export function ProfileSection({
           </div>
         </div>
       </Modal>
-    </section>
+    </>
   )
 }

@@ -46,7 +46,7 @@ export function AvatarUpload({
     })
   }
 
-  const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded-xl'
+  const shapeClass = shape === 'circle' ? 'rounded-full' : 'rounded-[20px]'
   const displayUrl = preview ?? imageUrl
 
   return (
@@ -54,33 +54,33 @@ export function AvatarUpload({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className={`group relative h-20 w-20 shrink-0 overflow-hidden ${shapeClass} bg-purple-100`}
+        className={`group relative size-20 shrink-0 overflow-hidden ${shapeClass} bg-[linear-gradient(135deg,#8b5cf6,#5b21b6)] ring-4 ring-[var(--accent-tint)]`}
         aria-label={`Alterar ${label.toLowerCase()}`}
       >
         {displayUrl ? (
-          <img src={displayUrl} alt="" className="h-full w-full object-cover" />
+          <img src={displayUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-xl font-medium text-purple-700">
+          <span className="flex h-full w-full items-center justify-center text-xl font-semibold text-white">
             {fallbackText}
           </span>
         )}
-        <span className="absolute inset-0 flex items-center justify-center bg-neutral-900/0 text-white opacity-0 transition-all duration-150 group-hover:bg-neutral-900/40 group-hover:opacity-100">
+        <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all duration-150 group-hover:bg-black/45 group-hover:opacity-100">
           <Camera className="h-5 w-5" />
         </span>
       </button>
 
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
-          <Button variant="secondary" size="sm" loading={uploading} onClick={() => fileInputRef.current?.click()}>
+          <Button variant="secondary" size="sm" className="h-9 rounded-full px-4" loading={uploading} onClick={() => fileInputRef.current?.click()}>
             Alterar {label.toLowerCase()}
           </Button>
           {imageUrl && (
-            <Button variant="ghost" size="sm" onClick={() => void onDelete()} disabled={uploading}>
+            <Button variant="ghost" size="sm" className="h-9 rounded-full px-4" onClick={() => void onDelete()} disabled={uploading}>
               Remover
             </Button>
           )}
         </div>
-        <p className="text-xs text-neutral-400">JPEG, PNG ou WebP · máx 2MB</p>
+        <p className="text-[12px] text-[var(--text-muted)]">JPEG, PNG ou WebP · até 2 MB</p>
       </div>
 
       <input

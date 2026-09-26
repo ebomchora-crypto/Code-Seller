@@ -25,14 +25,14 @@ export function StageEditor({ stage, onUpdate, onDelete }: StageEditorProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-wrap items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3 ${isDragging ? 'shadow-lg' : ''}`}
+      className={`flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] p-3 ${isDragging ? 'shadow-[var(--shadow-modal)]' : ''}`}
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
         aria-label="Reordenar etapa"
-        className="cursor-grab text-neutral-300 hover:text-neutral-500"
+        className="cursor-grab text-[var(--text-muted)] hover:text-[var(--text-primary)] active:cursor-grabbing"
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -44,7 +44,7 @@ export function StageEditor({ stage, onUpdate, onDelete }: StageEditorProps) {
             type="button"
             aria-label={`Cor ${color}`}
             onClick={() => onUpdate({ color })}
-            className={`h-5 w-5 rounded-full ${stage.color === color ? 'ring-2 ring-offset-1' : ''}`}
+            className={`size-5 rounded-full transition ${stage.color === color ? 'ring-2 ring-[var(--text-primary)] ring-offset-2 ring-offset-[var(--bg-card)]' : 'opacity-70 hover:opacity-100'}`}
             style={{ backgroundColor: color }}
           />
         ))}
@@ -54,7 +54,8 @@ export function StageEditor({ stage, onUpdate, onDelete }: StageEditorProps) {
         value={name}
         onChange={(event) => setName(event.target.value)}
         onBlur={() => name.trim() && name !== stage.name && onUpdate({ name: name.trim() })}
-        className="min-w-0 flex-1 border-b border-transparent bg-transparent text-sm font-medium text-neutral-800 outline-none focus:border-purple-300"
+        aria-label="Nome"
+        className="min-w-[8rem] flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-[14px] font-medium text-[var(--text-primary)] outline-none hover:border-[var(--border-default)] focus:border-[var(--accent-ring)]"
       />
 
       <div className="flex items-center gap-1.5">
@@ -64,16 +65,16 @@ export function StageEditor({ stage, onUpdate, onDelete }: StageEditorProps) {
           max={100}
           value={stage.default_probability}
           onChange={(event) => onUpdate({ default_probability: Number(event.target.value) })}
-          className="h-8 w-16 text-xs"
+          className="!h-8 w-16 !px-2 text-xs"
         />
-        <span className="text-xs text-neutral-400">%</span>
+        <span className="text-xs text-[var(--text-muted)]">%</span>
       </div>
 
-      <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+      <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
         <Switch checked={stage.is_won} onChange={(checked) => onUpdate({ is_won: checked })} ariaLabel="Etapa de ganho" />
         Ganho
       </label>
-      <label className="flex items-center gap-1.5 text-xs text-neutral-500">
+      <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
         <Switch checked={stage.is_lost} onChange={(checked) => onUpdate({ is_lost: checked })} ariaLabel="Etapa de perda" />
         Perda
       </label>
@@ -82,7 +83,7 @@ export function StageEditor({ stage, onUpdate, onDelete }: StageEditorProps) {
         type="button"
         onClick={() => setDeleteOpen(true)}
         aria-label="Excluir etapa"
-        className="text-neutral-400 hover:text-red-600"
+        className="flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition hover:bg-red-500/10 hover:text-red-500"
       >
         <Trash2 className="h-4 w-4" />
       </button>

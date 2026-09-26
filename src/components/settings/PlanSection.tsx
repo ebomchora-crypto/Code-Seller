@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
-import { Card } from '@/components/ui/Card'
+import { SettingsSection } from '@/components/settings/SettingsSection'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
@@ -60,15 +60,15 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
   const percentage = Math.min(100, (used / limit) * 100)
   return (
     <div>
-      <div className="flex justify-between text-xs text-neutral-500">
+      <div className="flex justify-between text-[12.5px] text-[var(--text-secondary)]">
         <span>{label}</span>
-        <span>
+        <span className="tabular-nums text-[var(--text-muted)]">
           {used} de {limit}
         </span>
       </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${percentage >= 90 ? 'bg-red-500' : 'bg-purple-500'}`}
+          className={`h-full rounded-full transition-all duration-500 ${percentage >= 90 ? 'bg-red-500' : 'bg-[linear-gradient(90deg,#8b5cf6,#6d28d9)]'}`}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -106,37 +106,48 @@ export function PlanSection() {
   const storageGb = usage ? usage.storage_bytes / 1024 ** 3 : 0
 
   return (
-    <section id="plano" className="scroll-mt-6">
-      <Card>
-        <span className="label-caps">Conta</span>
-        <h2 className="mt-1 text-2xl font-medium tracking-tightest text-neutral-900">Plano e assinatura</h2>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+    <>
+      <SettingsSection id="plano" icon={CreditCard} title="Plano e uso" description="Seu plano atual e quanto você já usou dele.">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {PLANS.map((plan) => {
             const isCurrent = plan.name === CURRENT_PLAN
             return (
               <div
                 key={plan.name}
-                className={`flex flex-col rounded-xl border p-5 ${isCurrent ? 'border-purple-400 bg-purple-50/40' : 'border-neutral-200'}`}
+                className={`relative flex flex-col overflow-hidden rounded-[20px] border p-5 ${
+                  isCurrent ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)]' : 'border-[var(--border-default)]'
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-medium text-neutral-900">{plan.label}</h3>
-                  {isCurrent && <Badge variant="purple">Plano atual</Badge>}
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">{plan.label}</h3>
+                  {isCurrent && (
+                    <Badge variant="purple" size="sm">
+                      Seu plano
+                    </Badge>
+                  )}
                 </div>
-                <p className="mt-1 text-xl font-medium text-neutral-900">{plan.price}</p>
+                <p className="mt-2 font-display text-[24px] font-bold tracking-tight text-[var(--text-primary)]">
+                  {plan.price.replace('/mês', '')}
+                  <span className="ml-1 font-sans text-[13px] font-medium text-[var(--text-muted)]">/mês</span>
+                </p>
 
                 <ul className="mt-4 flex flex-1 flex-col gap-2">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm text-neutral-600">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <li key={feature} className="flex items-start gap-2 text-[13px] text-[var(--text-secondary)]">
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
                       {feature}
                     </li>
                   ))}
                 </ul>
 
                 {!isCurrent && (
-                  <Button variant="secondary" size="sm" className="mt-4" onClick={() => setUpgradeModalPlan(plan)}>
-                    Fazer upgrade
+                  <Button
+                    variant={plan.name === 'pro' ? 'primary' : 'secondary'}
+                    size="sm"
+                    className="mt-5 h-10 rounded-full"
+                    onClick={() => setUpgradeModalPlan(plan)}
+                  >
+                    Quero o {plan.label}
                   </Button>
                 )}
               </div>
@@ -144,8 +155,8 @@ export function PlanSection() {
           })}
         </div>
 
-        <div className="mt-8 border-t border-neutral-100 pt-6">
-          <p className="mb-3 text-sm font-medium text-neutral-800">Uso atual</p>
+        <div className="mt-6 border-t border-[var(--border-subtle)] pt-6">
+          <p className="mb-4 text-[14px] font-semibold text-[var(--text-primary)]">Uso atual</p>
           {loadingUsage ? (
             <div className="flex flex-col gap-3">
               <Skeleton className="h-8 w-full" />
@@ -153,14 +164,14 @@ export function PlanSection() {
               <Skeleton className="h-8 w-full" />
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="grid gap-5 sm:grid-cols-3">
               <UsageBar
-                label="Contatos utilizados"
+                label="Contatos"
                 used={usage?.contacts ?? 0}
                 limit={typeof currentPlan.limits.contacts === 'number' ? currentPlan.limits.contacts : 1}
               />
               <UsageBar
-                label="Deals ativos"
+                label="Negócios ativos"
                 used={usage?.active_deals ?? 0}
                 limit={typeof currentPlan.limits.deals === 'number' ? currentPlan.limits.deals : 1}
               />
@@ -172,7 +183,7 @@ export function PlanSection() {
             </div>
           )}
         </div>
-      </Card>
+      </SettingsSection>
 
       <Modal
         open={upgradeModalPlan !== null}
@@ -181,7 +192,7 @@ export function PlanSection() {
         size="sm"
       >
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-[var(--text-secondary)]">
             O checkout de planos pagos ainda não está disponível. Deixe seu e-mail para ser avisado assim que
             abrirmos.
           </p>
@@ -201,6 +212,6 @@ export function PlanSection() {
           </div>
         </div>
       </Modal>
-    </section>
+    </>
   )
 }

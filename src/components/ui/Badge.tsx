@@ -10,7 +10,7 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  purple: 'bg-purple-500/10 text-purple-500 border border-purple-500/20',
+  purple: 'bg-[var(--accent-tint)] text-[var(--accent-text)] border border-[var(--accent-ring)]',
   neutral: 'bg-[var(--bg-muted)] text-[var(--text-secondary)] border border-[var(--border-subtle)]',
   success: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20',
   warning: 'bg-amber-500/10 text-amber-500 border border-amber-500/20',

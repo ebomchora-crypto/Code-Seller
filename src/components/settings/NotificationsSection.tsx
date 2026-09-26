@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Card } from '@/components/ui/Card'
+import { Bell } from 'lucide-react'
+import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { Switch } from '@/components/ui/Switch'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { NotificationPreferences } from '@/types'
@@ -53,34 +54,28 @@ export function NotificationsSection({ preferences, loading, onSave }: Notificat
   }, [])
 
   return (
-    <section id="notificações" className="scroll-mt-6">
-      <Card>
-        <span className="label-caps">Sistema</span>
-        <h2 className="mt-1 text-2xl font-medium tracking-tightest text-neutral-900">Notificações</h2>
+    <SettingsSection id="notificações" icon={Bell} title="Notificações" description="Escolha o que merece um aviso seu.">
+      <SettingsNote>
+        Avisos por e-mail e no celular chegam em breve. Por enquanto, os lembretes de tarefas aparecem dentro do app.
+      </SettingsNote>
 
-        <p className="mt-2 rounded-lg bg-purple-50 px-4 py-3 text-sm text-purple-700">
-          Notificações por e-mail e push serão disponibilizadas em breve. Por ora, os avisos aparecem dentro do
-          sistema.
-        </p>
-
-        <div className="mt-6 divide-y divide-neutral-100">
-          {loading
-            ? Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="my-3 h-10 w-full" />)
-            : TOGGLES.map((toggle) => (
-                <div key={toggle.key} className="flex items-center justify-between gap-4 py-4">
-                  <div>
-                    <p className="text-sm font-medium text-neutral-800">{toggle.label}</p>
-                    <p className="text-xs text-neutral-500">{toggle.description}</p>
-                  </div>
-                  <Switch
-                    checked={valueFor(toggle.key)}
-                    onChange={(checked) => handleToggle(toggle.key, checked)}
-                    ariaLabel={toggle.label}
-                  />
-                </div>
-              ))}
-        </div>
-      </Card>
-    </section>
+      <div className="mt-4 divide-y divide-[var(--border-subtle)]">
+        {loading
+          ? Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="my-3 h-10 w-full" />)
+          : TOGGLES.map((toggle) => (
+              <label key={toggle.key} className="flex cursor-pointer items-center justify-between gap-4 py-4">
+                <span>
+                  <span className="block text-[14px] font-medium text-[var(--text-primary)]">{toggle.label}</span>
+                  <span className="block text-[12.5px] text-[var(--text-muted)]">{toggle.description}</span>
+                </span>
+                <Switch
+                  checked={valueFor(toggle.key)}
+                  onChange={(checked) => handleToggle(toggle.key, checked)}
+                  ariaLabel={toggle.label}
+                />
+              </label>
+            ))}
+      </div>
+    </SettingsSection>
   )
 }

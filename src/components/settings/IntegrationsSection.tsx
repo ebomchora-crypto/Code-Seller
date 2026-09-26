@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Card } from '@/components/ui/Card'
+import { Plug } from 'lucide-react'
+import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -147,16 +148,14 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
   }
 
   return (
-    <section id="integrações" className="scroll-mt-6">
-      <Card>
-        <span className="label-caps">Sistema</span>
-        <h2 className="mt-1 text-2xl font-medium tracking-tightest text-neutral-900">Integrações</h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Nenhuma integração real está ativa neste MVP — a conexão abaixo apenas estrutura a UI e salva a
-          configuração no banco.
-        </p>
+    <>
+      <SettingsSection id="integrações" icon={Plug} title="Integrações" description="Conecte o Code Sellers a outras ferramentas.">
+        <SettingsNote>
+          As integrações ainda estão em construção: conectar aqui salva a configuração, mas nada é enviado ou
+          sincronizado por enquanto.
+        </SettingsNote>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {configs.map((config) => (
             <IntegrationCard
               key={config.type}
@@ -166,7 +165,7 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
             />
           ))}
         </div>
-      </Card>
+      </SettingsSection>
 
       <Modal
         open={connectingType !== null}
@@ -176,7 +175,7 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
       >
         {connectingType === 'whatsapp' && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-[var(--text-secondary)]">
               Informe o número usado na sua conta do WhatsApp Business API.
               {/* TODO: implementar integração real com a WhatsApp Business API. */}
             </p>
@@ -191,7 +190,7 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
 
         {(connectingType === 'google_calendar' || connectingType === 'google_contacts') && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-[var(--text-secondary)]">
               A conexão real via OAuth com o Google ainda não está implementada neste MVP.
               {/* TODO: implementar OAuth real com Google para google_calendar/google_contacts. */}
             </p>
@@ -203,8 +202,8 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
 
         {connectingType === 'zapier' && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-neutral-600">Use esta chave para conectar o Code Sellers ao Zapier.</p>
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 font-mono text-xs text-neutral-700">
+            <p className="text-sm text-[var(--text-secondary)]">Use esta chave para conectar o Code Sellers ao Zapier.</p>
+            <div className="break-all rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] px-3 py-2.5 font-mono text-xs text-[var(--text-secondary)]">
               {zapierKey}
             </div>
             {/* TODO: implementar integração real com a API do Zapier. */}
@@ -255,6 +254,6 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
         }}
         onCancel={() => setDisconnectingType(null)}
       />
-    </section>
+    </>
   )
 }

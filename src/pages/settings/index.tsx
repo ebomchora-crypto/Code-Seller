@@ -1,5 +1,4 @@
-import { PageWrapper } from '@/components/ui/PageWrapper'
-import { SectionLabel } from '@/components/ui/section-label'
+import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { SettingsNav } from '@/components/settings/SettingsNav'
 import { ProfileSection } from '@/components/settings/ProfileSection'
 import { SecuritySection } from '@/components/settings/SecuritySection'
@@ -63,17 +62,14 @@ export default function SettingsPage() {
 
   return (
     <PageWrapper>
-        <div className="mb-8">
-          <SectionLabel>Configurações</SectionLabel>
-          <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-[var(--text-primary)]">Configurações</h1>
-        </div>
+        <PageHeader title="Configurações" subtitle="Seu perfil, sua conta e como o Code Sellers funciona para você." />
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-          <div className="lg:w-56 lg:shrink-0">
+        <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          <div className="lg:sticky lg:top-6 lg:w-60 lg:shrink-0">
             <SettingsNav />
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col gap-8">
+          <div className="flex min-w-0 flex-1 flex-col gap-6">
             <ProfileSection
               profile={profile}
               userEmail={user?.email ?? ''}

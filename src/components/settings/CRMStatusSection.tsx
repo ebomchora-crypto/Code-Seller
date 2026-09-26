@@ -1,7 +1,7 @@
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { Info } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Tags, Plus } from 'lucide-react'
+import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { StatusEditor } from '@/components/settings/StatusEditor'
@@ -34,18 +34,8 @@ export function CRMStatusSection({ statuses, onCreate, onUpdate, onDelete, onReo
   }
 
   return (
-    <section id="crm-status" className="scroll-mt-6">
-      <Card>
-        <span className="label-caps">CRM</span>
-        <h2 className="mt-1 text-2xl font-medium tracking-tightest text-neutral-900">Status do CRM</h2>
-
-        <div className="mt-4 flex items-start gap-2 rounded-lg bg-purple-50 px-4 py-3 text-sm text-purple-700">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            Os status customizados serão aplicados a novos contatos. A integração completa com os contatos
-            existentes será disponibilizada em breve.
-          </p>
-        </div>
+    <SettingsSection id="crm-status" icon={Tags} title="Status do CRM" description="Os estágios dos seus contatos. Arraste para reordenar.">
+      <SettingsNote>Por enquanto, o CRM ainda usa os status padrão. Estas configurações passam a valer quando a personalização for liberada.</SettingsNote>
 
         <div className="mt-4">
           {sorted.length === 0 ? (
@@ -69,11 +59,11 @@ export function CRMStatusSection({ statuses, onCreate, onUpdate, onDelete, onReo
         </div>
 
         <div className="mt-4">
-          <Button variant="ghost" size="sm" onClick={onCreate}>
-            + Adicionar status
+          <Button variant="secondary" size="sm" className="h-9 rounded-full px-4" onClick={onCreate}>
+            <Plus className="size-4" />
+            Adicionar status
           </Button>
         </div>
-      </Card>
-    </section>
+    </SettingsSection>
   )
 }
