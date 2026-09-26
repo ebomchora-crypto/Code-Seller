@@ -18,6 +18,9 @@ export interface UserProfile {
   // Migração 0013
   monthly_goal?: number | null
   onboarding_dismissed_at?: string | null
+  // Migração 0015
+  followup_enabled?: boolean
+  followup_days?: number[]
   created_at: string
   updated_at: string
 }
@@ -70,19 +73,6 @@ export interface Integration {
   connected_at: string | null
   created_at: string
   updated_at: string
-}
-
-// Informações de plano (estáticas por enquanto — sem billing real)
-export interface PlanInfo {
-  name: 'free' | 'pro' | 'agency'
-  label: string
-  price: string
-  features: string[]
-  limits: {
-    contacts: number | 'unlimited'
-    deals: number | 'unlimited'
-    storage_gb: number
-  }
 }
 
 // Configuração de integração para exibição

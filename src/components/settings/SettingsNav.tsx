@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
   Bell,
-  CreditCard,
+  MessageSquareText,
+  Repeat,
   GitBranch,
   Plug,
   Settings as SettingsIcon,
@@ -24,7 +25,8 @@ const NAV_ITEMS: SettingsNavItem[] = [
   { id: 'pipeline', label: 'Pipeline', icon: GitBranch },
   { id: 'crm-status', label: 'Status do CRM', icon: Tags },
   { id: 'integrações', label: 'Integrações', icon: Plug },
-  { id: 'plano', label: 'Plano', icon: CreditCard },
+  { id: 'modelos', label: 'Modelos', icon: MessageSquareText },
+  { id: 'follow-up', label: 'Follow-up', icon: Repeat },
   { id: 'notificações', label: 'Notificações', icon: Bell },
 ]
 

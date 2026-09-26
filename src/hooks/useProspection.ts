@@ -11,6 +11,7 @@ import {
   restoreProspect,
   searchProspects,
 } from '@/services/supabase/prospection'
+import { startFollowUp } from '@/services/supabase/followup'
 import { applyProspectFilters, DEFAULT_PROSPECT_FILTERS, scoreProspect } from '@/utils/prospection'
 import type {
   Prospect,
@@ -186,11 +187,23 @@ export function useProspection() {
         const created = await importProspects(pending, params?.niche ?? '')
         setImported((current) => new Map([...current, ...created]))
         setSelected((current) => new Set([...current].filter((id) => !created.has(id))))
-        toast.success(
-          pending.length === 1
-            ? `${pending[0].name} foi adicionada ao CRM.`
-            : `${pending.length} empresas adicionadas ao CRM.`,
-        )
+        // Follow-up automático para cada empresa importada (se estiver ligado).
+        let scheduled = 0
+        for (const prospect of pending) {
+          const contactId = created.get(prospect.id)
+          if (!contactId) continue
+          try {
+            const count = await startFollowUp({
+              contact: { id: contactId, name: prospect.name, city: prospect.city, niche: prospect.category ?? params?.niche },
+            })
+            if (count > 0) scheduled++
+          } catch {
+            // O contato já foi criado; o follow-up pode ser iniciado depois, no contato.
+          }
+        }
+        const base =
+          pending.length === 1 ? `${pending[0].name} foi adicionada ao CRM.` : `${pending.length} empresas adicionadas ao CRM.`
+        toast.success(scheduled > 0 ? `${base} Follow-up agendado.` : base)
       } catch {
         toast.error('Não foi possível adicionar ao CRM. Tente de novo.')
       } finally {

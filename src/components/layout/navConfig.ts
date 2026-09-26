@@ -1,4 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
+import { ChartColumnBig } from 'lucide-react'
 import {
   AutopilotIcon,
   CrmIcon,
@@ -28,6 +29,7 @@ const crmItem: NavItem = { label: 'CRM', path: '/crm', icon: CrmIcon }
 const dealsItem: NavItem = { label: 'Negócios', path: '/deals', icon: DealsIcon }
 const financialItem: NavItem = { label: 'Financeiro', path: '/financial', icon: FinancialIcon }
 const tasksItem: NavItem = { label: 'Tarefas', path: '/tasks', icon: TasksIcon }
+const reportsItem: NavItem = { label: 'Relatórios', path: '/relatorios', icon: ChartColumnBig }
 const autopilotItem: NavItem = { label: 'CS Copilot', path: '/copilot', icon: AutopilotIcon }
 const settingsItem: NavItem = { label: 'Configurações', path: '/settings', icon: SettingsIcon }
 const supportItem: NavItem = { label: 'Suporte', path: '/support', icon: SupportIcon }
@@ -35,7 +37,7 @@ const supportItem: NavItem = { label: 'Suporte', path: '/support', icon: Support
 export const navGroups: NavGroup[] = [
   { label: 'Principal', items: [dashboardItem] },
   { label: 'Vendas', items: [prospectionItem, crmItem, dealsItem] },
-  { label: 'Gestão', items: [financialItem, tasksItem] },
+  { label: 'Gestão', items: [financialItem, tasksItem, reportsItem] },
   { label: 'IA', items: [autopilotItem] },
   { label: 'Conta', items: [settingsItem, supportItem] },
 ]

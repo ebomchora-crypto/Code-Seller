@@ -8,8 +8,9 @@ import { PreferencesSection } from '@/components/settings/PreferencesSection'
 import { PipelineSection } from '@/components/settings/PipelineSection'
 import { CRMStatusSection } from '@/components/settings/CRMStatusSection'
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection'
-import { PlanSection } from '@/components/settings/PlanSection'
 import { NotificationsSection } from '@/components/settings/NotificationsSection'
+import { TemplatesSection } from '@/components/settings/TemplatesSection'
+import { FollowUpSection } from '@/components/settings/FollowUpSection'
 import { useSettings } from '@/hooks/useSettings'
 import { useAuthContext } from '@/stores/AuthContext'
 import { CATEGORY_COLOR_SWATCHES } from '@/types'
@@ -118,7 +119,9 @@ export default function SettingsPage() {
               onDisconnect={disconnectIntegration}
             />
 
-            <PlanSection />
+            <TemplatesSection />
+
+            <FollowUpSection />
 
             <NotificationsSection preferences={notificationPrefs} loading={loading} onSave={updateNotificationPrefs} />
           </div>

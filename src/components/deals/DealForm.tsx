@@ -8,6 +8,7 @@ import { getContacts } from '@/services/supabase/contacts'
 import { createDeal, updateDeal } from '@/services/supabase/deals'
 import { DEAL_STAGES, getStageConfig } from '@/utils/deals'
 import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage } from '@/types'
+import { startFollowUp } from '@/services/supabase/followup'
 
 interface DealFormProps {
   deal?: Deal
@@ -129,7 +130,17 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
       }
 
       const result = deal ? await updateDeal(deal.id, payload) : await createDeal(payload)
-      toast.success(deal ? 'Negócio atualizado com sucesso.' : 'Negócio criado com sucesso.')
+      let scheduled = 0
+      if (!deal && payload.status === 'open' && payload.contact_id) {
+        // Negócio novo com contato: agenda o follow-up automático (se ligado).
+        scheduled = await startFollowUp({
+          contact: { id: payload.contact_id, name: form.contactName || payload.title },
+          deal: { id: result.id, title: result.title, value: result.value },
+        }).catch(() => 0)
+      }
+      toast.success(
+        deal ? 'Negócio atualizado com sucesso.' : scheduled > 0 ? 'Negócio criado. Follow-up agendado nas Tarefas.' : 'Negócio criado com sucesso.',
+      )
       onSuccess(result)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Não foi possível salvar o negócio.')

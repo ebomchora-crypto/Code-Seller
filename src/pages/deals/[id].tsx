@@ -14,6 +14,8 @@ import { ActivityForm } from '@/components/deals/ActivityForm'
 import { LinkedTasksSection } from '@/components/tasks/LinkedTasksSection'
 import { useDeal } from '@/hooks/useDeal'
 import { useAuthContext } from '@/stores/AuthContext'
+import { SendMessageButton } from '@/components/messages/SendMessageButton'
+import { ContractButton } from '@/components/contracts/ContractButton'
 
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -69,6 +71,19 @@ export default function DealDetailPage() {
             deleteProposal={deleteProposal}
             generateProposal={generateProposal}
             generatingProposal={generatingProposal}
+            actions={(buttonClass) => (
+              <>
+                <SendMessageButton
+                  className={buttonClass}
+                  target={{
+                    contact: deal.contact ? { id: deal.contact.id, name: deal.contact.name, phone: deal.contact.phone } : null,
+                    deal: { id: deal.id, title: deal.title, value: deal.value },
+                  }}
+                  onSent={() => void refetch()}
+                />
+                <ContractButton className={buttonClass} deal={deal} />
+              </>
+            )}
             extra={<LinkedTasksSection dealId={deal.id} dealTitle={deal.title} />}
             history={
               <Card>

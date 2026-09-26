@@ -1,6 +1,6 @@
 const PAGE_SECTIONS = [
   { paths: ['/prospection', '/crm', '/deals'], label: 'Vendas' },
-  { paths: ['/financial', '/tasks'], label: 'Gestão' },
+  { paths: ['/financial', '/tasks', '/relatorios'], label: 'Gestão' },
   { paths: ['/copilot'], label: 'IA' },
   { paths: ['/settings', '/support'], label: 'Conta' },
 ] as const

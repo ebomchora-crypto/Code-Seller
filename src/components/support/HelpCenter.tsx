@@ -1,4 +1,4 @@
-import { Bot, CreditCard, ListChecks, Search, UserCog, Users, Wallet, type LucideIcon } from 'lucide-react'
+import { Bot, Crosshair, ListChecks, Search, UserCog, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { SilkRibbons } from '@/components/auth/SilkRibbons'
 import { OVERALL_STATUS } from '@/data/systemStatus'
 
@@ -16,7 +16,7 @@ const TOPICS: Topic[] = [
   { title: 'Negócios e pipeline', description: 'Propostas e o funil de vendas.', icon: ListChecks, color: '#818cf8', category: 'Negócios' },
   { title: 'Financeiro', description: 'Receitas, despesas e a receber.', icon: Wallet, color: '#34d399', category: 'Financeiro' },
   { title: 'CS Copilot', description: 'Seu assistente de IA para vendas.', icon: Bot, color: '#e879f9', category: 'CS Copilot' },
-  { title: 'Planos e cobrança', description: 'Assinatura, upgrade e pagamento.', icon: CreditCard, color: '#fbbf24', category: 'Planos' },
+  { title: 'Buyers Hunter', description: 'Prospecção de empresas por nicho e cidade.', icon: Crosshair, color: '#fbbf24', category: 'Buyers Hunter' },
   { title: 'Conta e acesso', description: 'E-mail, senha e cancelamento.', icon: UserCog, color: '#60a5fa', category: 'Conta' },
 ]
 

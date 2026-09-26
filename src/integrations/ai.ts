@@ -166,3 +166,58 @@ Use só essas informações — não invente fatos sobre a empresa. Termine com 
 
   return (await chatCompletion([{ role: 'user', content: prompt }])).trim()
 }
+
+// ============================================================================
+// Contrato de prestação de serviço
+// ============================================================================
+
+export interface ContractPayload {
+  provider_name: string
+  provider_company: string | null
+  provider_document: string | null
+  client_name: string
+  client_document: string | null
+  client_address: string | null
+  service: string
+  scope: string
+  value: number | null
+  payment_terms: string
+  deadline: string
+  support: string | null
+  city: string | null
+}
+
+export async function generateContract(payload: ContractPayload): Promise<string> {
+  const value = payload.value !== null ? formatCurrency(payload.value) : 'a combinar'
+  const prompt = `Você redige contratos simples de prestação de serviços digitais (sites, landing pages, sistemas e automações) para freelancers brasileiros.
+
+Escreva um CONTRATO DE PRESTAÇÃO DE SERVIÇOS em português do Brasil, em Markdown, com linguagem clara e objetiva, com as cláusulas numeradas:
+1. Das partes
+2. Do objeto
+3. Do escopo (o que está incluído e o que não está)
+4. Do prazo
+5. Do valor e forma de pagamento
+6. Das obrigações do contratado
+7. Das obrigações do contratante (enviar conteúdos, aprovar etapas, acessos)
+8. Das alterações de escopo
+9. Da propriedade e entrega dos arquivos
+10. Do suporte e ajustes após a entrega
+11. Da rescisão
+12. Do foro
+Termine com local, data em branco (____/____/______) e linhas de assinatura das duas partes.
+
+Dados (use só estes; onde faltar dado, deixe um espaço em branco "__________" para preencher):
+- Contratado: ${payload.provider_name}${payload.provider_company ? ` (${payload.provider_company})` : ''}${payload.provider_document ? `, documento ${payload.provider_document}` : ''}
+- Contratante: ${payload.client_name}${payload.client_document ? `, documento ${payload.client_document}` : ''}${payload.client_address ? `, endereço ${payload.client_address}` : ''}
+- Serviço: ${payload.service}
+- Escopo informado: ${payload.scope || 'não detalhado'}
+- Valor total: ${value}
+- Forma de pagamento: ${payload.payment_terms || 'a combinar'}
+- Prazo de entrega: ${payload.deadline || 'a combinar'}
+- Suporte/ajustes após a entrega: ${payload.support || 'não informado'}
+- Cidade do foro: ${payload.city || '__________'}
+
+Não invente valores, prazos ou dados pessoais. Não inclua comentários fora do contrato.`
+
+  return (await chatCompletion([{ role: 'user', content: prompt }])).trim()
+}

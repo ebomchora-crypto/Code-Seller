@@ -20,6 +20,7 @@ const TasksPage = lazy(() => import('@/pages/tasks'))
 const CopilotPage = lazy(() => import('@/pages/autopilot'))
 const SettingsPage = lazy(() => import('@/pages/settings'))
 const SupportPage = lazy(() => import('@/pages/support'))
+const ReportsPage = lazy(() => import('@/pages/reports'))
 const RevenueRoomPage = lazy(() => import('@/pages/revenue-room'))
 
 function RouteFallback() {
@@ -79,6 +80,7 @@ export function AppRouter() {
             <Route path="/deals/:id" element={<DealDetailPage />} />
             <Route path="/financial" element={<FinancialPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/relatorios" element={<ReportsPage />} />
             <Route path="/copilot" element={<CopilotPage />} />
             <Route path="/autopilot" element={<Navigate to="/copilot" replace />} />
             <Route path="/settings" element={<SettingsPage />} />

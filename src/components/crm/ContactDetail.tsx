@@ -42,6 +42,8 @@ interface ContactDetailProps {
   onDealLinked: (deal: Deal) => void
   /** Coluna da direita (histórico de interações). */
   history: ReactNode
+  /** Botões extras no topo (ex.: mensagem pronta, contrato). Recebem a classe dos botões do topo. */
+  actions?: (buttonClass: string) => ReactNode
   /** Cards extras abaixo dos negócios (ex: tarefas vinculadas). */
   extra?: ReactNode
 }
@@ -73,6 +75,7 @@ export function ContactDetail({
   onDealLinked,
   history,
   extra,
+  actions,
 }: ContactDetailProps) {
   const navigate = useNavigate()
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
@@ -226,6 +229,7 @@ export function ContactDetail({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {actions?.(actionButton)}
             {whatsapp && (
               <a href={whatsapp} target="_blank" rel="noreferrer" className={actionButton}>
                 <MessageCircle className="size-4 text-emerald-500" />

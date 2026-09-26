@@ -45,6 +45,8 @@ interface DealDetailProps {
   generatingProposal: boolean
   /** Coluna da direita (histórico). */
   history: ReactNode
+  /** Botões extras no topo (ex.: mensagem pronta, contrato). Recebem a classe dos botões do topo. */
+  actions?: (buttonClass: string) => ReactNode
   /** Cards extras na coluna da esquerda (ex: tarefas). */
   extra?: ReactNode
 }
@@ -68,6 +70,7 @@ export function DealDetail({
   generatingProposal,
   history,
   extra,
+  actions,
 }: DealDetailProps) {
   const navigate = useNavigate()
   const [stageMenuOpen, setStageMenuOpen] = useState(false)
@@ -222,6 +225,7 @@ export function DealDetail({
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {actions?.(actionButton)}
               <button type="button" onClick={onEdit} className={actionButton}>
                 <Pencil className="size-4 text-[var(--text-muted)]" />
                 Editar

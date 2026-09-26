@@ -19,8 +19,8 @@ export const FAQ_ITEMS: FAQItem[] = [
   {
     id: 'faq-3',
     category: 'CRM',
-    question: 'Qual o limite de contatos no plano gratuito?',
-    answer: 'No plano gratuito você pode cadastrar até 50 contatos. No plano Pro e Agência os contatos são ilimitados.',
+    question: 'Existe limite de contatos?',
+    answer: 'Não. Você pode cadastrar quantos contatos precisar, manualmente, por CSV ou importando do Buyers Hunter.',
   },
   {
     id: 'faq-4',
@@ -72,18 +72,19 @@ export const FAQ_ITEMS: FAQItem[] = [
     answer:
       'Não. O CS Copilot sempre pede confirmação antes de criar ou editar qualquer dado. Você aprova ou rejeita cada ação sugerida.',
   },
-  // CATEGORIA: Planos
+  // CATEGORIA: Buyers Hunter
   {
     id: 'faq-11',
-    category: 'Planos',
-    question: 'Posso mudar de plano a qualquer momento?',
-    answer: 'Sim. O upgrade é imediato. O downgrade entra em vigor no próximo ciclo de cobrança.',
+    category: 'Buyers Hunter',
+    question: 'O que é o Buyers Hunter?',
+    answer:
+      'É a ferramenta de prospecção: você informa o nicho e a cidade e ela mostra empresas da região com uma nota de potencial e o motivo. Com um clique a empresa vai para o seu CRM.',
   },
   {
     id: 'faq-12',
-    category: 'Planos',
-    question: 'Existe período de teste gratuito?',
-    answer: 'O plano gratuito não tem limite de tempo. Você pode usar o Code Sellers gratuitamente para sempre, com as limitações do plano Free.',
+    category: 'Buyers Hunter',
+    question: 'Quantas buscas posso fazer?',
+    answer: 'Cada conta tem um limite mensal de buscas, mostrado no próprio painel. O contador volta a zero todo dia 1º.',
   },
 ]
 

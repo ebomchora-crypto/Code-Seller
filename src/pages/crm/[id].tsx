@@ -14,6 +14,8 @@ import { InteractionForm } from '@/components/crm/InteractionForm'
 import { LinkedTasksSection } from '@/components/tasks/LinkedTasksSection'
 import { useContact } from '@/hooks/useContact'
 import { useTags } from '@/hooks/useTags'
+import { SendMessageButton } from '@/components/messages/SendMessageButton'
+import { FollowUpButton } from '@/components/followup/FollowUpButton'
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -54,6 +56,19 @@ export default function ContactDetailPage() {
             onCreateTag={createTag}
             onEdit={() => setEditOpen(true)}
             onDealLinked={() => void refetch()}
+            actions={(buttonClass) => (
+              <>
+                <SendMessageButton
+                  className={buttonClass}
+                  target={{ contact: { id: contact.id, name: contact.name, phone: contact.phone, city: contact.city, niche: contact.niche } }}
+                  onSent={() => void refetch()}
+                />
+                <FollowUpButton
+                  className={buttonClass}
+                  target={{ contact: { id: contact.id, name: contact.name, city: contact.city, niche: contact.niche } }}
+                />
+              </>
+            )}
             extra={<LinkedTasksSection contactId={contact.id} contactName={contact.name} />}
             history={
               <Card>
