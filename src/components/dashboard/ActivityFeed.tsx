@@ -15,7 +15,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { PanelHeader } from '@/components/dashboard/PanelHeader'
+import { PanelHeader } from '@/components/ui/PanelHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'

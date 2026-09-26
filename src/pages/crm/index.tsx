@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { PageWrapper } from '@/components/ui/PageWrapper'
-import { SectionLabel } from '@/components/ui/section-label'
+import { Columns3, List, Plus, Upload } from 'lucide-react'
+import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -13,36 +13,6 @@ import { ImportCSVModal } from '@/components/crm/ImportCSVModal'
 import { useCRM } from '@/hooks/useCRM'
 import { useTags } from '@/hooks/useTags'
 import type { Contact } from '@/types'
-
-function ListIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className={`h-4 w-4 ${active ? 'text-purple-600' : 'text-neutral-400'}`}
-    >
-      <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  )
-}
-
-function KanbanIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className={`h-4 w-4 ${active ? 'text-purple-600' : 'text-neutral-400'}`}
-    >
-      <rect x="3" y="4" width="5" height="16" rx="1" />
-      <rect x="9.5" y="4" width="5" height="10" rx="1" />
-      <rect x="16" y="4" width="5" height="13" rx="1" />
-    </svg>
-  )
-}
 
 export default function CrmPage() {
   const {
@@ -94,45 +64,53 @@ export default function CrmPage() {
 
   return (
     <PageWrapper>
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <SectionLabel>Contatos</SectionLabel>
-            <h1 className="mt-2 flex items-baseline gap-3 font-display text-4xl font-bold tracking-tight text-[var(--text-primary)]">
-              CRM
-              <span className="text-lg font-normal text-[var(--text-muted)]">{total}</span>
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-1">
-              <button
-                type="button"
-                aria-label="Visualização em lista"
-                aria-pressed={view === 'list'}
-                onClick={() => setView('list')}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'list' ? 'bg-[var(--purple-soft)]' : 'hover:bg-[var(--bg-muted)]'}`}
+        <PageHeader
+          title="Contatos"
+          count={total}
+          subtitle="Leads e clientes que você está acompanhando, do primeiro contato ao fechamento."
+          actions={
+            <>
+              <div
+                role="group"
+                aria-label="Modo de visualização"
+                className="flex h-11 items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] p-1"
               >
-                <ListIcon active={view === 'list'} />
-              </button>
-              <button
-                type="button"
-                aria-label="Visualização em kanban"
-                aria-pressed={view === 'kanban'}
-                onClick={() => setView('kanban')}
-                className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${view === 'kanban' ? 'bg-purple-50' : 'hover:bg-neutral-50'}`}
-              >
-                <KanbanIcon active={view === 'kanban'} />
-              </button>
-            </div>
+                {(
+                  [
+                    { value: 'list', label: 'Lista', icon: List },
+                    { value: 'kanban', label: 'Kanban', icon: Columns3 },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={view === option.value}
+                    onClick={() => setView(option.value)}
+                    className={`flex h-full items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors ${
+                      view === option.value
+                        ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <option.icon className="size-4" />
+                    {option.label}
+                  </button>
+                ))}
+              </div>
 
-            <Button variant="secondary" onClick={() => setImportOpen(true)}>
-              Importar CSV
-            </Button>
-            <Button magnetic onClick={openCreateForm}>+ Novo Contato</Button>
-          </div>
-        </div>
+              <Button variant="secondary" className="h-11 rounded-full px-4" onClick={() => setImportOpen(true)}>
+                <Upload className="size-4" />
+                Importar CSV
+              </Button>
+              <Button magnetic className="h-11 rounded-full px-5" onClick={openCreateForm}>
+                <Plus className="size-4" strokeWidth={2.4} />
+                Novo contato
+              </Button>
+            </>
+          }
+        />
 
-        <div className="mt-6">
+        <div className="mt-8">
           <ContactFilters
             filters={filters}
             onChange={setFilters}

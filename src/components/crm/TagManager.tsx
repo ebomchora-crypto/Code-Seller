@@ -57,14 +57,14 @@ export function TagManager({ contactTags, availableTags, onAdd, onRemove, onCrea
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-300 px-2 py-0.5 text-[11px] font-medium text-neutral-500 transition-colors hover:border-purple-300 hover:text-purple-600"
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-[var(--border-strong)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
         >
           + Adicionar tag
         </button>
       </div>
 
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-2 w-64 animate-fade-in rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+        <div className="absolute left-0 top-full z-20 mt-2 w-72 animate-fade-in rounded-2xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-3 shadow-[var(--shadow-modal)]">
           <Input
             placeholder="Buscar ou criar tag"
             value={search}
@@ -83,18 +83,18 @@ export function TagManager({ contactTags, availableTags, onAdd, onRemove, onCrea
                     setSearch('')
                     setOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-neutral-50"
+                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-[var(--bg-muted)]"
                 >
                   <TagBadge tag={tag} />
                 </button>
               ))
             ) : (
-              <p className="px-2 py-1.5 text-xs text-neutral-400">Nenhuma tag encontrada.</p>
+              <p className="px-2 py-1.5 text-xs text-[var(--text-muted)]">Nenhuma tag encontrada.</p>
             )}
           </div>
 
           {search.trim() && filteredTags.every((tag) => tag.name.toLowerCase() !== search.trim().toLowerCase()) && (
-            <div className="mt-2 border-t border-neutral-100 pt-2">
+            <div className="mt-2 border-t border-[var(--border-subtle)] pt-2">
               {creating ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-1.5">
@@ -104,7 +104,7 @@ export function TagManager({ contactTags, availableTags, onAdd, onRemove, onCrea
                         type="button"
                         aria-label={`Cor ${color}`}
                         onClick={() => setNewColor(color)}
-                        className={`h-5 w-5 rounded-full ${newColor === color ? 'ring-2 ring-offset-1' : ''}`}
+                        className={`h-5 w-5 rounded-full ${newColor === color ? 'ring-2 ring-[var(--text-primary)] ring-offset-2 ring-offset-[var(--panel-bg)]' : ''}`}
                         style={{ backgroundColor: color }}
                       />
                     ))}

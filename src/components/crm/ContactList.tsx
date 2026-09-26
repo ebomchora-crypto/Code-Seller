@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
+import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react'
 import { FlipItem } from '@/components/motion/FlipItem'
 import { StatusBadge } from '@/components/crm/StatusBadge'
 import { TagBadge } from '@/components/crm/TagBadge'
+import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { Button } from '@/components/ui/Button'
 import type { ContactSortColumn, SortDirection } from '@/services/supabase/contacts'
 import type { Contact } from '@/types'
 
@@ -23,47 +24,49 @@ interface ContactListProps {
   onPageChange: (page: number) => void
 }
 
-const columns: { key: ContactSortColumn | null; label: string }[] = [
-  { key: 'name', label: 'Nome' },
+const columns: { key: ContactSortColumn | null; label: string; className?: string }[] = [
+  { key: 'name', label: 'Contato' },
   { key: 'status', label: 'Status' },
   { key: null, label: 'Nicho' },
-  { key: null, label: 'Cidade/Estado' },
+  { key: null, label: 'Cidade' },
   { key: null, label: 'Telefone' },
   { key: null, label: 'Tags' },
   { key: 'created_at', label: 'Criado em' },
-  { key: null, label: 'Ações' },
+  { key: null, label: '', className: 'w-24' },
 ]
 
 function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('pt-BR')
+  return new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).replace('.', '')
 }
 
-function SortIcon({ direction }: { direction: SortDirection }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      className={`h-3 w-3 transition-transform ${direction === 'asc' ? 'rotate-180' : ''}`}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-    </svg>
-  )
+function location(contact: Contact): string {
+  return [contact.city, contact.state].filter(Boolean).join('/') || '—'
 }
 
-function SkeletonRows() {
+const iconButton =
+  'flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]'
+
+function RowActions({ contact, onEdit, onDeleteRequest }: Pick<ContactListProps, 'onEdit' | 'onDeleteRequest'> & { contact: Contact }) {
   return (
     <>
-      {Array.from({ length: 6 }).map((_, index) => (
-        <tr key={index} className="border-b border-neutral-100">
-          {columns.map((_column, columnIndex) => (
-            <td key={columnIndex} className="px-4 py-3">
-              <Skeleton className="h-4 w-full max-w-[120px]" />
-            </td>
-          ))}
-        </tr>
-      ))}
+      <button
+        type="button"
+        onClick={() => onEdit(contact)}
+        aria-label={`Editar ${contact.name}`}
+        title="Editar"
+        className={`${iconButton} hover:text-[var(--accent-text)]`}
+      >
+        <Pencil className="size-4" />
+      </button>
+      <button
+        type="button"
+        onClick={() => onDeleteRequest(contact)}
+        aria-label={`Excluir ${contact.name}`}
+        title="Excluir"
+        className={`${iconButton} hover:text-red-500`}
+      >
+        <Trash2 className="size-4" />
+      </button>
     </>
   )
 }
@@ -93,25 +96,32 @@ export function ContactList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-      {/* Desktop table */}
+    <div className="overflow-hidden rounded-[var(--card-radius)] border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-[var(--shadow-card)]">
+      {/* Desktop */}
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-[13.5px]">
           <thead>
-            <tr className="border-b border-neutral-100">
+            <tr className="border-b border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.02]">
               {columns.map((column) => (
-                <th key={column.label} className="px-4 py-3 font-medium text-neutral-500">
+                <th
+                  key={column.label || 'actions'}
+                  className={`whitespace-nowrap px-4 py-3 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)] first:pl-5 ${column.className ?? ''}`}
+                >
                   {column.key ? (
                     <button
                       type="button"
                       onClick={() => onSort(column.key as ContactSortColumn)}
-                      className="flex items-center gap-1 transition-colors hover:text-neutral-900"
+                      className={`inline-flex items-center gap-1 uppercase transition-colors hover:text-[var(--text-primary)] ${
+                        sortColumn === column.key ? 'text-[var(--text-secondary)]' : ''
+                      }`}
                     >
                       {column.label}
-                      {sortColumn === column.key && <SortIcon direction={sortDirection} />}
+                      {sortColumn === column.key && (
+                        <ChevronDown className={`size-3.5 transition-transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`} />
+                      )}
                     </button>
                   ) : (
-                    column.label
+                    column.label || <span className="sr-only">Ações</span>
                   )}
                 </th>
               ))}
@@ -119,53 +129,66 @@ export function ContactList({
           </thead>
           <tbody>
             {loading ? (
-              <SkeletonRows />
+              Array.from({ length: 6 }).map((_, index) => (
+                <tr key={index} className="border-b border-[var(--border-subtle)] last:border-0">
+                  <td className="py-3.5 pl-5 pr-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="size-9 rounded-[10px]" />
+                      <Skeleton className="h-4 w-36" />
+                    </div>
+                  </td>
+                  {columns.slice(1).map((_column, columnIndex) => (
+                    <td key={columnIndex} className="px-4 py-3.5">
+                      <Skeleton className="h-4 w-full max-w-[96px]" />
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : (
               <AnimatePresence initial={false}>
                 {contacts.map((contact) => (
-                <FlipItem
-                  as="tr"
-                  key={contact.id}
-                  className="group border-b border-neutral-100 transition-colors duration-150 last:border-0 hover:bg-purple-50/60"
-                >
-                  <td className="px-4 py-3">
-                    <Link to={`/crm/${contact.id}`} className="font-medium text-neutral-900 hover:text-purple-700">
-                      {contact.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={contact.status} />
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">{contact.niche ?? '—'}</td>
-                  <td className="px-4 py-3 text-neutral-600">
-                    {[contact.city, contact.state].filter(Boolean).join(' / ') || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-600">{contact.phone ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {contact.tags?.map((tag) => <TagBadge key={tag.id} tag={tag} />) ?? '—'}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-500">{formatDate(contact.created_at)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(contact)}
-                        className="text-xs font-medium text-neutral-500 hover:text-purple-700"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteRequest(contact)}
-                        className="text-xs font-medium text-neutral-500 hover:text-red-600"
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </FlipItem>
+                  <FlipItem
+                    as="tr"
+                    key={contact.id}
+                    className="group border-b border-[var(--border-subtle)] transition-colors duration-150 last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/[0.03]"
+                  >
+                    <td className="py-3 pl-5 pr-4">
+                      <Link to={`/crm/${contact.id}`} className="flex min-w-0 items-center gap-3">
+                        <InitialsAvatar name={contact.name} size="sm" />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-text)]">
+                            {contact.name}
+                          </span>
+                          {contact.email && (
+                            <span className="block max-w-[220px] truncate text-[12px] text-[var(--text-muted)]">{contact.email}</span>
+                          )}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={contact.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[var(--text-secondary)]">{contact.niche ?? '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[var(--text-secondary)]">{location(contact)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 tabular-nums text-[var(--text-secondary)]">{contact.phone ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      {contact.tags && contact.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {contact.tags.map((tag) => (
+                            <TagBadge key={tag.id} tag={tag} />
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">—</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[var(--text-muted)]">{formatDate(contact.created_at)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+                        <RowActions contact={contact} onEdit={onEdit} onDeleteRequest={onDeleteRequest} />
+                      </div>
+                    </td>
+                  </FlipItem>
                 ))}
               </AnimatePresence>
             )}
@@ -173,63 +196,67 @@ export function ContactList({
         </table>
       </div>
 
-      {/* Mobile stacked cards */}
-      <div className="flex flex-col gap-3 p-3 md:hidden">
+      {/* Mobile */}
+      <ul className="flex flex-col divide-y divide-[var(--border-subtle)] md:hidden">
         {loading
-          ? Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-28 w-full" />)
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <li key={index} className="flex items-center gap-3 p-4">
+                <Skeleton className="size-10 rounded-xl" />
+                <Skeleton className="h-4 flex-1" />
+              </li>
+            ))
           : contacts.map((contact) => (
-              <div key={contact.id} className="rounded-lg border border-neutral-200 p-4">
-                <div className="flex items-center justify-between">
-                  <Link to={`/crm/${contact.id}`} className="font-medium text-neutral-900">
-                    {contact.name}
-                  </Link>
-                  <StatusBadge status={contact.status} />
-                </div>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {[contact.niche, contact.city].filter(Boolean).join(' · ') || '—'}
-                </p>
-                {contact.tags && contact.tags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {contact.tags.map((tag) => <TagBadge key={tag.id} tag={tag} />)}
+              <li key={contact.id} className="flex items-start gap-3 p-4">
+                <InitialsAvatar name={contact.name} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link to={`/crm/${contact.id}`} className="min-w-0 truncate font-medium text-[var(--text-primary)]">
+                      {contact.name}
+                    </Link>
+                    <StatusBadge status={contact.status} />
                   </div>
-                )}
-                <div className="mt-3 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(contact)}
-                    className="text-xs font-medium text-neutral-500 hover:text-purple-700"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteRequest(contact)}
-                    className="text-xs font-medium text-neutral-500 hover:text-red-600"
-                  >
-                    Excluir
-                  </button>
+                  <p className="mt-0.5 truncate text-[12.5px] text-[var(--text-muted)]">
+                    {[contact.niche, contact.city].filter(Boolean).join(' · ') || '—'}
+                  </p>
+                  {contact.tags && contact.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {contact.tags.map((tag) => (
+                        <TagBadge key={tag.id} tag={tag} />
+                      ))}
+                    </div>
+                  )}
+                  <div className="-ml-2 mt-2 flex gap-1">
+                    <RowActions contact={contact} onEdit={onEdit} onDeleteRequest={onDeleteRequest} />
+                  </div>
                 </div>
-              </div>
+              </li>
             ))}
-      </div>
+      </ul>
 
       {!loading && total > pageSize && (
-        <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-3">
-          <p className="text-xs text-neutral-500">
+        <div className="flex items-center justify-between border-t border-[var(--border-subtle)] px-5 py-3">
+          <p className="text-[12.5px] text-[var(--text-muted)]">
             Página {page} de {totalPages}
           </p>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-              Anterior
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+              aria-label="Página anterior"
+              className="flex size-9 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              type="button"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
+              aria-label="Próxima página"
+              className="flex size-9 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-secondary)] transition hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Próxima
-            </Button>
+              <ChevronRight className="size-4" />
+            </button>
           </div>
         </div>
       )}

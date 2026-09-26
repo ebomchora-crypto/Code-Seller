@@ -17,7 +17,7 @@ export function StatusBadge({ status, onClick }: StatusBadgeProps) {
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-150 ${
         onClick ? 'cursor-pointer hover:brightness-95' : ''
       }`}
-      style={{ backgroundColor: config.bg, color: config.color }}
+      style={{ backgroundColor: `${config.color}1f`, color: config.color }}
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: config.color }} />
       {config.label}

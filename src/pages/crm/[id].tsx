@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Drawer } from '@/components/ui/Drawer'
+import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
 import { ContactDetail } from '@/components/crm/ContactDetail'
 import { ContactForm } from '@/components/crm/ContactForm'
 import { InteractionList } from '@/components/crm/InteractionList'
@@ -23,12 +26,10 @@ export default function ContactDetailPage() {
     <PageWrapper>
         <Link
           to="/crm"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-neutral-500 transition-colors hover:text-purple-700"
+          className="mb-5 inline-flex items-center gap-1.5 rounded-full py-1 pr-3 text-[13.5px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" />
-          </svg>
-          Voltar para CRM
+          <ChevronLeft className="size-4" />
+          Contatos
         </Link>
 
         {loading && (
@@ -44,35 +45,35 @@ export default function ContactDetailPage() {
         )}
 
         {!loading && contact && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <ContactDetail
-                contact={contact}
-                allTags={tags}
-                onUpdate={updateContact}
-                onAddTag={addTag}
-                onRemoveTag={removeTag}
-                onCreateTag={createTag}
-                onEdit={() => setEditOpen(true)}
-                onDealLinked={() => void refetch()}
-              />
-              <div className="mt-6">
-                <LinkedTasksSection contactId={contact.id} contactName={contact.name} />
-              </div>
-            </div>
-
-            <div className="lg:col-span-3">
-              <p className="label-caps mb-3">Histórico de interações</p>
-              <div className="mb-4">
+          <ContactDetail
+            contact={contact}
+            allTags={tags}
+            onUpdate={updateContact}
+            onAddTag={addTag}
+            onRemoveTag={removeTag}
+            onCreateTag={createTag}
+            onEdit={() => setEditOpen(true)}
+            onDealLinked={() => void refetch()}
+            extra={<LinkedTasksSection contactId={contact.id} contactName={contact.name} />}
+            history={
+              <Card>
+                <PanelHeader
+                  title="Histórico"
+                  subtitle={`${contact.interactions?.length ?? 0} ${
+                    contact.interactions?.length === 1 ? 'interação registrada' : 'interações registradas'
+                  }`}
+                />
                 <InteractionForm
                   onSubmit={async (data) => {
                     await addInteraction(data)
                   }}
                 />
-              </div>
-              <InteractionList interactions={contact.interactions ?? []} onDelete={deleteInteraction} />
-            </div>
-          </div>
+                <div className="mt-6">
+                  <InteractionList interactions={contact.interactions ?? []} onDelete={deleteInteraction} />
+                </div>
+              </Card>
+            }
+          />
         )}
 
         <Drawer open={editOpen} onClose={() => setEditOpen(false)} title="Editar contato">

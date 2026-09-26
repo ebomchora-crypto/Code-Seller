@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
 import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { TaskCheckbox } from '@/components/tasks/TaskCheckbox'
@@ -61,9 +62,7 @@ export function LinkedTasksSection({ contactId, contactName, dealId, dealTitle }
 
   return (
     <Card>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="label-caps">Tarefas vinculadas</p>
-      </div>
+      <PanelHeader title="Tarefas" subtitle={`Vinculadas a ${contactId ? 'este contato' : 'este negócio'}`} />
 
       {loading ? (
         <div className="flex flex-col gap-2">
@@ -71,9 +70,9 @@ export function LinkedTasksSection({ contactId, contactName, dealId, dealTitle }
           <Skeleton className="h-10 w-full" />
         </div>
       ) : tasks.length === 0 ? (
-        <p className="text-sm text-neutral-500">Nenhuma tarefa vinculada ainda.</p>
+        <p className="text-[13.5px] text-[var(--text-muted)]">Nenhuma tarefa vinculada ainda.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-neutral-100">
+        <ul className="flex flex-col divide-y divide-[var(--border-subtle)]">
           {tasks.map((task) => (
             <li key={task.id} className="flex items-center gap-3 py-2.5">
               <TaskCheckbox
@@ -83,7 +82,7 @@ export function LinkedTasksSection({ contactId, contactName, dealId, dealTitle }
                 ariaLabel={`Concluir ${task.title}`}
               />
               <div className="min-w-0 flex-1">
-                <p className={`truncate text-sm ${task.status === 'done' ? 'text-neutral-400 line-through' : 'text-neutral-800'}`}>
+                <p className={`truncate text-sm ${task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]'}`}>
                   {task.title}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -97,7 +96,7 @@ export function LinkedTasksSection({ contactId, contactName, dealId, dealTitle }
         </ul>
       )}
 
-      <Button variant="secondary" size="sm" className="mt-4" onClick={handleCreateTask}>
+      <Button variant="secondary" size="sm" className="mt-4 h-9 rounded-full px-4" onClick={handleCreateTask}>
         Criar tarefa para {contactId ? 'este contato' : 'este negócio'}
       </Button>
     </Card>

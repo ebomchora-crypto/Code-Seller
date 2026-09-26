@@ -16,20 +16,13 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { CONTACT_STATUSES, CONTACT_STATUS_LABELS, type Contact, type ContactStatus } from '@/types'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
 import { duration, easing } from '@/motion/tokens'
 
 interface ContactKanbanProps {
   contacts: Contact[]
   loading: boolean
   onStatusChange: (id: string, status: ContactStatus) => void
-}
-
-const columnHeaderClasses: Record<ContactStatus, string> = {
-  lead: 'text-purple-700',
-  negotiating: 'text-amber-700',
-  client: 'text-emerald-700',
-  inactive: 'text-neutral-500',
-  lost: 'text-red-700',
 }
 
 function KanbanCard({ contact, index }: { contact: Contact; index: number }) {
@@ -74,27 +67,36 @@ function KanbanColumn({
   contacts: Contact[]
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  const color = CONTACT_STATUS_COLORS[status]
 
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-72 shrink-0 flex-col rounded-xl bg-neutral-50 p-3 transition-all duration-200 ${
-        isOver ? 'scale-[1.01] bg-purple-50/70 ring-2 ring-purple-300 shadow-[0_0_24px_rgba(179,92,255,0.12)]' : ''
+      className={`flex w-[288px] shrink-0 flex-col rounded-[22px] border p-2.5 transition-all duration-200 ${
+        isOver
+          ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] shadow-[0_0_0_4px_var(--accent-tint)]'
+          : 'border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.02]'
       }`}
     >
-      <div className="mb-3 flex items-center justify-between px-1">
-        <h3 className={`text-sm font-medium ${columnHeaderClasses[status]}`}>
+      <div className="mb-2.5 flex items-center justify-between px-2 pt-1.5">
+        <h3 className="flex items-center gap-2 text-[13.5px] font-semibold text-[var(--text-primary)]">
+          <span className="size-2.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }} />
           {CONTACT_STATUS_LABELS[status]}
         </h3>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-neutral-500">
+        <span className="rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--text-secondary)] ring-1 ring-[var(--border-subtle)]">
           {contacts.length}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="flex min-h-24 flex-1 flex-col gap-2.5">
         {contacts.map((contact, index) => (
           <KanbanCard key={contact.id} contact={contact} index={index} />
         ))}
+        {contacts.length === 0 && (
+          <p className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[var(--border-default)] px-4 py-8 text-center text-[12.5px] text-[var(--text-muted)]">
+            Arraste um contato pra cá
+          </p>
+        )}
       </div>
     </div>
   )
@@ -125,10 +127,10 @@ export function ContactKanban({ contacts, loading, onStatusChange }: ContactKanb
     return (
       <div className="flex gap-4 overflow-x-auto pb-4">
         {CONTACT_STATUSES.map((status) => (
-          <div key={status} className="flex w-72 shrink-0 flex-col gap-3 rounded-xl bg-neutral-50 p-3">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
+          <div key={status} className="flex w-[288px] shrink-0 flex-col gap-2.5 rounded-[22px] border border-[var(--border-subtle)] p-2.5">
+            <Skeleton className="m-1.5 h-5 w-24" />
+            <Skeleton className="h-32 w-full rounded-[18px]" />
+            <Skeleton className="h-32 w-full rounded-[18px]" />
           </div>
         ))}
       </div>
@@ -146,7 +148,7 @@ export function ContactKanban({ contacts, loading, onStatusChange }: ContactKanb
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {CONTACT_STATUSES.map((status) => (
           <KanbanColumn
             key={status}
