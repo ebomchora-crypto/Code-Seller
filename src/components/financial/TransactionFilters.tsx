@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
-import { Button } from '@/components/ui/Button'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS } from '@/utils/financial'
 import type { FinancialCategory, TransactionFilters as TransactionFiltersType } from '@/types'
 
@@ -17,33 +17,45 @@ export function TransactionFilters({ filters, onChange, onClear, hasActiveFilter
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4">
-      <div className="flex items-center gap-3">
+    <div>
+      <div className="flex items-center gap-2">
         <div className="flex-1">
           <Input
+            aria-label="Buscar transações"
             placeholder="Buscar por descrição"
             value={filters.search}
             onChange={(event) => onChange({ search: event.target.value })}
-            icon={
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-4 w-4">
-                <circle cx="11" cy="11" r="7" />
-                <path strokeLinecap="round" d="m21 21-4.3-4.3" />
-              </svg>
-            }
+            icon={<Search className="size-4" />}
           />
         </div>
-        <Button variant="ghost" size="md" onClick={() => setExpanded((value) => !value)}>
-          Filtros {expanded ? '▲' : '▼'}
-        </Button>
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3.5 text-[13px] font-medium transition ${
+            expanded || hasActiveFilters
+              ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] text-[var(--accent-text)]'
+              : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          <SlidersHorizontal className="size-4" />
+          <span className="hidden sm:inline">Filtros</span>
+        </button>
         {hasActiveFilters && (
-          <Button variant="ghost" size="md" onClick={onClear}>
-            Limpar
-          </Button>
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label="Limpar filtros"
+            title="Limpar filtros"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+          >
+            <X className="size-4" />
+          </button>
         )}
       </div>
 
       {expanded && (
-        <div className="mt-4 grid grid-cols-1 gap-3 border-t border-[var(--border-subtle)] pt-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 gap-3 rounded-2xl border border-[var(--border-subtle)] p-3 sm:grid-cols-2">
           <Select
             label="Categoria"
             value={filters.category_id}

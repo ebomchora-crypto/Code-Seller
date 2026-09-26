@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
+import { FilterChips } from '@/components/ui/FilterChips'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -65,30 +67,23 @@ export function ReceivablesList({
   }
 
   return (
-    <Card>
-      <div className="mb-1 flex items-center justify-between">
-        <h3 className="text-base font-medium text-neutral-900">Contas a Receber</h3>
-        <span className="text-sm font-medium text-amber-600">{formatCurrency(total)}</span>
-      </div>
+    <Card className="h-full">
+      <PanelHeader
+        title="Contas a receber"
+        subtitle="Parcelas dos negócios ganhos"
+        action={
+          <div className="text-right">
+            <p className="font-display text-[18px] font-bold leading-none tabular-nums text-[var(--text-primary)]">{formatCurrency(total)}</p>
+            <p className="mt-1 text-[12px] text-[var(--text-muted)]">em aberto</p>
+          </div>
+        }
+      />
 
-      <div className="mt-3 flex gap-1 overflow-x-auto rounded-lg bg-neutral-50 p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-              activeTab === tab.key ? 'bg-white text-purple-700 shadow-sm' : 'text-neutral-500'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <FilterChips label="Filtrar contas a receber" options={TABS.map((tab) => ({ value: tab.key, label: tab.label }))} value={activeTab} onChange={setActiveTab} />
 
       <div className="mt-4 flex flex-col gap-3">
         {loading ? (
-          Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-24 w-full" />)
+          Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-28 w-full rounded-[18px]" />)
         ) : error ? (
           <ErrorState message={error} onRetry={onRetry} />
         ) : filtered.length === 0 ? (

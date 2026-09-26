@@ -43,12 +43,12 @@ export function CategoryManager({ open, onClose }: CategoryManagerProps) {
 
   return (
     <Modal open={open} onClose={onClose} title="Categorias" size="md">
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1">
         <button
           type="button"
           onClick={() => setActiveTab('income')}
-          className={`rounded-md py-2 text-sm font-medium transition-colors duration-150 ${
-            activeTab === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-neutral-500'
+          className={`rounded-lg py-2 text-sm font-medium transition-colors duration-150 ${
+            activeTab === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
           Receitas
@@ -56,8 +56,8 @@ export function CategoryManager({ open, onClose }: CategoryManagerProps) {
         <button
           type="button"
           onClick={() => setActiveTab('expense')}
-          className={`rounded-md py-2 text-sm font-medium transition-colors duration-150 ${
-            activeTab === 'expense' ? 'bg-white text-red-500 shadow-sm' : 'text-neutral-500'
+          className={`rounded-lg py-2 text-sm font-medium transition-colors duration-150 ${
+            activeTab === 'expense' ? 'bg-red-500/15 text-red-600 dark:text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
           Despesas
@@ -71,15 +71,15 @@ export function CategoryManager({ open, onClose }: CategoryManagerProps) {
           <EmptyState title="Nenhuma categoria cadastrada" />
         ) : (
           categories.map((category) => (
-            <div key={category.id} className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2">
-              <span className="flex items-center gap-2 text-sm text-neutral-800">
+            <div key={category.id} className="flex items-center justify-between rounded-xl border border-[var(--border-default)] px-3 py-2">
+              <span className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: category.color }} />
                 {category.name}
               </span>
               <button
                 type="button"
                 onClick={() => setDeletingCategory(category)}
-                className="text-xs font-medium text-neutral-400 hover:text-red-600"
+                className="text-xs font-medium text-[var(--text-muted)] hover:text-red-500"
               >
                 Remover
               </button>
@@ -88,7 +88,7 @@ export function CategoryManager({ open, onClose }: CategoryManagerProps) {
         )}
       </div>
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-neutral-100 pt-4">
+      <div className="mt-4 flex flex-col gap-3 border-t border-[var(--border-subtle)] pt-4">
         <Input
           label="Nova categoria"
           placeholder={activeTab === 'income' ? 'Ex: Consultoria' : 'Ex: Marketing'}

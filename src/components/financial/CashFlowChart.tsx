@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -36,11 +37,21 @@ function CustomTooltip({ active, payload }: TooltipContentProps) {
   const point = payload[0].payload as CashFlowDataPoint
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white px-3 py-2 shadow-md">
-      <p className="mb-1 text-xs text-neutral-500">{point.month_full}</p>
-      <p className="text-xs text-emerald-600">Receita: {formatCurrency(point.income)}</p>
-      <p className="text-xs text-red-500">Despesa: {formatCurrency(point.expense)}</p>
-      <p className="mt-1 text-xs font-medium text-purple-600">Saldo: {formatCurrency(point.balance)}</p>
+    <div className="min-w-[180px] rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] px-3.5 py-3 shadow-[var(--shadow-modal)]">
+      <p className="mb-2 text-[11.5px] text-[var(--text-muted)]">{point.month_full}</p>
+      {[
+        { label: 'Entrou', value: point.income, color: '#34d399' },
+        { label: 'Saiu', value: point.expense, color: '#f87171' },
+        { label: 'Saldo', value: point.balance, color: '#a78bfa' },
+      ].map((row) => (
+        <p key={row.label} className="flex items-center justify-between gap-4 text-[12.5px]">
+          <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+            <span className="size-2 rounded-full" style={{ backgroundColor: row.color }} />
+            {row.label}
+          </span>
+          <span className="font-semibold tabular-nums text-[var(--text-primary)]">{formatCurrency(row.value)}</span>
+        </p>
+      ))}
     </div>
   )
 }
@@ -51,13 +62,26 @@ export function CashFlowChart({ data, loading, error, onRetry }: CashFlowChartPr
 
   return (
     <Card>
-      <div className="mb-4 flex items-baseline justify-between">
-        <h3 className="text-base font-medium text-neutral-900">Fluxo de Caixa</h3>
-        <span className="text-xs text-neutral-400">Últimos 6 meses</span>
-      </div>
+      <PanelHeader
+        title="Fluxo de caixa"
+        subtitle="Entradas, saídas e saldo acumulado nos últimos 6 meses"
+        action={
+          <div className="hidden items-center gap-4 text-[12.5px] text-[var(--text-secondary)] sm:flex">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-400" /> Entrou
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-red-400" /> Saiu
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-0.5 w-3 rounded-full bg-[#a78bfa]" /> Saldo
+            </span>
+          </div>
+        }
+      />
 
       {loading ? (
-        <Skeleton className="h-72 w-full" />
+        <Skeleton className="h-72 w-full rounded-2xl" />
       ) : error ? (
         <ErrorState message={error} onRetry={onRetry} />
       ) : !hasData ? (
@@ -72,8 +96,18 @@ export function CashFlowChart({ data, loading, error, onRetry }: CashFlowChartPr
           <div className="h-72 animate-fade-in">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="var(--border-subtle)" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+                <defs>
+                  <linearGradient id="cashIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+                  <linearGradient id="cashExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fb7185" />
+                    <stop offset="100%" stopColor="#dc2626" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="var(--border-subtle)" strokeDasharray="4 6" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} dy={8} />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
@@ -81,15 +115,15 @@ export function CashFlowChart({ data, loading, error, onRetry }: CashFlowChartPr
                   tickFormatter={formatCompactBRL}
                   width={60}
                 />
-                <Tooltip content={(props) => <CustomTooltip {...props} />} />
-                <Bar dataKey="income" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={16} isAnimationActive={!reducedMotion} animationDuration={600} />
-                <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} barSize={16} isAnimationActive={!reducedMotion} animationDuration={600} />
+                <Tooltip content={(props) => <CustomTooltip {...props} />} cursor={{ fill: 'var(--bg-muted)', opacity: 0.5 }} />
+                <Bar dataKey="income" fill="url(#cashIncome)" radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={!reducedMotion} animationDuration={600} />
+                <Bar dataKey="expense" fill="url(#cashExpense)" radius={[6, 6, 0, 0]} barSize={18} isAnimationActive={!reducedMotion} animationDuration={600} />
                 <Line
                   type="monotone"
                   dataKey="balance"
-                  stroke="#b35cff"
-                  strokeWidth={2}
-                  dot={false}
+                  stroke="#a78bfa"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: '#a78bfa', strokeWidth: 0 }}
                   isAnimationActive={!reducedMotion}
                   animationDuration={600}
                 />
@@ -97,17 +131,6 @@ export function CashFlowChart({ data, loading, error, onRetry }: CashFlowChartPr
             </ResponsiveContainer>
           </div>
 
-          <div className="mt-3 flex items-center justify-center gap-6 text-xs text-neutral-500">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Receita
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-red-400" /> Despesa
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-accent-bright" /> Saldo
-            </span>
-          </div>
         </>
       )}
     </Card>

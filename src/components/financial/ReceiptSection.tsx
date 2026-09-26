@@ -45,7 +45,7 @@ export function ReceiptSection({ receiptUrl, onUpload, uploading, onDelete }: Re
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-neutral-700">Comprovante</label>
+      <label className="text-[13px] font-medium text-[var(--text-secondary)]">Comprovante</label>
 
       {!receiptUrl ? (
         <div>
@@ -71,28 +71,28 @@ export function ReceiptSection({ receiptUrl, onUpload, uploading, onDelete }: Re
           />
         </div>
       ) : (
-        <div className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2">
-          <span className="max-w-[160px] truncate text-sm text-neutral-700">{fileNameFromPath(receiptUrl)}</span>
+        <div className="flex items-center justify-between rounded-xl border border-[var(--border-default)] px-3 py-2">
+          <span className="max-w-[160px] truncate text-sm text-[var(--text-primary)]">{fileNameFromPath(receiptUrl)}</span>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={handleView}
               disabled={viewing}
-              className="text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50"
+              className="text-xs font-medium text-[var(--accent-text)] hover:underline disabled:opacity-50"
             >
               Visualizar
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
+              className="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             >
               Substituir
             </button>
             <button
               type="button"
               onClick={() => setDeleteOpen(true)}
-              className="text-xs font-medium text-neutral-500 hover:text-red-600"
+              className="text-xs font-medium text-[var(--text-secondary)] hover:text-red-500"
             >
               Remover
             </button>

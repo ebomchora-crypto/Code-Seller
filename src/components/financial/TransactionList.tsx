@@ -9,14 +9,12 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { Button } from '@/components/ui/Button'
-import { Tooltip } from '@/components/ui/Tooltip'
-import {
-  formatCurrency,
-  getOverdueStatus,
-  PAYMENT_METHOD_LABELS,
-  RECURRENCE_LABELS,
-  TRANSACTION_STATUS_LABELS,
-} from '@/utils/financial'
+import { Card } from '@/components/ui/Card'
+import { PanelHeader } from '@/components/ui/PanelHeader'
+import { FilterChips } from '@/components/ui/FilterChips'
+import { StatusPill } from '@/components/financial/StatusPill'
+import { ArrowDownRight, ArrowUpRight, CheckCircle2, Pencil, Repeat, Trash2 } from 'lucide-react'
+import { formatCurrency, getOverdueStatus, PAYMENT_METHOD_LABELS, RECURRENCE_LABELS } from '@/utils/financial'
 import type { FinancialCategory, Transaction, TransactionFilters as TransactionFiltersType } from '@/types'
 
 interface TransactionListProps {
@@ -46,32 +44,12 @@ const TABS: { key: QuickTab; label: string }[] = [
   { key: 'overdue', label: 'Vencidas' },
 ]
 
-const statusBadgeClasses: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700',
-  paid: 'bg-emerald-50 text-emerald-700',
-  overdue: 'bg-red-50 text-red-700',
-  cancelled: 'bg-neutral-100 text-neutral-500',
-}
-
 function formatDate(value: string): string {
-  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR')
+  return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')
 }
 
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 8 }).map((_, index) => (
-        <tr key={index} className="border-b border-neutral-100">
-          {Array.from({ length: 7 }).map((_column, columnIndex) => (
-            <td key={columnIndex} className="px-4 py-3">
-              <Skeleton className="h-4 w-full max-w-[110px]" />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
-  )
-}
+const iconButton =
+  'flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)]'
 
 export function TransactionList({
   transactions,
@@ -102,184 +80,210 @@ export function TransactionList({
 
   const visibleTransactions = useMemo(() => {
     if (activeTab !== 'overdue') return transactions
-    return transactions.filter((transaction) => getOverdueStatus(transaction.due_date, transaction.status) === 'overdue')
+    return transactions.filter(
+      (transaction) => getOverdueStatus(transaction.due_date, transaction.status) === 'overdue',
+    )
   }, [transactions, activeTab])
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-medium text-neutral-900">
-          Transações <span className="ml-1 font-normal text-neutral-400">{visibleTransactions.length}</span>
-        </h3>
-      </div>
-
-      <div className="flex gap-1 overflow-x-auto rounded-lg border border-neutral-200 bg-white p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => handleTabChange(tab.key)}
-            className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-              activeTab === tab.key ? 'bg-purple-50 text-purple-700' : 'text-neutral-500 hover:bg-neutral-50'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <TransactionFilters
-        filters={filters}
-        onChange={onFilterChange}
-        onClear={onClearFilters}
-        hasActiveFilters={hasActiveFilters}
-        categories={categories}
+    <Card className="h-full">
+      <PanelHeader
+        title="Transações"
+        subtitle={`${visibleTransactions.length} ${visibleTransactions.length === 1 ? 'lançamento' : 'lançamentos'}`}
       />
 
-      <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
+      <div className="flex flex-col gap-3">
+        <FilterChips
+          label="Filtrar transações"
+          options={TABS.map((tab) => ({ value: tab.key, label: tab.label }))}
+          value={activeTab}
+          onChange={handleTabChange}
+        />
+        <TransactionFilters
+          filters={filters}
+          onChange={onFilterChange}
+          onClear={onClearFilters}
+          hasActiveFilters={hasActiveFilters}
+          categories={categories}
+        />
+      </div>
+
+      <div className="-mx-6 mt-4 border-t border-[var(--border-subtle)]">
         {!loading && !error && visibleTransactions.length === 0 ? (
-          <EmptyState
-            title="Nenhuma transação encontrada"
-            action={<Button size="sm" onClick={onCreateTransaction}>Registrar transação</Button>}
-          />
+          <div className="px-6 pt-6">
+            <EmptyState
+              title="Nenhuma transação encontrada"
+              action={
+                <Button size="sm" className="h-9 rounded-full px-4" onClick={onCreateTransaction}>
+                  Registrar transação
+                </Button>
+              }
+            />
+          </div>
         ) : error ? (
-          <ErrorState message={error} onRetry={onRetry} />
+          <div className="px-6 pt-6">
+            <ErrorState message={error} onRetry={onRetry} />
+          </div>
         ) : (
           <>
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-[13.5px]">
                 <thead>
-                  <tr className="border-b border-neutral-100 text-neutral-500">
-                    <th className="px-4 py-3 font-medium">Descrição</th>
-                    <th className="px-4 py-3 font-medium">Categoria</th>
-                    <th className="px-4 py-3 font-medium">Vinculado</th>
-                    <th className="px-4 py-3 font-medium">Método</th>
-                    <th className="px-4 py-3 text-right font-medium">Valor</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Data</th>
-                    <th className="px-4 py-3 font-medium">Ações</th>
+                  <tr className="border-b border-[var(--border-subtle)] text-[11.5px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                    <th className="py-3 pl-6 pr-4 font-semibold">Descrição</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 text-right font-semibold">Valor</th>
+                    <th className="w-32 py-3 pl-2 pr-5">
+                      <span className="sr-only">Ações</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <SkeletonRows />
+                    Array.from({ length: 6 }).map((_, index) => (
+                      <tr key={index} className="border-b border-[var(--border-subtle)] last:border-0">
+                        {Array.from({ length: 4 }).map((_column, columnIndex) => (
+                          <td key={columnIndex} className="px-4 py-4 first:pl-6">
+                            <Skeleton className="h-4 w-full max-w-[120px]" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))
                   ) : (
                     <AnimatePresence initial={false}>
-                    {visibleTransactions.map((transaction) => {
-                      const overdue = getOverdueStatus(transaction.due_date, transaction.status) === 'overdue'
-                      const displayStatus = overdue ? 'overdue' : transaction.status
-
-                      return (
-                        <FlipItem
-                          as="tr"
-                          key={transaction.id}
-                          className={`group border-b border-neutral-100 transition-colors duration-150 last:border-0 hover:bg-purple-50/60 ${
-                            overdue ? 'border-l-2 border-l-red-500' : ''
-                          }`}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <span className={transaction.type === 'income' ? 'text-emerald-600' : 'text-red-500'}>
-                                {transaction.type === 'income' ? '↑' : '↓'}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => onEdit(transaction)}
-                                className="text-left font-medium text-neutral-900 hover:text-purple-700"
-                              >
-                                {transaction.description}
-                              </button>
-                              {transaction.recurrence !== 'none' && (
-                                <Tooltip content={`Recorrência ${RECURRENCE_LABELS[transaction.recurrence].toLowerCase()}`}>
-                                  <span className="text-xs text-neutral-400">↻</span>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <CategoryBadge category={transaction.category} />
-                          </td>
-                          <td className="px-4 py-3">
-                            {transaction.contact && (
-                              <Link to={`/crm/${transaction.contact.id}`} className="text-xs text-purple-600 hover:text-purple-700">
-                                {transaction.contact.name}
-                              </Link>
-                            )}
-                            {transaction.deal && (
-                              <Link to={`/deals/${transaction.deal.id}`} className="block text-xs text-purple-600 hover:text-purple-700">
-                                {transaction.deal.title}
-                              </Link>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-xs text-neutral-500">
-                            {transaction.payment_method ? PAYMENT_METHOD_LABELS[transaction.payment_method] : '—'}
-                          </td>
-                          <td
-                            className={`px-4 py-3 text-right font-medium ${
-                              transaction.type === 'income' ? 'text-emerald-600' : 'text-red-500'
-                            }`}
+                      {visibleTransactions.map((transaction) => {
+                        const overdue = getOverdueStatus(transaction.due_date, transaction.status) === 'overdue'
+                        const income = transaction.type === 'income'
+                        return (
+                          <FlipItem
+                            as="tr"
+                            key={transaction.id}
+                            className="group border-b border-[var(--border-subtle)] transition-colors duration-150 last:border-0 hover:bg-black/[0.025] dark:hover:bg-white/[0.03]"
                           >
-                            {transaction.type === 'income' ? '+' : '-'}
-                            {formatCurrency(transaction.amount)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClasses[displayStatus]}`}>
-                              {overdue ? 'Vencido' : TRANSACTION_STATUS_LABELS[transaction.status]}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-neutral-500">{formatDate(transaction.date)}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                              {transaction.status === 'pending' && (
+                            <td className="py-3 pl-6 pr-4">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span
+                                  className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                                    income ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
+                                  }`}
+                                >
+                                  {income ? <ArrowUpRight className="size-4" /> : <ArrowDownRight className="size-4" />}
+                                </span>
+                                <div className="min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => onEdit(transaction)}
+                                    className="flex max-w-[280px] items-center gap-1.5 truncate text-left font-medium text-[var(--text-primary)] hover:text-[var(--accent-text)]"
+                                  >
+                                    <span className="truncate">{transaction.description}</span>
+                                    {transaction.recurrence !== 'none' && (
+                                      <span
+                                        title={`Recorrência ${RECURRENCE_LABELS[transaction.recurrence].toLowerCase()}`}
+                                      >
+                                        <Repeat className="size-3.5 shrink-0 text-[var(--text-muted)]" />
+                                      </span>
+                                    )}
+                                  </button>
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--text-muted)]">
+                                    <span className="tabular-nums">{formatDate(transaction.date)}</span>
+                                    <CategoryBadge category={transaction.category} />
+                                    {transaction.payment_method && (
+                                      <span>{PAYMENT_METHOD_LABELS[transaction.payment_method]}</span>
+                                    )}
+                                    {transaction.contact && (
+                                      <Link
+                                        to={`/crm/${transaction.contact.id}`}
+                                        className="hover:text-[var(--accent-text)]"
+                                      >
+                                        {transaction.contact.name}
+                                      </Link>
+                                    )}
+                                    {transaction.deal && (
+                                      <Link
+                                        to={`/deals/${transaction.deal.id}`}
+                                        className="hover:text-[var(--accent-text)]"
+                                      >
+                                        {transaction.deal.title}
+                                      </Link>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusPill status={overdue ? 'overdue' : transaction.status} />
+                            </td>
+                            <td
+                              className={`whitespace-nowrap px-4 py-3 text-right font-display font-semibold tabular-nums ${
+                                income ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-primary)]'
+                              }`}
+                            >
+                              {income ? '+' : '−'}
+                              {formatCurrency(transaction.amount)}
+                            </td>
+                            <td className="py-3 pl-2 pr-5">
+                              <div className="flex justify-end gap-0.5 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+                                {transaction.status === 'pending' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onMarkAsPaid(transaction.id)}
+                                    aria-label={`Marcar ${transaction.description} como pago`}
+                                    title="Marcar como pago"
+                                    className={`${iconButton} hover:text-emerald-500`}
+                                  >
+                                    <CheckCircle2 className="size-4" />
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => onMarkAsPaid(transaction.id)}
-                                  className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                                  onClick={() => onEdit(transaction)}
+                                  aria-label={`Editar ${transaction.description}`}
+                                  title="Editar"
+                                  className={`${iconButton} hover:text-[var(--accent-text)]`}
                                 >
-                                  Marcar pago
+                                  <Pencil className="size-4" />
                                 </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => onEdit(transaction)}
-                                className="text-xs font-medium text-neutral-500 hover:text-purple-700"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onDeleteRequest(transaction)}
-                                className="text-xs font-medium text-neutral-500 hover:text-red-600"
-                              >
-                                Excluir
-                              </button>
-                            </div>
-                          </td>
-                        </FlipItem>
-                      )
-                    })}
+                                <button
+                                  type="button"
+                                  onClick={() => onDeleteRequest(transaction)}
+                                  aria-label={`Excluir ${transaction.description}`}
+                                  title="Excluir"
+                                  className={`${iconButton} hover:text-red-500`}
+                                >
+                                  <Trash2 className="size-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </FlipItem>
+                        )
+                      })}
                     </AnimatePresence>
                   )}
                 </tbody>
               </table>
             </div>
 
-            <div className="flex flex-col gap-3 p-3 md:hidden">
+            <ul className="flex flex-col divide-y divide-[var(--border-subtle)] md:hidden">
               {loading
-                ? Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-28 w-full" />)
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <li key={index} className="px-6 py-4">
+                      <Skeleton className="h-12 w-full" />
+                    </li>
+                  ))
                 : visibleTransactions.map((transaction) => (
-                    <TransactionCard
-                      key={transaction.id}
-                      transaction={transaction}
-                      onEdit={() => onEdit(transaction)}
-                      onMarkAsPaid={() => onMarkAsPaid(transaction.id)}
-                      onDelete={() => onDeleteRequest(transaction)}
-                    />
+                    <li key={transaction.id}>
+                      <TransactionCard
+                        transaction={transaction}
+                        onEdit={() => onEdit(transaction)}
+                        onMarkAsPaid={() => onMarkAsPaid(transaction.id)}
+                        onDelete={() => onDeleteRequest(transaction)}
+                      />
+                    </li>
                   ))}
-            </div>
+            </ul>
           </>
         )}
       </div>
-    </div>
+    </Card>
   )
 }

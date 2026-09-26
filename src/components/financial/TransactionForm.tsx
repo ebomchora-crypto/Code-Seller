@@ -300,16 +300,16 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <label className="text-sm font-medium text-neutral-700">Tipo</label>
-        <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1">
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Tipo</label>
+        <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1">
           <button
             type="button"
             onClick={() => {
               updateField('type', 'income')
               updateField('categoryId', '')
             }}
-            className={`rounded-md py-2 text-sm font-medium transition-colors duration-150 ${
-              form.type === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-neutral-500'
+            className={`rounded-lg py-2 text-sm font-medium transition-colors duration-150 ${
+              form.type === 'income' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             Receita
@@ -320,8 +320,8 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
               updateField('type', 'expense')
               updateField('categoryId', '')
             }}
-            className={`rounded-md py-2 text-sm font-medium transition-colors duration-150 ${
-              form.type === 'expense' ? 'bg-white text-red-500 shadow-sm' : 'text-neutral-500'
+            className={`rounded-lg py-2 text-sm font-medium transition-colors duration-150 ${
+              form.type === 'expense' ? 'bg-red-500/15 text-red-600 dark:text-red-400' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
             }`}
           >
             Despesa
@@ -380,12 +380,12 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
           <button
             type="button"
             onClick={() => setCreatingCategory(true)}
-            className="mt-1.5 text-xs font-medium text-purple-600 hover:text-purple-700"
+            className="mt-1.5 text-xs font-medium text-[var(--accent-text)] hover:underline"
           >
             + Criar categoria
           </button>
         ) : (
-          <div className="mt-2 flex flex-col gap-2 rounded-lg border border-neutral-200 p-3">
+          <div className="mt-2 flex flex-col gap-2 rounded-xl border border-[var(--border-default)] p-3">
             <Input
               placeholder="Nome da categoria"
               value={newCategoryName}
@@ -451,7 +451,7 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
       </Select>
 
       <div ref={contactBoxRef} className="relative flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-neutral-700">Contato vinculado</label>
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Contato vinculado</label>
         <Input
           placeholder="Buscar contato do CRM"
           value={form.contactName}
@@ -463,11 +463,11 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
           onFocus={() => setContactDropdownOpen(true)}
         />
         {contactDropdownOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]">
             <button
               type="button"
               onClick={() => selectContact(null)}
-              className="block w-full px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50"
+              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-muted)]"
             >
               Nenhum contato
             </button>
@@ -476,7 +476,7 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
                 key={contact.id}
                 type="button"
                 onClick={() => selectContact(contact)}
-                className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-purple-50"
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-muted)]"
               >
                 {contact.name}
               </button>
@@ -486,7 +486,7 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
       </div>
 
       <div ref={dealBoxRef} className="relative flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-neutral-700">Negócio vinculado</label>
+        <label className="text-[13px] font-medium text-[var(--text-secondary)]">Negócio vinculado</label>
         <Input
           placeholder="Buscar negócio"
           value={form.dealTitle}
@@ -498,11 +498,11 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
           onFocus={() => setDealDropdownOpen(true)}
         />
         {dealDropdownOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]">
             <button
               type="button"
               onClick={() => selectDeal(null)}
-              className="block w-full px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50"
+              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-muted)]"
             >
               Nenhum negócio
             </button>
@@ -511,13 +511,13 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
                 key={deal.id}
                 type="button"
                 onClick={() => selectDeal(deal)}
-                className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-purple-50"
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-muted)]"
               >
                 {deal.title}
               </button>
             ))}
             {filteredDeals.length === 0 && (
-              <p className="px-3 py-2 text-sm text-neutral-400">Nenhum negócio encontrado.</p>
+              <p className="px-3 py-2 text-sm text-[var(--text-muted)]">Nenhum negócio encontrado.</p>
             )}
           </div>
         )}
@@ -546,7 +546,7 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
             error={errors.recurrenceEndDate}
           />
           {futureInstances > 0 && (
-            <p className="rounded-lg bg-purple-50 px-3 py-2 text-xs text-purple-700">
+            <p className="rounded-xl border border-[var(--accent-ring)] bg-[var(--accent-tint)] px-3 py-2 text-xs text-[var(--text-secondary)]">
               Serão criadas {futureInstances} transações futuras até {new Date(`${form.recurrenceEndDate}T00:00:00`).toLocaleDateString('pt-BR')}.
             </p>
           )}
@@ -561,7 +561,7 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
           onDelete={handleDeleteReceipt}
         />
       ) : (
-        <p className="text-xs text-neutral-400">O comprovante pode ser anexado após salvar a transação.</p>
+        <p className="text-xs text-[var(--text-muted)]">O comprovante pode ser anexado após salvar a transação.</p>
       )}
 
       <Textarea

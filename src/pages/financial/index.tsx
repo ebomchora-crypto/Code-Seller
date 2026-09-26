@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { PageWrapper } from '@/components/ui/PageWrapper'
-import { SectionLabel } from '@/components/ui/section-label'
+import { Plus, Tags } from 'lucide-react'
+import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -77,22 +77,25 @@ export default function FinancialPage() {
 
   return (
     <PageWrapper>
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <SectionLabel>Financeiro</SectionLabel>
-            <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-[var(--text-primary)]">Financeiro</h1>
-          </div>
+        <PageHeader
+          title="Financeiro"
+          subtitle="O que entrou, o que saiu e o que ainda vai entrar."
+          actions={
+            <>
+              <ExportButton onExport={exportCSV} />
+              <Button variant="secondary" className="h-11 rounded-full px-4" onClick={() => setCategoryManagerOpen(true)}>
+                <Tags className="size-4" />
+                Categorias
+              </Button>
+              <Button className="h-11 rounded-full px-5" onClick={openCreateForm}>
+                <Plus className="size-4" strokeWidth={2.4} />
+                Nova transação
+              </Button>
+            </>
+          }
+        />
 
-          <div className="flex items-center gap-3">
-            <ExportButton onExport={exportCSV} />
-            <Button variant="secondary" onClick={() => setCategoryManagerOpen(true)}>
-              Categorias
-            </Button>
-            <Button onClick={openCreateForm}>+ Nova Transação</Button>
-          </div>
-        </div>
-
-        <div className="mt-6">
+        <div className="mt-8">
           <FinancialMetrics metrics={metrics} loading={loading && !metrics} />
         </div>
 
@@ -100,8 +103,8 @@ export default function FinancialPage() {
           <CashFlowChart data={cashFlow} loading={loading && cashFlow.length === 0} />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-          <div className="lg:col-span-3">
+        <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div className="xl:col-span-2">
             <TransactionList
               transactions={transactions}
               loading={loading}
@@ -118,7 +121,7 @@ export default function FinancialPage() {
               onCreateTransaction={openCreateForm}
             />
           </div>
-          <div className="lg:col-span-2">
+          <div>
             <ReceivablesList
               receivables={receivables}
               loading={receivablesLoading}
