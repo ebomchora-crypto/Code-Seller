@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Menu, X } from 'lucide-react'
+import { Download, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useReducedMotion } from '@/motion/hooks'
 import { duration, easing } from '@/motion/tokens'
@@ -48,7 +48,15 @@ export function LandingNavbar() {
             ))}
           </nav>
 
-          <div className="hidden lg:block">
+          <div className="hidden items-center gap-2 lg:flex">
+            <a
+              href="/downloads/CodeSellers-Setup.exe"
+              download
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-white/80 transition-colors hover:text-white"
+            >
+              <Download className="h-4 w-4" />
+              Baixar app
+            </a>
             <Button
               size="sm"
               magnetic
@@ -100,6 +108,15 @@ export function LandingNavbar() {
                   {link.label}
                 </a>
               ))}
+              <a
+                href="/downloads/CodeSellers-Setup.exe"
+                download
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                <Download className="h-4 w-4" />
+                Baixar app para Windows
+              </a>
               <Button
                 className="mt-1 w-full !bg-landing-primary !text-white hover:!bg-landing-primary-hover"
                 onClick={() => navigate('/login')}

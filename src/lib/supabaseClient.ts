@@ -68,3 +68,14 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-anon-key',
   { auth: { storage: authStorage } },
 )
+
+// App de Windows: o login acontece no navegador (não dentro do Electron), e
+// depois o app volta pro primeiro plano já com a sessão. O main process do
+// Electron chama essa função (via executeJavaScript) para aplicar os tokens
+// recebidos pelo protocolo codesellers://. Só existe dentro do app — em
+// qualquer navegador normal, window.codeSellersDesktop não existe.
+if (typeof window !== 'undefined' && window.codeSellersDesktop) {
+  window.__codeSellersSetSession = (tokens) => {
+    void supabase.auth.setSession(tokens)
+  }
+}

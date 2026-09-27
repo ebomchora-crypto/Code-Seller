@@ -20,12 +20,19 @@
     "publish": null,
     "files": [
       "main.js",
+      "preload.js",
       "package.json"
     ],
     "directories": {
       "output": "release",
       "buildResources": "build"
     },
+    "protocols": [
+      {
+        "name": "Code Sellers",
+        "schemes": ["codesellers"]
+      }
+    ],
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] },
@@ -39,7 +46,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Code Sellers"
+      "shortcutName": "Code Sellers",
+      "include": "build/installer.nsh"
     },
     "portable": {
       "artifactName": "CodeSellers-portable.exe"

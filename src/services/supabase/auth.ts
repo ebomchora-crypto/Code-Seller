@@ -87,15 +87,17 @@ export async function signUpWithEmail(
   }
 }
 
-// Redireciona pro Google e volta pra raiz do site, onde o supabase-js lê a
-// sessão da URL e o RootRoute mostra o Dashboard. O provider precisa estar
-// ativo no Supabase (Authentication → Providers → Google) e a URL do site
-// cadastrada em Authentication → URL Configuration.
+// Redireciona pro Google e volta pra mesma página onde o login foi iniciado
+// (preserva a query string — importante pro app de Windows, que manda
+// ?desktop=1 pra saber que precisa devolver a sessão pro app depois). O
+// supabase-js lê a sessão da URL e o RootRoute mostra o Dashboard. O
+// provider precisa estar ativo no Supabase (Authentication → Providers →
+// Google) e a URL do site cadastrada em Authentication → URL Configuration.
 export async function signInWithGoogle(): Promise<ServiceResponse<null>> {
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.href },
     })
     if (error) return { data: null, error: translateAuthError(error.message), loading: false }
     return { data: null, error: null, loading: false }
