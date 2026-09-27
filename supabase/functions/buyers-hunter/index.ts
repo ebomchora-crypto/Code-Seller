@@ -1,13 +1,15 @@
 // Supabase Edge Function — busca de empresas do Buyers Hunter.
 //
 // O provedor dos dados é configurado só aqui (servidor): a tela nunca sabe
-// de onde vêm as empresas, e a chave nunca chega ao navegador.
+// de onde vêm as empresas, e o token nunca chega ao navegador.
+//
+// Provedor: Apify (ator "Google Maps Scraper" — compass/crawler-google-places).
 //
 // Deploy:
 //   supabase functions deploy buyers-hunter
-//   supabase secrets set BUYERS_HUNTER_PLACES_KEY=...
+//   supabase secrets set BUYERS_HUNTER_APIFY_TOKEN=apify_api_...
 //   supabase secrets set BUYERS_HUNTER_MONTHLY_LIMIT=50   (opcional, padrão 50)
-// Alternativa aos secrets: linhas 'buyers_hunter_places_key' e
+// Alternativa aos secrets: linhas 'buyers_hunter_apify_token' e
 // 'buyers_hunter_monthly_limit' na tabela public.app_config (só o servidor lê).
 //
 // Ações (POST com JSON):
@@ -16,25 +18,16 @@
 //
 // Cada chamada de busca (inclusive "carregar mais") conta 1 no limite mensal.
 // Os resultados não são gravados: só o histórico da busca (prospect_searches).
+//
+// Paginação: como o ator não tem cursor, "carregar mais" roda a busca de novo
+// pedindo um lote maior (o pageToken guarda quantos lugares já foram pedidos).
+// O app descarta duplicados pelo id, então repetir itens já vistos é inofensivo.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText'
-const FIELD_MASK = [
-  'places.id',
-  'places.displayName',
-  'places.formattedAddress',
-  'places.addressComponents',
-  'places.nationalPhoneNumber',
-  'places.internationalPhoneNumber',
-  'places.websiteUri',
-  'places.rating',
-  'places.userRatingCount',
-  'places.primaryTypeDisplayName',
-  'places.googleMapsUri',
-  'places.businessStatus',
-  'nextPageToken',
-].join(',')
+const APIFY_RUN_URL = 'https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?memory=1024'
+const PAGE_SIZE = 20
+const MAX_TOTAL_RESULTS = 60 // ~3 páginas — trava o custo de uma única busca
 
 const DEFAULT_MONTHLY_LIMIT = 50
 
@@ -61,19 +54,22 @@ interface ProspectResult {
   maps_url: string | null
 }
 
-interface RawPlace {
-  id: string
-  displayName?: { text?: string }
-  formattedAddress?: string
-  addressComponents?: { longText?: string; shortText?: string; types?: string[] }[]
-  nationalPhoneNumber?: string
-  internationalPhoneNumber?: string
-  websiteUri?: string
-  rating?: number
-  userRatingCount?: number
-  primaryTypeDisplayName?: { text?: string }
-  googleMapsUri?: string
-  businessStatus?: string
+// Formato do ator compass/crawler-google-places (Apify).
+interface ApifyPlace {
+  placeId: string
+  title?: string
+  categoryName?: string
+  address?: string
+  city?: string
+  state?: string
+  website?: string
+  phone?: string
+  phoneUnformatted?: string
+  totalScore?: number
+  reviewsCount?: number
+  url?: string
+  permanentlyClosed?: boolean
+  temporarilyClosed?: boolean
 }
 
 const SOCIAL_HOSTS = [
@@ -102,27 +98,21 @@ function classifyWebsite(url: string | undefined): WebsiteKind {
   }
 }
 
-function findComponent(place: RawPlace, type: string, short = false): string | null {
-  const component = place.addressComponents?.find((entry) => entry.types?.includes(type))
-  if (!component) return null
-  return (short ? component.shortText : component.longText) ?? null
-}
-
-function normalize(place: RawPlace): ProspectResult {
+function normalize(place: ApifyPlace): ProspectResult {
   return {
-    id: place.id,
-    name: place.displayName?.text ?? 'Empresa sem nome',
-    category: place.primaryTypeDisplayName?.text ?? null,
-    address: place.formattedAddress ?? null,
-    city: findComponent(place, 'administrative_area_level_2'),
-    state: findComponent(place, 'administrative_area_level_1', true),
-    phone: place.nationalPhoneNumber ?? null,
-    phone_international: place.internationalPhoneNumber ?? null,
-    website: place.websiteUri ?? null,
-    website_kind: classifyWebsite(place.websiteUri),
-    rating: place.rating ?? null,
-    reviews: place.userRatingCount ?? 0,
-    maps_url: place.googleMapsUri ?? null,
+    id: place.placeId,
+    name: place.title ?? 'Empresa sem nome',
+    category: place.categoryName ?? null,
+    address: place.address ?? null,
+    city: place.city ?? null,
+    state: place.state ?? null,
+    phone: place.phone ?? null,
+    phone_international: place.phoneUnformatted ?? null,
+    website: place.website ?? null,
+    website_kind: classifyWebsite(place.website),
+    rating: place.totalScore ?? null,
+    reviews: place.reviewsCount ?? 0,
+    maps_url: place.url ?? null,
   }
 }
 
@@ -153,9 +143,9 @@ Deno.serve(async (req: Request) => {
     const { data: configRows } = await admin
       .from('app_config')
       .select('key, value')
-      .in('key', ['buyers_hunter_places_key', 'buyers_hunter_monthly_limit'])
+      .in('key', ['buyers_hunter_apify_token', 'buyers_hunter_monthly_limit'])
     const config = new Map((configRows ?? []).map((row) => [row.key as string, row.value as string]))
-    const placesKey = Deno.env.get('BUYERS_HUNTER_PLACES_KEY') ?? config.get('buyers_hunter_places_key')
+    const apifyToken = Deno.env.get('BUYERS_HUNTER_APIFY_TOKEN') ?? config.get('buyers_hunter_apify_token')
     const limit =
       Number(Deno.env.get('BUYERS_HUNTER_MONTHLY_LIMIT') ?? config.get('buyers_hunter_monthly_limit')) || DEFAULT_MONTHLY_LIMIT
 
@@ -168,7 +158,8 @@ Deno.serve(async (req: Request) => {
 
     const { count, error: countError } = await admin
       .from('prospect_searches')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
+      .limit(1)
       .eq('user_id', userId)
       .gte('created_at', monthStartIso())
     if (countError) throw new Error(countError.message)
@@ -183,11 +174,11 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action === 'usage') {
-      return json({ configured: Boolean(placesKey), used, limit })
+      return json({ configured: Boolean(apifyToken), used, limit })
     }
 
     if (body.action !== 'search') return fail('invalid_input', 'Ação inválida.', 400)
-    if (!placesKey) return fail('not_configured', 'A busca ainda não está disponível.', 503)
+    if (!apifyToken) return fail('not_configured', 'A busca ainda não está disponível.', 503)
 
     const niche = body.niche?.trim().slice(0, 80) ?? ''
     const city = body.city?.trim().slice(0, 80) ?? ''
@@ -198,19 +189,23 @@ Deno.serve(async (req: Request) => {
       return fail('limit_reached', `Você usou as ${limit} buscas deste mês. O limite renova no dia 1º.`, 429)
     }
 
-    const upstream = await fetch(SEARCH_URL, {
+    // Sem cursor real: "carregar mais" pede um lote maior desde o início.
+    // pageToken guarda quantos lugares o lote anterior já tinha.
+    const already = Math.max(0, Math.min(Number(body.pageToken) || 0, MAX_TOTAL_RESULTS))
+    const wanted = Math.min(already + PAGE_SIZE, MAX_TOTAL_RESULTS)
+
+    const upstream = await fetch(APIFY_RUN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Goog-Api-Key': placesKey,
-        'X-Goog-FieldMask': FIELD_MASK,
+        Authorization: `Bearer ${apifyToken}`,
       },
       body: JSON.stringify({
-        textQuery: `${niche} em ${city}`,
-        languageCode: 'pt-BR',
-        regionCode: 'BR',
-        pageSize: 20,
-        ...(body.pageToken ? { pageToken: body.pageToken } : {}),
+        searchStringsArray: [niche],
+        locationQuery: `${city}, Brazil`,
+        language: 'pt-BR',
+        maxCrawledPlacesPerSearch: wanted,
+        skipClosedPlaces: true,
       }),
     })
 
@@ -219,10 +214,8 @@ Deno.serve(async (req: Request) => {
       return fail('upstream_error', 'Não foi possível buscar empresas agora. Tente de novo em instantes.', 502)
     }
 
-    const payload = (await upstream.json()) as { places?: RawPlace[]; nextPageToken?: string }
-    const results = (payload.places ?? [])
-      .filter((place) => place.businessStatus !== 'CLOSED_PERMANENTLY')
-      .map(normalize)
+    const payload = (await upstream.json()) as ApifyPlace[]
+    const results = payload.filter((place) => !place.permanentlyClosed && !place.temporarilyClosed).map(normalize)
 
     const { error: insertError } = await admin.from('prospect_searches').insert({
       user_id: userId,
@@ -233,9 +226,12 @@ Deno.serve(async (req: Request) => {
     })
     if (insertError) console.error('buyers-hunter insert', insertError.message)
 
+    // Só oferece "carregar mais" se o lote voltou cheio (sinal de que pode haver mais) e ainda não bateu o teto.
+    const nextPageToken = results.length >= wanted && wanted < MAX_TOTAL_RESULTS ? String(wanted) : null
+
     return json({
       results,
-      nextPageToken: payload.nextPageToken ?? null,
+      nextPageToken,
       usage: { configured: true, used: used + 1, limit },
     })
   } catch (error) {
