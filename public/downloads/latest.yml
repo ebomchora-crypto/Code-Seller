@@ -1,7 +1,7 @@
-version: 1.1.0
+version: 1.2.0
 files:
   - url: CodeSellers-Setup.exe
-    sha512: czdllbYYwfwWTPF1PxNPy1JnXN1SJbMHfluMTjXUx+c8Vp9hc43szvXaPziCjghwqW1x0cPXmnl39B7i7sMCEQ==
+    sha512: N2zvK7rB4O/XqKrHAX9cWmooURVDvHHA4TvuSuJCjDF/bwdxU5QDogx6D9yTBhmKJN2ljo4W+ojPykwHHFkwOA==
 path: CodeSellers-Setup.exe
-sha512: czdllbYYwfwWTPF1PxNPy1JnXN1SJbMHfluMTjXUx+c8Vp9hc43szvXaPziCjghwqW1x0cPXmnl39B7i7sMCEQ==
-releaseDate: '2026-09-27T02:52:16.308Z'
+sha512: N2zvK7rB4O/XqKrHAX9cWmooURVDvHHA4TvuSuJCjDF/bwdxU5QDogx6D9yTBhmKJN2ljo4W+ojPykwHHFkwOA==
+releaseDate: '2026-09-27T12:20:37.314Z'

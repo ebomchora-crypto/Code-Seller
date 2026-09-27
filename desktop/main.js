@@ -12,14 +12,22 @@
 // o app de volta pra frente através do protocolo próprio codesellers://
 // (registrado pelo instalador) com um código de uso único, que o app troca
 // por uma sessão só dele.
+//
+// Recursos de app de verdade (a página pede via preload.js; só funciona se a
+// chamada vier do próprio site): aviso do Windows quando uma tarefa vence,
+// número de tarefas atrasadas no ícone da barra de tarefas e a opção de
+// abrir junto com o Windows (nesse caso o app já começa minimizado).
 
-const { app, BrowserWindow, shell, session, ipcMain } = require('electron')
+const { app, BrowserWindow, Notification, nativeImage, shell, session, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 
 const APP_URL = process.env.CODE_SELLERS_URL || 'https://codesellers.vercel.app/login'
 const APP_ORIGIN = new URL(APP_URL).origin
 const CUSTOM_SCHEME = 'codesellers'
+const APP_ID = 'com.codesellers.desktop'
+// Argumento usado quando o próprio Windows abre o app ao ligar o computador.
+const HIDDEN_START_ARG = '--iniciar-minimizado'
 
 // Domínios que fazem parte do fluxo de login (Google OAuth): a janela pode
 // navegar até eles sem sair do app.
@@ -36,8 +44,10 @@ function isAllowedNavigation(url) {
 }
 
 // Cria a janela sempre maximizada (ocupando a tela toda) e só a mostra
-// quando o conteúdo já estiver pronto, pra não piscar em branco.
-function createWindow() {
+// quando o conteúdo já estiver pronto, pra não piscar em branco. Aberto pelo
+// Windows ao ligar o computador, começa minimizado na barra de tarefas e
+// maximiza quando a pessoa clicar nele.
+function createWindow({ startHidden = false } = {}) {
   const win = new BrowserWindow({
     width: 1360,
     height: 860,
@@ -57,9 +67,17 @@ function createWindow() {
   })
 
   win.once('ready-to-show', () => {
+    if (startHidden) {
+      win.once('restore', () => win.maximize())
+      win.minimize()
+      return
+    }
     win.maximize()
     win.show()
   })
+
+  // Piscou na barra de tarefas por causa de um aviso: para ao abrir a janela.
+  win.on('focus', () => win.flashFrame(false))
 
   // Links abertos com target="_blank": impressão/recibo (about:blank, a própria
   // tela escreve o conteúdo) ficam no app; qualquer outro domínio (WhatsApp,
@@ -103,6 +121,100 @@ function setupAutoUpdate() {
   const check = () => autoUpdater.checkForUpdates().catch(() => undefined)
   check()
   setInterval(check, UPDATE_CHECK_INTERVAL_MS)
+}
+
+// Só aceita pedidos (avisos, contador, iniciar com o Windows) vindos de uma
+// página do próprio site — nunca de outra página que a janela esteja exibindo.
+function fromApp(event) {
+  try {
+    return new URL(event.senderFrame?.url ?? '').origin === APP_ORIGIN
+  } catch {
+    return false
+  }
+}
+
+function focusWindow(win) {
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
+// Guarda os avisos abertos: sem essa referência o Electron pode descartar o
+// objeto antes do clique, e aí clicar no aviso não abriria o app.
+const activeNotifications = new Set()
+
+function showNotification({ title, body, target }) {
+  if (!Notification.isSupported()) return
+  const notification = new Notification({ title, body })
+  activeNotifications.add(notification)
+  const release = () => activeNotifications.delete(notification)
+  notification.on('click', () => {
+    release()
+    const win = BrowserWindow.getAllWindows()[0]
+    if (!win) return
+    focusWindow(win)
+    if (target) win.webContents.send('navigate', target)
+  })
+  notification.on('close', release)
+  notification.on('failed', release)
+  notification.show()
+
+  const win = BrowserWindow.getAllWindows()[0]
+  if (win && !win.isFocused()) win.flashFrame(true)
+}
+
+function badgeDescription(count) {
+  return `${count} ${count === 1 ? 'tarefa atrasada' : 'tarefas atrasadas'}`
+}
+
+// "Abrir quando o Windows iniciar". Na versão portátil, o executável de
+// verdade é o .exe original (o que roda é uma cópia temporária).
+function loginItemOptions() {
+  return { path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath, args: [HIDDEN_START_ARG] }
+}
+
+function canOpenAtLogin() {
+  return app.isPackaged && (process.platform === 'win32' || process.platform === 'darwin')
+}
+
+function registerDesktopFeatures() {
+  ipcMain.on('notify', (event, payload) => {
+    if (!fromApp(event) || !payload || typeof payload.title !== 'string') return
+    const target = typeof payload.path === 'string' && payload.path.startsWith('/') ? payload.path.slice(0, 300) : null
+    showNotification({
+      title: payload.title.slice(0, 120),
+      body: typeof payload.body === 'string' ? payload.body.slice(0, 240) : '',
+      target,
+    })
+  })
+
+  ipcMain.on('set-badge', (event, payload) => {
+    if (!fromApp(event)) return
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    const count = Math.max(0, Math.floor(Number(payload?.count) || 0))
+    if (process.platform === 'win32') {
+      const dataUrl = typeof payload?.imageDataUrl === 'string' ? payload.imageDataUrl : ''
+      if (count > 0 && dataUrl.startsWith('data:image/png;base64,')) {
+        win.setOverlayIcon(nativeImage.createFromDataURL(dataUrl), badgeDescription(count))
+      } else {
+        win.setOverlayIcon(null, '')
+      }
+    } else {
+      app.setBadgeCount(count)
+    }
+  })
+
+  ipcMain.handle('get-open-at-login', (event) => {
+    if (!fromApp(event) || !canOpenAtLogin()) return false
+    return app.getLoginItemSettings(loginItemOptions()).openAtLogin
+  })
+
+  ipcMain.handle('set-open-at-login', (event, enabled) => {
+    if (!fromApp(event) || !canOpenAtLogin()) return false
+    app.setLoginItemSettings({ openAtLogin: Boolean(enabled), ...loginItemOptions() })
+    return app.getLoginItemSettings(loginItemOptions()).openAtLogin
+  })
 }
 
 function extractCallbackUrl(argv) {
@@ -154,8 +266,7 @@ if (!gotLock) {
     if (callbackUrl) {
       void applySessionToWindow(win, callbackUrl)
     } else {
-      if (win.isMinimized()) win.restore()
-      win.focus()
+      focusWindow(win)
     }
   })
 
@@ -167,12 +278,18 @@ if (!gotLock) {
     void applySessionToWindow(win, url)
   })
 
+  // Sem isso os avisos do Windows não aparecem (o Windows liga o aviso ao
+  // atalho do app criado pelo instalador, que usa este mesmo ID).
+  if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
+
   app.whenReady().then(() => {
     app.setAsDefaultProtocolClient(CUSTOM_SCHEME)
+    registerDesktopFeatures()
 
     // A tela de login roda sandboxed (sem Node): pede pro processo principal
     // abrir o link no navegador padrão em vez de chamar shell.* direto.
-    ipcMain.on('open-external', (_event, url) => {
+    ipcMain.on('open-external', (event, url) => {
+      if (!fromApp(event)) return
       try {
         if (['http:', 'https:'].includes(new URL(url).protocol)) shell.openExternal(url)
       } catch {
@@ -185,7 +302,7 @@ if (!gotLock) {
       callback(permission === 'notifications')
     })
 
-    const win = createWindow()
+    const win = createWindow({ startHidden: process.argv.includes(HIDDEN_START_ARG) })
     setupAutoUpdate()
 
     // App aberto do zero clicando num link codesellers:// (não uma segunda

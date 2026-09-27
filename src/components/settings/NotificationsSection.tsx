@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, BellRing, Send, Smartphone } from 'lucide-react'
+import { Bell, BellOff, BellRing, Monitor, Send, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { Switch } from '@/components/ui/Switch'
@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { Button } from '@/components/ui/Button'
 import { disablePush, enablePush, getPushStatus, sendTestPush, type PushStatus } from '@/services/supabase/push'
 import type { NotificationPreferences } from '@/types'
+import { isDesktopApp } from '@/utils/desktop'
 
 interface NotificationsSectionProps {
   preferences: NotificationPreferences | null
@@ -152,6 +153,25 @@ function DeviceCard() {
   )
 }
 
+// Dentro do app de Windows, as notificações do navegador não existem: os
+// avisos de tarefa saem pelo próprio Windows (seção App de Windows).
+function DesktopDeviceCard() {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-[var(--border-default)] p-4">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+        <Monitor className="size-[18px]" />
+      </span>
+      <div>
+        <p className="text-[14px] font-medium text-[var(--text-primary)]">Avisos neste computador</p>
+        <p className="mt-0.5 max-w-md text-[12.5px] text-[var(--text-muted)]">
+          No app de Windows, os avisos de tarefas aparecem pelo próprio Windows. Ajuste em App de Windows, no fim desta
+          página. Para receber no celular, abra o site pelo celular e ative lá.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function NotificationsSection({ preferences, loading, onSave }: NotificationsSectionProps) {
   const [localValues, setLocalValues] = useState<Partial<Record<ToggleKey | 'daily_summary_hour', boolean | number>>>({})
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -183,11 +203,11 @@ export function NotificationsSection({ preferences, loading, onSave }: Notificat
 
   return (
     <SettingsSection id="notificações" icon={Bell} title="Notificações" description="Escolha o que merece um aviso seu.">
-      <DeviceCard />
+      {isDesktopApp() ? <DesktopDeviceCard /> : <DeviceCard />}
 
       <div className="mt-4">
         <SettingsNote>
-          Os avisos chegam como notificação em cada celular ou computador em que você ativar acima. Os lembretes de tarefas
+          Os avisos chegam como notificação em cada celular ou computador em que você ativar. Os lembretes de tarefas
           também continuam aparecendo dentro do app.
         </SettingsNote>
       </div>

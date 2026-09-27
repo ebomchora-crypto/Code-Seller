@@ -6,6 +6,7 @@ import { PublicRoute } from '@/router/PublicRoute'
 import { RootRoute } from '@/router/RootRoute'
 import { Spinner } from '@/components/ui/Spinner'
 import { AppLayout } from '@/layouts/AppLayout'
+import { DesktopIntegration } from '@/components/desktop/DesktopIntegration'
 
 const LoginPage = lazyPage(() => import('@/pages/auth/Login'))
 const RegisterPage = lazyPage(() => import('@/pages/auth/Register'))
@@ -42,6 +43,7 @@ function RouteFallback() {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <DesktopIntegration />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route

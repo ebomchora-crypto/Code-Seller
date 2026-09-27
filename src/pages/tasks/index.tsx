@@ -61,6 +61,16 @@ export default function TasksPage() {
     refetch: refetchSelectedTask,
   } = useTask(selectedTaskId ?? undefined)
 
+  // Clique num aviso do Windows abre /tasks?task=<id>: abre a tarefa e limpa a URL.
+  const taskFromLink = searchParams.get('task')
+  useEffect(() => {
+    if (!taskFromLink) return
+    setSelectedTaskId(taskFromLink)
+    searchParams.delete('task')
+    setSearchParams(searchParams, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskFromLink])
+
   useEffect(() => {
     if (presetContactId || presetDealId) {
       setEditingTask(null)

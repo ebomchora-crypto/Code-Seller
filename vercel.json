@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/agenda/:token",
+      "destination": "https://mfzlwynqjbusyudstdds.supabase.co/functions/v1/calendar-feed?token=:token"
+    },
+    {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }

@@ -5,6 +5,7 @@ import { useAuthContext } from '@/stores/AuthContext'
 import { getOAuthErrorFromUrl } from '@/services/supabase/auth'
 import { supabase } from '@/lib/supabaseClient'
 import { Spinner } from '@/components/ui/Spinner'
+import { isDesktopApp } from '@/utils/desktop'
 import { AppLayout } from '@/layouts/AppLayout'
 
 const DashboardPage = lazyPage(() => import('@/pages/dashboard'))
@@ -16,10 +17,6 @@ function RouteFallback() {
       <Spinner size="lg" className="text-purple-600" />
     </div>
   )
-}
-
-function isDesktopApp() {
-  return typeof window !== 'undefined' && Boolean(window.codeSellersDesktop)
 }
 
 function readDesktopHandoffFlag(): boolean {

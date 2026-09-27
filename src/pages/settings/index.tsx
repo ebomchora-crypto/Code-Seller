@@ -8,9 +8,12 @@ import { PreferencesSection } from '@/components/settings/PreferencesSection'
 import { PipelineSection } from '@/components/settings/PipelineSection'
 import { CRMStatusSection } from '@/components/settings/CRMStatusSection'
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection'
+import { CalendarFeedSection } from '@/components/settings/CalendarFeedSection'
 import { NotificationsSection } from '@/components/settings/NotificationsSection'
 import { TemplatesSection } from '@/components/settings/TemplatesSection'
 import { FollowUpSection } from '@/components/settings/FollowUpSection'
+import { DesktopAppSection } from '@/components/settings/DesktopAppSection'
+import { isDesktopApp } from '@/utils/desktop'
 import { useSettings } from '@/hooks/useSettings'
 import { useAuthContext } from '@/stores/AuthContext'
 import { CATEGORY_COLOR_SWATCHES } from '@/types'
@@ -119,11 +122,15 @@ export default function SettingsPage() {
               onDisconnect={disconnectIntegration}
             />
 
+            <CalendarFeedSection />
+
             <TemplatesSection />
 
             <FollowUpSection />
 
             <NotificationsSection preferences={notificationPrefs} loading={loading} onSave={updateNotificationPrefs} />
+
+            {isDesktopApp() && <DesktopAppSection />}
           </div>
         </div>
     </PageWrapper>

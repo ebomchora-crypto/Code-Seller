@@ -1,7 +1,7 @@
 {
   "name": "code-sellers-desktop",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Code Sellers para Windows — o app de verdade, com login pelo navegador.",
   "main": "main.js",
   "scripts": {

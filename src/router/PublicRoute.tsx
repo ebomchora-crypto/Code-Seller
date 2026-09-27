@@ -3,14 +3,11 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '@/stores/AuthContext'
 import { Spinner } from '@/components/ui/Spinner'
+import { isDesktopApp } from '@/utils/desktop'
 import { DesktopLogin } from '@/components/auth/DesktopLogin'
 
 interface PublicRouteProps {
   children: ReactNode
-}
-
-function isDesktopApp() {
-  return typeof window !== 'undefined' && Boolean(window.codeSellersDesktop)
 }
 
 export function PublicRoute({ children }: PublicRouteProps) {

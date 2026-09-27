@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
   Bell,
+  CalendarDays,
   MessageSquareText,
+  Monitor,
   Repeat,
   GitBranch,
   Plug,
@@ -12,10 +14,14 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { isDesktopApp } from '@/utils/desktop'
+
 interface SettingsNavItem {
   id: string
   label: string
   icon: LucideIcon
+  /** Só aparece dentro do app de Windows. */
+  desktopOnly?: boolean
 }
 
 const NAV_ITEMS: SettingsNavItem[] = [
@@ -25,16 +31,20 @@ const NAV_ITEMS: SettingsNavItem[] = [
   { id: 'pipeline', label: 'Pipeline', icon: GitBranch },
   { id: 'crm-status', label: 'Status do CRM', icon: Tags },
   { id: 'integrações', label: 'Integrações', icon: Plug },
+  { id: 'agenda', label: 'Google Agenda', icon: CalendarDays },
   { id: 'modelos', label: 'Modelos', icon: MessageSquareText },
   { id: 'follow-up', label: 'Follow-up', icon: Repeat },
   { id: 'notificações', label: 'Notificações', icon: Bell },
+  { id: 'app-windows', label: 'App de Windows', icon: Monitor, desktopOnly: true },
 ]
 
+const VISIBLE_ITEMS = NAV_ITEMS.filter((item) => !item.desktopOnly || isDesktopApp())
+
 export function SettingsNav() {
-  const [activeId, setActiveId] = useState(NAV_ITEMS[0].id)
+  const [activeId, setActiveId] = useState(VISIBLE_ITEMS[0].id)
 
   useEffect(() => {
-    const sections = NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
+    const sections = VISIBLE_ITEMS.map((item) => document.getElementById(item.id)).filter(
       (element): element is HTMLElement => element !== null,
     )
 
@@ -61,7 +71,7 @@ export function SettingsNav() {
       aria-label="Seções das configurações"
       className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1 lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:rounded-[var(--card-radius)] lg:border lg:border-[var(--border-subtle)] lg:bg-[var(--bg-card)] lg:p-2 lg:shadow-[var(--shadow-card)]"
     >
-      {NAV_ITEMS.map((item) => {
+      {VISIBLE_ITEMS.map((item) => {
         const Icon = item.icon
         const active = activeId === item.id
         return (
