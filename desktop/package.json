@@ -1,0 +1,48 @@
+{
+  "name": "code-sellers-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Code Sellers para Windows — abre o app de verdade (codesellers.vercel.app), login e dados sempre pelo Supabase.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.codesellers.desktop",
+    "productName": "Code Sellers",
+    "copyright": "Code Sellers",
+    "asar": true,
+    "publish": null,
+    "files": [
+      "main.js",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Code Sellers"
+    },
+    "portable": {
+      "artifactName": "CodeSellers-portable.exe"
+    }
+  }
+}
