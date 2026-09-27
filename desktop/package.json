@@ -2,7 +2,7 @@
   "name": "code-sellers-desktop",
   "private": true,
   "version": "1.0.0",
-  "description": "Code Sellers para Windows — abre o app de verdade (codesellers.vercel.app), login e dados sempre pelo Supabase.",
+  "description": "Code Sellers para Windows — o app de verdade, com login pelo navegador.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

@@ -66,7 +66,7 @@ export const CHANGELOG: ChangelogItem[] = [
       'CRM completo com contatos e tags',
       'Pipeline de negócios',
       'Dashboard com métricas',
-      'Autenticação segura com Supabase',
+      'Autenticação segura',
     ],
   },
 ]

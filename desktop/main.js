@@ -1,11 +1,10 @@
 // Code Sellers para Windows — só um app nativo em volta do site de verdade.
 //
-// Não existe banco local (sem SQLite): a janela carrega direto a tela de
-// login de https://codesellers.vercel.app (sem passar pela landing page),
-// então login, sessão e todos os dados continuam vindo do Supabase,
-// exatamente como na web. O Electron guarda a sessão (localStorage) na
-// pasta do usuário, então quem já entrou uma vez continua conectado ao
-// abrir o app de novo — a própria tela de login redireciona pro painel.
+// Sem banco local: a janela carrega direto a tela de login do site (sem
+// passar pela landing pública), então login, sessão e todos os dados
+// continuam vindo do mesmo lugar de sempre — igual na web. O Electron
+// guarda a sessão na pasta do usuário, então quem já entrou uma vez
+// continua conectado ao abrir o app de novo.
 //
 // Login acontece no navegador, não dentro do app: a tela de login detecta
 // que está rodando aqui dentro (via preload.js) e abre o navegador padrão
@@ -21,14 +20,9 @@ const APP_URL = process.env.CODE_SELLERS_URL || 'https://codesellers.vercel.app/
 const APP_ORIGIN = new URL(APP_URL).origin
 const CUSTOM_SCHEME = 'codesellers'
 
-// Domínios que fazem parte do fluxo de login (Google OAuth) e do próprio
-// Supabase: a janela pode navegar até eles sem sair do app.
-const ALLOWED_NAVIGATION_HOSTS = [
-  new URL(APP_URL).host,
-  'accounts.google.com',
-  'accounts.youtube.com',
-  'myaccount.google.com',
-]
+// Domínios que fazem parte do fluxo de login (Google OAuth): a janela pode
+// navegar até eles sem sair do app.
+const ALLOWED_NAVIGATION_HOSTS = [new URL(APP_URL).host, 'accounts.google.com', 'accounts.youtube.com', 'myaccount.google.com']
 
 function isAllowedNavigation(url) {
   try {
@@ -40,12 +34,15 @@ function isAllowedNavigation(url) {
   }
 }
 
+// Cria a janela sempre maximizada (ocupando a tela toda) e só a mostra
+// quando o conteúdo já estiver pronto, pra não piscar em branco.
 function createWindow() {
   const win = new BrowserWindow({
     width: 1360,
     height: 860,
     minWidth: 1024,
     minHeight: 640,
+    show: false,
     backgroundColor: '#0b0812',
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'build', 'icon.ico'),
@@ -58,7 +55,10 @@ function createWindow() {
     },
   })
 
-  win.loadURL(APP_URL)
+  win.once('ready-to-show', () => {
+    win.maximize()
+    win.show()
+  })
 
   // Links abertos com target="_blank": impressão/recibo (about:blank, a própria
   // tela escreve o conteúdo) ficam no app; qualquer outro domínio (WhatsApp,
@@ -76,7 +76,7 @@ function createWindow() {
   })
 
   // Navegação da própria janela (troca de página, não link novo): só permite
-  // seguir dentro do app ou para o login do Google/Supabase. O resto abre no
+  // seguir dentro do app ou para o login do Google. O resto abre no
   // navegador padrão em vez de "sequestrar" a janela do app.
   win.webContents.on('will-navigate', (event, url) => {
     if (new URL(url).origin === APP_ORIGIN) return
@@ -95,7 +95,7 @@ function extractCallbackUrl(argv) {
 // Recebe codesellers://auth-callback?access_token=...&refresh_token=...
 // (mandado pelo site depois do login no navegador) e aplica a sessão dentro
 // da janela do app, que passa a carregar o painel já conectado.
-async function handleAuthCallback(rawUrl) {
+async function applySessionToWindow(win, rawUrl) {
   let accessToken = null
   let refreshToken = null
   try {
@@ -107,7 +107,6 @@ async function handleAuthCallback(rawUrl) {
   }
   if (!accessToken || !refreshToken) return
 
-  const win = BrowserWindow.getAllWindows()[0] ?? createWindow()
   await win.loadURL(`${APP_ORIGIN}/`)
   // window.__codeSellersSetSession vem do bundle da própria página — espera
   // alguns instantes caso a janela ainda esteja terminando de carregar.
@@ -120,6 +119,7 @@ async function handleAuthCallback(rawUrl) {
       }
     })(25)
   `)
+  win.maximize()
   if (win.isMinimized()) win.restore()
   win.show()
   win.focus()
@@ -134,19 +134,22 @@ if (!gotLock) {
 } else {
   app.on('second-instance', (_event, argv) => {
     const win = BrowserWindow.getAllWindows()[0]
-    if (win) {
+    if (!win) return
+    const callbackUrl = extractCallbackUrl(argv)
+    if (callbackUrl) {
+      void applySessionToWindow(win, callbackUrl)
+    } else {
       if (win.isMinimized()) win.restore()
       win.focus()
     }
-    const callbackUrl = extractCallbackUrl(argv)
-    if (callbackUrl) void handleAuthCallback(callbackUrl)
   })
 
   // macOS entrega o protocolo por esse evento (irrelevante pro build de
   // Windows, mas inofensivo manter — o app é o mesmo código em qualquer SO).
   app.on('open-url', (event, url) => {
     event.preventDefault()
-    void handleAuthCallback(url)
+    const win = BrowserWindow.getAllWindows()[0] ?? createWindow()
+    void applySessionToWindow(win, url)
   })
 
   app.whenReady().then(() => {
@@ -167,15 +170,21 @@ if (!gotLock) {
       callback(permission === 'notifications')
     })
 
-    createWindow()
+    const win = createWindow()
 
     // App aberto do zero clicando num link codesellers:// (não uma segunda
-    // instância): a URL vem nos argumentos de linha de comando.
+    // instância): a URL vem nos argumentos de linha de comando. Nesse caso
+    // NUNCA carrega a tela de login primeiro — senão ela abriria o
+    // navegador de novo antes da sessão ser aplicada.
     const initialCallbackUrl = extractCallbackUrl(process.argv)
-    if (initialCallbackUrl) void handleAuthCallback(initialCallbackUrl)
+    if (initialCallbackUrl) {
+      void applySessionToWindow(win, initialCallbackUrl)
+    } else {
+      win.loadURL(APP_URL)
+    }
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      if (BrowserWindow.getAllWindows().length === 0) createWindow().loadURL(APP_URL)
     })
   })
 

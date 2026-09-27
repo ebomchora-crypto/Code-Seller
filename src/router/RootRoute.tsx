@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { lazyPage } from '@/utils/lazyPage'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthContext } from '@/stores/AuthContext'
@@ -37,11 +37,17 @@ export function RootRoute() {
 
   // Login feito no navegador a pedido do app de Windows (ver PublicRoute):
   // assim que autentica, devolve a sessão pro app via protocolo próprio
-  // (codesellers://) em vez de mostrar o Dashboard nesta aba.
+  // (codesellers://) em vez de mostrar o Dashboard nesta aba. Só pode
+  // acontecer uma vez — sem o guard de ref, qualquer renovação de token
+  // (troca de aba, o Supabase atualiza o access token sozinho de tempos em
+  // tempos) muda a referência de `user` e reexecutaria o efeito, reabrindo
+  // o app em loop.
   const [desktopHandoff] = useState(readDesktopHandoffFlag)
+  const handoffDone = useRef(false)
 
   useEffect(() => {
-    if (!desktopHandoff || loading || !user) return
+    if (!desktopHandoff || loading || !user || handoffDone.current) return
+    handoffDone.current = true
     void (async () => {
       const { data } = await supabase.auth.getSession()
       const session = data.session
@@ -53,6 +59,10 @@ export function RootRoute() {
       if (!session?.access_token || !session.refresh_token) return
       const url = `codesellers://auth-callback?access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
       window.location.href = url
+      // Tenta fechar a aba sozinha — funciona quando o navegador considera
+      // que foi aberta "por fora" (é o caso aqui, veio do app). Se o
+      // navegador bloquear, a mensagem na tela já diz que dá pra fechar.
+      setTimeout(() => window.close(), 300)
     })()
   }, [desktopHandoff, loading, user])
 
