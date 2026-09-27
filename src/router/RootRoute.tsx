@@ -18,13 +18,35 @@ function RouteFallback() {
   )
 }
 
+function isDesktopApp() {
+  return typeof window !== 'undefined' && Boolean(window.codeSellersDesktop)
+}
+
 function readDesktopHandoffFlag(): boolean {
-  if (typeof window !== 'undefined' && window.codeSellersDesktop) return false
+  if (isDesktopApp()) return false
   try {
     return sessionStorage.getItem('cs_desktop_handoff') === '1'
   } catch {
     return false
   }
+}
+
+type HandoffStatus = 'working' | 'done' | 'error'
+
+function HandoffScreen({ status }: { status: HandoffStatus }) {
+  const copy = {
+    working: { title: 'Conectando o app…', text: 'Só um instante.' },
+    done: { title: 'Pronto! Pode voltar pro app', text: 'O Code Sellers já abriu conectado. Dá pra fechar esta aba.' },
+    error: { title: 'Não deu pra conectar o app', text: 'Volte pro app e clique em "Entrar pelo navegador" de novo.' },
+  }[status]
+
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#0b0812] px-6 text-center text-white">
+      <img src="/logo.png" alt="Code Sellers" className="h-10 w-10 object-contain" />
+      <p className="text-lg font-semibold">{copy.title}</p>
+      <p className="max-w-sm text-[14px] leading-6 text-white/60">{copy.text}</p>
+    </div>
+  )
 }
 
 // A rota "/" mostra conteúdo diferente conforme o estado de autenticação —
@@ -36,33 +58,36 @@ export function RootRoute() {
   const location = useLocation()
 
   // Login feito no navegador a pedido do app de Windows (ver PublicRoute):
-  // assim que autentica, devolve a sessão pro app via protocolo próprio
-  // (codesellers://) em vez de mostrar o Dashboard nesta aba. Só pode
-  // acontecer uma vez — sem o guard de ref, qualquer renovação de token
-  // (troca de aba, o Supabase atualiza o access token sozinho de tempos em
-  // tempos) muda a referência de `user` e reexecutaria o efeito, reabrindo
-  // o app em loop.
+  // assim que autentica, pede um código de uso único e manda pro app pelo
+  // protocolo codesellers://. O app troca o código por uma sessão própria —
+  // a sessão deste navegador continua intacta. Roda no máximo uma vez: sem
+  // o ref, cada renovação de token (nova referência de `user`) reabriria o
+  // app em loop.
   const [desktopHandoff] = useState(readDesktopHandoffFlag)
-  const handoffDone = useRef(false)
+  const [handoffStatus, setHandoffStatus] = useState<HandoffStatus>('working')
+  const handoffStarted = useRef(false)
 
   useEffect(() => {
-    if (!desktopHandoff || loading || !user || handoffDone.current) return
-    handoffDone.current = true
+    if (!desktopHandoff || loading || !user || handoffStarted.current) return
+    handoffStarted.current = true
+    try {
+      sessionStorage.removeItem('cs_desktop_handoff')
+    } catch {
+      // marca de uso único; se não der pra limpar, some ao fechar a aba
+    }
     void (async () => {
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
-      try {
-        sessionStorage.removeItem('cs_desktop_handoff')
-      } catch {
-        // sem problema, é só uma marca de uso único
+      const { data, error } = await supabase.functions.invoke<{ token_hash?: string }>('desktop-handoff', {
+        method: 'POST',
+      })
+      if (error || !data?.token_hash) {
+        setHandoffStatus('error')
+        return
       }
-      if (!session?.access_token || !session.refresh_token) return
-      const url = `codesellers://auth-callback?access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
-      window.location.href = url
-      // Tenta fechar a aba sozinha — funciona quando o navegador considera
-      // que foi aberta "por fora" (é o caso aqui, veio do app). Se o
-      // navegador bloquear, a mensagem na tela já diz que dá pra fechar.
-      setTimeout(() => window.close(), 300)
+      window.location.href = `codesellers://auth-callback?token_hash=${encodeURIComponent(data.token_hash)}`
+      setHandoffStatus('done')
+      // Tenta fechar a aba sozinha (vale quando ela foi aberta pelo app).
+      // Se o navegador bloquear, a mensagem na tela já diz que dá pra fechar.
+      setTimeout(() => window.close(), 400)
     })()
   }, [desktopHandoff, loading, user])
 
@@ -74,22 +99,18 @@ export function RootRoute() {
     )
   }
 
+  // Dentro do app de Windows não existe landing: deslogado é sempre login.
+  if (!user && isDesktopApp()) {
+    return <Navigate to="/login" replace />
+  }
+
   // Voltou do Google com erro: manda pro login, que mostra a mensagem.
   if (!user && getOAuthErrorFromUrl()) {
     return <Navigate to={`/login${location.search}${location.hash}`} replace />
   }
 
   if (desktopHandoff && user) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#0b0812] px-6 text-center text-white">
-        <img src="/logo.png" alt="Code Sellers" className="h-10 w-10 object-contain" />
-        <p className="text-lg font-semibold">Pronto! Pode voltar pro app</p>
-        <p className="max-w-sm text-[14px] leading-6 text-white/60">
-          O Code Sellers já deve ter aberto sozinho, conectado. Dá pra fechar
-          esta aba.
-        </p>
-      </div>
-    )
+    return <HandoffScreen status={handoffStatus} />
   }
 
   return (

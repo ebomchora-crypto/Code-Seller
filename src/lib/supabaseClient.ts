@@ -69,13 +69,15 @@ export const supabase = createClient(
   { auth: { storage: authStorage } },
 )
 
-// App de Windows: o login acontece no navegador (não dentro do Electron), e
-// depois o app volta pro primeiro plano já com a sessão. O main process do
-// Electron chama essa função (via executeJavaScript) para aplicar os tokens
-// recebidos pelo protocolo codesellers://. Só existe dentro do app — em
-// qualquer navegador normal, window.codeSellersDesktop não existe.
+// App de Windows: o login acontece no navegador, que devolve um código de
+// uso único pelo protocolo codesellers://. O main process do Electron chama
+// esta função (via executeJavaScript) e o app troca o código por uma sessão
+// própria — separada da do navegador. Só existe dentro do app.
+export const DESKTOP_AUTH_ERROR_EVENT = 'cs-desktop-auth-error'
+
 if (typeof window !== 'undefined' && window.codeSellersDesktop) {
-  window.__codeSellersSetSession = (tokens) => {
-    void supabase.auth.setSession(tokens)
+  window.__codeSellersVerifyHandoff = async (tokenHash) => {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'magiclink' })
+    if (error) window.dispatchEvent(new CustomEvent(DESKTOP_AUTH_ERROR_EVENT))
   }
 }

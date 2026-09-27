@@ -8,6 +8,6 @@ declare global {
     codeSellersDesktop?: {
       openInBrowser: (url: string) => void
     }
-    __codeSellersSetSession?: (tokens: { access_token: string; refresh_token: string }) => void
+    __codeSellersVerifyHandoff?: (tokenHash: string) => Promise<void>
   }
 }

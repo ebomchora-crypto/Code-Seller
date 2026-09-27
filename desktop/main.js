@@ -9,9 +9,9 @@
 // Login acontece no navegador, não dentro do app: a tela de login detecta
 // que está rodando aqui dentro (via preload.js) e abre o navegador padrão
 // em vez de mostrar o formulário. Depois que a pessoa entra, o site manda
-// o app de volta pra frente já conectado através do protocolo próprio
-// codesellers:// (registrado pelo instalador), carregando os tokens da
-// sessão pra dentro da janela.
+// o app de volta pra frente através do protocolo próprio codesellers://
+// (registrado pelo instalador) com um código de uso único, que o app troca
+// por uma sessão só dele.
 
 const { app, BrowserWindow, shell, session, ipcMain } = require('electron')
 const path = require('node:path')
@@ -92,28 +92,26 @@ function extractCallbackUrl(argv) {
   return argv.find((arg) => arg.startsWith(`${CUSTOM_SCHEME}://`))
 }
 
-// Recebe codesellers://auth-callback?access_token=...&refresh_token=...
-// (mandado pelo site depois do login no navegador) e aplica a sessão dentro
-// da janela do app, que passa a carregar o painel já conectado.
+// Recebe codesellers://auth-callback?token_hash=... (código de uso único
+// mandado pelo site depois do login no navegador) e troca por uma sessão
+// própria do app — separada da do navegador, então sair num não derruba o
+// outro. A janela passa a carregar o painel já conectado.
 async function applySessionToWindow(win, rawUrl) {
-  let accessToken = null
-  let refreshToken = null
+  let tokenHash = null
   try {
-    const parsed = new URL(rawUrl)
-    accessToken = parsed.searchParams.get('access_token')
-    refreshToken = parsed.searchParams.get('refresh_token')
+    tokenHash = new URL(rawUrl).searchParams.get('token_hash')
   } catch {
     return
   }
-  if (!accessToken || !refreshToken) return
+  if (!tokenHash) return
 
-  await win.loadURL(`${APP_ORIGIN}/`)
-  // window.__codeSellersSetSession vem do bundle da própria página — espera
+  await win.loadURL(APP_URL)
+  // window.__codeSellersVerifyHandoff vem do bundle da própria página — espera
   // alguns instantes caso a janela ainda esteja terminando de carregar.
   await win.webContents.executeJavaScript(`
     (function tryApply(attempts) {
-      if (window.__codeSellersSetSession) {
-        window.__codeSellersSetSession(${JSON.stringify({ access_token: accessToken, refresh_token: refreshToken })})
+      if (window.__codeSellersVerifyHandoff) {
+        window.__codeSellersVerifyHandoff(${JSON.stringify(tokenHash)})
       } else if (attempts > 0) {
         setTimeout(function () { tryApply(attempts - 1) }, 200)
       }

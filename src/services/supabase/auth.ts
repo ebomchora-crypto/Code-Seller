@@ -106,9 +106,11 @@ export async function signInWithGoogle(): Promise<ServiceResponse<null>> {
   }
 }
 
+// Sai só deste aparelho: o app de Windows e o navegador têm sessões
+// separadas, então sair num não pode derrubar o outro.
 export async function signOut(): Promise<ServiceResponse<null>> {
   try {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
     if (error) return { data: null, error: translateAuthError(error.message), loading: false }
     return { data: null, error: null, loading: false }
   } catch (error) {
