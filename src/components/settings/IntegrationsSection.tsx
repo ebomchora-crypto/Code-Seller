@@ -1,13 +1,12 @@
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 import { Plug } from 'lucide-react'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { Modal } from '@/components/ui/Modal'
-import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { IntegrationCard } from '@/components/settings/IntegrationCard'
+import { WebhookModal } from '@/components/settings/WebhookModal'
 import type { Integration, IntegrationConfig, IntegrationType } from '@/types'
 
 interface IntegrationsSectionProps {
@@ -16,143 +15,65 @@ interface IntegrationsSectionProps {
   onDisconnect: (type: IntegrationType) => Promise<void>
 }
 
-const INTEGRATION_META: Record<Omit<IntegrationConfig, 'status' | 'connected_at'>['type'], Omit<IntegrationConfig, 'status' | 'connected_at'>> = {
-  whatsapp: {
-    type: 'whatsapp',
-    label: 'WhatsApp Business',
-    description: 'Envie mensagens diretamente do CRM',
-    icon: 'MessageCircle',
-    docs_url: 'https://developers.facebook.com/docs/whatsapp',
-  },
-  google_calendar: {
-    type: 'google_calendar',
-    label: 'Google Calendar',
-    description: 'Sincronize tarefas com seu calendário',
-    icon: 'Calendar',
-    docs_url: 'https://developers.google.com/calendar',
+type IntegrationMeta = Omit<IntegrationConfig, 'status' | 'connected_at'>
+
+const INTEGRATION_META: Partial<Record<IntegrationType, IntegrationMeta>> = {
+  webhook: {
+    type: 'webhook',
+    label: 'Webhook',
+    description: 'Mande contatos, negócios e tarefas para qualquer sistema, na hora em que acontecem.',
+    icon: 'Webhook',
   },
   google_contacts: {
     type: 'google_contacts',
     label: 'Google Contacts',
-    description: 'Importe contatos do Google',
+    description: 'Traga seus contatos do Google para o CRM.',
     icon: 'Users',
-    docs_url: 'https://developers.google.com/people',
-  },
-  zapier: {
-    type: 'zapier',
-    label: 'Zapier',
-    description: 'Conecte o Code Sellers a milhares de apps',
-    icon: 'Zap',
-    docs_url: 'https://zapier.com/developer',
-  },
-  webhook: {
-    type: 'webhook',
-    label: 'Webhook',
-    description: 'Receba eventos do Code Sellers em qualquer URL',
-    icon: 'Webhook',
-    docs_url: 'https://en.wikipedia.org/wiki/Webhook',
+    coming_soon: true,
+    action_label: 'Importar agora',
   },
 }
 
-const WEBHOOK_EVENTS = [
-  { value: 'deal.created', label: 'Negócio criado' },
-  { value: 'deal.won', label: 'Negócio ganho' },
-  { value: 'contact.created', label: 'Contato criado' },
-  { value: 'task.completed', label: 'Tarefa concluída' },
+const GOOGLE_STEPS = [
+  <>
+    Abra <strong>contacts.google.com</strong> com a conta Google que tem os contatos.
+  </>,
+  <>
+    Selecione os contatos (ou nenhum, para levar todos) e clique em <strong>Exportar</strong>.
+  </>,
+  <>
+    Escolha <strong>CSV do Google</strong> e baixe o arquivo.
+  </>,
+  <>
+    Aqui no CRM, clique em <strong>Importar CSV</strong> e envie o arquivo. Nome, e-mail, telefone, cidade e observações
+    são reconhecidos sozinhos.
+  </>,
 ]
 
-function generateApiKey(): string {
-  return `cs_${crypto.randomUUID().replace(/-/g, '')}`
-}
-
 export function IntegrationsSection({ integrations, onConnect, onDisconnect }: IntegrationsSectionProps) {
-  const [connectingType, setConnectingType] = useState<IntegrationType | null>(null)
+  const navigate = useNavigate()
+  const [webhookOpen, setWebhookOpen] = useState(false)
+  const [googleOpen, setGoogleOpen] = useState(false)
   const [disconnectingType, setDisconnectingType] = useState<IntegrationType | null>(null)
-  const [submitting, setSubmitting] = useState(false)
 
-  const [whatsappNumber, setWhatsappNumber] = useState('')
-  const [webhookUrl, setWebhookUrl] = useState('')
-  const [webhookEvent, setWebhookEvent] = useState(WEBHOOK_EVENTS[0].value)
-  const [testingWebhook, setTestingWebhook] = useState(false)
-  const [zapierKey, setZapierKey] = useState('')
+  const configs: IntegrationConfig[] = integrations.flatMap((integration) => {
+    const meta = INTEGRATION_META[integration.type]
+    return meta ? [{ ...meta, status: integration.status, connected_at: integration.connected_at }] : []
+  })
+  const webhook = integrations.find((integration) => integration.type === 'webhook')
 
-  const configs: IntegrationConfig[] = integrations.map((integration) => ({
-    ...INTEGRATION_META[integration.type],
-    status: integration.status,
-    connected_at: integration.connected_at,
-  }))
-
-  function openModal(type: IntegrationType) {
-    setConnectingType(type)
-    if (type === 'zapier') setZapierKey(generateApiKey())
-  }
-
-  function closeModal() {
-    setConnectingType(null)
-    setWhatsappNumber('')
-    setWebhookUrl('')
-    setWebhookEvent(WEBHOOK_EVENTS[0].value)
-  }
-
-  async function handleConnect() {
-    if (!connectingType) return
-    setSubmitting(true)
-
-    let config: Record<string, unknown> = {}
-    if (connectingType === 'whatsapp') {
-      if (!whatsappNumber.trim()) {
-        toast.error('Informe o número do WhatsApp Business.')
-        setSubmitting(false)
-        return
-      }
-      config = { phone_number: whatsappNumber.trim() }
-    } else if (connectingType === 'webhook') {
-      if (!webhookUrl.trim()) {
-        toast.error('Informe a URL do webhook.')
-        setSubmitting(false)
-        return
-      }
-      config = { url: webhookUrl.trim(), event: webhookEvent }
-    } else if (connectingType === 'zapier') {
-      config = { api_key: zapierKey }
-    } else {
-      // google_calendar / google_contacts
-      // TODO: implementar OAuth real com Google para google_calendar/google_contacts.
-      config = { oauth: 'pending' }
-    }
-
-    const success = await onConnect(connectingType, config)
-    setSubmitting(false)
-    if (success) closeModal()
-  }
-
-  async function handleTestWebhook() {
-    if (!webhookUrl.trim()) {
-      toast.error('Informe a URL do webhook antes de testar.')
-      return
-    }
-    setTestingWebhook(true)
-    try {
-      await fetch(webhookUrl.trim(), {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ event: 'test', source: 'code-sellers', sent_at: new Date().toISOString() }),
-      })
-      toast.success('Requisição de teste enviada. Confira o destino do webhook.')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível enviar o teste.')
-    } finally {
-      setTestingWebhook(false)
-    }
+  function openFor(type: IntegrationType) {
+    if (type === 'webhook') setWebhookOpen(true)
+    if (type === 'google_contacts') setGoogleOpen(true)
   }
 
   return (
     <>
       <SettingsSection id="integrações" icon={Plug} title="Integrações" description="Conecte o Code Sellers a outras ferramentas.">
         <SettingsNote>
-          As integrações ainda estão em construção: conectar aqui salva a configuração, mas nada é enviado ou
-          sincronizado por enquanto.
+          O Webhook já funciona: cada contato, negócio ou tarefa marcada é enviada na hora para o endereço que você escolher.
+          A conexão direta com o Google Contacts está em construção — enquanto isso, dá para trazer os contatos em 1 minuto
+          pelo arquivo CSV.
         </SettingsNote>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -160,93 +81,48 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
             <IntegrationCard
               key={config.type}
               config={config}
-              onConnect={() => openModal(config.type)}
+              onConnect={() => openFor(config.type)}
+              onConfigure={config.type === 'webhook' ? () => setWebhookOpen(true) : undefined}
               onDisconnect={() => setDisconnectingType(config.type)}
             />
           ))}
         </div>
       </SettingsSection>
 
-      <Modal
-        open={connectingType !== null}
-        onClose={closeModal}
-        title={connectingType ? `Conectar ${INTEGRATION_META[connectingType].label}` : ''}
-        size="sm"
-      >
-        {connectingType === 'whatsapp' && (
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text-secondary)]">
-              Informe o número usado na sua conta do WhatsApp Business API.
-              {/* TODO: implementar integração real com a WhatsApp Business API. */}
-            </p>
-            <Input
-              label="Número do WhatsApp"
-              placeholder="+55 11 99999-9999"
-              value={whatsappNumber}
-              onChange={(event) => setWhatsappNumber(event.target.value)}
-            />
-          </div>
-        )}
+      <WebhookModal
+        open={webhookOpen}
+        integration={webhook}
+        onClose={() => setWebhookOpen(false)}
+        onSave={(config) => onConnect('webhook', config)}
+      />
 
-        {(connectingType === 'google_calendar' || connectingType === 'google_contacts') && (
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text-secondary)]">
-              A conexão real via OAuth com o Google ainda não está implementada neste MVP.
-              {/* TODO: implementar OAuth real com Google para google_calendar/google_contacts. */}
-            </p>
-            <Button variant="secondary" onClick={handleConnect} loading={submitting}>
-              Conectar com Google
-            </Button>
-          </div>
-        )}
-
-        {connectingType === 'zapier' && (
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-[var(--text-secondary)]">Use esta chave para conectar o Code Sellers ao Zapier.</p>
-            <div className="break-all rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] px-3 py-2.5 font-mono text-xs text-[var(--text-secondary)]">
-              {zapierKey}
-            </div>
-            {/* TODO: implementar integração real com a API do Zapier. */}
-          </div>
-        )}
-
-        {connectingType === 'webhook' && (
-          <div className="flex flex-col gap-4">
-            <Input
-              label="URL do webhook"
-              placeholder="https://exemplo.com/webhook"
-              value={webhookUrl}
-              onChange={(event) => setWebhookUrl(event.target.value)}
-            />
-            <Select label="Evento" value={webhookEvent} onChange={(event) => setWebhookEvent(event.target.value)}>
-              {WEBHOOK_EVENTS.map((event) => (
-                <option key={event.value} value={event.value}>
-                  {event.label}
-                </option>
-              ))}
-            </Select>
-            <Button variant="ghost" size="sm" onClick={handleTestWebhook} loading={testingWebhook}>
-              Testar webhook
-            </Button>
-          </div>
-        )}
-
-        {connectingType !== 'google_calendar' && connectingType !== 'google_contacts' && (
-          <div className="mt-6 flex justify-end gap-3">
-            <Button variant="ghost" onClick={closeModal} disabled={submitting}>
-              Cancelar
-            </Button>
-            <Button onClick={handleConnect} loading={submitting}>
-              Salvar conexão
-            </Button>
-          </div>
-        )}
+      <Modal open={googleOpen} onClose={() => setGoogleOpen(false)} title="Trazer contatos do Google" size="sm">
+        <ol className="flex flex-col gap-3">
+          {GOOGLE_STEPS.map((step, index) => (
+            <li key={index} className="flex gap-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-tint)] text-[12px] font-semibold text-[var(--accent-text)]">
+                {index + 1}
+              </span>
+              <span className="pt-0.5">{step}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="ghost" onClick={() => setGoogleOpen(false)}>
+            Fechar
+          </Button>
+          <Button onClick={() => navigate('/crm?importar=1')}>Abrir importação</Button>
+        </div>
       </Modal>
 
       <ConfirmDialog
         open={disconnectingType !== null}
         title="Desconectar integração"
-        message="Tem certeza que deseja desconectar esta integração?"
+        message={
+          disconnectingType === 'webhook'
+            ? 'Os eventos param de ser enviados e a chave de assinatura é apagada.'
+            : 'Tem certeza que deseja desconectar esta integração?'
+        }
         confirmLabel="Desconectar"
         onConfirm={async () => {
           if (disconnectingType) await onDisconnect(disconnectingType)

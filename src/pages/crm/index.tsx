@@ -50,6 +50,8 @@ export default function CrmPage() {
     setFormOpen(true)
   }
   useOpenOnParam(openCreateForm)
+  // Vindo de Configurações → Integrações → Google Contacts.
+  useOpenOnParam(() => setImportOpen(true), 'importar')
 
 
   function openEditForm(contact: Contact) {

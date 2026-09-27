@@ -83,5 +83,8 @@ export interface IntegrationConfig {
   icon: string // nome do ícone Lucide
   status: IntegrationStatus
   connected_at: string | null
-  docs_url: string
+  // Ainda não funciona de verdade: mostra "Em breve" e nunca "Conectado".
+  coming_soon?: boolean
+  // Texto do botão quando não está conectado (padrão "Conectar").
+  action_label?: string
 }

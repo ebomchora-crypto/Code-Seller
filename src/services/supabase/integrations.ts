@@ -3,7 +3,7 @@ import type { Integration, IntegrationStatus, IntegrationType } from '@/types'
 
 // O Google Agenda tem seção própria e funcional nas Configurações (agenda por
 // link), então não aparece mais aqui como integração "em construção".
-const ALL_TYPES: IntegrationType[] = ['whatsapp', 'google_contacts', 'zapier', 'webhook']
+const ALL_TYPES: IntegrationType[] = ['webhook', 'google_contacts']
 
 // Nenhuma integração tem uma linha no banco até o usuário conectar pela
 // primeira vez — preenchemos placeholders "disconnected" em memória para os

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { importContacts, type ImportContactsResult } from '@/services/supabase/contacts'
 import type { Contact, ContactStatus } from '@/types'
+import { GOOGLE_HEADER_ALIASES, addFullNameColumn, normalizeCsvHeader } from '@/utils/contactCsv'
 
 interface ImportCSVModalProps {
   open: boolean
@@ -53,13 +54,6 @@ const HEADER_TO_FIELD: Record<string, ContactField> = {
 
 const TEMPLATE_HEADERS = 'nome,email,telefone,nicho,cidade,estado,status,origem,site_atual,observacoes'
 
-function normalizeHeader(header: string): string {
-  return header
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-}
 
 function downloadTemplate() {
   const blob = new Blob([`${TEMPLATE_HEADERS}\n`], { type: 'text/csv;charset=utf-8;' })
@@ -110,20 +104,22 @@ export function ImportCSVModal({ open, onClose, onImported }: ImportCSVModalProp
       header: true,
       skipEmptyLines: true,
       complete: (parsed) => {
-        const parsedHeaders = parsed.meta.fields ?? []
-        if (parsedHeaders.length === 0 || parsed.data.length === 0) {
+        const prepared = addFullNameColumn(parsed.meta.fields ?? [], parsed.data)
+        const parsedHeaders = prepared.headers
+        if (parsedHeaders.length === 0 || prepared.rows.length === 0) {
           toast.error('Não foi possível ler colunas ou linhas no arquivo enviado.')
           return
         }
 
         const autoMapping: Record<string, ContactField | 'ignore'> = {}
         for (const header of parsedHeaders) {
-          const normalized = normalizeHeader(header)
-          autoMapping[header] = HEADER_TO_FIELD[normalized] ?? 'ignore'
+          const normalized = normalizeCsvHeader(header)
+          autoMapping[header] =
+            HEADER_TO_FIELD[normalized] ?? (GOOGLE_HEADER_ALIASES[normalized] as ContactField | undefined) ?? 'ignore'
         }
 
         setHeaders(parsedHeaders)
-        setRows(parsed.data)
+        setRows(prepared.rows)
         setMapping(autoMapping)
         setStep('mapping')
       },

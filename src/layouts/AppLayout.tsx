@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { useLocation, useOutlet } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 import { Bell } from 'lucide-react'
@@ -24,6 +24,16 @@ interface AppLayoutProps {
 // rota troca. Por isso a flag abaixo, fora do componente, ainda garante que
 // os lembretes só sejam checados uma vez por carregamento do app.
 let reminderCheckDone = false
+
+// Congela o conteúdo da rota em que a página nasceu. Sem isto, durante a
+// animação de saída o <Outlet/> da página que está saindo já mostraria a rota
+// NOVA — ela montava duas vezes e perdia o estado (ex.: ?novo=1 e ?importar=1
+// abriam a janela e ela fechava sozinha).
+function FrozenRoute({ children }: { children?: ReactNode }) {
+  const outlet = useOutlet()
+  const [frozenOutlet] = useState(outlet)
+  return <>{children ?? frozenOutlet}</>
+}
 
 function formatReminderTime(value: string): string {
   return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -64,7 +74,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   const reducedMotion = useReducedMotion()
   const mainRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-  const content = children ?? <Outlet />
   const surface = getAppSurface(pathname)
 
   useReminderCheck()
@@ -114,7 +123,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   exit={reducedMotion || !surface.animateOpacity ? undefined : { opacity: 0, y: -6 }}
                   transition={{ duration: reducedMotion || !surface.animateOpacity ? 0 : duration.page, ease: easing.standard }}
                 >
-                  {content}
+                  <FrozenRoute>{children}</FrozenRoute>
                 </motion.div>
               </AnimatePresence>
             </div>
