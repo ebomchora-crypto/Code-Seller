@@ -10,6 +10,13 @@ interface SidebarProps {
   onCloseMobile: () => void
 }
 
+// Já rodando dentro do próprio app de Windows: não faz sentido oferecer
+// "baixar o app" de novo, então tira esse item do menu.
+const groupsForWeb =
+  typeof window !== 'undefined' && window.codeSellersDesktop
+    ? navGroups.map((group) => ({ ...group, items: group.items.filter((item) => !item.download) }))
+    : navGroups
+
 export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }: SidebarProps) {
   const { user, profile, signOut } = useAuthContext()
   const { pathname } = useLocation()
@@ -17,7 +24,7 @@ export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile
 
   return (
     <DashboardSidebar
-      groups={navGroups}
+      groups={groupsForWeb}
       collapsed={collapsed}
       currentPath={pathname}
       mobileOpen={mobileOpen}

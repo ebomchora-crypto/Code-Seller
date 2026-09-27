@@ -158,23 +158,16 @@ export function DashboardSidebar({
               )}
 
               {group.items.map((item) => {
-                const isActive = isSidebarRouteActive(item.path, currentPath)
-
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    title={collapsed ? item.label : undefined}
-                    aria-current={isActive ? 'page' : undefined}
-                    onClick={onCloseMobile}
-                    className={cn(
-                      'group relative flex h-10 items-center rounded-xl text-[13.5px] transition-colors duration-150 [@media(max-height:780px)]:h-9',
-                      collapsed ? 'mx-auto w-10 justify-center' : 'gap-3 px-3',
-                      isActive
-                        ? 'font-semibold text-[var(--text-primary)]'
-                        : 'font-medium text-[var(--text-secondary)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)]',
-                    )}
-                  >
+                const isActive = !item.download && isSidebarRouteActive(item.path, currentPath)
+                const itemClassName = cn(
+                  'group relative flex h-10 items-center rounded-xl text-[13.5px] transition-colors duration-150 [@media(max-height:780px)]:h-9',
+                  collapsed ? 'mx-auto w-10 justify-center' : 'gap-3 px-3',
+                  isActive
+                    ? 'font-semibold text-[var(--text-primary)]'
+                    : 'font-medium text-[var(--text-secondary)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)]',
+                )
+                const content = (
+                  <>
                     {isActive && (
                       <motion.span
                         layoutId="dashboard-sidebar-active"
@@ -190,6 +183,36 @@ export function DashboardSidebar({
                       )}
                     />
                     {!collapsed && <span className="relative truncate">{item.label}</span>}
+                  </>
+                )
+
+                // Item de arquivo (baixar o app): link de verdade, não rota do
+                // react-router — senão cairia na tela de "não encontrada".
+                if (item.download) {
+                  return (
+                    <a
+                      key={item.path}
+                      href={item.path}
+                      download
+                      title={collapsed ? item.label : undefined}
+                      onClick={onCloseMobile}
+                      className={itemClassName}
+                    >
+                      {content}
+                    </a>
+                  )
+                }
+
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    title={collapsed ? item.label : undefined}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={onCloseMobile}
+                    className={itemClassName}
+                  >
+                    {content}
                   </Link>
                 )
               })}

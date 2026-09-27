@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
-import { ChartColumnBig, GalleryHorizontalEnd, GraduationCap } from 'lucide-react'
+import { ChartColumnBig, Download, GalleryHorizontalEnd, GraduationCap } from 'lucide-react'
 import {
   AutopilotIcon,
   CrmIcon,
@@ -16,6 +16,8 @@ export interface NavItem {
   label: string
   path: string
   icon: ComponentType<SVGProps<SVGSVGElement>>
+  /** Link de arquivo (não é uma página do app) — vira <a download> em vez de <Link>. */
+  download?: boolean
 }
 
 export interface NavGroup {
@@ -33,6 +35,12 @@ const financialItem: NavItem = { label: 'Financeiro', path: '/financial', icon: 
 const tasksItem: NavItem = { label: 'Tarefas', path: '/tasks', icon: TasksIcon }
 const reportsItem: NavItem = { label: 'Relatórios', path: '/relatorios', icon: ChartColumnBig }
 const autopilotItem: NavItem = { label: 'CS Copilot', path: '/copilot', icon: AutopilotIcon }
+const downloadAppItem: NavItem = {
+  label: 'Baixar app',
+  path: '/downloads/CodeSellers-Setup.exe',
+  icon: Download,
+  download: true,
+}
 const settingsItem: NavItem = { label: 'Configurações', path: '/settings', icon: SettingsIcon }
 const supportItem: NavItem = { label: 'Suporte', path: '/support', icon: SupportIcon }
 
@@ -40,7 +48,7 @@ export const navGroups: NavGroup[] = [
   { label: 'Principal', items: [dashboardItem, academyItem] },
   { label: 'Vendas', items: [prospectionItem, crmItem, portfolioItem, dealsItem] },
   { label: 'Gestão', items: [financialItem, tasksItem, reportsItem] },
-  { label: 'IA', items: [autopilotItem] },
+  { label: 'IA', items: [autopilotItem, downloadAppItem] },
   { label: 'Conta', items: [settingsItem, supportItem] },
 ]
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Bell, Download, Moon, Search, Sun } from 'lucide-react'
+import { Bell, Moon, Search, Sun } from 'lucide-react'
 import { openCommandPalette } from '@/components/layout/commandPaletteEvents'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { getPageTitle } from '@/components/layout/navConfig'
@@ -69,14 +69,6 @@ export function Header({ onOpenMobileMenu, theme, onToggleTheme }: HeaderProps) 
             </span>
           </button>
         </Tooltip>
-
-        {typeof window !== 'undefined' && !window.codeSellersDesktop && (
-          <Tooltip content="Baixar app para Windows">
-            <a href="/downloads/CodeSellers-Setup.exe" download aria-label="Baixar app para Windows" className={iconButton}>
-              <Download className="size-4" />
-            </a>
-          </Tooltip>
-        )}
 
         <Tooltip content="Notificações">
           <Link to="/settings#notificações" aria-label="Notificações" className={iconButton}>
