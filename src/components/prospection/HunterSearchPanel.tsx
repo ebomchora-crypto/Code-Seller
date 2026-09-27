@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { History, MapPin, Search, Store } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { OFFER_OPTIONS } from '@/utils/prospection'
+import { DEFAULT_LEADS_COUNT, LEADS_OPTIONS } from '@/types/prospection'
 import type { ProspectOffer, ProspectSearchParams, ProspectUsage, RecentProspectSearch } from '@/types'
 
 interface HunterSearchPanelProps {
@@ -38,6 +39,7 @@ export function HunterSearchPanel({
   const [niche, setNiche] = useState(initial?.niche ?? '')
   const [city, setCity] = useState(initial?.city ?? '')
   const [offer, setOffer] = useState<ProspectOffer>(initial?.offer ?? 'site')
+  const [maxResults, setMaxResults] = useState(initial?.maxResults ?? DEFAULT_LEADS_COUNT)
 
   const notConfigured = usage !== null && !usage.configured
   const limitReached = usage !== null && usage.configured && usage.limit > 0 && usage.used >= usage.limit
@@ -47,7 +49,7 @@ export function HunterSearchPanel({
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!canSearch) return
-    onSearch({ niche: niche.trim(), city: city.trim(), offer })
+    onSearch({ niche: niche.trim(), city: city.trim(), offer, maxResults })
   }
 
   function runRecent(entry: RecentProspectSearch) {
@@ -55,7 +57,8 @@ export function HunterSearchPanel({
     setNiche(entry.niche)
     setCity(entry.city)
     setOffer(nextOffer)
-    if (!notConfigured && !limitReached && !searching) onSearch({ niche: entry.niche, city: entry.city, offer: nextOffer })
+    if (!notConfigured && !limitReached && !searching)
+      onSearch({ niche: entry.niche, city: entry.city, offer: nextOffer, maxResults })
   }
 
   return (
@@ -126,6 +129,28 @@ export function HunterSearchPanel({
                     }`}
                   >
                     {option.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-[12.5px] text-white/55">Quantidade de leads</span>
+              {LEADS_OPTIONS.map((option) => {
+                const active = maxResults === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setMaxResults(option)}
+                    className={`h-8 rounded-full border px-3 text-[12.5px] font-medium transition-all duration-200 ${
+                      active
+                        ? 'border-[#c4b5fd]/60 bg-[#8b5cf6]/30 text-white'
+                        : 'border-white/[0.12] text-white/60 hover:border-white/25 hover:text-white'
+                    }`}
+                  >
+                    {option}
                   </button>
                 )
               })}

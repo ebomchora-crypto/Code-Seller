@@ -39,15 +39,20 @@ export interface ProspectUsage {
   limit: number
 }
 
+export const MAX_LEADS_PER_SEARCH = 30
+export const LEADS_OPTIONS = [10, 20, MAX_LEADS_PER_SEARCH] as const
+export const DEFAULT_LEADS_COUNT = 20
+
 export interface ProspectSearchParams {
   niche: string
   city: string
   offer: ProspectOffer
+  /** Quantos leads trazer nesta busca (1 a MAX_LEADS_PER_SEARCH). */
+  maxResults: number
 }
 
 export interface ProspectSearchResponse {
   results: Prospect[]
-  nextPageToken: string | null
   usage: ProspectUsage
 }
 

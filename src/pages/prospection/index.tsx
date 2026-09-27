@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, Crosshair, Gauge, Loader2, Plus, SearchX, UserPlus, X } from 'lucide-react'
+import { Check, Crosshair, Gauge, Plus, SearchX, UserPlus, X } from 'lucide-react'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -216,21 +216,6 @@ export default function ProspectionPage() {
                     onOutreach={() => setOutreachFor(prospect)}
                   />
                 ))}
-              </div>
-            )}
-
-            {hasResults && hunter.nextPageToken && (
-              <div className="border-t border-[var(--border-subtle)] px-5 py-4 text-center">
-                <Button
-                  variant="secondary"
-                  className="rounded-full"
-                  onClick={() => void hunter.loadMore()}
-                  disabled={hunter.status === 'loading_more'}
-                >
-                  {hunter.status === 'loading_more' && <Loader2 className="size-4 animate-spin" />}
-                  Carregar mais empresas
-                </Button>
-                <p className="mt-2 text-[12px] text-[var(--text-muted)]">Conta como 1 busca do seu limite mensal.</p>
               </div>
             )}
           </Card>

@@ -13,21 +13,18 @@
 // 'buyers_hunter_monthly_limit' na tabela public.app_config (só o servidor lê).
 //
 // Ações (POST com JSON):
-//   { action: 'usage' }                                  → { configured, used, limit }
-//   { action: 'search', niche, city, offer?, pageToken? } → { results, nextPageToken, usage }
+//   { action: 'usage' }                                        → { configured, used, limit }
+//   { action: 'search', niche, city, offer?, maxResults? }      → { results, usage }
 //
-// Cada chamada de busca (inclusive "carregar mais") conta 1 no limite mensal.
+// maxResults: quantos leads trazer (1 a MAX_RESULTS_PER_SEARCH, padrão 20).
+// Cada busca conta 1 no limite mensal, não importa a quantidade pedida.
 // Os resultados não são gravados: só o histórico da busca (prospect_searches).
-//
-// Paginação: como o ator não tem cursor, "carregar mais" roda a busca de novo
-// pedindo um lote maior (o pageToken guarda quantos lugares já foram pedidos).
-// O app descarta duplicados pelo id, então repetir itens já vistos é inofensivo.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const APIFY_RUN_URL = 'https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?memory=1024'
-const PAGE_SIZE = 20
-const MAX_TOTAL_RESULTS = 60 // ~3 páginas — trava o custo de uma única busca
+const DEFAULT_RESULTS = 20
+const MAX_RESULTS_PER_SEARCH = 30 // trava o custo (e o crédito da Apify) de uma única busca
 
 const DEFAULT_MONTHLY_LIMIT = 50
 
@@ -170,7 +167,7 @@ Deno.serve(async (req: Request) => {
       niche?: string
       city?: string
       offer?: string
-      pageToken?: string
+      maxResults?: number
     }
 
     if (body.action === 'usage') {
@@ -189,10 +186,7 @@ Deno.serve(async (req: Request) => {
       return fail('limit_reached', `Você usou as ${limit} buscas deste mês. O limite renova no dia 1º.`, 429)
     }
 
-    // Sem cursor real: "carregar mais" pede um lote maior desde o início.
-    // pageToken guarda quantos lugares o lote anterior já tinha.
-    const already = Math.max(0, Math.min(Number(body.pageToken) || 0, MAX_TOTAL_RESULTS))
-    const wanted = Math.min(already + PAGE_SIZE, MAX_TOTAL_RESULTS)
+    const wanted = Math.min(Math.max(Math.round(Number(body.maxResults)) || DEFAULT_RESULTS, 1), MAX_RESULTS_PER_SEARCH)
 
     const upstream = await fetch(APIFY_RUN_URL, {
       method: 'POST',
@@ -226,12 +220,8 @@ Deno.serve(async (req: Request) => {
     })
     if (insertError) console.error('buyers-hunter insert', insertError.message)
 
-    // Só oferece "carregar mais" se o lote voltou cheio (sinal de que pode haver mais) e ainda não bateu o teto.
-    const nextPageToken = results.length >= wanted && wanted < MAX_TOTAL_RESULTS ? String(wanted) : null
-
     return json({
       results,
-      nextPageToken,
       usage: { configured: true, used: used + 1, limit },
     })
   } catch (error) {

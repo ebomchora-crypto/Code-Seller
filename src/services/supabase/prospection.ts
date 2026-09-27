@@ -44,8 +44,8 @@ export function getProspectUsage(): Promise<ProspectUsage> {
   return invokeHunter<ProspectUsage>({ action: 'usage' })
 }
 
-export function searchProspects(params: ProspectSearchParams, pageToken?: string | null): Promise<ProspectSearchResponse> {
-  return invokeHunter<ProspectSearchResponse>({ action: 'search', ...params, pageToken: pageToken ?? undefined })
+export function searchProspects(params: ProspectSearchParams): Promise<ProspectSearchResponse> {
+  return invokeHunter<ProspectSearchResponse>({ action: 'search', ...params })
 }
 
 // Últimas buscas sem repetir o mesmo nicho + cidade.

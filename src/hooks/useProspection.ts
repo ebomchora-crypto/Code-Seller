@@ -22,12 +22,11 @@ import type {
   ScoredProspect,
 } from '@/types'
 
-type SearchStatus = 'idle' | 'searching' | 'loading_more' | 'done' | 'error'
+type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 
 interface StoredSearch {
   params: ProspectSearchParams
   results: Prospect[]
-  nextPageToken: string | null
 }
 
 // A última busca fica só na aba (sessionStorage): voltar para a tela não gasta
@@ -57,7 +56,6 @@ export function useProspection() {
   const [usageLoading, setUsageLoading] = useState(true)
   const [params, setParams] = useState<ProspectSearchParams | null>(stored?.params ?? null)
   const [results, setResults] = useState<Prospect[]>(stored?.results ?? [])
-  const [nextPageToken, setNextPageToken] = useState<string | null>(stored?.nextPageToken ?? null)
   const [status, setStatus] = useState<SearchStatus>(stored ? 'done' : 'idle')
   const [error, setError] = useState<ProspectError | null>(null)
   const [recent, setRecent] = useState<RecentProspectSearch[]>([])
@@ -111,10 +109,9 @@ export function useProspection() {
         const response = await searchProspects(next)
         setParams(next)
         setResults(response.results)
-        setNextPageToken(response.nextPageToken)
         setUsage(response.usage)
         setStatus('done')
-        storeSearch({ params: next, results: response.results, nextPageToken: response.nextPageToken })
+        storeSearch({ params: next, results: response.results })
         syncImported(response.results)
         refreshRecent()
       } catch (reason) {
@@ -125,25 +122,6 @@ export function useProspection() {
     },
     [refreshRecent, refreshUsage, syncImported],
   )
-
-  const loadMore = useCallback(async () => {
-    if (!params || !nextPageToken) return
-    setStatus('loading_more')
-    try {
-      const response = await searchProspects(params, nextPageToken)
-      const known = new Set(results.map((prospect) => prospect.id))
-      const merged = [...results, ...response.results.filter((prospect) => !known.has(prospect.id))]
-      setResults(merged)
-      setNextPageToken(response.nextPageToken)
-      setUsage(response.usage)
-      storeSearch({ params, results: merged, nextPageToken: response.nextPageToken })
-      syncImported(response.results)
-    } catch (reason) {
-      toast.error(reason instanceof ProspectError ? reason.message : 'Não foi possível carregar mais empresas.')
-    } finally {
-      setStatus('done')
-    }
-  }, [params, nextPageToken, results, syncImported])
 
   const dismiss = useCallback(async (prospect: Prospect) => {
     setDismissed((current) => new Set(current).add(prospect.id))
@@ -255,13 +233,11 @@ export function useProspection() {
     recent,
     scored,
     visible,
-    nextPageToken,
     imported,
     importing,
     selected,
     filters,
     search,
-    loadMore,
     dismiss,
     importMany,
     toggleSelected,
