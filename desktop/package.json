@@ -1,12 +1,13 @@
 {
   "name": "code-sellers-desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Code Sellers para Windows — o app de verdade, com login pelo navegador.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist:win": "electron-builder --win nsis portable"
+    "dist:win": "electron-builder --win nsis portable --publish never",
+    "release": "npm run dist:win && node scripts/copy-to-site.mjs"
   },
   "devDependencies": {
     "electron": "^33.4.11",
@@ -17,7 +18,10 @@
     "productName": "Code Sellers",
     "copyright": "Code Sellers",
     "asar": true,
-    "publish": null,
+    "publish": {
+      "provider": "generic",
+      "url": "https://codesellers.vercel.app/downloads"
+    },
     "files": [
       "main.js",
       "preload.js",
@@ -30,13 +34,25 @@
     "protocols": [
       {
         "name": "Code Sellers",
-        "schemes": ["codesellers"]
+        "schemes": [
+          "codesellers"
+        ]
       }
     ],
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.ico"
     },
@@ -47,10 +63,15 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Code Sellers",
-      "include": "build/installer.nsh"
+      "include": "build/installer.nsh",
+      "artifactName": "CodeSellers-Setup.exe",
+      "differentialPackage": false
     },
     "portable": {
-      "artifactName": "CodeSellers-portable.exe"
+      "artifactName": "CodeSellers-Portable.exe"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

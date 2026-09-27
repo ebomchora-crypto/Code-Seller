@@ -14,6 +14,7 @@
 // por uma sessão só dele.
 
 const { app, BrowserWindow, shell, session, ipcMain } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('node:path')
 
 const APP_URL = process.env.CODE_SELLERS_URL || 'https://codesellers.vercel.app/login'
@@ -86,6 +87,22 @@ function createWindow() {
   })
 
   return win
+}
+
+// Atualização automática da "casca" do app (telas e funções já vêm do site,
+// então só isto aqui precisa de versão nova). Confere ao abrir e a cada 6h
+// em /downloads/latest.yml, baixa em segundo plano e instala ao fechar.
+// A versão portátil não se atualiza (não tem instalador pra substituir).
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000
+
+function setupAutoUpdate() {
+  if (!app.isPackaged || process.env.PORTABLE_EXECUTABLE_DIR) return
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.on('error', (error) => console.error('auto-update', error?.message ?? error))
+  const check = () => autoUpdater.checkForUpdates().catch(() => undefined)
+  check()
+  setInterval(check, UPDATE_CHECK_INTERVAL_MS)
 }
 
 function extractCallbackUrl(argv) {
@@ -169,6 +186,7 @@ if (!gotLock) {
     })
 
     const win = createWindow()
+    setupAutoUpdate()
 
     // App aberto do zero clicando num link codesellers:// (não uma segunda
     // instância): a URL vem nos argumentos de linha de comando. Nesse caso

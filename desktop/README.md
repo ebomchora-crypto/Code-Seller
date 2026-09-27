@@ -14,17 +14,28 @@ npm install
 npm start
 ```
 
-## Gerar o instalador (.exe)
+## Publicar uma versão nova do app
 
-```
-cd desktop
-npm install
-npm run dist:win
-```
+Mudanças no site (telas, funções) já aparecem no app sozinhas — não precisa
+de versão nova. Só precisa quando mudar algo aqui em `desktop/`
+(`main.js`, `preload.js`, ícone, instalador).
 
-Gera em `desktop/release/`:
-- `Code Sellers Setup <versão>.exe` — instalador (NSIS)
-- `CodeSellers-portable.exe` — versão portátil, sem instalar
+1. Suba o `"version"` em `desktop/package.json` (ex.: 1.1.0 → 1.2.0).
+2. Rode:
+   ```
+   cd desktop
+   npm install
+   npm run release
+   ```
+   Isso gera o build e copia pra `public/downloads/`:
+   - `CodeSellers-Setup.exe` — instalador (é o que o site oferece)
+   - `CodeSellers-Portable.exe` — versão portátil, sem instalar
+   - `latest.yml` — o "aviso de versão nova" que o app lê
+3. Faça commit e push na `main`. Quando o site publicar, cada app instalado
+   encontra a versão nova (ao abrir e a cada 6h), baixa em segundo plano e
+   instala quando a pessoa fechar o app.
+
+A versão portátil não se atualiza sozinha — quem usa ela baixa de novo.
 
 Em Linux, o `electron-builder` precisa do Wine para empacotar para
 Windows (`apt-get install wine wine32:i386`, com `dpkg --add-architecture
