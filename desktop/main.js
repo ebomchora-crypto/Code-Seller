@@ -1,15 +1,16 @@
 // Code Sellers para Windows — só um app nativo em volta do site de verdade.
 //
-// Não existe banco local (sem SQLite): a janela carrega direto
-// https://codesellers.vercel.app, então login, sessão e todos os dados
-// continuam vindo do Supabase, exatamente como na web. O Electron guarda
-// a sessão (localStorage) na pasta do usuário, então quem já entrou uma
-// vez continua conectado ao abrir o app de novo — igual um navegador.
+// Não existe banco local (sem SQLite): a janela carrega direto a tela de
+// login de https://codesellers.vercel.app (sem passar pela landing page),
+// então login, sessão e todos os dados continuam vindo do Supabase,
+// exatamente como na web. O Electron guarda a sessão (localStorage) na
+// pasta do usuário, então quem já entrou uma vez continua conectado ao
+// abrir o app de novo — a própria tela de login redireciona pro painel.
 
 const { app, BrowserWindow, shell, session } = require('electron')
 const path = require('node:path')
 
-const APP_URL = process.env.CODE_SELLERS_URL || 'https://codesellers.vercel.app'
+const APP_URL = process.env.CODE_SELLERS_URL || 'https://codesellers.vercel.app/login'
 const APP_ORIGIN = new URL(APP_URL).origin
 
 // Domínios que fazem parte do fluxo de login (Google OAuth) e do próprio
