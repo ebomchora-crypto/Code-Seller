@@ -89,7 +89,7 @@ export function WelcomeBanner({
 
           <motion.h1
             {...reveal(0.08)}
-            className="mt-5 font-display text-[34px] font-bold leading-[1.05] tracking-tight sm:text-[44px]"
+            className="mt-5 font-display text-[34px] font-bold leading-[1.05] tracking-tight [overflow-wrap:anywhere] sm:text-[44px]"
           >
             {getGreeting()}, {userName}
           </motion.h1>

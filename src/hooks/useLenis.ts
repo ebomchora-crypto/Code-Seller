@@ -17,6 +17,8 @@ export function useLenis(wrapperRef: RefObject<HTMLElement | null>, contentRef: 
 
   useEffect(() => {
     if (reducedMotion) return
+    // No celular a rolagem nativa é melhor (e o Lenis só suaviza a roda do mouse).
+    if (window.matchMedia('(pointer: coarse)').matches) return
     if (!wrapperRef.current || !contentRef.current) return
 
     const lenis = new Lenis({

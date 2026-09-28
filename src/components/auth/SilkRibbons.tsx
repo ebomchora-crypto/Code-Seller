@@ -1,5 +1,3 @@
-import { useId } from 'react'
-
 // Fitas de seda roxas do painel das telas de acesso. Cada fita é uma curva
 // grossa em S com um degradê atravessando a largura (escuro → brilho →
 // escuro), o que lê como tecido dobrado; como o degradê segue a linha reta e
@@ -78,62 +76,30 @@ function frame(tiltDeg: number) {
 
 const fmt = (p: { x: number; y: number }) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`
 
+function buildSvg(): string {
+  const defs = RIBBONS.map((ribbon, index) => {
+    const point = frame(ribbon.tilt)
+    const from = point(0, ribbon.offset - ribbon.thickness / 2)
+    const to = point(0, ribbon.offset + ribbon.thickness / 2)
+    const stops = PROFILES[ribbon.profile].map(([stop, color]) => `<stop offset="${stop}" stop-color="${color}"/>`).join('')
+    return `<linearGradient id="silk-${index}" gradientUnits="userSpaceOnUse" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}">${stops}</linearGradient>`
+  }).join('')
+  const paths = RIBBONS.map((ribbon, index) => {
+    const point = frame(ribbon.tilt)
+    const start = point(-HALF_LENGTH, ribbon.offset)
+    const control1 = point(-HALF_LENGTH / 3, ribbon.offset + ribbon.bend)
+    const control2 = point(HALF_LENGTH / 3, ribbon.offset - ribbon.bend)
+    const end = point(HALF_LENGTH, ribbon.offset)
+    return `<path d="M ${fmt(start)} C ${fmt(control1)}, ${fmt(control2)}, ${fmt(end)}" fill="none" stroke="url(#silk-${index})" stroke-width="${ribbon.thickness}" filter="url(#shadow)"/>`
+  }).join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" preserveAspectRatio="xMidYMid slice"><defs>${defs}<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="-8" dy="-12" stdDeviation="16" flood-color="#07021a" flood-opacity="0.5"/></filter><radialGradient id="sheen" cx="72%" cy="28%" r="75%"><stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs><rect width="${WIDTH}" height="${HEIGHT}" fill="#120c36"/>${paths}<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#sheen)"/></svg>`
+}
+
+// Desenhado uma vez só, como imagem. Como <svg> direto na página, as sombras
+// eram recalculadas a cada quadro das animações — no Safari do iPhone isso
+// travava a tela inteira (nem toque nem rolagem).
+const SILK_IMAGE = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(buildSvg())}`
+
 export function SilkRibbons({ className = '' }: { className?: string }) {
-  // IDs únicos: o menu e o Dashboard desenham fitas na mesma página.
-  const uid = `s${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
-  return (
-    <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="xMidYMid slice" className={className} aria-hidden>
-      <defs>
-        {RIBBONS.map((ribbon, index) => {
-          const point = frame(ribbon.tilt)
-          const from = point(0, ribbon.offset - ribbon.thickness / 2)
-          const to = point(0, ribbon.offset + ribbon.thickness / 2)
-          return (
-            <linearGradient
-              key={index}
-              id={`${uid}-silk-${index}`}
-              gradientUnits="userSpaceOnUse"
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
-            >
-              {PROFILES[ribbon.profile].map(([stop, color]) => (
-                <stop key={stop} offset={stop} stopColor={color} />
-              ))}
-            </linearGradient>
-          )
-        })}
-        <filter id={`${uid}-shadow`} x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="-8" dy="-12" stdDeviation="16" floodColor="#07021a" floodOpacity="0.5" />
-        </filter>
-        <radialGradient id={`${uid}-sheen`} cx="72%" cy="28%" r="75%">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.18" />
-          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      <rect width={WIDTH} height={HEIGHT} fill="#120c36" />
-
-      {RIBBONS.map((ribbon, index) => {
-        const point = frame(ribbon.tilt)
-        const start = point(-HALF_LENGTH, ribbon.offset)
-        const control1 = point(-HALF_LENGTH / 3, ribbon.offset + ribbon.bend)
-        const control2 = point(HALF_LENGTH / 3, ribbon.offset - ribbon.bend)
-        const end = point(HALF_LENGTH, ribbon.offset)
-        return (
-          <path
-            key={index}
-            d={`M ${fmt(start)} C ${fmt(control1)}, ${fmt(control2)}, ${fmt(end)}`}
-            fill="none"
-            stroke={`url(#${uid}-silk-${index})`}
-            strokeWidth={ribbon.thickness}
-            filter={`url(#${uid}-shadow)`}
-          />
-        )
-      })}
-
-      <rect width={WIDTH} height={HEIGHT} fill={`url(#${uid}-sheen)`} />
-    </svg>
-  )
+  return <img src={SILK_IMAGE} alt="" aria-hidden draggable={false} decoding="async" className={`object-cover ${className}`} />
 }
