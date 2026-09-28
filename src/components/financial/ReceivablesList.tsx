@@ -70,7 +70,7 @@ export function ReceivablesList({
     <Card className="h-full">
       <PanelHeader
         title="Contas a receber"
-        subtitle="Parcelas dos negócios ganhos"
+        subtitle="Vendas ganhas que o cliente ainda não pagou"
         action={
           <div className="text-right">
             <p className="font-display text-[18px] font-bold leading-none tabular-nums text-[var(--text-primary)]">{formatCurrency(total)}</p>

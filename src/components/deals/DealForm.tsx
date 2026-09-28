@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/Button'
 import { ChoiceField } from '@/components/ui/ChoiceField'
 import { getContactById, getContacts } from '@/services/supabase/contacts'
 import { createDeal, updateDeal } from '@/services/supabase/deals'
+import { PAYMENT_METHOD_LABELS } from '@/utils/financial'
 import { DEAL_STAGES, getStageConfig } from '@/utils/deals'
-import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage } from '@/types'
+import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage, type PaymentMethod } from '@/types'
 import { startFollowUp } from '@/services/supabase/followup'
 import { dayToTimestamp, localDay } from '@/utils/saleDate'
 
@@ -65,6 +66,9 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
   const [errors, setErrors] = useState<Partial<Record<'title' | 'value' | 'wonDate', string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const today = localDay(new Date())
+  // Virando Ganho agora: já recebeu ou ainda vai receber? (vai para o Financeiro)
+  const [received, setReceived] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix')
 
   const [contactOptions, setContactOptions] = useState<Contact[]>([])
   const [contactDropdownOpen, setContactDropdownOpen] = useState(false)
@@ -145,6 +149,8 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
   }
 
   const filteredContacts = contactOptions
+  // Só pergunta do pagamento quando o negócio vira Ganho agora e tem valor.
+  const becomingWon = form.stage === 'won' && deal?.status !== 'won' && Number(form.value) > 0
   const autoTitle = [form.service.trim(), form.contactName.trim()].filter(Boolean).join(' — ')
 
   function validate(): boolean {
@@ -197,7 +203,8 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
           : {}),
       }
 
-      const result = deal ? await updateDeal(deal.id, payload) : await createDeal(payload)
+      const payment = becomingWon ? { received, method: paymentMethod } : undefined
+      const result = deal ? await updateDeal(deal.id, payload, payment) : await createDeal(payload, payment)
       let scheduled = 0
       if (!deal && payload.status === 'open' && payload.contact_id) {
         // Negócio novo com contato: agenda o follow-up automático (se ligado).
@@ -207,7 +214,15 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
         }).catch(() => 0)
       }
       toast.success(
-        deal ? 'Negócio atualizado com sucesso.' : scheduled > 0 ? 'Negócio criado. Follow-up agendado nas Tarefas.' : 'Negócio criado com sucesso.',
+        becomingWon
+          ? received
+            ? 'Venda registrada. O valor entrou no Financeiro como recebido.'
+            : 'Venda registrada. O valor foi para o Financeiro em "A receber".'
+          : deal
+            ? 'Negócio atualizado com sucesso.'
+            : scheduled > 0
+              ? 'Negócio criado. Follow-up agendado nas Tarefas.'
+              : 'Negócio criado com sucesso.',
       )
       onSuccess(result)
     } catch (err) {
@@ -322,6 +337,47 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
           value={form.expectedCloseDate}
           onChange={(event) => updateField('expectedCloseDate', event.target.value)}
         />
+      )}
+
+      {becomingWon && (
+        <div className="flex flex-col gap-2 rounded-2xl border border-[var(--border-default)] p-3.5">
+          <p className="text-[13px] font-medium text-[var(--text-secondary)]">Você já recebeu esse dinheiro?</p>
+          <div role="radiogroup" aria-label="Pagamento" className="grid grid-cols-2 gap-1.5">
+            {[
+              { value: false, label: 'Ainda vou receber' },
+              { value: true, label: 'Já recebi' },
+            ].map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                role="radio"
+                aria-checked={received === option.value}
+                onClick={() => setReceived(option.value)}
+                className={`h-10 rounded-xl border text-[13px] font-medium transition-colors ${
+                  received === option.value
+                    ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] text-[var(--text-primary)]'
+                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          {received && (
+            <Select label="Como recebeu" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
+              {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          )}
+          <p className="text-[12px] leading-snug text-[var(--text-muted)]">
+            {received
+              ? 'Entra no Financeiro como recebido no dia da venda.'
+              : 'Vai para o Financeiro em "A receber". Quando o cliente pagar, é só marcar como recebido lá.'}
+          </p>
+        </div>
       )}
 
       <Input

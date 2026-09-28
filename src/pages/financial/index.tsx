@@ -79,7 +79,7 @@ export default function FinancialPage() {
     <PageWrapper>
         <PageHeader
           title="Financeiro"
-          subtitle="O que entrou, o que saiu e o que ainda vai entrar."
+          subtitle="O dinheiro de verdade: o que entrou, o que saiu e o que as vendas ainda vão pagar."
           actions={
             <>
               <ExportButton onExport={exportCSV} />

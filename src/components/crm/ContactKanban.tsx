@@ -81,22 +81,24 @@ function KanbanColumn({
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between px-2 pt-1.5">
-        <h3 className="flex min-w-0 items-center gap-2 truncate text-[13.5px] font-semibold text-[var(--text-primary)]">
-          <span className="size-2.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }} />
-          {CONTACT_STATUS_LABELS[status]}
+        <h3 className="flex min-w-0 items-center gap-2 text-[13.5px] font-semibold text-[var(--text-primary)]">
+          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }} />
+          <span className="min-w-0 truncate">{CONTACT_STATUS_LABELS[status]}</span>
         </h3>
-        <span className="rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--text-secondary)] ring-1 ring-[var(--border-subtle)]">
+        <span className="shrink-0 rounded-full bg-[var(--bg-card)] px-2 py-0.5 text-[12px] font-semibold tabular-nums text-[var(--text-secondary)] ring-1 ring-[var(--border-subtle)]">
           {contacts.length}
         </span>
       </div>
 
-      <div className="flex min-h-24 flex-1 flex-col gap-2">
+      <div className="flex flex-1 flex-col gap-2">
         {contacts.map((contact, index) => (
           <KanbanCard key={contact.id} contact={contact} index={index} />
         ))}
         {contacts.length === 0 && (
-          <p className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[var(--border-default)] px-4 py-8 text-center text-[12.5px] text-[var(--text-muted)]">
-            Arraste um contato pra cá
+          <p className="px-3 py-6 text-center text-[12.5px] leading-relaxed text-[var(--text-muted)]">
+            Nenhum contato aqui.
+            <br />
+            Arraste um pra cá.
           </p>
         )}
       </div>

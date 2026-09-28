@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
-import { createReceivable } from '@/services/supabase/receivables'
+import { createReceivable, markReceivableAsPaid } from '@/services/supabase/receivables'
 import { getStageConfig } from '@/utils/deals'
-import type { Deal, DealFilters, DealStage, DealStatus } from '@/types'
+import type { Deal, DealFilters, DealStage, DealStatus, PaymentMethod } from '@/types'
 
 const DEAL_LIST_SELECT = '*, contact:contacts(id, name, email, phone)'
 const DEAL_DETAIL_SELECT = '*, contact:contacts(id, name, email, phone), activities:deal_activities(*)'
@@ -13,22 +13,40 @@ const DEAL_DETAIL_SELECT = '*, contact:contacts(id, name, email, phone), activit
 // mesmo em atualizações feitas diretamente no banco (fora do frontend).
 // Falhas aqui não devem impedir a atualização do deal em si — por isso o
 // erro é apenas logado, não propagado.
-async function createReceivableIfWon(previousStatus: DealStatus | undefined, deal: Deal): Promise<void> {
+//
+// Com `payment` (formulário do negócio): "já recebi" registra na hora a
+// entrada paga no Financeiro, no dia da venda; senão fica "a receber".
+export interface DealPayment {
+  received: boolean
+  method: PaymentMethod
+}
+
+async function createReceivableIfWon(
+  previousStatus: DealStatus | undefined,
+  deal: Deal,
+  payment?: DealPayment,
+): Promise<void> {
   if (!previousStatus || previousStatus === 'won' || deal.status !== 'won') return
   if (!deal.value || deal.value <= 0) return
 
   try {
-    await createReceivable({
+    const wonDay = deal.won_at ? new Date(deal.won_at) : new Date()
+    const localDay = new Date(wonDay.getTime() - wonDay.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+    const receivable = await createReceivable({
       deal_id: deal.id,
       contact_id: deal.contact_id,
       description: deal.title,
       amount: deal.value,
-      due_date: deal.expected_close_date,
+      // Já recebido: vence no dia da venda. A receber: usa a previsão (se tiver).
+      due_date: payment?.received ? localDay : deal.expected_close_date,
       status: 'pending',
       paid_at: null,
       transaction_id: null,
       notes: null,
     })
+    if (payment?.received) {
+      await markReceivableAsPaid(receivable.id, payment.method, deal.won_at ?? undefined)
+    }
   } catch (err) {
     console.error('Não foi possível criar a conta a receber automaticamente para o negócio ganho:', err)
   }
@@ -101,6 +119,7 @@ export async function getDealById(id: string): Promise<Deal | null> {
 
 export async function createDeal(
   input: Omit<Deal, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'contact' | 'activities'>,
+  payment?: DealPayment,
 ): Promise<Deal> {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw new Error(userError.message)
@@ -113,10 +132,13 @@ export async function createDeal(
     .single()
 
   if (error) throw new Error(error.message)
-  return data as unknown as Deal
+  const deal = data as unknown as Deal
+  // Negócio já cadastrado como Ganho também vai para o Financeiro.
+  await createReceivableIfWon('open', deal, payment)
+  return deal
 }
 
-export async function updateDeal(id: string, input: Partial<Deal>): Promise<Deal> {
+export async function updateDeal(id: string, input: Partial<Deal>, payment?: DealPayment): Promise<Deal> {
   const { contact: _contact, activities: _activities, ...updatable } = input
 
   const { data: previousRow } = await supabase.from('deals').select('status').eq('id', id).single()
@@ -132,7 +154,7 @@ export async function updateDeal(id: string, input: Partial<Deal>): Promise<Deal
   if (error) throw new Error(error.message)
   const deal = data as unknown as Deal
 
-  await createReceivableIfWon(previousStatus, deal)
+  await createReceivableIfWon(previousStatus, deal, payment)
 
   return deal
 }

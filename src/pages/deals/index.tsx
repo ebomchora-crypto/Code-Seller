@@ -72,7 +72,7 @@ export default function DealsPage() {
         <PageHeader
           title="Negócios"
           count={deals.length}
-          subtitle="Cada proposta em andamento, da primeira conversa ao fechamento."
+          subtitle="O que você está vendendo e o que já vendeu. Venda ganha vai sozinha para o Financeiro."
           actions={
             <>
               <div
