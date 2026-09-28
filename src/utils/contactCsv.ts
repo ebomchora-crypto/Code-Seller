@@ -53,3 +53,13 @@ export function addFullNameColumn(
   })
   return { headers: [FULL_NAME_HEADER, ...headers], rows: nextRows }
 }
+
+// Quando o contato tem mais de um telefone/e-mail, o Google junta tudo no
+// mesmo campo separado por " ::: ". Nos campos de um valor só, fica o primeiro
+// (senão o botão do WhatsApp e o e-mail quebram). Observações ficam inteiras.
+const MULTI_VALUE_SEPARATOR = /\s*:::\s*/
+
+export function firstCsvValue(field: string, value: string): string {
+  if (field === 'notes') return value.split(MULTI_VALUE_SEPARATOR).join(' · ')
+  return value.split(MULTI_VALUE_SEPARATOR).find((part) => part.trim())?.trim() ?? ''
+}

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { FULL_NAME_HEADER, GOOGLE_HEADER_ALIASES, addFullNameColumn, normalizeCsvHeader } from './contactCsv.ts'
+import { FULL_NAME_HEADER, GOOGLE_HEADER_ALIASES, addFullNameColumn, firstCsvValue, normalizeCsvHeader } from './contactCsv.ts'
 
 test('junta Nome, Nome do meio e Sobrenome do CSV do Google', () => {
   const headers = ['First Name', 'Middle Name', 'Last Name', 'E-mail 1 - Value']
@@ -39,4 +39,12 @@ test('apelidos das colunas do Google', () => {
   assert.equal(GOOGLE_HEADER_ALIASES[normalizeCsvHeader('E-mail 1 - Value')], 'email')
   assert.equal(GOOGLE_HEADER_ALIASES[normalizeCsvHeader('Phone 1 - Value')], 'phone')
   assert.equal(GOOGLE_HEADER_ALIASES[normalizeCsvHeader(FULL_NAME_HEADER)], 'name')
+})
+
+test('campos com vários valores do Google ficam só com o primeiro', () => {
+  assert.equal(firstCsvValue('phone', '+55 16 99999-0000 ::: +55 16 3333-4444'), '+55 16 99999-0000')
+  assert.equal(firstCsvValue('email', 'a@x.com ::: b@y.com'), 'a@x.com')
+  assert.equal(firstCsvValue('phone', ' ::: +55 11 98888-7777'), '+55 11 98888-7777')
+  assert.equal(firstCsvValue('phone', '(16) 99999-0000'), '(16) 99999-0000')
+  assert.equal(firstCsvValue('notes', 'cliente antigo ::: pediu orçamento'), 'cliente antigo · pediu orçamento')
 })

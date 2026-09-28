@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { importContacts, type ImportContactsResult } from '@/services/supabase/contacts'
 import type { Contact, ContactStatus } from '@/types'
-import { GOOGLE_HEADER_ALIASES, addFullNameColumn, normalizeCsvHeader } from '@/utils/contactCsv'
+import { GOOGLE_HEADER_ALIASES, addFullNameColumn, firstCsvValue, normalizeCsvHeader } from '@/utils/contactCsv'
 
 interface ImportCSVModalProps {
   open: boolean
@@ -135,7 +135,7 @@ export function ImportCSVModal({ open, onClose, onImported }: ImportCSVModalProp
         for (const header of headers) {
           const field = mapping[header]
           if (field === 'ignore' || !field) continue
-          const value = row[header]?.trim()
+          const value = firstCsvValue(field, row[header]?.trim() ?? '')
           if (!value) continue
           if (field === 'status') {
             contact.status = value.toLowerCase() as ContactStatus
