@@ -83,8 +83,10 @@ export interface IntegrationConfig {
   icon: string // nome do ícone Lucide
   status: IntegrationStatus
   connected_at: string | null
-  // Ainda não funciona de verdade: mostra "Em breve" e nunca "Conectado".
-  coming_soon?: boolean
+  // Funciona sem conectar nada (ex.: importar arquivo): mostra "Pronto para usar".
+  no_connection?: boolean
+  // Situação real do último envio (webhook), mostrada no card.
+  health?: { ok: boolean; text: string } | null
   // Texto do botão quando não está conectado (padrão "Conectar").
   action_label?: string
 }

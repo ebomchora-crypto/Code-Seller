@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plug } from 'lucide-react'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { IntegrationCard } from '@/components/settings/IntegrationCard'
 import { WebhookModal } from '@/components/settings/WebhookModal'
+import { listWebhookDeliveries, type WebhookDelivery } from '@/services/supabase/webhook'
 import type { Integration, IntegrationConfig, IntegrationType } from '@/types'
 
 interface IntegrationsSectionProps {
@@ -17,6 +18,15 @@ interface IntegrationsSectionProps {
 
 type IntegrationMeta = Omit<IntegrationConfig, 'status' | 'connected_at'>
 
+function timeAgo(iso: string): string {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000)
+  if (minutes < 1) return 'agora há pouco'
+  if (minutes < 60) return `há ${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `há ${hours} h`
+  return `em ${new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+}
+
 const INTEGRATION_META: Partial<Record<IntegrationType, IntegrationMeta>> = {
   webhook: {
     type: 'webhook',
@@ -26,10 +36,10 @@ const INTEGRATION_META: Partial<Record<IntegrationType, IntegrationMeta>> = {
   },
   google_contacts: {
     type: 'google_contacts',
-    label: 'Google Contacts',
-    description: 'Traga seus contatos do Google para o CRM.',
+    label: 'Contatos do Google',
+    description: 'Traga seus contatos do Google para o CRM em 1 minuto, pelo arquivo que o próprio Google gera.',
     icon: 'Users',
-    coming_soon: true,
+    no_connection: true,
     action_label: 'Importar agora',
   },
 }
@@ -56,11 +66,41 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
   const [googleOpen, setGoogleOpen] = useState(false)
   const [disconnectingType, setDisconnectingType] = useState<IntegrationType | null>(null)
 
+  const webhook = integrations.find((integration) => integration.type === 'webhook')
+  const webhookConnected = webhook?.status === 'connected'
+  const [lastDelivery, setLastDelivery] = useState<WebhookDelivery | null>(null)
+
+  // Situação real do webhook: o último envio chegou ou falhou?
+  const refreshHealth = useCallback(async () => {
+    try {
+      setLastDelivery((await listWebhookDeliveries(1))[0] ?? null)
+    } catch {
+      setLastDelivery(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (webhookConnected) void refreshHealth()
+  }, [webhookConnected, refreshHealth])
+
+  const webhookHealth = webhookConnected && lastDelivery
+    ? lastDelivery.ok
+      ? { ok: true, text: `Funcionando · último envio ${timeAgo(lastDelivery.created_at)}` }
+      : { ok: false, text: `Último envio falhou (${timeAgo(lastDelivery.created_at)}): ${lastDelivery.error ?? 'sem resposta'}` }
+    : null
+
   const configs: IntegrationConfig[] = integrations.flatMap((integration) => {
     const meta = INTEGRATION_META[integration.type]
-    return meta ? [{ ...meta, status: integration.status, connected_at: integration.connected_at }] : []
+    if (!meta) return []
+    return [
+      {
+        ...meta,
+        status: integration.status,
+        connected_at: integration.connected_at,
+        health: integration.type === 'webhook' ? webhookHealth : null,
+      },
+    ]
   })
-  const webhook = integrations.find((integration) => integration.type === 'webhook')
 
   function openFor(type: IntegrationType) {
     if (type === 'webhook') setWebhookOpen(true)
@@ -71,9 +111,8 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
     <>
       <SettingsSection id="integrações" icon={Plug} title="Integrações" description="Conecte o Code Sellers a outras ferramentas.">
         <SettingsNote>
-          O Webhook já funciona: cada contato, negócio ou tarefa marcada é enviada na hora para o endereço que você escolher.
-          A conexão direta com o Google Contacts está em construção — enquanto isso, dá para trazer os contatos em 1 minuto
-          pelo arquivo CSV.
+          O Webhook manda cada contato, negócio ou tarefa concluída na hora para o endereço que você escolher — o card mostra
+          se o último envio chegou. Os contatos do Google entram pelo arquivo que o Google exporta.
         </SettingsNote>
 
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -92,7 +131,10 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
       <WebhookModal
         open={webhookOpen}
         integration={webhook}
-        onClose={() => setWebhookOpen(false)}
+        onClose={() => {
+          setWebhookOpen(false)
+          if (webhookConnected) void refreshHealth()
+        }}
         onSave={(config) => onConnect('webhook', config)}
       />
 

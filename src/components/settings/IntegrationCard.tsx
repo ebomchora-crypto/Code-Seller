@@ -1,4 +1,4 @@
-import { Users, Webhook, type LucideIcon } from 'lucide-react'
+import { CheckCircle2, Users, Webhook, XCircle, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import type { IntegrationConfig, IntegrationType } from '@/types'
 
@@ -21,11 +21,11 @@ const STATUS_LABELS: Record<IntegrationConfig['status'], string> = {
   error: 'Erro',
 }
 
-const STATUS_CLASSES: Record<IntegrationConfig['status'] | 'soon', string> = {
+const STATUS_CLASSES: Record<IntegrationConfig['status'] | 'ready', string> = {
   connected: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   disconnected: 'bg-[var(--bg-muted)] text-[var(--text-muted)]',
   error: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  soon: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  ready: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
 }
 
 const TONES: Partial<Record<IntegrationType, string>> = {
@@ -36,8 +36,8 @@ const TONES: Partial<Record<IntegrationType, string>> = {
 export function IntegrationCard({ config, onConnect, onDisconnect, onConfigure }: IntegrationCardProps) {
   const Icon = ICONS[config.type] ?? Webhook
   const tone = TONES[config.type] ?? '#a78bfa'
-  const soon = Boolean(config.coming_soon)
-  const connected = !soon && config.status === 'connected'
+  const ready = Boolean(config.no_connection)
+  const connected = !ready && config.status === 'connected'
 
   return (
     <div className="flex flex-col gap-4 rounded-[20px] border border-[var(--border-default)] p-5 transition hover:border-[var(--border-strong)]">
@@ -47,18 +47,28 @@ export function IntegrationCard({ config, onConnect, onDisconnect, onConfigure }
         </span>
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium ${
-            STATUS_CLASSES[soon ? 'soon' : config.status]
+            STATUS_CLASSES[ready ? 'ready' : config.status]
           }`}
         >
           <span className="size-1.5 rounded-full bg-current" />
-          {soon ? 'Em breve' : STATUS_LABELS[config.status]}
+          {ready ? 'Pronto para usar' : STATUS_LABELS[config.status]}
         </span>
       </div>
 
       <div className="flex-1">
         <h3 className="text-[14.5px] font-semibold text-[var(--text-primary)]">{config.label}</h3>
         <p className="mt-1 text-[13px] text-[var(--text-muted)]">{config.description}</p>
-        {connected && config.connected_at && (
+        {connected && config.health && (
+          <p
+            className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] font-medium ${
+              config.health.ok ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
+            }`}
+          >
+            {config.health.ok ? <CheckCircle2 className="size-3.5 shrink-0" /> : <XCircle className="size-3.5 shrink-0" />}
+            {config.health.text}
+          </p>
+        )}
+        {connected && !config.health && config.connected_at && (
           <p className="mt-1 text-[11.5px] text-[var(--text-muted)]">
             Conectado em {new Date(config.connected_at).toLocaleDateString('pt-BR')}
           </p>
