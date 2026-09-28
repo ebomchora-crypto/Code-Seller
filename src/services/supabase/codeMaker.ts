@@ -192,3 +192,38 @@ export async function getPublicSite(slug: string): Promise<{ name: string; html:
   if (error) throw new Error(error.message)
   return (data as { name: string; html: string } | null) ?? null
 }
+
+const ASSET_BUCKET = 'site-assets'
+const MAX_SIDE = { logo: 800, photo: 1920 } as const
+
+// Reduz a imagem no navegador antes de enviar: sites leves e dentro do limite.
+async function shrinkImage(file: File, kind: 'logo' | 'photo'): Promise<Blob> {
+  const bitmap = await createImageBitmap(file).catch(() => null)
+  if (!bitmap) throw new Error('Não foi possível ler esta imagem. Use JPG, PNG ou WebP.')
+  const scale = Math.min(1, MAX_SIDE[kind] / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  // Logo em PNG (mantém o fundo transparente); fotos em JPG.
+  const type = kind === 'logo' ? 'image/png' : 'image/jpeg'
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Não foi possível preparar a imagem.'))), type, 0.86),
+  )
+}
+
+export async function uploadSiteAsset(file: File, kind: 'logo' | 'photo'): Promise<string> {
+  if (!/^image\/(jpeg|png|webp|heic|heif|gif)$/.test(file.type) && !/\.(jpe?g|png|webp|heic)$/i.test(file.name)) {
+    throw new Error('Envie imagens (JPG, PNG ou WebP).')
+  }
+  if (file.size > 25 * 1024 * 1024) throw new Error('Imagem muito grande (máximo 25 MB).')
+  const { data } = await supabase.auth.getUser()
+  if (!data.user) throw new Error('Sessão expirada. Entre novamente.')
+  const blob = await shrinkImage(file, kind)
+  const extension = blob.type === 'image/png' ? 'png' : 'jpg'
+  const path = `${data.user.id}/${crypto.randomUUID()}.${extension}`
+  const { error } = await supabase.storage.from(ASSET_BUCKET).upload(path, blob, { contentType: blob.type, upsert: false })
+  if (error) throw new Error(error.message.includes('exceeded') ? 'Imagem muito grande.' : error.message)
+  return supabase.storage.from(ASSET_BUCKET).getPublicUrl(path).data.publicUrl
+}

@@ -160,6 +160,18 @@ export function BuildTimeline(props: BuildTimelineProps) {
             ))}
           </p>
         )}
+        {brief.assets && brief.assets.length > 0 && (
+          <span className="mt-2 flex flex-wrap gap-1.5">
+            {brief.assets.map((asset) => (
+              <img
+                key={asset.url}
+                src={asset.url}
+                alt={asset.kind === 'logo' ? 'Logo enviada' : 'Foto enviada'}
+                className={`size-10 rounded-lg bg-white/15 ${asset.kind === 'logo' ? 'object-contain p-1' : 'object-cover'}`}
+              />
+            ))}
+          </span>
+        )}
       </UserBubble>
 
       <AiBlock title={planning || !plan ? 'Planejando o site' : 'Direção de arte'} status={planStatus}>

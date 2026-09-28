@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner'
 import { assembleSite, parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
 import { useSiteBuilder } from '@/hooks/useSiteBuilder'
+import { AttachButton, AttachmentTray, useAttachments } from '@/components/code-maker/Attachments'
 import { BuildTimeline, partLabel } from '@/components/code-maker/BuildTimeline'
 import { CodeView } from '@/components/code-maker/CodeView'
 import { SitePreview } from '@/components/code-maker/SitePreview'
@@ -63,6 +64,7 @@ export default function CodeMakerEditorPage() {
   const [deleting, setDeleting] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const autoStarted = useRef(false)
+  const attachments = useAttachments()
 
   // Chegou do "Criar site": começa a gerar sozinho.
   useEffect(() => {
@@ -150,13 +152,15 @@ export default function CodeMakerEditorPage() {
 
   async function submitEdit(event?: FormEvent) {
     event?.preventDefault()
-    const text = instruction.trim()
-    if (!text || busy || !ready) return
+    const assets = attachments.assets
+    const text = instruction.trim() || (assets.length > 0 ? 'Use as imagens anexadas no site.' : '')
+    if (!text || busy || !ready || attachments.uploading) return
     setInstruction('')
     setLeftTab('acoes')
     setMobileView('acoes')
-    const ok = await builder.edit(text)
-    if (!ok) setInstruction(text)
+    const ok = await builder.edit(text, assets)
+    if (ok) attachments.clear()
+    else setInstruction(text)
   }
 
   function handleComposerKey(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -441,39 +445,61 @@ export default function CodeMakerEditorPage() {
                 ))}
               </div>
             )}
-            <div className="flex items-end gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1.5 transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]">
-              <textarea
-                value={instruction}
-                onChange={(event) => setInstruction(event.target.value)}
-                onKeyDown={handleComposerKey}
-                rows={2}
-                maxLength={2000}
-                disabled={!ready || busy}
-                placeholder={
-                  busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança… ex.: troque o título do topo' : 'Espere o site ficar pronto'
-                }
-                className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed"
-              />
-              {busy ? (
-                <button
-                  type="button"
-                  onClick={builder.stop}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-muted)] text-[var(--text-primary)] transition hover:bg-[var(--bg-card-hover)]"
-                  aria-label="Parar"
-                  title="Parar"
-                >
-                  <Square className="size-3.5 fill-current" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!instruction.trim() || !ready}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white transition hover:brightness-110 disabled:opacity-40"
-                  aria-label="Enviar"
-                >
-                  <ArrowUp className="size-4" />
-                </button>
-              )}
+            <div
+              onDragOver={(event) => {
+                if (event.dataTransfer.types.includes('Files')) event.preventDefault()
+              }}
+              onDrop={(event) => {
+                if (!event.dataTransfer.files.length || !ready || busy) return
+                event.preventDefault()
+                attachments.add(event.dataTransfer.files)
+              }}
+              className="rounded-2xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1.5 transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]"
+            >
+              <div className="pt-1.5">
+                <AttachmentTray state={attachments} />
+              </div>
+              <div className="flex items-end gap-2">
+                <AttachButton onFiles={attachments.add} disabled={!ready || busy} compact />
+                <textarea
+                  value={instruction}
+                  onChange={(event) => setInstruction(event.target.value)}
+                  onKeyDown={handleComposerKey}
+                  onPaste={(event) => {
+                    if (event.clipboardData.files.length && ready && !busy) {
+                      event.preventDefault()
+                      attachments.add(event.clipboardData.files)
+                    }
+                  }}
+                  rows={2}
+                  maxLength={2000}
+                  disabled={!ready || busy}
+                  placeholder={
+                    busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança… ex.: troque o título do topo' : 'Espere o site ficar pronto'
+                  }
+                  className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed"
+                />
+                {busy ? (
+                  <button
+                    type="button"
+                    onClick={builder.stop}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-muted)] text-[var(--text-primary)] transition hover:bg-[var(--bg-card-hover)]"
+                    aria-label="Parar"
+                    title="Parar"
+                  >
+                    <Square className="size-3.5 fill-current" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={(!instruction.trim() && attachments.assets.length === 0) || !ready || attachments.uploading}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white transition hover:brightness-110 disabled:opacity-40"
+                    aria-label="Enviar"
+                  >
+                    <ArrowUp className="size-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </form>
         </section>

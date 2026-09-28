@@ -6,6 +6,7 @@ import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { PromptBox, PROMPT_IDEAS } from '@/components/code-maker/PromptBox'
+import { useAttachments } from '@/components/code-maker/Attachments'
 import { SiteThumbnail } from '@/components/code-maker/SiteThumbnail'
 import { createSite, getCodeMakerUsage, listSites, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
 import type { SiteBrief, SiteStyle } from '../../../supabase/functions/code-maker/site'
@@ -93,6 +94,7 @@ export default function CodeMakerPage() {
   const [prompt, setPrompt] = useState('')
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [creating, setCreating] = useState(false)
+  const attachments = useAttachments()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -137,6 +139,7 @@ export default function CodeMakerPage() {
         reviews: prefill?.reviews ?? null,
         style,
         details: text,
+        assets: attachments.assets,
       }
       const site = await createSite(brief, prefill?.contactId)
       navigate(`/code-maker/${site.id}?gerar=1`)
@@ -154,7 +157,7 @@ export default function CodeMakerPage() {
           O que vamos criar hoje?
         </h1>
         <p className="relative mx-auto mt-2 max-w-xl text-[15px] text-[var(--text-muted)]">
-          Descreva o site do seu jeito: o negócio, a cidade, o estilo, os serviços. A IA cria e você ajusta conversando.
+          Descreva o site do seu jeito e anexe a logo e as fotos do cliente. A IA cria e você ajusta conversando.
         </p>
         <div className="relative mt-7 text-left">
           <PromptBox
@@ -164,6 +167,7 @@ export default function CodeMakerPage() {
             busy={creating}
             disabled={limitReached}
             footnote={usage ? `${usage.sites_today} de ${usage.sites_limit} sites hoje` : null}
+            attachments={attachments}
           />
         </div>
         {limitReached ? (

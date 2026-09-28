@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { ArrowUp, ChevronDown, Loader2 } from 'lucide-react'
 import type { SiteStyle } from '../../../supabase/functions/code-maker/site'
+import { AttachButton, AttachmentTray, type AttachmentsState } from '@/components/code-maker/Attachments'
 
 const STYLES: { value: SiteStyle; label: string; swatch: string[] }[] = [
   { value: 'auto', label: 'A IA escolhe o estilo', swatch: ['#a78bfa', '#f472b6', '#fbbf24'] },
@@ -52,15 +53,17 @@ interface PromptBoxProps {
   busy: boolean
   disabled?: boolean
   footnote?: string | null
+  attachments: AttachmentsState
 }
 
-export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, footnote }: PromptBoxProps) {
+export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, footnote, attachments }: PromptBoxProps) {
+  const [dragging, setDragging] = useState(false)
   const [style, setStyle] = useState<SiteStyle>('auto')
   const [styleOpen, setStyleOpen] = useState(false)
   const [placeholder, setPlaceholder] = useState(0)
   const textarea = useRef<HTMLTextAreaElement>(null)
   const current = STYLES.find((option) => option.value === style) ?? STYLES[0]
-  const canSend = value.trim().length >= 8 && !busy && !disabled
+  const canSend = value.trim().length >= 8 && !busy && !disabled && !attachments.uploading
 
   // Cresce com o texto (até um limite).
   useEffect(() => {
@@ -90,13 +93,39 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
   return (
     <form
       onSubmit={submit}
-      className="relative rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-card)] p-3 shadow-[0_30px_80px_-40px_rgba(124,58,237,0.55)] transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]"
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes('Files')) return
+        event.preventDefault()
+        setDragging(true)
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(event) => {
+        if (!event.dataTransfer.files.length) return
+        event.preventDefault()
+        setDragging(false)
+        attachments.add(event.dataTransfer.files)
+      }}
+      className={`relative rounded-[26px] border bg-[var(--bg-card)] p-3 shadow-[0_30px_80px_-40px_rgba(124,58,237,0.55)] transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)] ${
+        dragging ? 'border-[var(--accent-ring)] ring-4 ring-[var(--accent-tint)]' : 'border-[var(--border-default)]'
+      }`}
     >
+      {dragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-[26px] bg-[var(--panel-bg)]/85 text-[14px] font-medium text-[var(--accent-text)]">
+          Solte aqui a logo e as fotos do cliente
+        </div>
+      )}
+      <AttachmentTray state={attachments} />
       <textarea
         ref={textarea}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKey}
+        onPaste={(event) => {
+          if (event.clipboardData.files.length) {
+            event.preventDefault()
+            attachments.add(event.clipboardData.files)
+          }
+        }}
         rows={3}
         maxLength={4000}
         disabled={busy || disabled}
@@ -105,7 +134,8 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
         className="block min-h-[92px] w-full resize-none bg-transparent px-2 py-1.5 text-[15.5px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-60"
       />
       <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="relative">
+        <div className="relative flex items-center gap-2">
+          <AttachButton onFiles={attachments.add} disabled={busy || disabled} />
           <button
             type="button"
             onClick={() => setStyleOpen((open) => !open)}

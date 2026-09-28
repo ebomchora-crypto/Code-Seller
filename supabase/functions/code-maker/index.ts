@@ -21,11 +21,13 @@ import {
   buildEditMessage,
   buildPartMessage,
   buildPlanMessage,
+  cleanAssets,
   CONTINUE_PROMPT,
   EDIT_SYSTEM,
   fillBrief,
   joinContinuation,
   parseEdit,
+  normalizePart,
   parsePart,
   parsePlan,
   partOrder,
@@ -104,7 +106,7 @@ async function uniqueSlug(admin: SupabaseClient, name: string): Promise<string> 
   return `${base}-${crypto.randomUUID().slice(0, 6)}`
 }
 
-function cleanBrief(input: Record<string, unknown>): SiteBrief | null {
+function cleanBrief(input: Record<string, unknown>, userId: string): SiteBrief | null {
   const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
   const businessName = text(input.businessName, 120)
   const details = text(input.details, 4000)
@@ -121,6 +123,7 @@ function cleanBrief(input: Record<string, unknown>): SiteBrief | null {
     details: details || null,
     rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? rating : null,
     reviews: Number.isFinite(reviews) && reviews > 0 ? Math.round(reviews) : null,
+    assets: cleanAssets(input.assets, userId, Deno.env.get('SUPABASE_URL')!),
   }
 }
 
@@ -248,7 +251,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === 'create') {
-      const brief = cleanBrief((body.brief ?? {}) as Record<string, unknown>)
+      const brief = cleanBrief((body.brief ?? {}) as Record<string, unknown>, user.id)
       if (!brief) return json({ error: 'Escreva o que você quer no site.' }, 400)
       if ((await countToday(admin, user.id, 'create')) >= SITES_PER_DAY) {
         return json({ error: `Você já criou ${SITES_PER_DAY} sites hoje. Amanhã libera de novo — e dá para alterar os que já existem.` }, 429)
@@ -351,7 +354,7 @@ Deno.serve(async (req: Request) => {
           { role: 'user', content: buildPartMessage(partId, planForAi, site.brief) },
         ],
         finish: async (full) => {
-          const { html } = parsePart(full)
+          const html = normalizePart(partId, parsePart(full).html)
           if (!html) return 'A IA devolveu esta parte vazia. Tente de novo.'
           const { data: merged, error } = await admin.rpc('code_maker_merge_part', { p_site: site.id, p_part: partId, p_html: html })
           if (error) throw error
@@ -378,6 +381,18 @@ Deno.serve(async (req: Request) => {
     const instruction = String(body.instruction ?? '').trim().slice(0, 2000)
     if (!instruction) return json({ error: 'Diga o que você quer mudar.' }, 400)
     if (site.status !== 'ready') return json({ error: 'Espere o site terminar de ser gerado.' }, 409)
+    // Imagens anexadas junto com o pedido: passam a fazer parte do site
+    // (uma logo nova substitui a antiga).
+    const fresh = cleanAssets(body.assets, user.id, supabaseUrl)
+    let brief = site.brief
+    if (fresh.length > 0) {
+      const newLogo = fresh.some((asset) => asset.kind === 'logo')
+      const kept = (site.brief.assets ?? []).filter(
+        (asset) => !(newLogo && asset.kind === 'logo') && !fresh.some((item) => item.url === asset.url),
+      )
+      brief = { ...site.brief, assets: [...kept, ...fresh].slice(-12) }
+      if (!partial) await admin.from('sites').update({ brief }).eq('id', site.id)
+    }
     if (!partial) {
       if ((await countToday(admin, user.id, 'edit')) >= EDITS_PER_DAY) {
         return json({ error: `Você já fez ${EDITS_PER_DAY} alterações hoje. Amanhã libera de novo.` }, 429)
@@ -391,7 +406,7 @@ Deno.serve(async (req: Request) => {
       partial,
       messages: [
         { role: 'system', content: EDIT_SYSTEM },
-        { role: 'user', content: buildEditMessage(planForAi, site.parts, instruction, site.brief) },
+        { role: 'user', content: buildEditMessage(planForAi, site.parts, instruction, brief, fresh) },
       ],
       finish: async (full) => {
         const edit = parseEdit(full)

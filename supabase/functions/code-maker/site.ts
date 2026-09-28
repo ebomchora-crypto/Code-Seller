@@ -14,6 +14,13 @@ export interface SiteBrief {
   details?: string | null
   rating?: number | null
   reviews?: number | null
+  // Logo e fotos enviadas pelo usuário (URLs públicas).
+  assets?: SiteAsset[] | null
+}
+
+export interface SiteAsset {
+  url: string
+  kind: 'logo' | 'photo'
 }
 
 export type SectionBackground = 'paper' | 'surface' | 'ink' | 'brand'
@@ -172,6 +179,46 @@ export function photoCatalog(niche: string | null | undefined): string {
     .join('\n')
 }
 
+// Só aceita imagens da pasta do próprio usuário no depósito do Code Maker e
+// remonta o endereço oficial (nada de links de fora nem de outra pessoa).
+export function cleanAssets(input: unknown, userId: string, baseUrl: string): SiteAsset[] {
+  const marker = `/storage/v1/object/public/site-assets/${userId}/`
+  const assets: SiteAsset[] = []
+  for (const item of Array.isArray(input) ? input.slice(0, 12) : []) {
+    const raw = typeof item?.url === 'string' ? item.url : ''
+    const index = raw.indexOf(marker)
+    const file = index >= 0 ? raw.slice(index + marker.length) : ''
+    if (!/^[\w-]+\.(?:png|jpe?g|webp)$/i.test(file)) continue
+    const url = `${baseUrl.replace(/\/+$/, '')}${marker}${file}`
+    const kind = item?.kind === 'logo' && !assets.some((asset) => asset.kind === 'logo') ? 'logo' : 'photo'
+    if (!assets.some((asset) => asset.url === url)) assets.push({ url, kind })
+  }
+  return assets
+}
+
+export function logoOf(brief: SiteBrief): string | null {
+  return brief.assets?.find((asset) => asset.kind === 'logo')?.url ?? null
+}
+
+// Imagens que a IA pode usar: as do próprio negócio primeiro, depois as de banco.
+export function imagesMessage(brief: SiteBrief, fresh: SiteAsset[] = []): string {
+  const logo = logoOf(brief)
+  const photos = (brief.assets ?? []).filter((asset) => asset.kind === 'photo')
+  const freshUrls = new Set(fresh.map((asset) => asset.url))
+  const mark = (url: string) => (freshUrls.has(url) ? ' (anexada agora)' : '')
+  return [
+    logo
+      ? `LOGO DO NEGÓCIO (enviada pelo usuário): ${logo}${mark(logo)}\nUse SOMENTE no cabeçalho e no rodapé (não repita na seção do topo, que já fica logo abaixo do cabeçalho), no lugar do nome em texto: <img src="..." alt="Logo ${brief.businessName}" class="h-9 w-auto md:h-10 object-contain">. Não recorte, não distorça e não coloque dentro de círculo. Combine as cores do site com ela.`
+      : null,
+    photos.length > 0
+      ? `FOTOS DO PRÓPRIO NEGÓCIO (enviadas pelo usuário — use estas PRIMEIRO, principalmente no topo, na galeria e no "sobre"; não sabemos o que cada uma mostra, então use legendas genéricas e alt descritivo neutro):\n${photos.map((photo) => `- ${photo.url}${mark(photo.url)}`).join('\n')}`
+      : null,
+    `${photos.length > 0 ? 'Fotos de banco (só como complemento, se faltar foto)' : 'Fotos disponíveis (use somente estas)'}:\n${photoCatalog(brief.niche)}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+}
+
 
 // ---------------------------------------------------------------------------
 // Regras de design e conteúdo (valem para todas as partes)
@@ -240,6 +287,9 @@ export function buildPlanMessage(brief: SiteBrief): string {
     phone ? `WhatsApp: ${phone}` : 'WhatsApp: não informado',
     brief.reviews && brief.rating ? `Reputação real: nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações` : null,
     `Estilo pedido: ${STYLE_DIRECTIONS[brief.style ?? 'auto']}`,
+    brief.assets?.length
+      ? `O usuário enviou ${logoOf(brief) ? 'a logo' : 'nenhuma logo'} e ${brief.assets.filter((asset) => asset.kind === 'photo').length} foto(s) do próprio negócio: o site vai usá-las. ${logoOf(brief) ? 'Escolha cores que combinem com uma logo de verdade (sóbrias, sem brigar com ela).' : ''}`
+      : null,
     brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
   ]
     .filter(Boolean)
@@ -330,7 +380,7 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
     .join(', ')
 
   if (partId === 'header') {
-    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho), menu com os links: ${nav}, e botão de ação para o WhatsApp (${whatsapp}). No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — no topo o texto do cabeçalho é text-${textOn(plan, plan.sections[0]?.bg ?? 'paper')}; ao rolar ele ganha fundo bg-paper/85 com backdrop-blur (o script marca [data-scrolled]) e o texto passa a text-${textOn(plan, 'paper')}. Escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:text-${textOn(plan, 'paper')} data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm). O painel do menu mobile tem fundo bg-paper e texto text-${textOn(plan, 'paper')}.`
+    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com ${logoOf(brief) ? 'a LOGO do negócio (imagem enviada — veja abaixo)' : 'logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho)'}, menu com os links: ${nav}, e botão de ação para o WhatsApp (${whatsapp}). No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — no topo o texto do cabeçalho é text-${textOn(plan, plan.sections[0]?.bg ?? 'paper')}; ao rolar ele ganha fundo bg-paper/85 com backdrop-blur (o script marca [data-scrolled]) e o texto passa a text-${textOn(plan, 'paper')}. Escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:text-${textOn(plan, 'paper')} data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm). O painel do menu mobile tem fundo bg-paper e texto text-${textOn(plan, 'paper')}.`
   }
   if (partId === 'footer') {
     return `Escreva o RODAPÉ: <footer> com o nome do negócio, frase curta, links do menu (${nav}), contato (WhatsApp ${phone ?? 'não informado'}, cidade ${brief.city ?? ''}), horário de funcionamento plausível e "© <span data-year></span> ${brief.businessName}". Depois do </footer>, um botão flutuante de WhatsApp: <a href="${whatsapp}" ... class="fixed bottom-5 right-5 z-50 ... bg-[#25D366] ..."> com o ícone do WhatsApp em SVG e aria-label.`
@@ -354,7 +404,7 @@ export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrie
     brief.details?.trim() ? `Pedido do cliente: ${brief.details.trim()}` : null,
     realFacts(brief),
     `Plano do site (siga à risca):\n${JSON.stringify(plan)}`,
-    `Fotos disponíveis (use somente estas):\n${photoCatalog(brief.niche)}`,
+    imagesMessage(brief),
     contrastGuide(plan),
     partInstructions(partId, plan, brief),
   ]
@@ -398,7 +448,7 @@ Depois, só o que muda:
 - Mudar cores ou fontes do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}}</tema>
 Mantenha tudo o que não foi pedido exatamente igual. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
 
-export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief): string {
+export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = []): string {
   const current = partOrder(plan)
     .filter((id) => parts[id])
     .map((id) => `<parte id="${id}">\n${parts[id]}\n</parte>`)
@@ -408,9 +458,14 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
     `Tema atual: ${JSON.stringify({ palette: plan.palette, fonts: plan.fonts, theme: plan.theme })}`,
     contrastGuide(plan),
     `Partes atuais do site:\n${current}`,
-    `Fotos disponíveis (se precisar de novas, use somente estas):\n${photoCatalog(brief.niche)}`,
+    imagesMessage(brief, fresh),
+    fresh.length > 0
+      ? `O usuário anexou ${fresh.length} imagem(ns) junto com este pedido (marcadas como "anexada agora" acima): use-as onde ele pedir; se ele não disser onde, a logo vai no cabeçalho/rodapé e as fotos no topo ou na galeria.`
+      : null,
     `Pedido do usuário: ${instruction.trim()}`,
-  ].join('\n\n')
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 }
 
 // ---------------------------------------------------------------------------
@@ -580,10 +635,98 @@ export function cleanFragment(html: string): string {
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<script[^>]*>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<\/?(?:html|head|body)[^>]*>/gi, '')
+    .replace(/<\/?(?:html|head|body)\b[^>]*>/gi, '')
     .replace(/<!doctype[^>]*>/gi, '')
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*')/gi, '')
     .trim()
+}
+
+// ---------------------------------------------------------------------------
+// Estrutura de cada parte: às vezes a IA escreve mais do que a parte pedida
+// (até o site inteiro dentro do rodapé) ou deixa uma tag aberta — um <svg>
+// sem fechar engole o resto da página. Aqui cada parte fica só com o seu
+// bloco e com todas as tags fechadas.
+// ---------------------------------------------------------------------------
+
+const TAG = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][\w:-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g
+const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'])
+
+// Fecha o que ficou aberto e descarta fechamentos sem abertura.
+export function balanceHtml(html: string): string {
+  const stack: string[] = []
+  let out = ''
+  let last = 0
+  for (const match of html.matchAll(TAG)) {
+    const [raw, slash, rawName, attrs] = match
+    out += html.slice(last, match.index)
+    last = match.index! + raw.length
+    if (!rawName) {
+      out += raw
+      continue
+    }
+    const name = rawName.toLowerCase()
+    if (!slash) {
+      out += raw
+      if (!VOID_TAGS.has(name) && !/\/\s*$/.test(attrs)) stack.push(name)
+      continue
+    }
+    const index = stack.lastIndexOf(name)
+    if (index < 0) continue
+    while (stack.length > index + 1) out += `</${stack.pop()}>`
+    stack.pop()
+    out += raw
+  }
+  out += html.slice(last).replace(/<[^>]*$/, '')
+  while (stack.length) out += `</${stack.pop()}>`
+  return out
+}
+
+// Início e fim do primeiro elemento `tag` (que passe no filtro), com o que tem dentro.
+function findElement(html: string, tag: string, accept: (attrs: string) => boolean = () => true): { start: number; end: number } | null {
+  let depth = 0
+  let start = -1
+  for (const match of html.matchAll(TAG)) {
+    const [raw, slash, rawName, attrs] = match
+    if (rawName?.toLowerCase() !== tag) continue
+    if (!slash) {
+      if (/\/\s*$/.test(attrs)) continue
+      if (start < 0) {
+        if (!accept(attrs)) continue
+        start = match.index!
+      }
+      depth++
+    } else if (start >= 0 && --depth === 0) {
+      return { start, end: match.index! + raw.length }
+    }
+  }
+  return start >= 0 ? { start, end: html.length } : null
+}
+
+const hasId = (id: string) => (attrs: string) => new RegExp(`\\bid\\s*=\\s*["']${id}["']`, 'i').test(attrs)
+
+export function normalizePart(partId: string, html: string): string {
+  if (!html.trim()) return ''
+  if (partId === 'header') {
+    const found = findElement(html, 'header')
+    if (!found) return `<header data-header class="fixed inset-x-0 top-0 z-50 transition">\n${balanceHtml(html)}\n</header>`
+    const header = balanceHtml(html.slice(found.start, found.end))
+    return /^<header\b[^>]*\bdata-header\b/i.test(header) ? header : header.replace(/^<header\b/i, '<header data-header')
+  }
+  if (partId === 'footer') {
+    const found = findElement(html, 'footer')
+    // Sem <footer> mas com seções/cabeçalho: a IA escreveu outra coisa. Vazio = gerar de novo.
+    if (!found) return /<(section|header|main)\b/i.test(html) ? '' : balanceHtml(html)
+    const footer = balanceHtml(html.slice(found.start, found.end))
+    // O botão flutuante de WhatsApp vem logo depois do rodapé.
+    const rest = html.slice(found.end)
+    const floating = findElement(rest, 'a', (attrs) => /\bfixed\b/.test(attrs))
+    return floating ? `${footer}\n${balanceHtml(rest.slice(floating.start, floating.end))}` : footer
+  }
+  const found = findElement(html, 'section', hasId(partId)) ?? findElement(html, 'section')
+  if (!found) return `<section id="${partId}">\n${balanceHtml(html)}\n</section>`
+  const section = balanceHtml(html.slice(found.start, found.end))
+  // Os links do menu usam o id da seção: mantém o que veio, só completa se faltar.
+  return /^<section\b[^>]*\sid\s*=/i.test(section) ? section : section.replace(/^<section\b/i, `<section id="${partId}"`)
 }
 
 export function parsePart(text: string): { html: string; complete: boolean } {
@@ -637,7 +780,8 @@ export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): {
     delete nextParts[id]
   }
   for (const part of edit.parts) {
-    if (!part.html) continue
+    const html = normalizePart(part.id, part.html)
+    if (!html) continue
     const known = part.id === 'header' || part.id === 'footer' || nextPlan.sections.some((section) => section.id === part.id)
     if (!known) {
       const index = part.after ? nextPlan.sections.findIndex((section) => section.id === part.after) : -1
@@ -645,7 +789,7 @@ export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): {
       if (index >= 0) nextPlan.sections.splice(index + 1, 0, section)
       else nextPlan.sections.push(section)
     }
-    nextParts[part.id] = part.html
+    nextParts[part.id] = html
   }
   if (edit.theme?.palette) {
     for (const [key, value] of Object.entries(edit.theme.palette)) {
@@ -734,7 +878,7 @@ export function buildHead(plan: SitePlan): string {
 export function assembleSite(plan: SitePlan, parts: SiteParts, options: { pending?: boolean } = {}): string {
   const body = partOrder(plan)
     .map((id) => {
-      if (parts[id]) return parts[id]
+      if (parts[id]) return normalizePart(id, parts[id])
       if (!options.pending) return ''
       return id === 'header' || id === 'footer'
         ? ''

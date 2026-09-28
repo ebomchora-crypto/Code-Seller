@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { parseActions, parsePart, partOrder, type SiteParts } from '../../supabase/functions/code-maker/site'
+import { normalizePart, parseActions, parsePart, partOrder, type SiteAsset, type SiteParts } from '../../supabase/functions/code-maker/site'
 import {
   getSite,
   listSiteVersions,
@@ -117,7 +117,7 @@ export function useSiteBuilder(siteId: string) {
               (text) => queueProgress((state) => ({ ...state, [partId]: { status: 'writing', text } })),
               signal,
             )
-            const { html } = parsePart(full)
+            const html = normalizePart(partId, parsePart(full).html)
             queueProgress((state) => ({ ...state, [partId]: { status: 'done', text: full } }))
             setBuiltParts((parts) => ({ ...parts, [partId]: html }))
             return
@@ -174,7 +174,7 @@ export function useSiteBuilder(siteId: string) {
   }, [buildParts, queuePlanText, refresh, resetPlanText, site])
 
   const edit = useCallback(
-    async (instruction: string) => {
+    async (instruction: string, assets: SiteAsset[] = []) => {
       if (busyRef.current || !site) return false
       busyRef.current = true
       abortRef.current?.abort()
@@ -185,7 +185,7 @@ export function useSiteBuilder(siteId: string) {
       setPendingInstruction(instruction)
       resetEditText('')
       try {
-        await streamCodeMaker({ action: 'edit', site_id: site.id, instruction }, (text) => queueEditText(() => text), controller.signal)
+        await streamCodeMaker({ action: 'edit', site_id: site.id, instruction, assets }, (text) => queueEditText(() => text), controller.signal)
         await refresh()
         return true
       } catch (err) {

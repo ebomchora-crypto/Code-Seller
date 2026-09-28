@@ -4,8 +4,10 @@ import test from 'node:test'
 import {
   applyEdit,
   assembleSite,
+  balanceHtml,
   cleanFragment,
   joinContinuation,
+  normalizePart,
   normalizePlan,
   parseEdit,
   parsePart,
@@ -139,4 +141,62 @@ test('contraste: no tema escuro o fundo "ink" é claro e pede texto escuro', asy
   assert.equal(textOn(light, 'brand'), 'paper')
   assert.ok(contrastRatio('#000000', '#ffffff') > 20)
   assert.match(contrastGuide(dark), /bg-ink: texto text-paper/)
+})
+
+test('anexos: só da pasta do próprio usuário, com o endereço oficial', async () => {
+  const { cleanAssets } = await import('../../supabase/functions/code-maker/site.ts')
+  const base = 'https://abc.supabase.co'
+  const own = 'http://localhost:8787/storage/v1/object/public/site-assets/u1/aa-bb.png'
+  const other = 'https://abc.supabase.co/storage/v1/object/public/site-assets/u2/cc.jpg'
+  const evil = 'https://abc.supabase.co/storage/v1/object/public/site-assets/u1/x.png" onerror="alert(1)'
+  const assets = cleanAssets(
+    [
+      { url: own, kind: 'logo' },
+      { url: `${base}/storage/v1/object/public/site-assets/u1/foto.jpg`, kind: 'logo' },
+      { url: other, kind: 'photo' },
+      { url: evil, kind: 'photo' },
+      { url: 'https://site-de-fora.com/foto.jpg', kind: 'photo' },
+    ],
+    'u1',
+    base,
+  )
+  assert.deepEqual(assets, [
+    { url: `${base}/storage/v1/object/public/site-assets/u1/aa-bb.png`, kind: 'logo' },
+    { url: `${base}/storage/v1/object/public/site-assets/u1/foto.jpg`, kind: 'photo' },
+  ])
+})
+
+test('balanceHtml fecha tags abertas e ignora fechamentos soltos', () => {
+  assert.equal(balanceHtml('<div><svg viewBox="0 0 1 1"><path d="M0 0"/>'), '<div><svg viewBox="0 0 1 1"><path d="M0 0"/></svg></div>')
+  assert.equal(balanceHtml('<p>a</div></p><img src="x"><br>'), '<p>a</p><img src="x"><br>')
+  assert.equal(balanceHtml('<a class="[&>*]:x" href="#">oi</a><div'), '<a class="[&>*]:x" href="#">oi</a>')
+})
+
+test('normalizePart deixa cada parte só com o seu bloco', () => {
+  // Rodapé que veio com o site inteiro e um <svg> aberto (caso real).
+  const footer =
+    '<section id="contato"><svg><path d="x"/><footer class="mt-10">© Forno</footer></section>' +
+    '<div>menu</div><main><section id="hero"><h1>Oi</h1></section>' +
+    '<a href="https://wa.me/1" class="fixed bottom-5 right-5"><svg><path d="y"/></svg></a>'
+  assert.equal(
+    normalizePart('footer', footer),
+    '<footer class="mt-10">© Forno</footer>\n<a href="https://wa.me/1" class="fixed bottom-5 right-5"><svg><path d="y"/></svg></a>',
+  )
+  // Cabeçalho sem a tag <header>: ganha a tag com data-header.
+  assert.match(normalizePart('header', '<div>logo</div>'), /^<header data-header [^>]*>\n<div>logo<\/div>\n<\/header>$/)
+  assert.equal(normalizePart('header', 'x<header class="fixed"><nav>a</nav></header><section>y</section>'), '<header data-header class="fixed"><nav>a</nav></header>')
+  // Seção: pega a certa (com seções dentro) e corrige o id.
+  assert.equal(
+    normalizePart('galeria', '<header>h</header><section id="galeria" class="a"><section>in</section></section><section id="b"></section>'),
+    '<section id="galeria" class="a"><section>in</section></section>',
+  )
+  assert.equal(normalizePart('faq', '<section class="bg-paper" id="duvidas"><p>q'), '<section class="bg-paper" id="duvidas"><p>q</p></section>')
+  assert.equal(normalizePart('faq', '<section class="bg-paper"><p>q</p></section>'), '<section id="faq" class="bg-paper"><p>q</p></section>')
+  // Rodapé sem <footer> que trouxe o site inteiro: descartado (gera de novo).
+  assert.equal(normalizePart('footer', '<div>menu</div><main><section id="hero">x</section></main>'), '')
+  // A limpeza de <head> não pode apagar <header>.
+  assert.equal(cleanFragment('<head><title>x</title></head><header data-header>a</header>'), '<title>x</title><header data-header>a</header>')
+  // Idempotente: normalizar de novo não muda nada.
+  const once = normalizePart('footer', footer)
+  assert.equal(normalizePart('footer', once), once)
 })
