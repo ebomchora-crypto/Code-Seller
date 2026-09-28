@@ -23,6 +23,7 @@ import {
   buildPlanMessage,
   CONTINUE_PROMPT,
   EDIT_SYSTEM,
+  fillBrief,
   joinContinuation,
   parseEdit,
   parsePart,
@@ -106,7 +107,8 @@ async function uniqueSlug(admin: SupabaseClient, name: string): Promise<string> 
 function cleanBrief(input: Record<string, unknown>): SiteBrief | null {
   const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
   const businessName = text(input.businessName, 120)
-  if (!businessName) return null
+  const details = text(input.details, 4000)
+  if (!businessName && !details) return null
   const style = ['auto', 'dark', 'minimal', 'elegant', 'vibrant'].includes(String(input.style)) ? (input.style as SiteBrief['style']) : 'auto'
   const rating = Number(input.rating)
   const reviews = Number(input.reviews)
@@ -116,7 +118,7 @@ function cleanBrief(input: Record<string, unknown>): SiteBrief | null {
     city: text(input.city, 80) || null,
     phone: text(input.phone, 30) || null,
     style,
-    details: text(input.details, 1500) || null,
+    details: details || null,
     rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? rating : null,
     reviews: Number.isFinite(reviews) && reviews > 0 ? Math.round(reviews) : null,
   }
@@ -247,7 +249,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'create') {
       const brief = cleanBrief((body.brief ?? {}) as Record<string, unknown>)
-      if (!brief) return json({ error: 'Informe o nome do negócio.' }, 400)
+      if (!brief) return json({ error: 'Escreva o que você quer no site.' }, 400)
       if ((await countToday(admin, user.id, 'create')) >= SITES_PER_DAY) {
         return json({ error: `Você já criou ${SITES_PER_DAY} sites hoje. Amanhã libera de novo — e dá para alterar os que já existem.` }, 429)
       }
@@ -258,7 +260,14 @@ Deno.serve(async (req: Request) => {
       }
       const { data: site, error } = await admin
         .from('sites')
-        .insert({ user_id: user.id, slug: await uniqueSlug(admin, brief.businessName), name: brief.businessName, brief, contact_id: contactId })
+        .insert({
+          user_id: user.id,
+          // Sem nome ainda (pedido livre): link provisório até a IA ler o pedido.
+          slug: brief.businessName ? await uniqueSlug(admin, brief.businessName) : `site-${crypto.randomUUID().slice(0, 8)}`,
+          name: brief.businessName || 'Novo site',
+          brief,
+          contact_id: contactId,
+        })
         .select('id, slug, name, status')
         .single()
       if (error) throw error
@@ -300,14 +309,23 @@ Deno.serve(async (req: Request) => {
           { role: 'user', content: buildPlanMessage(site.brief) },
         ],
         finish: async (full) => {
-          const { actions, plan } = parsePlan(full, site.brief)
+          const { actions, plan, business } = parsePlan(full, site.brief)
           if (!plan) {
             await admin.from('sites').update({ status: 'error' }).eq('id', site.id)
             return 'A IA não conseguiu planejar o site. Tente gerar de novo.'
           }
+          const brief = fillBrief(site.brief, business)
+          const renamed = !site.brief.businessName && brief.businessName
           await admin
             .from('sites')
-            .update({ plan: { ...plan, actions }, parts: {}, status: 'building', html: null })
+            .update({
+              plan: { ...plan, actions },
+              parts: {},
+              status: 'building',
+              html: null,
+              brief,
+              ...(renamed ? { name: brief.businessName, slug: await uniqueSlug(admin, brief.businessName) } : {}),
+            })
             .eq('id', site.id)
           return null
         },

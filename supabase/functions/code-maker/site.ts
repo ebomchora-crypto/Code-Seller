@@ -220,8 +220,10 @@ Formato do JSON:
   "theme": "dark" ou "light",
   "palette": { "brand": "#hex cor principal", "brandDark": "#hex mais escura da principal", "accent": "#hex acento", "ink": "#hex texto principal (no dark é claro, no light é quase preto)", "paper": "#hex fundo principal", "surface": "#hex fundo alternativo/cartões", "muted": "#hex texto secundário" },
   "fonts": { "display": "nome exato de uma fonte do Google Fonts para títulos", "body": "nome exato de uma fonte do Google Fonts para texto" },
-  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "brief": "o que a seção mostra, com conteúdo específico e a ideia de layout", "bg": "paper" | "surface" | "ink" | "brand" } ]
+  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "brief": "o que a seção mostra, com conteúdo específico e a ideia de layout", "bg": "paper" | "surface" | "ink" | "brand" } ],
+  "business": { "name": "nome do negócio", "niche": "nicho em poucas palavras", "city": "cidade ou null", "phone": "WhatsApp só com dígitos ou null" }
 }
+"business": copie do pedido. Se o pedido não disser o nome, crie um nome curto e plausível; cidade e WhatsApp só se estiverem escritos no pedido (senão null).
 
 Regras do plano:
 - sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
@@ -232,13 +234,13 @@ Regras do plano:
 export function buildPlanMessage(brief: SiteBrief): string {
   const phone = phoneDigits(brief.phone)
   return [
-    `Negócio: ${brief.businessName}`,
+    brief.businessName ? `Negócio: ${brief.businessName}` : 'Negócio: (tire o nome e os dados do pedido abaixo)',
     brief.niche ? `Nicho: ${brief.niche}` : null,
     brief.city ? `Cidade: ${brief.city}` : null,
     phone ? `WhatsApp: ${phone}` : 'WhatsApp: não informado',
     brief.reviews && brief.rating ? `Reputação real: nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações` : null,
     `Estilo pedido: ${STYLE_DIRECTIONS[brief.style ?? 'auto']}`,
-    brief.details?.trim() ? `Pedido do cliente / detalhes:\n${brief.details.trim()}` : null,
+    brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
   ]
     .filter(Boolean)
     .join('\n')
@@ -259,6 +261,65 @@ ${DESIGN_RULES}
 
 FORMATO DA RESPOSTA: somente um bloco \`\`\`html com a parte pedida, sem nada antes ou depois.`
 
+// ---------------------------------------------------------------------------
+// Contraste: qual cor de texto usar em cada fundo, calculado das cores reais
+// (no tema escuro "ink" é claro — sem isto a IA punha texto claro em fundo claro).
+// ---------------------------------------------------------------------------
+
+function luminance(hex: string): number {
+  const channel = (index: number) => {
+    const value = parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16) / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2)
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (light + 0.05) / (dark + 0.05)
+}
+
+type TextToken = 'ink' | 'paper' | 'white' | 'black'
+const BG_COLOR: Record<SectionBackground | 'accent', keyof SitePlan['palette']> = {
+  paper: 'paper',
+  surface: 'surface',
+  ink: 'ink',
+  brand: 'brand',
+  accent: 'accent',
+}
+
+// Cor de texto com mais contraste sobre o fundo (prefere as cores do tema).
+export function textOn(plan: SitePlan, bg: SectionBackground | 'accent'): TextToken {
+  const background = plan.palette[BG_COLOR[bg]]
+  const options: [TextToken, string][] = [
+    ['ink', plan.palette.ink],
+    ['paper', plan.palette.paper],
+    ['white', '#ffffff'],
+    ['black', '#000000'],
+  ]
+  const themed = options.slice(0, 2).map(([token, color]) => [token, contrastRatio(background, color)] as const)
+  const best = [...themed].sort((a, b) => b[1] - a[1])[0]
+  if (best[1] >= 4.5) return best[0]
+  return contrastRatio(background, '#ffffff') >= contrastRatio(background, '#000000') ? 'white' : 'black'
+}
+
+export function contrastGuide(plan: SitePlan): string {
+  const line = (bg: SectionBackground | 'accent') => {
+    const text = textOn(plan, bg)
+    return `- bg-${bg}: texto text-${text} (secundário text-${text}/70), bordas border-${text}/10, cartões bg-${text}/5`
+  }
+  return [
+    'CONTRASTE (obrigatório — calculado das cores do tema): em cada fundo use SOMENTE a cor de texto indicada.',
+    line('paper'),
+    line('surface'),
+    line('ink'),
+    line('brand'),
+    line('accent'),
+    `- Botão principal bg-brand: texto text-${textOn(plan, 'brand')}.`,
+    '- Cartão por cima de foto: fundo sólido do tema (ex.: bg-paper/95 ou bg-ink/90) e o texto indicado para esse fundo acima. Sobre foto sem cartão: gradiente escuro por cima e texto text-white.',
+  ].join('\n')
+}
+
 function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): string {
   const phone = phoneDigits(brief.phone)
   const whatsapp = phone ? `https://wa.me/55${phone}` : '#contato'
@@ -269,20 +330,20 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
     .join(', ')
 
   if (partId === 'header') {
-    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho), menu com os links: ${nav}, e botão de ação para o WhatsApp (${whatsapp}). No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — use cores de texto que funcionem sobre o hero e também sobre o fundo que ele ganha ao rolar (bg-paper/80 com backdrop-blur, aplicado pelo script via [data-scrolled]); escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm).`
+    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho), menu com os links: ${nav}, e botão de ação para o WhatsApp (${whatsapp}). No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — no topo o texto do cabeçalho é text-${textOn(plan, plan.sections[0]?.bg ?? 'paper')}; ao rolar ele ganha fundo bg-paper/85 com backdrop-blur (o script marca [data-scrolled]) e o texto passa a text-${textOn(plan, 'paper')}. Escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:text-${textOn(plan, 'paper')} data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm). O painel do menu mobile tem fundo bg-paper e texto text-${textOn(plan, 'paper')}.`
   }
   if (partId === 'footer') {
     return `Escreva o RODAPÉ: <footer> com o nome do negócio, frase curta, links do menu (${nav}), contato (WhatsApp ${phone ?? 'não informado'}, cidade ${brief.city ?? ''}), horário de funcionamento plausível e "© <span data-year></span> ${brief.businessName}". Depois do </footer>, um botão flutuante de WhatsApp: <a href="${whatsapp}" ... class="fixed bottom-5 right-5 z-50 ... bg-[#25D366] ..."> com o ícone do WhatsApp em SVG e aria-label.`
   }
   const section = plan.sections.find((item) => item.id === partId)
   const bgClass = { paper: 'bg-paper', surface: 'bg-surface', ink: 'bg-ink', brand: 'bg-brand' }[section?.bg ?? 'paper']
-  const onDark = section?.bg === 'ink' || section?.bg === 'brand'
+  const sectionText = textOn(plan, section?.bg ?? 'paper')
   const hero =
     partId === 'hero'
       ? ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de destaques verdadeiros logo abaixo (a reputação real, se informada; senão, facilidades como agendamento, horário ou localização) e um visual marcante (foto grande em cartão arredondado com 1–2 cartões flutuantes com informações verdadeiras como horário, preço a partir de ou bairro, ou foto de fundo com gradiente por cima).'
       : ''
   return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}". Briefing: ${section?.brief ?? ''}${hero}${
-    onDark ? ` O fundo desta seção é escuro/colorido (${bgClass}): use texto claro (text-paper, text-white, text-paper/70) e cartões em white/10.` : ''
+    ` Fundo desta seção: ${bgClass} — texto principal text-${sectionText}, secundário text-${sectionText}/70.`
   } Link do WhatsApp: ${whatsapp}.`
 }
 
@@ -294,6 +355,7 @@ export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrie
     realFacts(brief),
     `Plano do site (siga à risca):\n${JSON.stringify(plan)}`,
     `Fotos disponíveis (use somente estas):\n${photoCatalog(brief.niche)}`,
+    contrastGuide(plan),
     partInstructions(partId, plan, brief),
   ]
     .filter(Boolean)
@@ -344,6 +406,7 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
   return [
     `Negócio: ${brief.businessName}${brief.niche ? ` · ${brief.niche}` : ''}${brief.city ? ` · ${brief.city}` : ''}`,
     `Tema atual: ${JSON.stringify({ palette: plan.palette, fonts: plan.fonts, theme: plan.theme })}`,
+    contrastGuide(plan),
     `Partes atuais do site:\n${current}`,
     `Fotos disponíveis (se precisar de novas, use somente estas):\n${photoCatalog(brief.niche)}`,
     `Pedido do usuário: ${instruction.trim()}`,
@@ -462,17 +525,53 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   }
 }
 
-export function parsePlan(text: string, brief: SiteBrief): { actions: string[]; plan: SitePlan | null } {
+export interface BusinessInfo {
+  name: string | null
+  niche: string | null
+  city: string | null
+  phone: string | null
+}
+
+function cleanText(value: unknown, max: number): string | null {
+  const text = typeof value === 'string' ? value.trim().slice(0, max) : ''
+  return text && text.toLowerCase() !== 'null' ? text : null
+}
+
+export function parsePlan(text: string, brief: SiteBrief): { actions: string[]; plan: SitePlan | null; business: BusinessInfo | null } {
   const raw = text.match(/<plano>([\s\S]*?)<\/plano>/i)?.[1]
   let plan: SitePlan | null = null
+  let business: BusinessInfo | null = null
   if (raw) {
     try {
-      plan = normalizePlan(JSON.parse(raw.trim().replace(/^```(?:json)?|```$/g, '')), brief)
+      const json = JSON.parse(raw.trim().replace(/^```(?:json)?|```$/g, ''))
+      plan = normalizePlan(json, brief)
+      const info = json?.business
+      if (info && typeof info === 'object') {
+        business = {
+          name: cleanText(info.name, 120),
+          niche: cleanText(info.niche, 80),
+          city: cleanText(info.city, 80),
+          phone: phoneDigits(cleanText(info.phone, 30)),
+        }
+      }
     } catch {
       plan = null
     }
   }
-  return { actions: parseActions(text), plan }
+  return { actions: parseActions(text), plan, business }
+}
+
+// Pedido escrito livremente: completa o briefing com o que a IA tirou dele
+// (sem trocar o que a pessoa já tinha informado).
+export function fillBrief(brief: SiteBrief, business: BusinessInfo | null): SiteBrief {
+  if (!business) return brief
+  return {
+    ...brief,
+    businessName: brief.businessName || business.name || 'Meu negócio',
+    niche: brief.niche || business.niche,
+    city: brief.city || business.city,
+    phone: brief.phone || business.phone,
+  }
 }
 
 // Limpa um pedaço de HTML escrito pela IA: sem scripts, estilos ou documento.

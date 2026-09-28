@@ -127,3 +127,16 @@ test('tira do plano os números que ninguém informou', async () => {
   const real = normalizePlan({ sections: [{ id: 'hero' }, { id: 'depoimentos' }] }, { ...semDados, rating: 4.8, reviews: 120 })
   assert.deepEqual(real.sections.map((section) => section.id), ['hero', 'depoimentos'])
 })
+
+test('contraste: no tema escuro o fundo "ink" é claro e pede texto escuro', async () => {
+  const { textOn, contrastGuide, contrastRatio } = await import('../../supabase/functions/code-maker/site.ts')
+  const dark = { palette: { brand: '#c8963e', brandDark: '#8a6524', accent: '#d9a441', ink: '#f4f0e8', paper: '#171615', surface: '#242220', muted: '#c0b8ac' } }
+  assert.equal(textOn(dark, 'paper'), 'ink')
+  assert.equal(textOn(dark, 'ink'), 'paper')
+  const light = { palette: { brand: '#1d4ed8', brandDark: '#1e3a8a', accent: '#f59e0b', ink: '#111827', paper: '#fafaf9', surface: '#f1efe9', muted: '#6b7280' } }
+  assert.equal(textOn(light, 'ink'), 'paper')
+  assert.equal(textOn(light, 'paper'), 'ink')
+  assert.equal(textOn(light, 'brand'), 'paper')
+  assert.ok(contrastRatio('#000000', '#ffffff') > 20)
+  assert.match(contrastGuide(dark), /bg-ink: texto text-paper/)
+})

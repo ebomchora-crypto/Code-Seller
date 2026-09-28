@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, Globe, Loader2, Plus, Sparkles, TriangleAlert } from 'lucide-react'
-import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
-import { Button } from '@/components/ui/Button'
+import { Eye, Globe, Loader2, TriangleAlert } from 'lucide-react'
+import { toast } from 'sonner'
+import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
-import { NewSiteModal, type NewSitePrefill } from '@/components/code-maker/NewSiteModal'
+import { PromptBox, PROMPT_IDEAS } from '@/components/code-maker/PromptBox'
 import { SiteThumbnail } from '@/components/code-maker/SiteThumbnail'
-import { getCodeMakerUsage, listSites, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
+import { createSite, getCodeMakerUsage, listSites, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
+import type { SiteBrief, SiteStyle } from '../../../supabase/functions/code-maker/site'
 
 function relativeDate(value: string): string {
   const date = new Date(value)
@@ -42,21 +43,44 @@ function StatusBadge({ site }: { site: SiteSummary }) {
   )
 }
 
-// Lê ?novo=1&nome=…&nicho=… (botões "Criar site" do CRM e do Buyers Hunter).
-function prefillFromParams(params: URLSearchParams): NewSitePrefill {
+// Dados que vieram do CRM ou do Buyers Hunter (?novo=1&nome=…&nicho=…).
+interface Prefill {
+  businessName: string | null
+  niche: string | null
+  city: string | null
+  phone: string | null
+  contactId: string | null
+  rating: number | null
+  reviews: number | null
+}
+
+function prefillFromParams(params: URLSearchParams): Prefill {
   const number = (key: string) => {
     const value = Number(params.get(key))
     return Number.isFinite(value) && value > 0 ? value : null
   }
   return {
-    businessName: params.get('nome') ?? undefined,
-    niche: params.get('nicho') ?? undefined,
-    city: params.get('cidade') ?? undefined,
-    phone: params.get('telefone') ?? undefined,
+    businessName: params.get('nome'),
+    niche: params.get('nicho'),
+    city: params.get('cidade'),
+    phone: params.get('telefone'),
     contactId: params.get('contato'),
     rating: number('nota'),
     reviews: number('avaliacoes'),
   }
+}
+
+// Começa o pedido com o que já se sabe do negócio; a pessoa completa.
+function promptFromPrefill(prefill: Prefill): string {
+  const where = [prefill.niche, prefill.city ? `em ${prefill.city}` : null].filter(Boolean).join(' ')
+  return [
+    `Site para ${prefill.businessName ?? 'o meu cliente'}${where ? `, ${where}` : ''}.`,
+    prefill.phone ? `WhatsApp: ${prefill.phone}.` : null,
+    prefill.rating && prefill.reviews ? `Nota ${prefill.rating.toLocaleString('pt-BR')} no Google com ${prefill.reviews} avaliações.` : null,
+    '',
+  ]
+    .filter((line) => line !== null)
+    .join(' ')
 }
 
 export default function CodeMakerPage() {
@@ -66,8 +90,9 @@ export default function CodeMakerPage() {
   const [usage, setUsage] = useState<CodeMakerUsage | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [prefill, setPrefill] = useState<NewSitePrefill | null>(null)
+  const [prompt, setPrompt] = useState('')
+  const [prefill, setPrefill] = useState<Prefill | null>(null)
+  const [creating, setCreating] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -87,57 +112,92 @@ export default function CodeMakerPage() {
     void load()
   }, [load])
 
-  // Chegou de outro lugar pedindo um site novo, já com os dados do negócio.
+  // Chegou do CRM ou do Buyers Hunter: o pedido já vem começado.
   useEffect(() => {
     if (searchParams.get('novo') !== '1') return
-    setPrefill(prefillFromParams(searchParams))
-    setModalOpen(true)
+    const data = prefillFromParams(searchParams)
+    setPrefill(data)
+    setPrompt(promptFromPrefill(data))
     setSearchParams(new URLSearchParams(), { replace: true })
   }, [searchParams, setSearchParams])
 
   const limitReached = usage ? usage.sites_today >= usage.sites_limit : false
-  const left = usage ? Math.max(0, usage.sites_limit - usage.sites_today) : null
 
-  const usageLabel = useMemo(() => {
-    if (!usage) return null
-    return `${usage.sites_today} de ${usage.sites_limit} sites hoje`
-  }, [usage])
-
-  function openNew() {
-    setPrefill(null)
-    setModalOpen(true)
+  async function create(style: SiteStyle) {
+    const text = prompt.trim()
+    if (!text || creating) return
+    setCreating(true)
+    try {
+      const brief: SiteBrief = {
+        businessName: prefill?.businessName ?? '',
+        niche: prefill?.niche ?? null,
+        city: prefill?.city ?? null,
+        phone: prefill?.phone ?? null,
+        rating: prefill?.rating ?? null,
+        reviews: prefill?.reviews ?? null,
+        style,
+        details: text,
+      }
+      const site = await createSite(brief, prefill?.contactId)
+      navigate(`/code-maker/${site.id}?gerar=1`)
+    } catch (err) {
+      toast.error((err as Error).message)
+      setCreating(false)
+    }
   }
 
   return (
     <PageWrapper>
-      <PageHeader
-        title="Code Maker"
-        count={loading ? undefined : sites.length}
-        subtitle="Descreva o negócio e a IA cria um site profissional, pronto para mandar ao cliente em um link."
-        actions={
-          <>
-            {usageLabel && (
-              <span
-                className="rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] px-3 py-1.5 text-[12.5px] font-medium tabular-nums text-[var(--text-secondary)]"
-                title="Libera de novo à meia-noite"
-              >
-                {usageLabel}
-              </span>
-            )}
-            <Button onClick={openNew} disabled={limitReached} magnetic>
-              <Plus className="size-4" /> Novo site
-            </Button>
-          </>
-        }
-      />
-
-      {limitReached && (
-        <p className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-[13.5px] text-amber-600 dark:text-amber-300">
-          Você já criou os {usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.
+      <section className="relative mx-auto max-w-3xl pb-4 pt-6 text-center sm:pt-12">
+        <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-64 w-[640px] max-w-full -translate-x-1/2 rounded-full bg-[#7c3aed]/20 blur-[100px]" />
+        <h1 className="relative font-display text-[32px] font-bold leading-tight tracking-tight text-[var(--text-primary)] sm:text-[44px]">
+          O que vamos criar hoje?
+        </h1>
+        <p className="relative mx-auto mt-2 max-w-xl text-[15px] text-[var(--text-muted)]">
+          Descreva o site do seu jeito: o negócio, a cidade, o estilo, os serviços. A IA cria e você ajusta conversando.
         </p>
-      )}
+        <div className="relative mt-7 text-left">
+          <PromptBox
+            value={prompt}
+            onChange={setPrompt}
+            onSubmit={(style) => void create(style)}
+            busy={creating}
+            disabled={limitReached}
+            footnote={usage ? `${usage.sites_today} de ${usage.sites_limit} sites hoje` : null}
+          />
+        </div>
+        {limitReached ? (
+          <p className="relative mt-4 text-[13.5px] text-amber-600 dark:text-amber-300">
+            Você já criou os {usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.
+          </p>
+        ) : (
+          <div className="relative mt-4 flex flex-wrap justify-center gap-2">
+            {PROMPT_IDEAS.map((idea) => (
+              <button
+                key={idea.label}
+                type="button"
+                onClick={() => {
+                  setPrefill(null)
+                  setPrompt(idea.prompt)
+                }}
+                className="rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] px-3 py-1.5 text-[12.5px] text-[var(--text-secondary)] transition hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
+              >
+                {idea.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
 
-      <div className="mt-8">
+      <section className="mt-12">
+        <h2 className="mb-4 flex items-center gap-2 font-display text-[18px] font-semibold tracking-tight text-[var(--text-primary)]">
+          Seus sites
+          {!loading && (
+            <span className="rounded-full border border-[var(--border-default)] px-2 py-0.5 font-sans text-[12px] font-semibold tabular-nums text-[var(--text-secondary)]">
+              {sites.length}
+            </span>
+          )}
+        </h2>
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }, (_, index) => (
@@ -147,23 +207,9 @@ export default function CodeMakerPage() {
         ) : error ? (
           <ErrorState message={error} onRetry={() => void load()} />
         ) : sites.length === 0 ? (
-          <div className="relative overflow-hidden rounded-[26px] border border-[var(--border-default)] bg-[var(--bg-card)] px-6 py-14 text-center sm:py-20">
-            <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-60 w-[520px] -translate-x-1/2 rounded-full bg-[#7c3aed]/15 blur-[90px]" />
-            <div className="relative mx-auto flex max-w-md flex-col items-center">
-              <span className="flex size-14 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-[0_12px_30px_-12px_rgba(124,58,237,0.9)]">
-                <Sparkles className="size-6" />
-              </span>
-              <h2 className="mt-5 font-display text-[22px] font-bold tracking-tight text-[var(--text-primary)]">Seu primeiro site em minutos</h2>
-              <p className="mt-2 text-[14.5px] text-[var(--text-muted)]">
-                Nome, nicho e cidade já bastam. Você vê a IA escrevendo o código ao vivo, pede mudanças no chat e publica em
-                <span className="font-medium text-[var(--text-secondary)]"> {window.location.host}/s/nome-do-negocio</span>.
-              </p>
-              <Button className="mt-6" onClick={openNew} disabled={limitReached}>
-                <Plus className="size-4" /> Criar site
-              </Button>
-              {left !== null && <p className="mt-3 text-[12.5px] text-[var(--text-muted)]">Até {usage?.sites_limit} sites por dia.</p>}
-            </div>
-          </div>
+          <p className="rounded-2xl border border-dashed border-[var(--border-default)] px-5 py-8 text-center text-[14px] text-[var(--text-muted)]">
+            Os sites que você criar aparecem aqui, com o link para mandar ao cliente.
+          </p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {sites.map((site) => (
@@ -190,17 +236,7 @@ export default function CodeMakerPage() {
             ))}
           </div>
         )}
-      </div>
-
-      <NewSiteModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        prefill={prefill}
-        onCreated={(id) => {
-          setModalOpen(false)
-          navigate(`/code-maker/${id}?gerar=1`)
-        }}
-      />
+      </section>
     </PageWrapper>
   )
 }

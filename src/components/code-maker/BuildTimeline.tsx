@@ -137,18 +137,22 @@ export function BuildTimeline(props: BuildTimelineProps) {
     bottom.current?.scrollIntoView({ block: 'end' })
   }, [planActions.length, doneCount, editActions.length, pendingInstruction, error, versions.length])
 
-  const briefChips = [brief.niche, brief.city, STYLE_NAMES[brief.style ?? 'auto']].filter(Boolean) as string[]
+  const briefChips = [brief.niche, brief.city, brief.style && brief.style !== 'auto' ? STYLE_NAMES[brief.style] : null].filter(Boolean) as string[]
   const planStatus = planning ? 'working' : plan ? 'done' : error ? 'error' : 'idle'
   const needsContinue = !busy && site.status !== 'ready'
 
   return (
     <div className="flex flex-col gap-5 p-4 sm:p-5">
       <UserBubble time={formatTime(site.created_at)}>
-        <p>
-          Criar o site da <strong className="font-semibold">{brief.businessName}</strong>
-        </p>
+        {brief.details ? (
+          <p className="whitespace-pre-wrap">{brief.details}</p>
+        ) : (
+          <p>
+            Criar o site da <strong className="font-semibold">{brief.businessName}</strong>
+          </p>
+        )}
         {briefChips.length > 0 && (
-          <p className="mt-1.5 flex flex-wrap gap-1">
+          <p className="mt-2 flex flex-wrap gap-1">
             {briefChips.map((chip) => (
               <span key={chip} className="rounded-full bg-white/15 px-2 py-0.5 text-[11.5px]">
                 {chip}
@@ -156,7 +160,6 @@ export function BuildTimeline(props: BuildTimelineProps) {
             ))}
           </p>
         )}
-        {brief.details && <p className="mt-1.5 line-clamp-4 text-[12.5px] text-white/80">{brief.details}</p>}
       </UserBubble>
 
       <AiBlock title={planning || !plan ? 'Planejando o site' : 'Direção de arte'} status={planStatus}>
