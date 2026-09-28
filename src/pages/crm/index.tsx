@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Columns3, List, Plus, Upload, Users } from 'lucide-react'
+import { Columns3, Link2, List, Plus, Upload, Users } from 'lucide-react'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
@@ -10,6 +10,7 @@ import { ContactList } from '@/components/crm/ContactList'
 import { ContactKanban } from '@/components/crm/ContactKanban'
 import { ContactForm } from '@/components/crm/ContactForm'
 import { ImportCSVModal } from '@/components/crm/ImportCSVModal'
+import { LeadFormModal } from '@/components/crm/LeadFormModal'
 import { useCRM } from '@/hooks/useCRM'
 import { useTags } from '@/hooks/useTags'
 import type { Contact } from '@/types'
@@ -44,6 +45,7 @@ export default function CrmPage() {
   const [deletingContact, setDeletingContact] = useState<Contact | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [leadFormOpen, setLeadFormOpen] = useState(false)
 
   function openCreateForm() {
     setEditingContact(null)
@@ -107,6 +109,10 @@ export default function CrmPage() {
                 ))}
               </div>
 
+              <Button variant="secondary" className="h-11 rounded-full px-4" onClick={() => setLeadFormOpen(true)}>
+                <Link2 className="size-4" />
+                Link de captação
+              </Button>
               <Button variant="secondary" className="h-11 rounded-full px-4" onClick={() => setImportOpen(true)}>
                 <Upload className="size-4" />
                 Importar CSV
@@ -193,6 +199,7 @@ export default function CrmPage() {
         </Drawer>
 
         <ImportCSVModal open={importOpen} onClose={() => setImportOpen(false)} onImported={() => void refetch()} />
+        <LeadFormModal open={leadFormOpen} onClose={() => setLeadFormOpen(false)} />
 
         <ConfirmDialog
           open={deletingContact !== null}

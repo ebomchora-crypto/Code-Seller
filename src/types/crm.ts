@@ -114,6 +114,7 @@ export const ORIGIN_SUGGESTIONS = [
   'TikTok',
   'LinkedIn',
   'Site',
+  'Formulário',
   'Anúncio pago',
   'Cold Call',
   'Visita presencial',

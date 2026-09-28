@@ -11,6 +11,10 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { useTags } from '@/hooks/useTags'
 import { TASK_PRIORITY_CONFIG, TASK_RECURRENCE_LABELS, TASK_STATUS_CONFIG } from '@/utils/tasks'
 import type { Tag, Task, TaskPriority, TaskStatus } from '@/types'
+import { toast } from 'sonner'
+import { Copy, MessageCircle } from 'lucide-react'
+import { extractTaskMessage } from '@/utils/firstMessage'
+import { whatsappUrl } from '@/utils/contactLinks'
 
 interface TaskDetailProps {
   task: Task
@@ -54,6 +58,19 @@ export function TaskDetail({
   const statusRef = useRef<HTMLDivElement>(null)
   const [editingDescription, setEditingDescription] = useState(false)
   const [descriptionValue, setDescriptionValue] = useState(task.description ?? '')
+  // Tarefas de abordagem/follow-up trazem a mensagem pronta na descrição.
+  const suggestedMessage = extractTaskMessage(task.description)
+  const whatsapp = whatsappUrl(task.contact?.phone)
+
+  async function copyMessage() {
+    if (!suggestedMessage) return
+    try {
+      await navigator.clipboard.writeText(suggestedMessage)
+      toast.success('Mensagem copiada.')
+    } catch {
+      toast.error('Não foi possível copiar. Selecione o texto e copie manualmente.')
+    }
+  }
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -241,6 +258,34 @@ export function TaskDetail({
           onCreate={createTag}
         />
       </div>
+
+      {suggestedMessage && (
+        <div className="rounded-2xl border border-[var(--accent-ring)] bg-[var(--accent-tint)] p-4">
+          <p className="text-[13px] font-semibold text-[var(--text-primary)]">Mensagem pronta</p>
+          <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-[var(--text-secondary)]">{suggestedMessage}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {whatsapp ? (
+              <a
+                href={`${whatsapp}?text=${encodeURIComponent(suggestedMessage)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-10 items-center gap-2 rounded-full bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-4 text-sm font-medium text-white transition-all hover:brightness-110"
+              >
+                <MessageCircle className="size-4" />
+                Enviar no WhatsApp
+              </a>
+            ) : (
+              <p className="self-center text-[12.5px] text-[var(--text-muted)]">
+                {task.contact ? 'O contato não tem WhatsApp cadastrado.' : 'Sem contato vinculado.'}
+              </p>
+            )}
+            <Button variant="secondary" className="h-10 rounded-full px-4" onClick={() => void copyMessage()}>
+              <Copy className="size-4" />
+              Copiar
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-[var(--border-subtle)] pt-5">
         <p className="mb-2 text-[13px] font-semibold text-[var(--text-primary)]">Descrição</p>

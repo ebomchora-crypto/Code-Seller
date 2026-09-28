@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   dismissProspect,
@@ -11,7 +12,7 @@ import {
   restoreProspect,
   searchProspects,
 } from '@/services/supabase/prospection'
-import { startFollowUp } from '@/services/supabase/followup'
+import { startProspecting } from '@/services/supabase/followup'
 import { applyProspectFilters, DEFAULT_PROSPECT_FILTERS, scoreProspect } from '@/utils/prospection'
 import type {
   Prospect,
@@ -60,6 +61,7 @@ export function useProspection() {
   const [error, setError] = useState<ProspectError | null>(null)
   const [recent, setRecent] = useState<RecentProspectSearch[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const navigate = useNavigate()
   const [imported, setImported] = useState<Map<string, string>>(new Map())
   const [importing, setImporting] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -165,30 +167,43 @@ export function useProspection() {
         const created = await importProspects(pending, params?.niche ?? '')
         setImported((current) => new Map([...current, ...created]))
         setSelected((current) => new Set([...current].filter((id) => !created.has(id))))
-        // Follow-up automático para cada empresa importada (se estiver ligado).
-        let scheduled = 0
-        for (const prospect of pending) {
-          const contactId = created.get(prospect.id)
-          if (!contactId) continue
-          try {
-            const count = await startFollowUp({
-              contact: { id: contactId, name: prospect.name, city: prospect.city, niche: prospect.category ?? params?.niche },
-            })
-            if (count > 0) scheduled++
-          } catch {
-            // O contato já foi criado; o follow-up pode ser iniciado depois, no contato.
-          }
+        // Para cada empresa: tarefa "Primeira mensagem" (texto pronto para o
+        // nicho dela) + sequência de follow-up (se estiver ligada).
+        let prepared = 0
+        try {
+          const result = await startProspecting(
+            pending
+              .filter((prospect) => created.has(prospect.id))
+              .map((prospect) => ({
+                contact: {
+                  id: created.get(prospect.id)!,
+                  name: prospect.name,
+                  city: prospect.city,
+                  niche: prospect.category ?? params?.niche,
+                },
+                websiteKind: prospect.website_kind,
+                rating: prospect.rating,
+                reviews: prospect.reviews,
+              })),
+            params?.offer ?? 'site',
+          )
+          prepared = result.contacts
+        } catch {
+          // Os contatos já foram criados; a abordagem pode ser feita pelo contato.
         }
         const base =
           pending.length === 1 ? `${pending[0].name} foi adicionada ao CRM.` : `${pending.length} empresas adicionadas ao CRM.`
-        toast.success(scheduled > 0 ? `${base} Follow-up agendado.` : base)
+        toast.success(
+          prepared > 0 ? `${base} Primeira mensagem pronta em Tarefas e follow-up agendado.` : base,
+          prepared > 0 ? { action: { label: 'Ver tarefas', onClick: () => navigate('/tasks') } } : undefined,
+        )
       } catch {
         toast.error('Não foi possível adicionar ao CRM. Tente de novo.')
       } finally {
         setImporting((current) => new Set([...current].filter((id) => !ids.includes(id))))
       }
     },
-    [imported, params],
+    [imported, params, navigate],
   )
 
   const toggleSelected = useCallback((id: string) => {

@@ -26,7 +26,7 @@ export interface Task {
   updated_at: string
   // Relações opcionais (join)
   tags?: Tag[]
-  contact?: Pick<Contact, 'id' | 'name' | 'email'>
+  contact?: Pick<Contact, 'id' | 'name' | 'email'> & { phone?: string | null }
   deal?: Pick<Deal, 'id' | 'title' | 'stage'>
   subtasks?: Task[]
 }

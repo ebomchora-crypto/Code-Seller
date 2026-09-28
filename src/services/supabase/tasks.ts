@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabaseClient'
 import type { Tag, Task, TaskFilters, TaskMetrics, TaskPriority, TaskRecurrence, TaskStatus } from '@/types'
 
 const TASK_SELECT =
-  '*, task_tags(tag:tags(*)), contact:contacts(id, name, email), deal:deals(id, title, stage)'
+  '*, task_tags(tag:tags(*)), contact:contacts(id, name, email, phone), deal:deals(id, title, stage)'
 
 interface RawTaskTag {
   tag: Tag | null

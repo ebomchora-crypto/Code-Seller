@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { buildMonthlyReport, monthRange, type MonthlyReport, type ReportDeal, type ReportTransaction } from '@/utils/report'
+import type { SourceContact, SourceDeal } from '@/utils/salesSources'
 
 const DEAL_COLUMNS = 'id, title, value, status, stage, service, origin, created_at, updated_at, contact:contacts(origin)'
 
@@ -63,4 +64,35 @@ export async function getMonthlyReport(year: number, month: number): Promise<Mon
     countSince('tasks', 'completed_at', start, end, (query) => query.eq('status', 'done')),
   ])
   return { ...buildMonthlyReport(deals, transactions, changes, year, month), newContacts, interactions, tasksDone }
+}
+
+// ---- De onde vêm as vendas (origem e nicho) ----
+
+interface RawSourceDeal {
+  value: number | null
+  status: SourceDeal['status']
+  won_at: string | null
+  updated_at: string
+  origin: string | null
+  contact: { origin: string | null; niche: string | null } | null
+}
+
+export async function getSalesSourcesData(): Promise<{ deals: SourceDeal[]; contacts: SourceContact[] }> {
+  const [dealsResult, contactsResult] = await Promise.all([
+    supabase
+      .from('deals')
+      .select('value, status, won_at, updated_at, origin, contact:contacts(origin, niche)')
+      .in('status', ['won', 'lost'])
+      .limit(10000),
+    supabase.from('contacts').select('created_at, origin, niche').limit(10000),
+  ])
+  if (dealsResult.error) throw new Error(dealsResult.error.message)
+  if (contactsResult.error) throw new Error(contactsResult.error.message)
+  const deals = ((dealsResult.data ?? []) as unknown as RawSourceDeal[]).map(({ contact, ...deal }) => ({
+    ...deal,
+    value: deal.value === null ? null : Number(deal.value),
+    contact_origin: contact?.origin ?? null,
+    contact_niche: contact?.niche ?? null,
+  }))
+  return { deals, contacts: (contactsResult.data ?? []) as SourceContact[] }
 }

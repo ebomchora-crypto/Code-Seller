@@ -1,4 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { SalesSources } from '@/components/reports/SalesSources'
 import { ChevronLeft, ChevronRight, FileDown, Hourglass } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
@@ -76,6 +78,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 // onde os negócios travam. "Baixar PDF" abre uma versão própria para papel.
 export default function ReportsPage() {
   const { user, profile } = useAuthContext()
+  // ?aba=origens abre direto em "De onde vêm as vendas".
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('aba') === 'origens' ? 'sources' : 'month'
   const now = new Date()
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() })
   const [report, setReport] = useState<MonthlyReportData | null>(null)
@@ -122,8 +127,13 @@ export default function ReportsPage() {
     <PageWrapper>
       <PageHeader
         title="Relatórios"
-        subtitle="O mês em números: o que vendeu, de onde vieram os clientes e onde os negócios travam."
+        subtitle={
+          tab === 'month'
+            ? 'O mês em números: o que vendeu, de onde vieram os clientes e onde os negócios travam.'
+            : 'Quais origens e nichos mais vendem e mais fecham — para saber onde colocar esforço.'
+        }
         actions={
+          tab === 'sources' ? undefined : (
           <>
             <div className="flex h-11 items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] p-1">
               <button
@@ -150,10 +160,39 @@ export default function ReportsPage() {
               Baixar PDF
             </Button>
           </>
+          )
         }
       />
 
-      {error ? (
+      <div role="tablist" aria-label="Relatório" className="mt-6 flex gap-1 border-b border-[var(--border-subtle)]">
+        {(
+          [
+            { value: 'month', label: 'Mês a mês' },
+            { value: 'sources', label: 'De onde vêm as vendas' },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="tab"
+            aria-selected={tab === option.value}
+            onClick={() => setSearchParams(option.value === 'sources' ? { aba: 'origens' } : {}, { replace: true })}
+            className={`-mb-px border-b-2 px-4 pb-3 pt-1 text-[14px] font-medium transition-colors ${
+              tab === option.value
+                ? 'border-[var(--accent-text)] text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'sources' ? (
+        <div className="mt-6">
+          <SalesSources />
+        </div>
+      ) : error ? (
         <div className="mt-8">
           <ErrorState message={error} onRetry={() => setCursor({ ...cursor })} />
         </div>
