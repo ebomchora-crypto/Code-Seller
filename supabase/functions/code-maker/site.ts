@@ -291,12 +291,22 @@ export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrie
     `Negócio: ${brief.businessName}${brief.niche ? ` · ${brief.niche}` : ''}${brief.city ? ` · ${brief.city}` : ''}`,
     brief.reviews && brief.rating ? `Reputação real: nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações` : null,
     brief.details?.trim() ? `Pedido do cliente: ${brief.details.trim()}` : null,
+    realFacts(brief),
     `Plano do site (siga à risca):\n${JSON.stringify(plan)}`,
     `Fotos disponíveis (use somente estas):\n${photoCatalog(brief.niche)}`,
     partInstructions(partId, plan, brief),
   ]
     .filter(Boolean)
     .join('\n\n')
+}
+
+// Lembrete explícito em cada pedido: a IA respeita melhor assim.
+function realFacts(brief: SiteBrief): string {
+  const reputation =
+    brief.rating && brief.reviews
+      ? `nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações (reais, pode usar)`
+      : 'nenhuma nota nem avaliação informada — NÃO mostre nota, estrelas, avaliações nem depoimentos'
+  return `FATOS REAIS DO NEGÓCIO: ${reputation}. Não existe nenhum outro número sobre o negócio: não escreva ano de fundação, anos de experiência nem quantidade de clientes/atendimentos que não estejam no pedido do cliente. Preços e horários informados podem ser usados; sem eles, use "a partir de" plausível.`
 }
 
 // Ordem das partes na página.
@@ -378,6 +388,36 @@ function cleanId(value: unknown): string {
     .slice(0, 30)
 }
 
+// Fatos que a IA costuma inventar (nota, avaliações, anos de mercado,
+// quantidade de clientes). Só ficam se estiverem no que a pessoa informou.
+const CLAIM_PATTERNS = [
+  /\d+(?:[.,]\d+)?\s*(?:★|estrelas?)/i,
+  /\bnota\s+(?:m[eé]dia\s+)?(?:de\s+)?\d/i,
+  /\d[\d.]*\+?\s*(?:avalia[çc][õo]es|reviews|depoimentos)/i,
+  /\bdesde\s+(?:19|20)\d{2}\b/i,
+  /\b(?:\d+|dez|quinze|vinte|trinta)\+?\s+anos\s+(?:de|no|na|em|atendendo|cuidando)/i,
+  /\d[\d.]*\+?\s*(?:mil\s+)?(?:clientes|carros|ve[ií]culos|atendimentos|cortes|pacientes|alunos|pets|projetos|obras|im[oó]veis|casamentos|pedidos)\b/i,
+]
+
+// Sem reputação informada, estas seções só teriam números inventados.
+const INVENTED_SECTIONS = /^(?:numeros|depoimentos|avaliacoes|resultados|estatisticas|prova-social)$/
+
+// Tira as frases com fatos que ninguém informou.
+export function stripInventedClaims(text: string, brief: SiteBrief): string {
+  const rating = brief.rating ? `${brief.rating} ${String(brief.rating).replace('.', ',')}` : ''
+  const facts = normalize(`${brief.details ?? ''} ${rating} ${brief.reviews ?? ''}`)
+  return text
+    .split(/(?<=[.!?;])\s+/)
+    .filter((sentence) => {
+      const claim = CLAIM_PATTERNS.map((pattern) => sentence.match(pattern)?.[0]).find(Boolean)
+      if (!claim) return true
+      const number = claim.match(/\d[\d.,]*/)?.[0]
+      return Boolean(number && facts.includes(number))
+    })
+    .join(' ')
+    .trim()
+}
+
 // Confere e completa o plano: nunca deixa o site sem cores/fontes válidas.
 export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   if (!raw || typeof raw !== 'object') return null
@@ -392,12 +432,13 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   for (const item of Array.isArray(input.sections) ? input.sections : []) {
     const id = cleanId(item?.id)
     if (!id || seen.has(id)) continue
+    if (INVENTED_SECTIONS.test(id) && !(brief.rating && brief.reviews)) continue
     seen.add(id)
     const bg = ['paper', 'surface', 'ink', 'brand'].includes(item?.bg) ? item.bg : 'paper'
     sections.push({
       id,
       label: String(item?.label ?? id).slice(0, 30),
-      brief: String(item?.brief ?? '').slice(0, 800),
+      brief: stripInventedClaims(String(item?.brief ?? ''), brief).slice(0, 800),
       bg,
     })
   }
@@ -409,8 +450,8 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   }
   return {
     title: String(input.title ?? brief.businessName).slice(0, 80),
-    description: String(input.description ?? '').slice(0, 200),
-    direction: String(input.direction ?? '').slice(0, 400),
+    description: stripInventedClaims(String(input.description ?? ''), brief).slice(0, 200),
+    direction: stripInventedClaims(String(input.direction ?? ''), brief).slice(0, 400),
     theme: input.theme === 'dark' ? 'dark' : 'light',
     palette,
     fonts: {

@@ -106,3 +106,24 @@ test('fotos por nicho, sempre com as gerais no fim', () => {
   assert.equal(photosFor('Algo desconhecido').length, 3)
   assert.match(photoCatalog('Pet shop'), /^- https:\/\/images\.unsplash\.com\/photo-1548199973-03cce0bbc87b\?auto=format&fit=crop&w=1600&q=80 — /)
 })
+
+test('tira do plano os números que ninguém informou', async () => {
+  const { stripInventedClaims, normalizePlan } = await import('../../supabase/functions/code-maker/site.ts')
+  const semDados = { businessName: 'Oficina X', niche: 'Oficina' }
+  assert.equal(
+    stripInventedClaims('História da oficina, destacando os 15 anos de estrada. Foto do time trabalhando.', semDados),
+    'Foto do time trabalhando.',
+  )
+  assert.equal(stripInventedClaims('Confiança desde 2010. Diagnóstico honesto.', semDados), 'Diagnóstico honesto.')
+  assert.equal(stripInventedClaims('4,8 estrelas de 300 clientes. Serviços.', semDados), 'Serviços.')
+  // Informado pela pessoa: fica.
+  const comDados = { businessName: 'Oficina X', details: 'Estamos desde 2010 no bairro.' }
+  assert.equal(stripInventedClaims('Confiança desde 2010.', comDados), 'Confiança desde 2010.')
+  const plan = normalizePlan(
+    { sections: [{ id: 'hero', brief: 'Topo.' }, { id: 'numeros', brief: '3.200 carros atendidos.' }, { id: 'depoimentos', brief: 'x' }, { id: 'contato', brief: 'Contato.' }] },
+    semDados,
+  )
+  assert.deepEqual(plan.sections.map((section) => section.id), ['hero', 'contato'])
+  const real = normalizePlan({ sections: [{ id: 'hero' }, { id: 'depoimentos' }] }, { ...semDados, rating: 4.8, reviews: 120 })
+  assert.deepEqual(real.sections.map((section) => section.id), ['hero', 'depoimentos'])
+})
