@@ -136,7 +136,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetric[]> {
       accent: 'green',
     },
     {
-      label: 'Deals ativos',
+      label: 'Negócios ativos',
       value: activeDealsCount.toString(),
       raw_value: activeDealsCount,
       icon: 'Briefcase',

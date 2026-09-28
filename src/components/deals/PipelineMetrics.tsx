@@ -12,13 +12,13 @@ function MetricCard({ label, value, caption, icon: Icon, tone }: { label: string
   return (
     <div className="min-w-0 rounded-[var(--card-radius)] border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 truncate pt-2 text-[13px] font-medium text-[var(--text-secondary)]">{label}</p>
+        <p className="min-w-0 pt-2 text-[13px] font-medium leading-snug text-[var(--text-secondary)]">{label}</p>
         <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl sm:flex" style={{ backgroundColor: `${tone}1f`, color: tone }}>
           <Icon className="size-[17px]" />
         </span>
       </div>
       <p className="mt-2 truncate font-display text-[19px] font-bold sm:mt-3 sm:text-[26px] leading-none tracking-tight tabular-nums text-[var(--text-primary)]">{value}</p>
-      <p className="mt-3 hidden truncate text-[12px] text-[var(--text-muted)] sm:block">{caption}</p>
+      <p className="mt-3 hidden text-[12px] leading-snug text-[var(--text-muted)] sm:block">{caption}</p>
     </div>
   )
 }

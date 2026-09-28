@@ -75,7 +75,7 @@ export function MetricCard({ metric, loading }: MetricCardProps) {
       />
 
       <div className="relative flex items-start justify-between gap-3">
-        <p className="min-w-0 truncate pt-2 text-[13px] font-medium text-[var(--text-secondary)]" title={metric.label}>
+        <p className="min-w-0 pt-2 text-[13px] font-medium leading-snug text-[var(--text-secondary)]">
           {metric.label}
         </p>
         <span
@@ -94,7 +94,7 @@ export function MetricCard({ metric, loading }: MetricCardProps) {
         )}
       </p>
 
-      <div className="relative mt-4 flex items-center gap-2 text-[12px] text-[var(--text-muted)]">
+      <div className="relative mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--text-muted)]">
         {change ? (
           <>
             <span
@@ -108,7 +108,7 @@ export function MetricCard({ metric, loading }: MetricCardProps) {
             >
               {change.direction === 'up' ? '↑' : change.direction === 'down' ? '↓' : '·'} {change.value}%
             </span>
-            <span className="truncate">{change.label}</span>
+            <span className="leading-snug">{change.label}</span>
           </>
         ) : (
           CAPTIONS[metric.icon]
