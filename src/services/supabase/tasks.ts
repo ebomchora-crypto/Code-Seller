@@ -405,9 +405,18 @@ export async function getUpcomingReminders(): Promise<Task[]> {
     .select(TASK_SELECT)
     .not('status', 'in', '(done,cancelled)')
     .not('reminder_at', 'is', null)
+    // Só os que ainda não apareceram na tela (vale para todos os aparelhos).
+    .is('reminder_seen_at', null)
     .lte('reminder_at', in60min.toISOString())
     .gte('reminder_at', dayAgo.toISOString())
 
   if (error) throw new Error(error.message)
   return ((data ?? []) as unknown as RawTaskRow[]).map(mapTask)
+}
+
+// Marca os lembretes como vistos: não voltam ao sair e entrar de novo.
+export async function markRemindersSeen(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  const { error } = await supabase.from('tasks').update({ reminder_seen_at: new Date().toISOString() }).in('id', ids)
+  if (error) throw new Error(error.message)
 }

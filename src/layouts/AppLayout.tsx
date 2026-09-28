@@ -10,7 +10,7 @@ import { SmoothScrollProvider } from '@/components/providers/SmoothScrollProvide
 import { useTheme } from '@/hooks/useTheme'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { duration, easing } from '@/motion/tokens'
-import { getUpcomingReminders } from '@/services/supabase/tasks'
+import { getUpcomingReminders, markRemindersSeen } from '@/services/supabase/tasks'
 import { cn } from '@/lib/utils'
 import { getAppSurface } from '@/layouts/appSurface'
 import { scrollAppToTop } from '@/utils/appScroll'
@@ -39,9 +39,8 @@ function formatReminderTime(value: string): string {
   return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Sistema de lembretes — MVP visual apenas (toast ao carregar o app).
-// TODO: implementar push notifications reais (Service Worker + Supabase Edge
-// Function com cron job) para avisos que funcionem com o app fechado.
+// Aviso na tela dos lembretes que chegaram (ou chegam na próxima hora) ao
+// abrir o app. Com o app fechado, quem avisa é a notificação no celular.
 function useReminderCheck() {
   useEffect(() => {
     if (reminderCheckDone) return
@@ -49,6 +48,7 @@ function useReminderCheck() {
 
     getUpcomingReminders()
       .then((tasks) => {
+        const shown: string[] = []
         for (const task of tasks) {
           if (!task.reminder_at) continue
           toast(task.title, {
@@ -57,7 +57,10 @@ function useReminderCheck() {
             icon: <Bell className="h-4 w-4 text-purple-600" />,
             duration: Infinity,
           })
+          shown.push(task.id)
         }
+        // Cada lembrete aparece uma vez só (mudar o horário libera de novo).
+        return markRemindersSeen(shown)
       })
       .catch(() => {
         // Falha silenciosa: lembretes são um recurso auxiliar, não devem
