@@ -9,6 +9,7 @@ import { createDeal, updateDeal } from '@/services/supabase/deals'
 import { DEAL_STAGES, getStageConfig } from '@/utils/deals'
 import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage } from '@/types'
 import { startFollowUp } from '@/services/supabase/followup'
+import { dayToTimestamp, localDay } from '@/utils/saleDate'
 
 interface DealFormProps {
   deal?: Deal
@@ -27,8 +28,19 @@ interface FormState {
   probability: number
   service: string
   expectedCloseDate: string
+  // Dia da venda (só para Ganho) — é o dia que conta no faturamento.
+  wonDate: string
   origin: string
   notes: string
+}
+
+// Dia da venda sugerido: o que já está salvo; senão a data de fechamento,
+// se já passou; senão hoje.
+function initialWonDate(deal?: Deal): string {
+  const today = localDay(new Date())
+  if (deal?.won_at) return localDay(deal.won_at)
+  if (deal?.expected_close_date && deal.expected_close_date <= today) return deal.expected_close_date
+  return today
 }
 
 function buildInitialState(deal?: Deal, defaultContactId?: string, defaultContactName?: string): FormState {
@@ -41,6 +53,7 @@ function buildInitialState(deal?: Deal, defaultContactId?: string, defaultContac
     probability: deal?.probability ?? getStageConfig('contact').default_probability,
     service: deal?.service ?? '',
     expectedCloseDate: deal?.expected_close_date ?? '',
+    wonDate: initialWonDate(deal),
     origin: deal?.origin ?? '',
     notes: deal?.notes ?? '',
   }
@@ -48,8 +61,9 @@ function buildInitialState(deal?: Deal, defaultContactId?: string, defaultContac
 
 export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess, onCancel }: DealFormProps) {
   const [form, setForm] = useState<FormState>(buildInitialState(deal, defaultContactId, defaultContactName))
-  const [errors, setErrors] = useState<Partial<Record<'title' | 'value', string>>>({})
+  const [errors, setErrors] = useState<Partial<Record<'title' | 'value' | 'wonDate', string>>>({})
   const [submitting, setSubmitting] = useState(false)
+  const today = localDay(new Date())
 
   const [contactOptions, setContactOptions] = useState<Contact[]>([])
   const [contactDropdownOpen, setContactDropdownOpen] = useState(false)
@@ -76,7 +90,16 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
   }
 
   function handleStageChange(stage: DealStage) {
-    setForm((current) => ({ ...current, stage, probability: getStageConfig(stage).default_probability }))
+    setForm((current) => ({
+      ...current,
+      stage,
+      probability: getStageConfig(stage).default_probability,
+      // Virando Ganho agora: se a data de fechamento já passou, a venda foi nela.
+      wonDate:
+        stage === 'won' && current.stage !== 'won' && !deal?.won_at && current.expectedCloseDate && current.expectedCloseDate <= today
+          ? current.expectedCloseDate
+          : current.wonDate,
+    }))
   }
 
   function selectContact(contact: Contact | null) {
@@ -93,7 +116,7 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
   )
 
   function validate(): boolean {
-    const nextErrors: Partial<Record<'title' | 'value', string>> = {}
+    const nextErrors: Partial<Record<'title' | 'value' | 'wonDate', string>> = {}
 
     if (!form.title.trim()) {
       nextErrors.title = 'Informe o título do negócio.'
@@ -103,6 +126,11 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
       if (Number.isNaN(numeric) || numeric < 0) {
         nextErrors.value = 'Informe um valor numérico positivo.'
       }
+    }
+
+    if (form.stage === 'won') {
+      if (!form.wonDate) nextErrors.wonDate = 'Informe o dia da venda.'
+      else if (form.wonDate > today) nextErrors.wonDate = 'A venda não pode estar no futuro.'
     }
 
     setErrors(nextErrors)
@@ -127,6 +155,13 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
         origin: form.origin.trim() || null,
         notes: form.notes.trim() || null,
         proposal_url: deal?.proposal_url ?? null,
+        // Mesmo dia já salvo: mantém o horário original.
+        ...(form.stage === 'won'
+          ? {
+              won_at:
+                deal?.won_at && localDay(deal.won_at) === form.wonDate ? deal.won_at : dayToTimestamp(form.wonDate),
+            }
+          : {}),
       }
 
       const result = deal ? await updateDeal(deal.id, payload) : await createDeal(payload)
@@ -238,12 +273,25 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
         </datalist>
       </div>
 
-      <Input
-        label="Data prevista de fechamento"
-        type="date"
-        value={form.expectedCloseDate}
-        onChange={(event) => updateField('expectedCloseDate', event.target.value)}
-      />
+      {form.stage === 'won' ? (
+        <Input
+          label="Data da venda"
+          type="date"
+          required
+          max={today}
+          value={form.wonDate}
+          onChange={(event) => updateField('wonDate', event.target.value)}
+          error={errors.wonDate}
+          helperText="A venda entra no faturamento deste dia, não no dia em que foi cadastrada."
+        />
+      ) : (
+        <Input
+          label="Data prevista de fechamento"
+          type="date"
+          value={form.expectedCloseDate}
+          onChange={(event) => updateField('expectedCloseDate', event.target.value)}
+        />
+      )}
 
       <div>
         <Input

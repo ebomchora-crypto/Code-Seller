@@ -44,6 +44,8 @@ export interface Deal {
   notes: string | null
   origin: string | null
   proposal_url: string | null
+  // Quando o negócio foi ganho (migração 0012). É a data que conta no faturamento.
+  won_at?: string | null
   created_at: string
   updated_at: string
   // Relações opcionais (join)

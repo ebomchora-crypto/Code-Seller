@@ -32,6 +32,7 @@ import { deleteDeal } from '@/services/supabase/deals'
 import { getContacts } from '@/services/supabase/contacts'
 import { DEAL_STAGES, formatCurrency, getStageConfig } from '@/utils/deals'
 import type { Contact, Deal, DealStage, ProposalGenerationPayload } from '@/types'
+import { localDay } from '@/utils/saleDate'
 
 interface DealDetailProps {
   deal: Deal
@@ -139,7 +140,9 @@ export function DealDetail({
   const infoFields: { icon: LucideIcon; label: string; value: ReactNode }[] = [
     { icon: Wallet, label: 'Valor', value: formatCurrency(deal.value) },
     { icon: Layers, label: 'Serviço', value: deal.service ?? '—' },
-    { icon: CalendarDays, label: 'Fechamento previsto', value: formatDate(deal.expected_close_date) },
+    deal.stage === 'won' && deal.won_at
+      ? { icon: CalendarDays, label: 'Vendido em', value: formatDate(localDay(deal.won_at)) }
+      : { icon: CalendarDays, label: 'Fechamento previsto', value: formatDate(deal.expected_close_date) },
     { icon: Sparkles, label: 'Origem', value: deal.origin ?? '—' },
     { icon: Clock, label: 'Criado em', value: formatDate(deal.created_at.slice(0, 10)) },
   ]

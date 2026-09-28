@@ -19,6 +19,7 @@ import {
 } from '@/services/supabase/transactions'
 import { PAYMENT_METHOD_LABELS, RECURRENCE_LABELS, TRANSACTION_STATUS_LABELS } from '@/utils/financial'
 import { CATEGORY_COLOR_SWATCHES } from '@/types'
+import { defaultPaidAtInput, localDateTimeInput, localDay } from '@/utils/saleDate'
 import type {
   Contact,
   Deal,
@@ -56,13 +57,7 @@ interface FormState {
 }
 
 function todayInputValue(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function nowLocalInputValue(): string {
-  const now = new Date()
-  const offset = now.getTimezoneOffset()
-  return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 16)
+  return localDay(new Date())
 }
 
 function centsFromAmount(amount?: number | null): string {
@@ -85,7 +80,10 @@ function buildInitialState(transaction?: Transaction): FormState {
     dueDate: transaction?.due_date ?? '',
     categoryId: transaction?.category_id ?? '',
     status: transaction?.status ?? 'pending',
-    paidAt: transaction?.paid_at ? transaction.paid_at.slice(0, 16) : nowLocalInputValue(),
+    // Sem data de pagamento salva: o dia do lançamento (hoje → agora).
+    paidAt: transaction?.paid_at
+      ? localDateTimeInput(transaction.paid_at)
+      : defaultPaidAtInput(transaction?.date ?? todayInputValue()),
     paymentMethod: transaction?.payment_method ?? '',
     contactId: transaction?.contact_id ?? null,
     contactName: transaction?.contact?.name ?? '',
@@ -103,6 +101,8 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
     {},
   )
   const [submitting, setSubmitting] = useState(false)
+  // "Pago em" acompanha a Data até a pessoa mexer nele (ou já vir salvo).
+  const [paidAtTouched, setPaidAtTouched] = useState(Boolean(transaction?.paid_at))
 
   const [categories, setCategories] = useState<FinancialCategory[]>([])
   const [creatingCategory, setCreatingCategory] = useState(false)
@@ -352,7 +352,14 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
           type="date"
           required
           value={form.date}
-          onChange={(event) => updateField('date', event.target.value)}
+          onChange={(event) => {
+            const date = event.target.value
+            setForm((current) => ({
+              ...current,
+              date,
+              paidAt: paidAtTouched || !date ? current.paidAt : defaultPaidAtInput(date),
+            }))
+          }}
         />
         <Input
           label="Data de vencimento"
@@ -433,7 +440,11 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
           label="Pago em"
           type="datetime-local"
           value={form.paidAt}
-          onChange={(event) => updateField('paidAt', event.target.value)}
+          onChange={(event) => {
+            setPaidAtTouched(true)
+            updateField('paidAt', event.target.value)
+          }}
+          helperText="Entra no faturamento deste dia."
         />
       )}
 
