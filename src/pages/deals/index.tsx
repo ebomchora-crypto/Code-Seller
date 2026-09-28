@@ -90,7 +90,11 @@ export default function DealsPage() {
                     key={option.value}
                     type="button"
                     aria-pressed={view === option.value}
-                    onClick={() => setView(option.value)}
+                    onClick={() => {
+                      setView(option.value)
+                      // No quadro as etapas viram colunas: tira o filtro de etapa.
+                      if (option.value !== 'list') setFilters({ stage: 'all' })
+                    }}
                     className={`flex h-full items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors ${
                       view === option.value
                         ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]'
@@ -120,6 +124,7 @@ export default function DealsPage() {
             filters={filters}
             onChange={setFilters}
             onClear={clearFilters}
+            hideStageChips={view !== 'list'}
             hasActiveFilters={hasActiveFilters}
             resultCount={deals.length}
             loading={loading}

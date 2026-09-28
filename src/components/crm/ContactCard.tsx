@@ -29,7 +29,7 @@ export function ContactCard({ contact, dragHandleProps, isDragging = false }: Co
       <div className="flex items-center gap-3">
         <InitialsAvatar name={contact.name} size="sm" />
         <div className="min-w-0">
-          <p className="truncate text-[14px] font-semibold text-[var(--text-primary)]">{contact.name}</p>
+          <p className="line-clamp-2 text-[14px] font-semibold leading-snug text-[var(--text-primary)]">{contact.name}</p>
           {contact.niche && <p className="truncate text-[12px] text-[var(--text-muted)]">{contact.niche}</p>}
         </div>
       </div>

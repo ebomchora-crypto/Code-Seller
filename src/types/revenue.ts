@@ -1,6 +1,7 @@
 // Receita por período — card do Início e Sala de receita.
 
-export type RevenuePeriod = 'today' | 'week' | 'month' | 'custom'
+// 'all' = o tempo todo (desde a primeira venda).
+export type RevenuePeriod = 'today' | 'week' | 'month' | 'custom' | 'all'
 
 // Vendido = negócios ganhos; Recebido = entradas pagas no Financeiro.
 export type RevenueSource = 'sold' | 'received'
@@ -15,8 +16,10 @@ export interface ResolvedRange {
   end: Date // exclusivo
   previousStart: Date
   previousEnd: Date
-  granularity: 'hour' | 'day'
+  granularity: 'hour' | 'day' | 'month'
   compareLabel: string
+  // false: não há período anterior para comparar (o tempo todo).
+  compare: boolean
 }
 
 export interface RevenuePoint {

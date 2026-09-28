@@ -97,7 +97,9 @@ export async function getRevenueSummary(range: ResolvedRange, source: RevenueSou
     total,
     previousTotal,
     count: current.length,
-    change: computeChange(total, previousTotal, range.compareLabel),
+    change: range.compare
+      ? computeChange(total, previousTotal, range.compareLabel)
+      : { value: 0, direction: 'neutral', label: '' },
     series: buildSeries(entries, range),
     entries: current.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   }

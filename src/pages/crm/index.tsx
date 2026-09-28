@@ -90,7 +90,11 @@ export default function CrmPage() {
                     key={option.value}
                     type="button"
                     aria-pressed={view === option.value}
-                    onClick={() => setView(option.value)}
+                    onClick={() => {
+                      setView(option.value)
+                      // No quadro os status viram colunas: tira o filtro de status.
+                      if (option.value !== 'list') setFilters({ status: 'all' })
+                    }}
                     className={`flex h-full items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors ${
                       view === option.value
                         ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]'
@@ -120,6 +124,7 @@ export default function CrmPage() {
             filters={filters}
             onChange={setFilters}
             onClear={clearFilters}
+            hideStatusChips={view !== 'list'}
             hasActiveFilters={hasActiveFilters}
             tags={tags}
             resultCount={total}

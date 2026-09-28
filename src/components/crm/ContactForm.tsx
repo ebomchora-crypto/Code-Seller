@@ -1,10 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
-import { createContact, updateContact } from '@/services/supabase/contacts'
+import { ChoiceField } from '@/components/ui/ChoiceField'
+import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
+import { mergeChoices } from '@/utils/choiceList'
+import { createContact, getContactFacets, updateContact } from '@/services/supabase/contacts'
 import {
   BRAZILIAN_STATES,
   CONTACT_STATUS_LABELS,
@@ -49,6 +52,14 @@ function buildInitialState(contact?: Contact): FormState {
   }
 }
 
+const STATUS_HINTS: Record<ContactStatus, string> = {
+  lead: 'Ainda não conversou de verdade ou só fez o primeiro contato.',
+  negotiating: 'Já está conversando sobre um serviço ou proposta.',
+  client: 'Já comprou de você.',
+  inactive: 'Parou de responder por enquanto.',
+  lost: 'Não tem interesse agora.',
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const URL_PATTERN = /^https?:\/\/.+\..+/
 
@@ -56,6 +67,21 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
   const [form, setForm] = useState<FormState>(buildInitialState(contact))
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [nicheOptions, setNicheOptions] = useState<string[]>(NICHE_SUGGESTIONS)
+  const [originOptions, setOriginOptions] = useState<string[]>(ORIGIN_SUGGESTIONS)
+
+  // Também oferece nichos/origens que a pessoa já usou antes.
+  useEffect(() => {
+    let cancelled = false
+    void getContactFacets().then(({ niches, origins }) => {
+      if (cancelled) return
+      setNicheOptions(mergeChoices(NICHE_SUGGESTIONS, niches))
+      setOriginOptions(mergeChoices(ORIGIN_SUGGESTIONS, origins))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -109,101 +135,120 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <Input
-        label="Nome"
-        required
-        value={form.name}
-        onChange={(event) => updateField('name', event.target.value)}
-        error={errors.name}
-      />
-
-      <Input
-        label="E-mail"
-        type="email"
-        value={form.email}
-        onChange={(event) => updateField('email', event.target.value)}
-        error={errors.email}
-      />
-
-      <Input
-        label="WhatsApp/Telefone"
-        value={form.phone}
-        onChange={(event) => updateField('phone', event.target.value)}
-      />
-
-      <div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <FormSection title="Quem é">
         <Input
-          label="Nicho/Segmento"
-          list="niche-suggestions"
+          label="Nome da empresa ou pessoa"
+          required
+          placeholder="Ex.: Barbearia do João"
+          value={form.name}
+          onChange={(event) => updateField('name', event.target.value)}
+          error={errors.name}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            label="WhatsApp / telefone"
+            placeholder="(11) 99999-9999"
+            inputMode="tel"
+            value={form.phone}
+            onChange={(event) => updateField('phone', event.target.value)}
+          />
+          <Input
+            label="E-mail"
+            type="email"
+            placeholder="opcional"
+            value={form.email}
+            onChange={(event) => updateField('email', event.target.value)}
+            error={errors.email}
+          />
+        </div>
+      </FormSection>
+
+      <FormSection title="Sobre o negócio">
+        <ChoiceField
+          label="Nicho"
+          placeholder="Escolha abaixo ou digite outro"
           value={form.niche}
-          onChange={(event) => updateField('niche', event.target.value)}
+          onChange={(value) => updateField('niche', value)}
+          options={nicheOptions}
         />
-        <datalist id="niche-suggestions">
-          {NICHE_SUGGESTIONS.map((niche) => (
-            <option key={niche} value={niche} />
-          ))}
-        </datalist>
-      </div>
+        <div className="grid grid-cols-[1fr_110px] gap-3">
+          <Input label="Cidade" value={form.city} onChange={(event) => updateField('city', event.target.value)} />
+          <Select label="Estado" value={form.state} onChange={(event) => updateField('state', event.target.value)}>
+            <option value="">UF</option>
+            {BRAZILIAN_STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </FormSection>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          label="Cidade"
-          value={form.city}
-          onChange={(event) => updateField('city', event.target.value)}
-        />
-        <Select label="Estado" value={form.state} onChange={(event) => updateField('state', event.target.value)}>
-          <option value="">Selecione</option>
-          {BRAZILIAN_STATES.map((state) => (
-            <option key={state} value={state}>
-              {state}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <Select
-        label="Status"
-        required
-        value={form.status}
-        onChange={(event) => updateField('status', event.target.value as ContactStatus)}
-      >
-        {CONTACT_STATUSES.map((status) => (
-          <option key={status} value={status}>
-            {CONTACT_STATUS_LABELS[status]}
-          </option>
-        ))}
-      </Select>
-
-      <div>
-        <Input
+      <FormSection title="Como chegou até você">
+        <ChoiceField
           label="Origem"
-          list="origin-suggestions"
+          placeholder="Escolha abaixo ou digite outra"
           value={form.origin}
-          onChange={(event) => updateField('origin', event.target.value)}
+          onChange={(value) => updateField('origin', value)}
+          options={originOptions}
+          visible={8}
         />
-        <datalist id="origin-suggestions">
-          {ORIGIN_SUGGESTIONS.map((origin) => (
-            <option key={origin} value={origin} />
-          ))}
-        </datalist>
-      </div>
+      </FormSection>
 
-      <Input
-        label="Site atual"
-        placeholder="https://exemplo.com"
-        value={form.current_site}
-        onChange={(event) => updateField('current_site', event.target.value)}
-        error={errors.current_site}
-      />
+      <FormSection title="Em que pé está">
+        <div role="radiogroup" aria-label="Status" className="flex flex-wrap gap-1.5">
+          {CONTACT_STATUSES.map((status) => {
+            const active = form.status === status
+            const color = CONTACT_STATUS_COLORS[status]
+            return (
+              <button
+                key={status}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => updateField('status', status)}
+                className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium transition-colors ${
+                  active
+                    ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] text-[var(--text-primary)]'
+                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]'
+                }`}
+              >
+                <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+                {CONTACT_STATUS_LABELS[status]}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-[12px] leading-snug text-[var(--text-muted)]">
+          {STATUS_HINTS[form.status]} Muda sozinho quando você abre ou ganha um negócio com ele.
+        </p>
+      </FormSection>
 
-      <Textarea
-        label="Observações"
-        value={form.notes}
-        onChange={(event) => updateField('notes', event.target.value)}
-      />
+      <details
+        className="group rounded-2xl border border-[var(--border-default)] px-4 py-3"
+        open={Boolean(contact?.current_site || contact?.notes)}
+      >
+        <summary className="cursor-pointer text-[13.5px] font-medium text-[var(--text-primary)]">
+          Mais detalhes <span className="font-normal text-[var(--text-muted)]">(site atual e observações)</span>
+        </summary>
+        <div className="mt-4 flex flex-col gap-4">
+          <Input
+            label="Site atual"
+            placeholder="https://exemplo.com"
+            value={form.current_site}
+            onChange={(event) => updateField('current_site', event.target.value)}
+            error={errors.current_site}
+          />
+          <Textarea
+            label="Observações"
+            value={form.notes}
+            onChange={(event) => updateField('notes', event.target.value)}
+          />
+        </div>
+      </details>
 
-      <div className="mt-2 flex justify-end gap-3">
+      <div className="flex justify-end gap-3">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>
@@ -212,5 +257,14 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
         </Button>
       </div>
     </form>
+  )
+}
+
+function FormSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h3 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{title}</h3>
+      {children}
+    </section>
   )
 }

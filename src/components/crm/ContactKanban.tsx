@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { BoardTabs, MoveToSelect } from '@/components/ui/BoardControls'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { motion } from 'motion/react'
 import {
   DndContext,
@@ -72,14 +74,14 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex w-[288px] shrink-0 flex-col rounded-[22px] border p-2.5 transition-all duration-200 ${
+      className={`flex min-w-0 flex-col rounded-[22px] border p-2 transition-all duration-200 ${
         isOver
           ? 'border-[var(--accent-ring)] bg-[var(--accent-tint)] shadow-[0_0_0_4px_var(--accent-tint)]'
           : 'border-[var(--border-subtle)] bg-black/[0.02] dark:bg-white/[0.02]'
       }`}
     >
       <div className="mb-2.5 flex items-center justify-between px-2 pt-1.5">
-        <h3 className="flex items-center gap-2 text-[13.5px] font-semibold text-[var(--text-primary)]">
+        <h3 className="flex min-w-0 items-center gap-2 truncate text-[13.5px] font-semibold text-[var(--text-primary)]">
           <span className="size-2.5 rounded-full" style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }} />
           {CONTACT_STATUS_LABELS[status]}
         </h3>
@@ -88,7 +90,7 @@ function KanbanColumn({
         </span>
       </div>
 
-      <div className="flex min-h-24 flex-1 flex-col gap-2.5">
+      <div className="flex min-h-24 flex-1 flex-col gap-2">
         {contacts.map((contact, index) => (
           <KanbanCard key={contact.id} contact={contact} index={index} />
         ))}
@@ -102,8 +104,14 @@ function KanbanColumn({
   )
 }
 
+const STATUS_OPTIONS = CONTACT_STATUSES.map((status) => ({ key: status, label: CONTACT_STATUS_LABELS[status] }))
+
 export function ContactKanban({ contacts, loading, onStatusChange }: ContactKanbanProps) {
   const [activeContact, setActiveContact] = useState<Contact | null>(null)
+  const [tab, setTab] = useState<ContactStatus>('lead')
+  // Tela grande: todas as colunas lado a lado, sem rolar para o lado.
+  // Menor que isso: uma coluna por vez, escolhida nas abas.
+  const wide = useMediaQuery('(min-width: 1360px)')
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   function handleDragStart(event: DragStartEvent) {
@@ -125,12 +133,15 @@ export function ContactKanban({ contacts, loading, onStatusChange }: ContactKanb
 
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {CONTACT_STATUSES.map((status) => (
-          <div key={status} className="flex w-[288px] shrink-0 flex-col gap-2.5 rounded-[22px] border border-[var(--border-subtle)] p-2.5">
+      <div className="grid grid-cols-1 gap-2.5 min-[1360px]:grid-cols-5">
+        {CONTACT_STATUSES.map((status, index) => (
+          <div
+            key={status}
+            className={`flex flex-col gap-2 rounded-[22px] border border-[var(--border-subtle)] p-2 ${index > 0 ? 'hidden min-[1360px]:flex' : ''}`}
+          >
             <Skeleton className="m-1.5 h-5 w-24" />
-            <Skeleton className="h-32 w-full rounded-[18px]" />
-            <Skeleton className="h-32 w-full rounded-[18px]" />
+            <Skeleton className="h-28 w-full rounded-[18px]" />
+            <Skeleton className="h-28 w-full rounded-[18px]" />
           </div>
         ))}
       </div>
@@ -146,9 +157,47 @@ export function ContactKanban({ contacts, loading, onStatusChange }: ContactKanb
     )
   }
 
+  if (!wide) {
+    const inTab = contacts.filter((contact) => contact.status === tab)
+    return (
+      <div className="flex flex-col gap-4">
+        <BoardTabs
+          label="Status"
+          value={tab}
+          onChange={setTab}
+          options={CONTACT_STATUSES.map((status) => ({
+            key: status,
+            label: CONTACT_STATUS_LABELS[status],
+            color: CONTACT_STATUS_COLORS[status],
+            count: contacts.filter((contact) => contact.status === status).length,
+          }))}
+        />
+        {inTab.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-[var(--border-default)] px-4 py-10 text-center text-[13px] text-[var(--text-muted)]">
+            Nenhum contato em {CONTACT_STATUS_LABELS[tab]}.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {inTab.map((contact) => (
+              <div key={contact.id}>
+                <ContactCard contact={contact} />
+                <MoveToSelect
+                  current={contact.status}
+                  options={STATUS_OPTIONS}
+                  itemName={contact.name}
+                  onMove={(status) => status !== contact.status && onStatusChange(contact.id, status)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      <div className="grid grid-cols-5 gap-2.5 pb-4">
         {CONTACT_STATUSES.map((status) => (
           <KanbanColumn
             key={status}

@@ -12,6 +12,8 @@ interface DealFiltersProps {
   hasActiveFilters: boolean
   resultCount: number
   loading: boolean
+  // No quadro as etapas já são as colunas: esconde os botões de etapa.
+  hideStageChips?: boolean
 }
 
 const STAGE_OPTIONS: FilterChipOption<DealFiltersType['stage']>[] = [
@@ -19,16 +21,18 @@ const STAGE_OPTIONS: FilterChipOption<DealFiltersType['stage']>[] = [
   ...DEAL_STAGES.map((stage) => ({ value: stage.key, label: stage.label, color: stage.color })),
 ]
 
-export function DealFilters({ filters, onChange, onClear, hasActiveFilters, resultCount, loading }: DealFiltersProps) {
+export function DealFilters({ filters, onChange, onClear, hasActiveFilters, resultCount, loading, hideStageChips = false }: DealFiltersProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FilterChips
-          label="Filtrar por etapa"
-          options={STAGE_OPTIONS}
-          value={filters.stage}
-          onChange={(value) => onChange({ stage: value })}
-        />
+        {!hideStageChips && (
+          <FilterChips
+            label="Filtrar por etapa"
+            options={STAGE_OPTIONS}
+            value={filters.stage}
+            onChange={(value) => onChange({ stage: value })}
+          />
+        )}
 
         <p className="text-[13px] text-[var(--text-muted)]" aria-live="polite">
           {loading ? 'Buscando negócios…' : `${resultCount} ${resultCount === 1 ? 'negócio encontrado' : 'negócios encontrados'}`}

@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { Search, X } from 'lucide-react'
+import { getContactFacets } from '@/services/supabase/contacts'
+import { mergeChoices } from '@/utils/choiceList'
 import { FilterChips, type FilterChipOption } from '@/components/ui/FilterChips'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -6,8 +9,6 @@ import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
 import {
   CONTACT_STATUS_LABELS,
   CONTACT_STATUSES,
-  NICHE_SUGGESTIONS,
-  ORIGIN_SUGGESTIONS,
   type ContactFilters as ContactFiltersType,
   type Tag,
 } from '@/types'
@@ -20,6 +21,8 @@ interface ContactFiltersProps {
   tags: Tag[]
   resultCount: number
   loading: boolean
+  // No quadro os status já são as colunas: esconde os botões de status.
+  hideStatusChips?: boolean
 }
 
 const STATUS_OPTIONS: FilterChipOption<ContactFiltersType['status']>[] = [
@@ -39,16 +42,35 @@ export function ContactFilters({
   tags,
   resultCount,
   loading,
+  hideStatusChips = false,
 }: ContactFiltersProps) {
+  // Só nichos/origens que existem nos contatos (filtrar por um que ninguém
+  // tem não mostraria nada). Recarrega quando a lista muda.
+  const [facets, setFacets] = useState<{ niches: string[]; origins: string[] }>({ niches: [], origins: [] })
+  useEffect(() => {
+    let cancelled = false
+    void getContactFacets().then((next) => {
+      if (!cancelled) setFacets({ niches: mergeChoices([], next.niches), origins: mergeChoices([], next.origins) })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [resultCount])
+  const niches = filters.niche && !facets.niches.includes(filters.niche) ? [filters.niche, ...facets.niches] : facets.niches
+  const origins =
+    filters.origin && !facets.origins.includes(filters.origin) ? [filters.origin, ...facets.origins] : facets.origins
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <FilterChips
+        {!hideStatusChips && (
+          <FilterChips
           label="Filtrar por status"
           options={STATUS_OPTIONS}
           value={filters.status}
           onChange={(value) => onChange({ status: value })}
         />
+        )}
 
         <p className="text-[13px] text-[var(--text-muted)]" aria-live="polite">
           {loading ? 'Buscando contatos…' : `${resultCount} ${resultCount === 1 ? 'contato encontrado' : 'contatos encontrados'}`}
@@ -70,7 +92,7 @@ export function ContactFilters({
           <div className="min-w-0 md:w-40">
             <Select aria-label="Nicho" value={filters.niche} onChange={(event) => onChange({ niche: event.target.value })}>
               <option value="">Nicho</option>
-              {NICHE_SUGGESTIONS.map((niche) => (
+              {niches.map((niche) => (
                 <option key={niche} value={niche}>
                   {niche}
                 </option>
@@ -81,7 +103,7 @@ export function ContactFilters({
           <div className="min-w-0 md:w-40">
             <Select aria-label="Origem" value={filters.origin} onChange={(event) => onChange({ origin: event.target.value })}>
               <option value="">Origem</option>
-              {ORIGIN_SUGGESTIONS.map((origin) => (
+              {origins.map((origin) => (
                 <option key={origin} value={origin}>
                   {origin}
                 </option>

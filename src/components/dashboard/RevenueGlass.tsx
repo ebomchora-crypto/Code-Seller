@@ -43,8 +43,8 @@ function saveChoice(choice: StoredChoice) {
 }
 
 const TITLES: Record<RevenueSource, Record<RevenuePeriod, string>> = {
-  sold: { today: 'Vendido hoje', week: 'Vendido na semana', month: 'Receita do mês', custom: 'Vendido no período' },
-  received: { today: 'Recebido hoje', week: 'Recebido na semana', month: 'Recebido no mês', custom: 'Recebido no período' },
+  sold: { today: 'Vendido hoje', week: 'Vendido na semana', month: 'Receita do mês', custom: 'Vendido no período', all: 'Vendido desde o início' },
+  received: { today: 'Recebido hoje', week: 'Recebido na semana', month: 'Recebido no mês', custom: 'Recebido no período', all: 'Recebido desde o início' },
 }
 
 function formatBRL(value: number): string {

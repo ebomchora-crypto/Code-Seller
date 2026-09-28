@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
-import { getContacts } from '@/services/supabase/contacts'
+import { ChoiceField } from '@/components/ui/ChoiceField'
+import { getContactById, getContacts } from '@/services/supabase/contacts'
 import { createDeal, updateDeal } from '@/services/supabase/deals'
 import { DEAL_STAGES, getStageConfig } from '@/utils/deals'
 import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage } from '@/types'
@@ -69,11 +70,43 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
   const [contactDropdownOpen, setContactDropdownOpen] = useState(false)
   const contactBoxRef = useRef<HTMLDivElement>(null)
 
+  // Busca no CRM enquanto digita (não só os 100 mais recentes).
+  const searchTerm = form.contactId ? '' : form.contactName.trim()
   useEffect(() => {
-    getContacts({ pageSize: 100 })
-      .then((result) => setContactOptions(result.data))
-      .catch(() => setContactOptions([]))
-  }, [])
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      getContacts({ pageSize: 30, filters: { search: searchTerm } })
+        .then((result) => !cancelled && setContactOptions(result.data))
+        .catch(() => !cancelled && setContactOptions([]))
+    }, searchTerm ? 250 : 0)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [searchTerm])
+
+  // Contato escolhido: a origem vem dele — não pergunta de novo.
+  const [linkedContact, setLinkedContact] = useState<Pick<Contact, 'id' | 'origin' | 'niche'> | null>(null)
+  useEffect(() => {
+    if (!form.contactId) {
+      setLinkedContact(null)
+      return
+    }
+    const known = contactOptions.find((contact) => contact.id === form.contactId)
+    if (known) {
+      setLinkedContact(known)
+      return
+    }
+    let cancelled = false
+    void getContactById(form.contactId)
+      .then((contact) => !cancelled && setLinkedContact(contact))
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+    // contactOptions muda a cada busca; só importa quando troca o contato.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.contactId])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -111,15 +144,14 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
     setContactDropdownOpen(false)
   }
 
-  const filteredContacts = contactOptions.filter((contact) =>
-    contact.name.toLowerCase().includes(form.contactName.toLowerCase()),
-  )
+  const filteredContacts = contactOptions
+  const autoTitle = [form.service.trim(), form.contactName.trim()].filter(Boolean).join(' — ')
 
   function validate(): boolean {
     const nextErrors: Partial<Record<'title' | 'value' | 'wonDate', string>> = {}
 
-    if (!form.title.trim()) {
-      nextErrors.title = 'Informe o título do negócio.'
+    if (!form.title.trim() && !autoTitle) {
+      nextErrors.title = 'Dê um nome ao negócio (ou escolha o contato e o serviço).'
     }
     if (form.value) {
       const numeric = Number(form.value)
@@ -144,7 +176,7 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
     setSubmitting(true)
     try {
       const payload = {
-        title: form.title.trim(),
+        title: form.title.trim() || autoTitle,
         contact_id: form.contactId,
         value: form.value ? Number(form.value) : null,
         stage: form.stage,
@@ -152,7 +184,8 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
         probability: form.probability,
         service: form.service.trim() || null,
         expected_close_date: form.expectedCloseDate || null,
-        origin: form.origin.trim() || null,
+        // Com contato: a origem é a dele (se ele tiver uma).
+        origin: (form.contactId ? linkedContact?.origin : null) || form.origin.trim() || null,
         notes: form.notes.trim() || null,
         proposal_url: deal?.proposal_url ?? null,
         // Mesmo dia já salvo: mantém o horário original.
@@ -184,20 +217,18 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
     }
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <Input
-        label="Título"
-        required
-        value={form.title}
-        onChange={(event) => updateField('title', event.target.value)}
-        error={errors.title}
-      />
+  const inheritedOrigin = form.contactId ? linkedContact?.origin ?? null : null
 
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div ref={contactBoxRef} className="relative flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-neutral-700">Contato vinculado</label>
+        <label htmlFor="deal-contact" className="text-[13px] font-medium text-[var(--text-secondary)]">
+          Contato do CRM
+        </label>
         <Input
-          placeholder="Buscar contato do CRM"
+          id="deal-contact"
+          placeholder="Busque pelo nome, telefone ou e-mail"
+          autoComplete="off"
           value={form.contactName}
           onChange={(event) => {
             updateField('contactName', event.target.value)
@@ -207,70 +238,70 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
           onFocus={() => setContactDropdownOpen(true)}
         />
         {contactDropdownOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]">
             <button
               type="button"
               onClick={() => selectContact(null)}
-              className="block w-full px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50"
+              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-muted)]"
             >
-              Nenhum contato
+              Sem contato
             </button>
             {filteredContacts.map((contact) => (
               <button
                 key={contact.id}
                 type="button"
                 onClick={() => selectContact(contact)}
-                className="block w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-purple-50"
+                className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--bg-muted)]"
               >
-                {contact.name}
+                <span className="truncate">{contact.name}</span>
+                {contact.niche && <span className="shrink-0 text-[12px] text-[var(--text-muted)]">{contact.niche}</span>}
               </button>
             ))}
             {filteredContacts.length === 0 && (
-              <p className="px-3 py-2 text-sm text-neutral-400">Nenhum contato encontrado.</p>
+              <p className="px-3 py-2 text-sm text-[var(--text-muted)]">Nenhum contato encontrado.</p>
             )}
           </div>
         )}
+        {form.contactId && (
+          <p className="text-[12px] text-[var(--text-muted)]">
+            {inheritedOrigin ? (
+              <>
+                Origem: <span className="font-medium text-[var(--text-secondary)]">{inheritedOrigin}</span> (vem do contato)
+              </>
+            ) : (
+              'A origem vem do contato.'
+            )}
+          </p>
+        )}
       </div>
 
-      <Input
-        label="Valor (R$)"
-        type="number"
-        min="0"
-        step="0.01"
-        value={form.value}
-        onChange={(event) => updateField('value', event.target.value)}
-        error={errors.value}
+      <ChoiceField
+        label="Serviço"
+        placeholder="Escolha abaixo ou digite outro"
+        value={form.service}
+        onChange={(value) => updateField('service', value)}
+        options={SERVICE_SUGGESTIONS}
+        visible={6}
       />
 
-      <Select label="Etapa" required value={form.stage} onChange={(event) => handleStageChange(event.target.value as DealStage)}>
-        {DEAL_STAGES.map((stage) => (
-          <option key={stage.key} value={stage.key}>
-            {stage.label}
-          </option>
-        ))}
-      </Select>
-
-      <Input
-        label={`Probabilidade (${form.probability}%)`}
-        type="range"
-        min={0}
-        max={100}
-        value={form.probability}
-        onChange={(event) => updateField('probability', Number(event.target.value))}
-      />
-
-      <div>
+      <div className="grid gap-3 sm:grid-cols-2">
         <Input
-          label="Serviço"
-          list="service-suggestions"
-          value={form.service}
-          onChange={(event) => updateField('service', event.target.value)}
+          label="Valor (R$)"
+          type="number"
+          min="0"
+          step="0.01"
+          inputMode="decimal"
+          value={form.value}
+          onChange={(event) => updateField('value', event.target.value)}
+          error={errors.value}
         />
-        <datalist id="service-suggestions">
-          {SERVICE_SUGGESTIONS.map((service) => (
-            <option key={service} value={service} />
+        <Select label="Etapa" required value={form.stage} onChange={(event) => handleStageChange(event.target.value as DealStage)}>
+          {DEAL_STAGES.map((stage) => (
+            <option key={stage.key} value={stage.key}>
+              {stage.label}
+            </option>
           ))}
-        </datalist>
+        </Select>
       </div>
 
       {form.stage === 'won' ? (
@@ -286,34 +317,52 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
         />
       ) : (
         <Input
-          label="Data prevista de fechamento"
+          label="Previsão de fechamento"
           type="date"
           value={form.expectedCloseDate}
           onChange={(event) => updateField('expectedCloseDate', event.target.value)}
         />
       )}
 
-      <div>
-        <Input
-          label="Origem"
-          list="deal-origin-suggestions"
-          value={form.origin}
-          onChange={(event) => updateField('origin', event.target.value)}
-        />
-        <datalist id="deal-origin-suggestions">
-          {ORIGIN_SUGGESTIONS.map((origin) => (
-            <option key={origin} value={origin} />
-          ))}
-        </datalist>
-      </div>
-
-      <Textarea
-        label="Observações"
-        value={form.notes}
-        onChange={(event) => updateField('notes', event.target.value)}
+      <Input
+        label="Nome do negócio"
+        placeholder={autoTitle || 'Ex.: Site institucional'}
+        value={form.title}
+        onChange={(event) => updateField('title', event.target.value)}
+        error={errors.title}
+        helperText={!form.title.trim() && autoTitle ? 'Em branco, fica com o nome sugerido.' : undefined}
       />
 
-      <div className="mt-2 flex justify-end gap-3">
+      {!form.contactId && (
+        <ChoiceField
+          label="Origem"
+          placeholder="Escolha abaixo ou digite outra"
+          value={form.origin}
+          onChange={(value) => updateField('origin', value)}
+          options={ORIGIN_SUGGESTIONS}
+          visible={8}
+        />
+      )}
+
+      <details className="group rounded-2xl border border-[var(--border-default)] px-4 py-3" open={Boolean(deal?.notes)}>
+        <summary className="cursor-pointer text-[13.5px] font-medium text-[var(--text-primary)]">
+          Mais detalhes <span className="font-normal text-[var(--text-muted)]">(chance de fechar e observações)</span>
+        </summary>
+        <div className="mt-4 flex flex-col gap-4">
+          <Input
+            label={`Chance de fechar (${form.probability}%)`}
+            type="range"
+            min={0}
+            max={100}
+            value={form.probability}
+            onChange={(event) => updateField('probability', Number(event.target.value))}
+            helperText="Muda sozinha com a etapa. Ajuste só se quiser."
+          />
+          <Textarea label="Observações" value={form.notes} onChange={(event) => updateField('notes', event.target.value)} />
+        </div>
+      </details>
+
+      <div className="flex justify-end gap-3">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
           Cancelar
         </Button>

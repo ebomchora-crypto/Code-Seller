@@ -9,6 +9,8 @@ interface RoomChartProps {
   series: RoomChartPoint[]
   currentLabel: string
   previousLabel: string
+  // false: esconde a linha tracejada do período anterior.
+  showPrevious?: boolean
   animate: boolean
 }
 
@@ -30,16 +32,18 @@ function RoomTooltip({ active, payload, currentLabel, previousLabel }: TooltipCo
       <p className="mt-1 text-[14px] font-semibold text-white">
         {currentLabel}: {point.value === null ? '—' : formatBRL(point.value)}
       </p>
-      <p className="text-[12.5px] text-white/50">
-        {previousLabel}: {formatBRL(point.previous)}
-      </p>
+      {previousLabel && (
+        <p className="text-[12.5px] text-white/50">
+          {previousLabel}: {formatBRL(point.previous)}
+        </p>
+      )}
     </div>
   )
 }
 
 // Linha do período atual (roxa, com brilho) sobre o período anterior
 // (tracejada), como no painel de "tendência de vendas".
-export function RoomChart({ series, currentLabel, previousLabel, animate }: RoomChartProps) {
+export function RoomChart({ series, currentLabel, previousLabel, showPrevious = true, animate }: RoomChartProps) {
   const lastIndex = series.reduce((last, point, index) => (point.value === null ? last : index), -1)
 
   return (
@@ -79,6 +83,7 @@ export function RoomChart({ series, currentLabel, previousLabel, animate }: Room
           content={(props) => <RoomTooltip {...props} currentLabel={currentLabel} previousLabel={previousLabel} />}
           cursor={{ stroke: 'rgba(196,181,253,0.35)', strokeDasharray: '4 4' }}
         />
+        {showPrevious && (
         <Line
           type="monotone"
           dataKey="previous"
@@ -89,6 +94,7 @@ export function RoomChart({ series, currentLabel, previousLabel, animate }: Room
           activeDot={false}
           isAnimationActive={animate}
         />
+        )}
         <Area
           type="linear"
           dataKey="value"

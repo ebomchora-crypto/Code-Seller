@@ -220,3 +220,17 @@ export async function importContacts(contacts: Partial<Contact>[]): Promise<Impo
 
   return { success, errors: errorDetails.length, errorDetails }
 }
+
+// Nichos e origens já usados nos contatos (ex.: categorias vindas do Buyers
+// Hunter), para os filtros e sugestões mostrarem mais do que a lista fixa.
+export async function getContactFacets(): Promise<{ niches: string[]; origins: string[] }> {
+  const { data, error } = await supabase.from('contacts').select('niche, origin').limit(5000)
+  if (error) return { niches: [], origins: [] }
+  const niches = new Set<string>()
+  const origins = new Set<string>()
+  for (const row of (data ?? []) as { niche: string | null; origin: string | null }[]) {
+    if (row.niche?.trim()) niches.add(row.niche.trim())
+    if (row.origin?.trim()) origins.add(row.origin.trim())
+  }
+  return { niches: [...niches], origins: [...origins] }
+}

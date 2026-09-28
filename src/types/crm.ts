@@ -75,24 +75,52 @@ export const INTERACTION_TYPE_LABELS: Record<InteractionType, string> = {
   other: 'Outro',
 }
 
+// Nichos mais comuns para quem vende site/serviço digital para negócio local.
+// A pessoa ainda pode digitar qualquer outro.
 export const NICHE_SUGGESTIONS = [
+  'Oficina mecânica',
+  'Barbearia',
+  'Salão de beleza',
+  'Clínica',
   'Advocacia',
+  'Dentista',
+  'Esteticista',
   'Restaurante',
-  'Escola',
+  'Lanchonete',
   'Academia',
-  'Odontologia',
-  'Imóveis',
-  'Outros',
+  'Pet shop',
+  'Imobiliária',
+  'Contabilidade',
+  'Psicólogo',
+  'Nutricionista',
+  'Fisioterapia',
+  'Loja de roupas',
+  'Padaria',
+  'Escola',
+  'Construção e reforma',
+  'Arquitetura',
+  'Fotografia',
 ]
 
+// Por onde o lead chegou. Os valores antigos (Cold Call, Outros…) continuam
+// iguais para os filtros acharem os contatos já cadastrados.
 export const ORIGIN_SUGGESTIONS = [
   'Buyers Hunter',
-  'Instagram',
   'Indicação',
-  'Cold Call',
-  'LinkedIn',
+  'Instagram',
   'WhatsApp',
+  'Google',
+  'Facebook',
+  'TikTok',
+  'LinkedIn',
   'Site',
+  'Anúncio pago',
+  'Cold Call',
+  'Visita presencial',
+  'Evento',
+  'E-mail',
+  'Cliente antigo',
+  'Parceiro',
   'Outros',
 ]
 

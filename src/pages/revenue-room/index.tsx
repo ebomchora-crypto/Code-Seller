@@ -24,17 +24,19 @@ const PERIODS: { value: RoomPeriod; label: string }[] = [
   { value: 'today', label: 'Hoje' },
   { value: 'week', label: 'Semana' },
   { value: 'month', label: 'Mês' },
+  { value: 'all', label: 'O tempo todo' },
 ]
 
 const TITLES: Record<RevenueSource, Record<RoomPeriod, string>> = {
-  sold: { today: 'Vendas hoje', week: 'Vendas da semana', month: 'Vendas do mês' },
-  received: { today: 'Recebido hoje', week: 'Recebido na semana', month: 'Recebido no mês' },
+  sold: { today: 'Vendas hoje', week: 'Vendas da semana', month: 'Vendas do mês', all: 'Todas as vendas' },
+  received: { today: 'Recebido hoje', week: 'Recebido na semana', month: 'Recebido no mês', all: 'Tudo que já entrou' },
 }
 
 const SERIES_LABELS: Record<RoomPeriod, [string, string]> = {
   today: ['Hoje', 'Ontem'],
   week: ['Esta semana', 'Semana passada'],
   month: ['Este mês', 'Mês passado'],
+  all: ['Por mês', ''],
 }
 
 function readChoice(): RoomChoice {
@@ -167,6 +169,8 @@ export default function RevenueRoomPage() {
 
   const chartSeries = useMemo<RoomChartPoint[]>(() => {
     if (!summary) return []
+    // Mês a mês (o tempo todo): todos os meses já aconteceram.
+    if (range.granularity === 'month') return summary.series
     const nowTime = now.getTime()
     const step = range.granularity === 'hour' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000
     return summary.series.map((point, index) => ({
@@ -193,7 +197,7 @@ export default function RevenueRoomPage() {
                 type="button"
                 aria-pressed={choice.period === option.value}
                 onClick={() => setChoice((current) => ({ ...current, period: option.value }))}
-                className={`h-8 rounded-full px-4 text-[12.5px] font-medium transition-colors ${
+                className={`h-8 whitespace-nowrap rounded-full px-4 text-[12.5px] font-medium transition-colors ${
                   choice.period === option.value ? 'bg-[#8b5cf6]/35 text-white' : 'text-white/55 hover:text-white'
                 }`}
               >
@@ -267,7 +271,7 @@ export default function RevenueRoomPage() {
           </div>
 
           <div className="flex items-center justify-end gap-2">
-            <div className="hidden items-center gap-2 lg:flex">{controls}</div>
+            <div className="hidden items-center gap-2 2xl:flex">{controls}</div>
             <button
               type="button"
               onClick={toggleFullscreen}
@@ -295,7 +299,7 @@ export default function RevenueRoomPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 lg:hidden">{controls}</div>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2 2xl:hidden">{controls}</div>
 
         {/* Número principal */}
         <div className="relative mx-auto mt-5 w-full max-w-[560px]">
@@ -349,12 +353,12 @@ export default function RevenueRoomPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#c4b5fd]/80">
-                Desempenho {range.granularity === 'hour' ? 'por horário' : 'por dia'}
+                Desempenho {range.granularity === 'hour' ? 'por horário' : range.granularity === 'month' ? 'por mês' : 'por dia'}
               </p>
               <h2 className="mt-1 font-display text-[20px] font-semibold tracking-tight">Tendência de vendas</h2>
               <p className="text-[12.5px] text-white/45">
                 {choice.source === 'sold' ? 'Negócios ganhos' : 'Entradas recebidas'}{' '}
-                {range.granularity === 'hour' ? 'ao longo do dia' : 'ao longo do período'}
+                {range.granularity === 'hour' ? 'ao longo do dia' : range.granularity === 'month' ? 'desde o início' : 'ao longo do período'}
               </p>
             </div>
             <div className="flex items-center gap-4 text-[12px] text-white/55">
@@ -362,14 +366,24 @@ export default function RevenueRoomPage() {
                 <span className="h-0.5 w-5 rounded bg-[#c4b5fd] shadow-[0_0_8px_#a78bfa]" />
                 {currentLabel}
               </span>
-              <span className="flex items-center gap-2">
-                <span className="h-0 w-5 border-t border-dashed border-white/40" />
-                {previousLabel}
-              </span>
+              {previousLabel && (
+                <span className="flex items-center gap-2">
+                  <span className="h-0 w-5 border-t border-dashed border-white/40" />
+                  {previousLabel}
+                </span>
+              )}
             </div>
           </div>
           <div className="mt-4 h-[240px] sm:h-[280px] lg:h-[clamp(200px,calc(100vh-575px),380px)]">
-            {summary && <RoomChart series={chartSeries} currentLabel={currentLabel} previousLabel={previousLabel} animate={!reducedMotion} />}
+            {summary && (
+              <RoomChart
+                series={chartSeries}
+                currentLabel={currentLabel}
+                previousLabel={previousLabel}
+                showPrevious={range.compare}
+                animate={!reducedMotion}
+              />
+            )}
           </div>
 
           </div>
@@ -378,7 +392,9 @@ export default function RevenueRoomPage() {
             <StatPanel
               kicker={choice.source === 'sold' ? 'Vendas confirmadas' : 'Recebimentos'}
               value={String(count).padStart(2, '0')}
-              hint={choice.period === 'today' ? 'hoje' : choice.period === 'week' ? 'nesta semana' : 'neste mês'}
+              hint={
+                choice.period === 'today' ? 'hoje' : choice.period === 'week' ? 'nesta semana' : choice.period === 'all' ? 'desde o início' : 'neste mês'
+              }
             />
             <StatPanel kicker="Ticket médio" value={count > 0 ? formatCurrency(ticket) : '—'} hint={choice.source === 'sold' ? 'por venda' : 'por recebimento'} />
             <StatPanel

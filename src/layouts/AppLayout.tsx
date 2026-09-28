@@ -100,7 +100,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           ref={mainRef}
           className={cn(
             'relative flex-1 transition-colors duration-300',
-            surface.immersive ? 'overflow-hidden' : 'overflow-y-auto',
+            surface.immersive ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden',
           )}
         >
           {/* Brilho roxo estático no topo do painel — só no dark mode. */}

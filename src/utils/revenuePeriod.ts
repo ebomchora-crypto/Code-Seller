@@ -8,6 +8,9 @@ import type {
 } from '@/types'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+// Início de "o tempo todo": antes de qualquer venda possível no sistema.
+const ALL_TIME_START = new Date(2000, 0, 1).getTime()
+const MIN_MONTHS_ALL_TIME = 6
 
 export const PERIOD_OPTIONS: { value: RevenuePeriod; label: string }[] = [
   { value: 'today', label: 'Hoje' },
@@ -52,6 +55,7 @@ export function resolveRange(period: RevenuePeriod, custom: CustomRange | null, 
       previousEnd: start,
       granularity: 'hour',
       compareLabel: 'vs. ontem',
+      compare: true,
     }
   }
 
@@ -64,6 +68,7 @@ export function resolveRange(period: RevenuePeriod, custom: CustomRange | null, 
       previousEnd: start,
       granularity: 'day',
       compareLabel: 'vs. semana passada',
+      compare: true,
     }
   }
 
@@ -80,6 +85,21 @@ export function resolveRange(period: RevenuePeriod, custom: CustomRange | null, 
       previousEnd: start,
       granularity: days <= 1 ? 'hour' : 'day',
       compareLabel: days <= 1 ? 'vs. dia anterior' : `vs. ${days} dias anteriores`,
+      compare: true,
+    }
+  }
+
+  if (period === 'all') {
+    // O tempo todo: tudo até o fim deste mês, mês a mês, sem comparação.
+    const start = new Date(ALL_TIME_START)
+    return {
+      start,
+      end: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      previousStart: start,
+      previousEnd: start,
+      granularity: 'month',
+      compareLabel: '',
+      compare: false,
     }
   }
 
@@ -92,6 +112,7 @@ export function resolveRange(period: RevenuePeriod, custom: CustomRange | null, 
     previousEnd: start,
     granularity: 'day',
     compareLabel: 'vs. mês anterior',
+    compare: true,
   }
 }
 
@@ -139,6 +160,30 @@ export function buildSeries(entries: RevenueEntry[], range: ResolvedRange): Reve
         full_label: `${label} – ${String(hour + 1).padStart(2, '0')}h`,
         value: sumBetween(entries, start, end),
         previous: sumBetween(entries, previousStart, previousEnd),
+      })
+    }
+    return points
+  }
+
+  if (range.granularity === 'month') {
+    // Da primeira venda até o mês atual (no mínimo os últimos 6 meses).
+    const lastMonth = new Date(range.end.getFullYear(), range.end.getMonth() - 1, 1)
+    let first = new Date(lastMonth.getFullYear(), lastMonth.getMonth() - (MIN_MONTHS_ALL_TIME - 1), 1)
+    for (const entry of entriesInRange(entries, range.start, range.end)) {
+      const date = new Date(entry.date)
+      const month = new Date(date.getFullYear(), date.getMonth(), 1)
+      if (month < first) first = month
+    }
+    const multipleYears = first.getFullYear() !== lastMonth.getFullYear()
+    for (let month = first; month <= lastMonth; month = new Date(month.getFullYear(), month.getMonth() + 1, 1)) {
+      const next = new Date(month.getFullYear(), month.getMonth() + 1, 1)
+      const short = month.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+      const name = short.charAt(0).toUpperCase() + short.slice(1)
+      points.push({
+        label: multipleYears ? `${name}/${String(month.getFullYear()).slice(2)}` : name,
+        full_label: month.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+        value: sumBetween(entries, month, next),
+        previous: 0,
       })
     }
     return points
