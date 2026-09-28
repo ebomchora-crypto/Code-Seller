@@ -22,6 +22,7 @@ import {
   setPublished,
   updateProject,
 } from '@/services/supabase/portfolio'
+import { ProjectCover } from '@/components/portfolio/ProjectCover'
 import { PORTFOLIO_CATEGORY_LABELS, portfolioUrl, slugify, validateSlug } from '@/utils/portfolio'
 import type { Portfolio, PortfolioCategory, PortfolioInput, PortfolioProject, PortfolioProjectInput } from '@/types'
 
@@ -120,6 +121,7 @@ export default function PortfolioPage() {
         description: '',
         url: '',
         image_url: null,
+        image_crop: null,
         testimonial: '',
         testimonial_author: '',
         deal_id: searchParams.get('negocio'),
@@ -393,7 +395,7 @@ export default function PortfolioPage() {
                   >
                     <div className="flex aspect-[16/10] w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--bg-muted)]">
                       {project.image_url ? (
-                        <img src={project.image_url} alt="" className="size-full object-cover" />
+                        <ProjectCover src={project.image_url} crop={project.image_crop} />
                       ) : (
                         <ImageOff className="size-5 text-[var(--text-muted)]" />
                       )}
@@ -433,6 +435,7 @@ export default function PortfolioPage() {
                               description: project.description,
                               url: project.url,
                               image_url: project.image_url,
+                              image_crop: project.image_crop,
                               testimonial: project.testimonial,
                               testimonial_author: project.testimonial_author,
                               deal_id: project.deal_id,

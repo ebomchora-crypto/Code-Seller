@@ -4,6 +4,7 @@ import { ArrowUpRight, Flag, MapPin, MessageCircle, Quote, X } from 'lucide-reac
 import { SilkRibbons } from '@/components/auth/SilkRibbons'
 import { getPublicPortfolio, registerPortfolioView, reportPortfolio } from '@/services/supabase/portfolio'
 import { whatsappUrl } from '@/utils/contactLinks'
+import { ProjectCover } from '@/components/portfolio/ProjectCover'
 import { PORTFOLIO_CATEGORY_LABELS } from '@/utils/portfolio'
 import type { PublicPortfolio, PublicPortfolioProject } from '@/types'
 
@@ -222,7 +223,9 @@ export default function PublicPortfolioPage() {
                 <article key={project.id} className="group overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.03] transition hover:border-[#a78bfa]/40">
                   <div className="aspect-[16/10] overflow-hidden bg-[linear-gradient(135deg,#1c1233,#0d0918)]">
                     {project.image_url ? (
-                      <img src={project.image_url} alt={project.title} loading="lazy" className="size-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+                      <div className="size-full transition duration-700 group-hover:scale-[1.04]">
+                        <ProjectCover src={project.image_url} crop={project.image_crop} alt={project.title} />
+                      </div>
                     ) : (
                       <div className="flex size-full items-center justify-center font-display text-[22px] font-semibold text-white/30">{project.title}</div>
                     )}

@@ -123,7 +123,7 @@ export async function getMyPublishedPortfolioLink(): Promise<string | null> {
 // ---------- Público (/p/:slug) ----------
 
 const PUBLIC_PORTFOLIO_COLUMNS = 'slug, display_name, headline, bio, avatar_url, whatsapp, city'
-const PUBLIC_PROJECT_COLUMNS = 'id, title, client_label, category, description, url, image_url, testimonial, testimonial_author'
+const PUBLIC_PROJECT_COLUMNS = 'id, title, client_label, category, description, url, image_url, image_crop, testimonial, testimonial_author'
 
 export async function getPublicPortfolio(
   slug: string,

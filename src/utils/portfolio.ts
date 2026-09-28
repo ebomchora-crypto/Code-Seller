@@ -1,4 +1,4 @@
-import type { PortfolioCategory } from '@/types'
+import type { ImageCrop, PortfolioCategory } from '@/types'
 
 export const PORTFOLIO_CATEGORY_LABELS: Record<PortfolioCategory, string> = {
   site: 'Site institucional',
@@ -40,4 +40,64 @@ export function validateSlug(slug: string): string | null {
 
 export function portfolioUrl(slug: string, origin = typeof window !== 'undefined' ? window.location.origin : 'https://codesellers.vercel.app') {
   return `${origin}/p/${slug}`
+}
+
+// ---------------------------------------------------------------------------
+// Ajuste da imagem do projeto no quadro 16:10 (arrastar, zoom, inteira).
+// ---------------------------------------------------------------------------
+
+export const COVER_ASPECT = 16 / 10
+export const MAX_ZOOM = 3
+export const DEFAULT_CROP: ImageCrop = { x: 50, y: 50, zoom: 1, fit: 'cover' }
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+// Aceita qualquer coisa vinda do banco e devolve um ajuste válido.
+export function normalizeCrop(input: unknown): ImageCrop {
+  const raw = (input && typeof input === 'object' ? input : {}) as Partial<Record<keyof ImageCrop, unknown>>
+  const number = (value: unknown, fallback: number) => (typeof value === 'number' && Number.isFinite(value) ? value : fallback)
+  return {
+    x: clamp(number(raw.x, 50), 0, 100),
+    y: clamp(number(raw.y, 50), 0, 100),
+    zoom: clamp(number(raw.zoom, 1), 1, MAX_ZOOM),
+    fit: raw.fit === 'contain' ? 'contain' : 'cover',
+  }
+}
+
+// Ajuste inicial de uma imagem nova: print de página inteira (mais alto que o
+// quadro) começa mostrando o topo do site; o resto começa centralizado.
+export function initialCrop(naturalWidth: number, naturalHeight: number): ImageCrop {
+  const tall = naturalWidth > 0 && naturalHeight / naturalWidth > (1 / COVER_ASPECT) * 1.15
+  return { ...DEFAULT_CROP, y: tall ? 0 : 50 }
+}
+
+// Estilo da <img class="object-cover"> para o ajuste: o ponto (x, y) da imagem
+// fica no ponto (x, y) do quadro e o zoom cresce a partir dele.
+export function cropStyle(crop: ImageCrop): { objectPosition: string; transform?: string; transformOrigin?: string } {
+  const position = `${crop.x}% ${crop.y}%`
+  return crop.zoom > 1 ? { objectPosition: position, transform: `scale(${crop.zoom})`, transformOrigin: position } : { objectPosition: position }
+}
+
+// Quanto da imagem sobra para fora do quadro (em px), em cada direção.
+export function cropOverflow(
+  frame: { width: number; height: number },
+  natural: { width: number; height: number },
+  zoom: number,
+): { x: number; y: number } {
+  if (!natural.width || !natural.height) return { x: 0, y: 0 }
+  const scale = Math.max(frame.width / natural.width, frame.height / natural.height) * zoom
+  return {
+    x: Math.max(0, natural.width * scale - frame.width),
+    y: Math.max(0, natural.height * scale - frame.height),
+  }
+}
+
+// Arrastar a imagem (dx, dy em px) → novo ponto x/y. Arrastar para a direita
+// revela mais do lado esquerdo, por isso o sinal invertido.
+export function dragCrop(crop: ImageCrop, dx: number, dy: number, overflow: { x: number; y: number }): ImageCrop {
+  return {
+    ...crop,
+    x: overflow.x > 0 ? clamp(crop.x - (dx / overflow.x) * 100, 0, 100) : crop.x,
+    y: overflow.y > 0 ? clamp(crop.y - (dy / overflow.y) * 100, 0, 100) : crop.y,
+  }
 }

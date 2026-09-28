@@ -17,6 +17,15 @@ export interface Portfolio {
   updated_at: string
 }
 
+// Que parte da imagem aparece no quadro 16:10 do projeto.
+// x/y: ponto que fica fixo (0–100); zoom: 1–3; fit: preencher ou mostrar inteira.
+export interface ImageCrop {
+  x: number
+  y: number
+  zoom: number
+  fit: 'cover' | 'contain'
+}
+
 export interface PortfolioProject {
   id: string
   user_id: string
@@ -26,6 +35,7 @@ export interface PortfolioProject {
   description: string | null
   url: string | null
   image_url: string | null
+  image_crop: ImageCrop | null
   testimonial: string | null
   testimonial_author: string | null
   deal_id: string | null
@@ -39,7 +49,17 @@ export type PortfolioInput = Pick<Portfolio, 'slug' | 'display_name' | 'headline
 
 export type PortfolioProjectInput = Pick<
   PortfolioProject,
-  'title' | 'client_label' | 'category' | 'description' | 'url' | 'image_url' | 'testimonial' | 'testimonial_author' | 'deal_id' | 'visible'
+  | 'title'
+  | 'client_label'
+  | 'category'
+  | 'description'
+  | 'url'
+  | 'image_url'
+  | 'image_crop'
+  | 'testimonial'
+  | 'testimonial_author'
+  | 'deal_id'
+  | 'visible'
 >
 
 export type PublicPortfolio = Omit<Portfolio, 'user_id' | 'published' | 'created_at' | 'updated_at' | 'views'>

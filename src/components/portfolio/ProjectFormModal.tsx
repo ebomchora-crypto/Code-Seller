@@ -3,6 +3,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { ImageUploader } from '@/components/portfolio/ImageUploader'
+import { CoverEditor } from '@/components/portfolio/ProjectCover'
 import { PORTFOLIO_CATEGORY_LABELS } from '@/utils/portfolio'
 import type { PortfolioCategory, PortfolioProjectInput } from '@/types'
 
@@ -22,6 +23,7 @@ const EMPTY: PortfolioProjectInput = {
   description: '',
   url: '',
   image_url: null,
+  image_crop: null,
   testimonial: '',
   testimonial_author: '',
   deal_id: null,
@@ -74,8 +76,26 @@ export function ProjectFormModal({ open, initial, editing, saving, onClose, onSu
   return (
     <Modal open={open} onClose={onClose} title={editing ? 'Editar projeto' : 'Novo projeto'} size="lg">
       <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1" data-lenis-prevent>
-        <ImageUploader value={form.image_url} onChange={(url) => update('image_url', url)} label="Adicionar imagem do projeto" />
-        <p className="-mt-2 text-[11.5px] text-[var(--text-muted)]">Dica: um print da página inicial do site, na horizontal.</p>
+        {form.image_url ? (
+          <CoverEditor
+            src={form.image_url}
+            crop={form.image_crop}
+            onCropChange={(crop) => update('image_crop', crop)}
+            onReplace={(url) => setForm((current) => ({ ...current, image_url: url, image_crop: null }))}
+            onRemove={() => setForm((current) => ({ ...current, image_url: null, image_crop: null }))}
+          />
+        ) : (
+          <>
+            <ImageUploader
+              value={null}
+              onChange={(url) => setForm((current) => ({ ...current, image_url: url, image_crop: null }))}
+              label="Adicionar imagem do projeto"
+            />
+            <p className="-mt-2 text-[11.5px] text-[var(--text-muted)]">
+              Dica: um print do site. Depois de enviar, dá para arrastar e dar zoom para escolher a parte que aparece.
+            </p>
+          </>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Título">
