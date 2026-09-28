@@ -193,7 +193,8 @@ DESIGN
 
 CONTEÚDO (português do Brasil, específico, sem enrolação)
 - Nada de lorem ipsum, "[Nome]", "Seu texto aqui", "Bem-vindo ao nosso site" ou frases vazias de empresa.
-- Escreva como o dono falaria com o cliente: serviços reais do nicho com preço "a partir de" plausível, diferenciais concretos, depoimentos com nome e contexto, dúvidas reais do nicho.
+- Escreva como o dono falaria com o cliente: serviços reais do nicho com preço "a partir de" plausível (ou os preços informados), diferenciais concretos, dúvidas reais do nicho.
+- NUNCA invente fatos sobre o negócio: nada de nota, número de avaliações, depoimentos de clientes, ano de fundação, anos de experiência, quantidade de clientes/atendimentos, prêmios ou endereço que não estejam no pedido. Use só o que foi informado; se a reputação real foi informada, use exatamente esses números. Sem dados, valorize o que é verdade para qualquer negócio do nicho (serviços, como funciona, horário, facilidade de agendar, localização na cidade).
 - Botões de contato abrem o WhatsApp com mensagem pronta coerente (target="_blank" rel="noopener"). Sem WhatsApp informado, leve para #contato.
 - Imagens: use SOMENTE as URLs da lista de fotos do pedido (pode mudar só o w=). Nunca invente URL de imagem. Sem foto adequada, resolva com design. Sempre alt descritivo e object-cover; loading="lazy" fora do topo. Avatares de depoimentos: iniciais em círculo, nunca foto.`
 
@@ -205,7 +206,7 @@ export const PLAN_SYSTEM = `Você é o diretor de arte do Code Maker. Você plan
 
 Responda exatamente neste formato, sem nada antes ou depois:
 <acoes>
-- (3 a 5 itens curtos, 1ª pessoa, contando as decisões: direção de arte, paleta, fontes, estrutura)
+- (3 a 5 itens curtos, 1ª pessoa, em linguagem simples para o dono do negócio, contando as decisões: clima do visual, cores, fontes, o que o site vai mostrar. Sem termos técnicos nem nomes internos como paper, ink, surface, brand, hero ou bg)
 </acoes>
 <plano>
 { JSON válido, sem comentários }
@@ -223,7 +224,7 @@ Formato do JSON:
 }
 
 Regras do plano:
-- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, numeros, servicos, diferenciais, galeria, depoimentos, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Inclua "contato" (localização, horário e WhatsApp) perto do fim.
+- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
 - Alterne "bg" entre as seções para dar ritmo (nunca 3 seguidas iguais); use "ink" ou "brand" em 1 ou 2 seções de destaque.
 - Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Fontes que combinem e existam no Google Fonts.
 - Cada "brief" deve ser específico do negócio (serviços, preços "a partir de", diferenciais, dúvidas reais), não genérico.`
@@ -278,7 +279,7 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
   const onDark = section?.bg === 'ink' || section?.bg === 'brand'
   const hero =
     partId === 'hero'
-      ? ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, prova social logo abaixo e um visual marcante (foto grande em cartão arredondado com 1–2 cartões flutuantes de dados, ou foto de fundo com gradiente por cima).'
+      ? ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de destaques verdadeiros logo abaixo (a reputação real, se informada; senão, facilidades como agendamento, horário ou localização) e um visual marcante (foto grande em cartão arredondado com 1–2 cartões flutuantes com informações verdadeiras como horário, preço a partir de ou bairro, ou foto de fundo com gradiente por cima).'
       : ''
   return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}". Briefing: ${section?.brief ?? ''}${hero}${
     onDark ? ` O fundo desta seção é escuro/colorido (${bgClass}): use texto claro (text-paper, text-white, text-paper/70) e cartões em white/10.` : ''
@@ -316,7 +317,7 @@ ${DESIGN_RULES}
 
 FORMATO DA RESPOSTA (sem nada antes ou depois):
 <acoes>
-- (2 a 6 itens curtos, 1ª pessoa, contando exatamente o que você mudou)
+- (2 a 6 itens curtos, 1ª pessoa, em linguagem simples, sem termos técnicos, contando exatamente o que você mudou)
 </acoes>
 Depois, só o que muda:
 - Parte alterada: <parte id="id">HTML completo da parte</parte>

@@ -2,7 +2,7 @@ const PAGE_SECTIONS = [
   { paths: ['/aluno'], label: 'Principal' },
   { paths: ['/prospection', '/crm', '/portfolio', '/deals'], label: 'Vendas' },
   { paths: ['/financial', '/tasks', '/relatorios'], label: 'Gestão' },
-  { paths: ['/copilot'], label: 'IA' },
+  { paths: ['/copilot', '/code-maker'], label: 'IA' },
   { paths: ['/settings', '/support'], label: 'Conta' },
 ] as const
 

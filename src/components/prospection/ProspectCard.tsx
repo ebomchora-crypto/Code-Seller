@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
-import { AtSign, Check, CheckCircle2, EyeOff, Globe, MapPin, MessageCircle, Phone, Plus, Sparkles, Star } from 'lucide-react'
+import { AtSign, Check, CheckCircle2, CodeXml, EyeOff, Globe, MapPin, MessageCircle, Phone, Plus, Sparkles, Star } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
 import { siteUrl, whatsappUrl } from '@/utils/contactLinks'
+import { newSiteLink } from '@/utils/codeMakerStream'
 import { isMobilePhone, POTENTIAL_LABELS, WEBSITE_KIND_LABELS } from '@/utils/prospection'
 import type { PotentialLevel, ScoredProspect } from '@/types'
 
@@ -153,6 +154,22 @@ export function ProspectCard({
         <button type="button" onClick={onOutreach} className={iconButton} title="Gerar abordagem" aria-label={`Gerar abordagem para ${prospect.name}`}>
           <Sparkles className="size-4" />
         </button>
+        <Link
+          to={newSiteLink({
+            name: prospect.name,
+            niche: prospect.category,
+            city: [prospect.city, prospect.state].filter(Boolean).join(', '),
+            phone: prospect.phone,
+            contactId: importedContactId,
+            rating: prospect.rating,
+            reviews: prospect.reviews,
+          })}
+          className={iconButton}
+          title="Criar site com o Code Maker"
+          aria-label={`Criar site para ${prospect.name}`}
+        >
+          <CodeXml className="size-4" />
+        </Link>
         {whatsapp ? (
           <a href={whatsapp} target="_blank" rel="noreferrer" className={iconButton} title="Abrir WhatsApp" aria-label={`WhatsApp de ${prospect.name}`}>
             <MessageCircle className="size-4" />

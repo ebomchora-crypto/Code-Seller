@@ -24,3 +24,8 @@ test('demais páginas preservam a superfície e a transição normais', () => {
     animateOpacity: true,
   })
 })
+
+test('editor do Code Maker ocupa o painel inteiro, a lista de sites não', () => {
+  assert.equal(getAppSurface('/code-maker/0f3c').immersive, true)
+  assert.equal(getAppSurface('/code-maker').immersive, false)
+})

@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
-import { ChartColumnBig, Download, GalleryHorizontalEnd, GraduationCap } from 'lucide-react'
+import { ChartColumnBig, CodeXml, Download, GalleryHorizontalEnd, GraduationCap } from 'lucide-react'
 import {
   AutopilotIcon,
   CrmIcon,
@@ -35,6 +35,7 @@ const financialItem: NavItem = { label: 'Financeiro', path: '/financial', icon: 
 const tasksItem: NavItem = { label: 'Tarefas', path: '/tasks', icon: TasksIcon }
 const reportsItem: NavItem = { label: 'Relatórios', path: '/relatorios', icon: ChartColumnBig }
 const autopilotItem: NavItem = { label: 'CS Copilot', path: '/copilot', icon: AutopilotIcon }
+const codeMakerItem: NavItem = { label: 'Code Maker', path: '/code-maker', icon: CodeXml }
 const downloadAppItem: NavItem = {
   label: 'Baixar app',
   path: '/downloads/CodeSellers-Setup.exe',
@@ -48,7 +49,7 @@ export const navGroups: NavGroup[] = [
   { label: 'Principal', items: [dashboardItem, academyItem] },
   { label: 'Vendas', items: [prospectionItem, crmItem, portfolioItem, dealsItem] },
   { label: 'Gestão', items: [financialItem, tasksItem, reportsItem] },
-  { label: 'IA', items: [autopilotItem, downloadAppItem] },
+  { label: 'IA', items: [autopilotItem, codeMakerItem, downloadAppItem] },
   { label: 'Conta', items: [settingsItem, supportItem] },
 ]
 

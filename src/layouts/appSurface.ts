@@ -5,7 +5,8 @@ export interface AppSurface {
 }
 
 export function getAppSurface(pathname: string): AppSurface {
-  const immersive = pathname === '/copilot' || pathname.startsWith('/copilot/')
+  // Chat do Copilot e editor do Code Maker (/code-maker/:id).
+  const immersive = pathname === '/copilot' || pathname.startsWith('/copilot/') || /^\/code-maker\/[^/]+/.test(pathname)
   return {
     immersive,
     animateOpacity: !immersive,

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CodeXml } from 'lucide-react'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -16,6 +16,7 @@ import { useContact } from '@/hooks/useContact'
 import { useTags } from '@/hooks/useTags'
 import { SendMessageButton } from '@/components/messages/SendMessageButton'
 import { FollowUpButton } from '@/components/followup/FollowUpButton'
+import { newSiteLink } from '@/utils/codeMakerStream'
 
 export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -67,6 +68,13 @@ export default function ContactDetailPage() {
                   className={buttonClass}
                   target={{ contact: { id: contact.id, name: contact.name, city: contact.city, niche: contact.niche } }}
                 />
+                <Link
+                  to={newSiteLink({ name: contact.name, niche: contact.niche, city: contact.city, phone: contact.phone, contactId: contact.id })}
+                  className={buttonClass}
+                >
+                  <CodeXml className="size-4 text-[var(--accent-text)]" />
+                  Criar site
+                </Link>
               </>
             )}
             extra={<LinkedTasksSection contactId={contact.id} contactName={contact.name} />}

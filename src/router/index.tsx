@@ -20,6 +20,8 @@ const DealDetailPage = lazyPage(() => import('@/pages/deals/[id]'))
 const FinancialPage = lazyPage(() => import('@/pages/financial'))
 const TasksPage = lazyPage(() => import('@/pages/tasks'))
 const CopilotPage = lazyPage(() => import('@/pages/autopilot'))
+const CodeMakerPage = lazyPage(() => import('@/pages/code-maker'))
+const CodeMakerEditorPage = lazyPage(() => import('@/pages/code-maker/[id]'))
 const SettingsPage = lazyPage(() => import('@/pages/settings'))
 const SupportPage = lazyPage(() => import('@/pages/support'))
 const ReportsPage = lazyPage(() => import('@/pages/reports'))
@@ -30,6 +32,7 @@ const AcademyKitPage = lazyPage(() => import('@/pages/academy/kit'))
 const PublicPortfolioPage = lazyPage(() => import('@/pages/public-portfolio'))
 const PublicLeadFormPage = lazyPage(() => import('@/pages/public-lead-form'))
 const PublicProposalPage = lazyPage(() => import('@/pages/public-proposal'))
+const PublicSitePage = lazyPage(() => import('@/pages/public-site'))
 const RevenueRoomPage = lazyPage(() => import('@/pages/revenue-room'))
 const NotFoundPage = lazyPage(() => import('@/pages/not-found'))
 
@@ -78,6 +81,8 @@ export function AppRouter() {
           <Route path="/p/:slug" element={<PublicPortfolioPage />} />
           <Route path="/f/:slug" element={<PublicLeadFormPage />} />
           <Route path="/proposta/:token" element={<PublicProposalPage />} />
+          {/* Sites criados no Code Maker. */}
+          <Route path="/s/:slug" element={<PublicSitePage />} />
 
           <Route
             path="/sala-de-receita"
@@ -103,6 +108,8 @@ export function AppRouter() {
             <Route path="/relatorios" element={<ReportsPage />} />
             <Route path="/copilot" element={<CopilotPage />} />
             <Route path="/autopilot" element={<Navigate to="/copilot" replace />} />
+            <Route path="/code-maker" element={<CodeMakerPage />} />
+            <Route path="/code-maker/:id" element={<CodeMakerEditorPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
           </Route>
