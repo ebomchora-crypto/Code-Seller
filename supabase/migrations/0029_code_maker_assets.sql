@@ -15,6 +15,13 @@ create policy "site-assets: dono envia"
   to authenticated
   with check (bucket_id = 'site-assets' and (select auth.uid())::text = (storage.foldername(name))[1]);
 
+-- Ver a própria pasta (sem isto o "apaga" não encontra os arquivos).
+drop policy if exists "site-assets: dono vê" on storage.objects;
+create policy "site-assets: dono vê"
+  on storage.objects for select
+  to authenticated
+  using (bucket_id = 'site-assets' and (select auth.uid())::text = (storage.foldername(name))[1]);
+
 drop policy if exists "site-assets: dono apaga" on storage.objects;
 create policy "site-assets: dono apaga"
   on storage.objects for delete
