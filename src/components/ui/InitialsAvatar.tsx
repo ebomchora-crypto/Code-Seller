@@ -7,7 +7,8 @@ const AVATAR_GRADIENTS = [
 ]
 
 const SIZES = {
-  sm: 'size-8 rounded-[10px] text-[11px]',
+  xs: 'size-6 rounded-lg text-[9.5px]',
+  sm:'size-8 rounded-[10px] text-[11px]',
   md: 'size-10 rounded-xl text-[12.5px]',
   lg: 'size-16 rounded-[20px] text-[20px]',
 }

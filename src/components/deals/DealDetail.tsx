@@ -159,8 +159,10 @@ export function DealDetail({
           aria-hidden
         />
 
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+        {/* Título e valor em cima; os botões numa linha própria embaixo —
+            lado a lado com o título, eles espremiam o nome do negócio. */}
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-5">
             <span
               className="flex size-16 shrink-0 items-center justify-center rounded-[20px]"
               style={{ backgroundColor: `${stageConfig.color}22`, color: stageConfig.color }}
@@ -218,32 +220,31 @@ export function DealDetail({
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col gap-4 lg:items-end">
-            <div className="lg:text-right">
-              <p className="font-display text-[30px] font-bold leading-none tracking-tight tabular-nums text-[var(--text-primary)]">
-                {formatCurrency(deal.value)}
-              </p>
-              <p className="mt-1.5 text-[12.5px] text-[var(--text-muted)]">
-                {deal.probability}% de chance de fechar
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {actions?.(actionButton)}
-              <button type="button" onClick={onEdit} className={actionButton}>
-                <Pencil className="size-4 text-[var(--text-muted)]" />
-                Editar
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteOpen(true)}
-                aria-label="Excluir negócio"
-                title="Excluir negócio"
-                className="flex size-10 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            </div>
+          <div className="shrink-0 sm:text-right">
+            <p className="font-display text-[30px] font-bold leading-none tracking-tight tabular-nums text-[var(--text-primary)]">
+              {formatCurrency(deal.value)}
+            </p>
+            <p className="mt-1.5 text-[12.5px] text-[var(--text-muted)]">
+              {deal.probability}% de chance de fechar
+            </p>
           </div>
+        </div>
+
+        <div className="relative mt-5 flex flex-wrap items-center gap-2">
+          {actions?.(actionButton)}
+          <button type="button" onClick={onEdit} className={actionButton}>
+            <Pencil className="size-4 text-[var(--text-muted)]" />
+            Editar
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeleteOpen(true)}
+            aria-label="Excluir negócio"
+            title="Excluir negócio"
+            className="ml-auto flex size-10 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
+          >
+            <Trash2 className="size-4" />
+          </button>
         </div>
 
         {/* Etapas do funil: clique numa etapa para mover o negócio. */}

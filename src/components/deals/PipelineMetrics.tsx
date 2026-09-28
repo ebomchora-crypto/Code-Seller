@@ -33,7 +33,7 @@ export function PipelineMetrics({ metrics, activeDealsCount }: PipelineMetricsPr
     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <MetricCard label="Em aberto" value={formatCurrency(openValue)} caption="Soma dos negócios em andamento" icon={Wallet} tone="#a78bfa" />
       <MetricCard label="Negócios ativos" value={Math.round(activeCount).toString()} caption="Em andamento agora" icon={Briefcase} tone="#818cf8" />
-      <MetricCard label="Conversão" value={`${conversionRate.toFixed(1)}%`} caption="Ganhos sobre os já decididos" icon={Target} tone="#e879f9" />
+      <MetricCard label="Conversão" value={`${Math.round(conversionRate)}%`} caption="Ganhos sobre os já decididos" icon={Target} tone="#e879f9" />
       <MetricCard label="Ticket médio" value={formatCurrency(avgDealValue)} caption="Média dos negócios ganhos" icon={Receipt} tone="#34d399" />
     </div>
   )
