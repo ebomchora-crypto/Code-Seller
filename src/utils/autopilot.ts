@@ -1,4 +1,6 @@
 import type { ActionType, AutoPilotContext, ProposedAction } from '@/types'
+import { parseLeadAnalysis } from './copilotCRM'
+import type { LeadAnalysis } from '@/types'
 
 const ACTION_TAG_REGEX = /<action>([\s\S]*?)<\/action>/g
 const VALID_ACTION_TYPES: ActionType[] = [
@@ -9,6 +11,7 @@ const VALID_ACTION_TYPES: ActionType[] = [
 ]
 
 interface ParsedResponse {
+  analysis: LeadAnalysis | null
   text: string
   actions: Omit<ProposedAction, 'status'>[]
 }
@@ -52,8 +55,13 @@ function parseActionBlock(raw: string): Omit<ProposedAction, 'status'> | null {
 // o colocou no texto, não apenas no final da mensagem.
 export function parseAutoPilotResponse(rawContent: string): ParsedResponse {
   const actions: Omit<ProposedAction, 'status'>[] = []
+  let analysis: LeadAnalysis | null = null
 
   const text = rawContent
+    .replace(/<lead_analysis>([\s\S]*?)<\/lead_analysis>/g, (_match, inner: string) => {
+      try { analysis = parseLeadAnalysis(JSON.parse(inner)) } catch { /* Keep the readable response on malformed output. */ }
+      return ''
+    })
     .replace(ACTION_TAG_REGEX, (_match, inner: string) => {
       const action = parseActionBlock(inner.trim())
       if (!action) return ''
@@ -63,7 +71,7 @@ export function parseAutoPilotResponse(rawContent: string): ParsedResponse {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
-  return { text, actions }
+  return { text, actions, analysis }
 }
 
 export function generateConversationTitle(firstMessage: string): string {
@@ -73,5 +81,10 @@ export function generateConversationTitle(firstMessage: string): string {
 }
 
 export function serializeContext(context: AutoPilotContext): string {
-  return JSON.stringify(context)
+  const lead = context.selected_lead
+  if (!lead) return JSON.stringify(context)
+  return JSON.stringify({ ...context, selected_lead: {
+    ...lead,
+    proposals: lead.proposals.map((row) => ({ ...row, token: undefined })),
+  } })
 }

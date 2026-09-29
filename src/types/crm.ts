@@ -12,6 +12,8 @@ export interface Tag {
 }
 
 export interface Interaction {
+  direction?: 'inbound' | 'outbound' | null
+  metadata?: { event?: 'prototype_sent' | 'summary' | 'meeting_summary'; [key: string]: unknown } | null
   id: string
   contact_id: string
   user_id: string

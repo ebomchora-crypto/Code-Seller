@@ -1,25 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  createConversation,
-  deleteConversation as deleteConversationService,
-  getConversationById,
-  getConversations,
-  saveMessage,
-  updateActionStatus,
-  updateConversationTitle,
-} from '@/services/supabase/autopilot'
+import { createConversation, deleteConversation as removeConversation, getConversationById, getConversations,
+  saveMessage, updateActionStatus, updateConversationTitle, claimAction, getOlderConversationMessages,
+  updateCommercialMemory, updateConversationPreferences } from '@/services/supabase/autopilot'
 import { buildAutoPilotContext } from '@/services/supabase/autopilotContext'
 import { executeAction } from '@/services/autopilot/actionExecutor'
-import { sendAutoPilotMessage } from '@/integrations/ai'
+import { sendAutoPilotMessage, summarizeCommercialMemory } from '@/integrations/ai'
 import { generateConversationTitle, parseAutoPilotResponse } from '@/utils/autopilot'
 import { useAuthContext } from '@/stores/AuthContext'
-import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage } from '@/types'
+import { DEFAULT_COPILOT_PREFERENCES, type AutoPilotContext, type AutoPilotConversation, type AutoPilotMessage, type CopilotPreferences, type ActionStatus } from '@/types'
 
-const MAX_HISTORY_MESSAGES = 20
-const DEFAULT_TITLE = 'Nova conversa'
-
-export function useAutoPilot() {
+export function useAutoPilot(contactId?: string) {
   const { user } = useAuthContext()
   const [conversations, setConversations] = useState<AutoPilotConversation[]>([])
   const [activeConversation, setActiveConversation] = useState<AutoPilotConversation | null>(null)
@@ -27,234 +18,198 @@ export function useAutoPilot() {
   const [context, setContext] = useState<AutoPilotContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [hasOlder, setHasOlder] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const loadConversations = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await getConversations()
-      setConversations(result)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Não foi possível carregar as conversas.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
+  const epoch = useRef(0)
+  const sendLock = useRef(false)
+  const abortRef = useRef<AbortController | null>(null)
+  const lastPreferences = useRef<CopilotPreferences>(DEFAULT_COPILOT_PREFERENCES)
+  const actionLocks = useRef(new Set<string>())
   const refreshContext = useCallback(async () => {
+    const scope = epoch.current
     try {
-      const result = await buildAutoPilotContext()
-      setContext(result)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível carregar o contexto do CS Copilot.')
-    }
-  }, [])
-
-  useEffect(() => {
-    void loadConversations()
-    void refreshContext()
-  }, [loadConversations, refreshContext])
-
+      const result = await buildAutoPilotContext(contactId)
+      if (scope === epoch.current) setContext(result)
+    } catch (err) { if (scope === epoch.current) toast.error(err instanceof Error ? err.message : 'Falha ao atualizar contexto.') }
+  }, [contactId])
+  const loadConversations = useCallback(async () => {
+    const scope = ++epoch.current
+    setLoading(true); setError(null); setContext(null); setMessages([]); setActiveConversation(null); setHasOlder(false)
+    if (!user) { setConversations([]); setLoading(false); return }
+    try {
+      const [list, snapshot] = await Promise.all([getConversations(contactId), buildAutoPilotContext(contactId)])
+      const conversation = contactId && list[0] ? await getConversationById(list[0].id) : null
+      if (scope !== epoch.current) return
+      setConversations(list); setContext(snapshot); setActiveConversation(conversation); setMessages(conversation?.messages ?? [])
+      setHasOlder((conversation?.messages?.length ?? 0) === 100)
+    } catch (err) { if (scope === epoch.current) setError(err instanceof Error ? err.message : 'Não foi possível abrir o CS Copilot.') }
+    finally { if (scope === epoch.current) setLoading(false) }
+  }, [contactId, user?.id])
+  useEffect(() => { void loadConversations(); return () => { epoch.current++ } }, [loadConversations])
   const selectConversation = useCallback(async (id: string) => {
+    if (sendLock.current) return
+    const scope = ++epoch.current
+    setLoading(true); setError(null)
     try {
       const conversation = await getConversationById(id)
-      if (!conversation) {
-        toast.error('Conversa não encontrada.')
-        return
-      }
-      setActiveConversation(conversation)
-      setMessages(conversation.messages ?? [])
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível abrir a conversa.')
-    }
-  }, [])
-
+      if (scope !== epoch.current) return
+      if (!conversation || (conversation.contact_id ?? undefined) !== contactId) throw new Error('Conversa indisponível neste contexto.')
+      setActiveConversation(conversation); setMessages(conversation.messages ?? [])
+      setHasOlder((conversation.messages?.length ?? 0) === 100)
+    } catch (err) { if (scope === epoch.current) setError(err instanceof Error ? err.message : 'Falha ao abrir conversa.') }
+    finally { if (scope === epoch.current) setLoading(false) }
+  }, [contactId])
   const createNewConversation = useCallback(async () => {
+    if (sendLock.current || contactId) return
+    epoch.current++; setActiveConversation(null); setMessages([]); setError(null); setHasOlder(false)
+  }, [contactId])
+  const loadOlder = useCallback(async () => {
+    if (!activeConversation || !messages[0] || !hasOlder) return
     try {
-      const conversation = await createConversation(DEFAULT_TITLE)
-      setConversations((current) => [conversation, ...current])
-      setActiveConversation(conversation)
-      setMessages([])
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível criar uma nova conversa.')
-    }
-  }, [])
-
-  const deleteConversation = useCallback(
-    async (id: string) => {
-      try {
-        await deleteConversationService(id)
-        setConversations((current) => current.filter((conversation) => conversation.id !== id))
-        if (activeConversation?.id === id) {
-          setActiveConversation(null)
-          setMessages([])
-        }
-        toast.success('Conversa excluída.')
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Não foi possível excluir a conversa.')
-      }
-    },
-    [activeConversation],
-  )
-
+      const older = await getOlderConversationMessages(activeConversation.id, messages[0])
+      setMessages((current) => [...older, ...current])
+      setHasOlder(older.length === 100)
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao carregar histórico anterior.') }
+  }, [activeConversation, messages, hasOlder])
+  const changePreferences = useCallback(async (preferences: CopilotPreferences) => {
+    lastPreferences.current = preferences
+    if (!activeConversation) return
+    try {
+      await updateConversationPreferences(activeConversation.id, preferences)
+      setActiveConversation((current) => current?.id === activeConversation.id ? { ...current, preferences } : current)
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao salvar preferências da conversa.') }
+  }, [activeConversation])
+  const deleteConversation = useCallback(async (id: string) => {
+    if (sendLock.current) return
+    try {
+      await removeConversation(id)
+      setConversations((current) => current.filter((item) => item.id !== id))
+      if (activeConversation?.id === id) { setActiveConversation(null); setMessages([]) }
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao excluir conversa.') }
+  }, [activeConversation])
   const renameConversation = useCallback(async (id: string, title: string) => {
     try {
       await updateConversationTitle(id, title)
-      setActiveConversation((current) => (current?.id === id ? { ...current, title } : current))
-      setConversations((current) => current.map((item) => (item.id === id ? { ...item, title } : item)))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível renomear a conversa.')
-    }
+      setActiveConversation((current) => current?.id === id ? { ...current, title } : current)
+      setConversations((current) => current.map((item) => item.id === id ? { ...item, title } : item))
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao renomear conversa.') }
   }, [])
-
-  const sendMessage = useCallback(
-    async (content: string) => {
-      if (!user) return
-      const trimmed = content.trim()
-      if (!trimmed) return
-
-      let conversation = activeConversation
-      if (!conversation) {
-        try {
-          conversation = await createConversation(DEFAULT_TITLE)
-          setConversations((current) => [conversation!, ...current])
-          setActiveConversation(conversation)
-        } catch (err) {
-          toast.error(err instanceof Error ? err.message : 'Não foi possível iniciar a conversa.')
-          return
-        }
-      }
-
-      const isFirstMessage = messages.length === 0
-
-      const optimisticUserMessage: AutoPilotMessage = {
-        id: `temp-user-${Date.now()}`,
-        conversation_id: conversation.id,
-        user_id: user.id,
-        role: 'user',
-        content: trimmed,
-        actions: [],
-        created_at: new Date().toISOString(),
-      }
-      setMessages((current) => [...current, optimisticUserMessage])
-      setSending(true)
-      setError(null)
-
-      try {
-        const savedUserMessage = await saveMessage({
-          conversation_id: conversation.id,
-          user_id: user.id,
-          role: 'user',
-          content: trimmed,
-          actions: [],
-        })
-        setMessages((current) =>
-          current.map((message) => (message.id === optimisticUserMessage.id ? savedUserMessage : message)),
-        )
-
-        const history = messages
-          .slice(-MAX_HISTORY_MESSAGES)
-          .map((message) => ({ role: message.role, content: message.content }))
-
-        const activeContext = context ?? (await buildAutoPilotContext())
-        if (!context) setContext(activeContext)
-
-        const rawResponse = await sendAutoPilotMessage(history, activeContext, trimmed)
-        const { text, actions } = parseAutoPilotResponse(rawResponse)
-
-        const assistantMessage = await saveMessage({
-          conversation_id: conversation.id,
-          user_id: user.id,
-          role: 'assistant',
-          content: text,
-          actions: actions.map((action) => ({ ...action, status: 'pending' as const })),
-        })
-        setMessages((current) => [...current, assistantMessage])
-
-        if (isFirstMessage && conversation.title === DEFAULT_TITLE) {
-          const title = generateConversationTitle(trimmed)
-          await updateConversationTitle(conversation.id, title)
-          setActiveConversation((current) => (current ? { ...current, title } : current))
-          setConversations((current) =>
-            current.map((item) => (item.id === conversation!.id ? { ...item, title } : item)),
-          )
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Não foi possível obter resposta do CS Copilot.'
-        setError(message)
-        toast.error(message)
-      } finally {
-        setSending(false)
-      }
-    },
-    [activeConversation, context, messages, user],
-  )
-
-  const confirmAction = useCallback(
-    async (messageId: string, actionIndex: number) => {
-      const message = messages.find((item) => item.id === messageId)
-      const action = message?.actions[actionIndex]
-      if (!action) return
-
-      try {
-        await executeAction(action)
-        await updateActionStatus(messageId, actionIndex, 'executed')
-        setMessages((current) =>
-          current.map((item) =>
-            item.id === messageId
-              ? { ...item, actions: item.actions.map((a, i) => (i === actionIndex ? { ...a, status: 'executed' } : a)) }
-              : item,
-          ),
-        )
-        toast.success(`Ação executada: ${action.label}`)
-        void refreshContext()
-      } catch (err) {
-        await updateActionStatus(messageId, actionIndex, 'failed').catch(() => undefined)
-        setMessages((current) =>
-          current.map((item) =>
-            item.id === messageId
-              ? { ...item, actions: item.actions.map((a, i) => (i === actionIndex ? { ...a, status: 'failed' } : a)) }
-              : item,
-          ),
-        )
-        toast.error(err instanceof Error ? err.message : 'Não foi possível executar a ação.')
-      }
-    },
-    [messages, refreshContext],
-  )
-
-  const rejectAction = useCallback(async (messageId: string, actionIndex: number) => {
+  const sendMessage = useCallback(async (content: string, preferences: CopilotPreferences = DEFAULT_COPILOT_PREFERENCES, retry = false) => {
+    if (!user || !content.trim() || loading || sendLock.current) return
+    lastPreferences.current = preferences
+    sendLock.current = true; setSending(true); setError(null)
+    const controller = new AbortController()
+    abortRef.current = controller
+    const scope = epoch.current
+    const trimmed = content.trim()
     try {
-      await updateActionStatus(messageId, actionIndex, 'rejected')
-      setMessages((current) =>
-        current.map((item) =>
-          item.id === messageId
-            ? { ...item, actions: item.actions.map((a, i) => (i === actionIndex ? { ...a, status: 'rejected' } : a)) }
-            : item,
-        ),
-      )
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível rejeitar a ação.')
-    }
-  }, [])
-
-  return {
-    conversations,
-    activeConversation,
-    messages,
-    context,
-    loading,
-    sending,
-    error,
-    loadConversations,
-    selectConversation,
-    createNewConversation,
-    deleteConversation,
-    renameConversation,
-    sendMessage,
-    confirmAction,
-    rejectAction,
-    refreshContext,
+      const snapshot = await buildAutoPilotContext(contactId)
+      let conversation = activeConversation
+      let history = messages
+      if (!conversation) {
+        conversation = await createConversation(contactId ? snapshot.selected_lead!.contact.name : 'Nova conversa', contactId, preferences)
+        history = (await getConversationById(conversation.id))?.messages ?? []
+      }
+      const currentConversation = conversation
+      if (scope === epoch.current) {
+        setContext(snapshot); setActiveConversation(conversation); setMessages(history)
+        setConversations((current) => current.some((item) => item.id === currentConversation.id) ? current : [currentConversation, ...current])
+      }
+      if (retry) {
+        if (history.at(-1)?.role !== 'user' || history.at(-1)?.content !== trimmed) throw new Error('Não há mensagem pendente para tentar novamente.')
+        history = history.slice(0, -1)
+      } else {
+        const saved = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'user', content: trimmed, actions: [] })
+        if (scope === epoch.current) setMessages((current) => [...current, saved])
+      }
+      if (contactId && !conversation.commercial_memory && history.length) {
+        let completeHistory = [...history]
+        let moreHistory = hasOlder
+        while (completeHistory.length && moreHistory) {
+          const older = await getOlderConversationMessages(conversation.id, completeHistory[0])
+          if (!older.length) break
+          completeHistory = [...older, ...completeHistory]
+          moreHistory = older.length === 100
+        }
+        const memory = await summarizeCommercialMemory(null,
+          completeHistory.map((message) => `${message.role}: ${message.content}`).join('\n\n'), '',
+          snapshot.selected_lead?.previous_analysis?.summary, controller.signal)
+        await updateCommercialMemory(conversation.id, memory)
+        conversation = { ...conversation, commercial_memory: memory }
+        if (snapshot.selected_lead) snapshot.selected_lead.commercial_memory = memory
+        if (scope === epoch.current) setActiveConversation(conversation)
+      }
+      const response = await sendAutoPilotMessage(history.map((message) => ({
+        role: message.role,
+        content: message.content + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
+      })), snapshot, trimmed, preferences, controller.signal)
+      const parsed = parseAutoPilotResponse(response)
+      const answer = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'assistant',
+        content: parsed.text, analysis: parsed.analysis, actions: parsed.actions.map((action) => ({ ...action, status: 'pending' })) })
+      if (scope === epoch.current) setMessages((current) => [...current, answer])
+      if (contactId && !controller.signal.aborted) {
+        try {
+          const memory = await summarizeCommercialMemory(snapshot.selected_lead?.commercial_memory ?? null,
+            trimmed, response, snapshot.selected_lead?.previous_analysis?.summary, controller.signal)
+          await updateCommercialMemory(conversation.id, memory)
+          if (scope === epoch.current) {
+            setActiveConversation((current) => current?.id === conversation.id ? { ...current, commercial_memory: memory } : current)
+            setContext((current) => current?.selected_lead
+              ? { ...current, selected_lead: { ...current.selected_lead, commercial_memory: memory } } : current)
+          }
+        } catch (memoryError) {
+          if (!controller.signal.aborted) toast.error(memoryError instanceof Error ? memoryError.message : 'Falha ao atualizar memória comercial.')
+        }
+      }
+      if (!contactId && conversation.title === 'Nova conversa') await renameConversation(conversation.id, generateConversationTitle(trimmed))
+    } catch (err) { if (scope === epoch.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Falha ao consultar o CS Copilot.') }
+    finally { if (abortRef.current === controller) abortRef.current = null; sendLock.current = false; setSending(false) }
+  }, [user, loading, contactId, activeConversation, messages, hasOlder, renameConversation])
+  const cancelGeneration = () => abortRef.current?.abort()
+  const retryAvailable = messages.at(-1)?.role === 'user' && Boolean(activeConversation)
+  const retryLast = () => {
+    if (retryAvailable) void sendMessage(messages.at(-1)!.content, activeConversation?.preferences ?? lastPreferences.current, true)
   }
+  const setActionState = (id: string, index: number, status: ActionStatus) => {
+    setMessages((current) => current.map((message) => message.id === id
+      ? { ...message, actions: message.actions.map((action, i) => i === index ? { ...action, status } : action) } : message))
+  }
+  const confirmAction = async (messageId: string, actionIndex: number) => {
+    const action = messages.find((message) => message.id === messageId)?.actions[actionIndex]
+    const key = messageId + ':' + actionIndex
+    if (!action || !['pending', 'failed'].includes(action.status) || actionLocks.current.has(key)) return
+    actionLocks.current.add(key)
+    let executed = false
+    let claimed = false
+    try {
+      const lead = context?.selected_lead
+      if (lead && !action.payload.contact_id && !action.payload.deal_id) throw new Error('A ação precisa identificar o lead ou negócio aberto.')
+      if (lead && ((action.payload.contact_id && action.payload.contact_id !== lead.contact.id)
+        || (action.payload.deal_id && !lead.deals.some((deal) => deal.id === action.payload.deal_id)))) throw new Error('A ação não pertence ao lead aberto.')
+      claimed = await claimAction(messageId, actionIndex)
+      if (!claimed) throw new Error('Esta ação já foi confirmada. Atualize a conversa.')
+      setActionState(messageId, actionIndex, 'confirmed')
+      await executeAction(action)
+      executed = true
+      await updateActionStatus(messageId, actionIndex, 'executed')
+      setActionState(messageId, actionIndex, 'executed')
+      toast.success('Ação executada.')
+      await refreshContext()
+    } catch (err) {
+      if (claimed && !executed) {
+        await updateActionStatus(messageId, actionIndex, 'failed').catch(() => undefined)
+        setActionState(messageId, actionIndex, 'failed')
+      }
+      toast.error(executed ? 'A ação foi realizada, mas o histórico não foi atualizado. Confira o CRM antes de repetir.' : err instanceof Error ? err.message : 'Falha ao executar ação.')
+    } finally { actionLocks.current.delete(key) }
+  }
+  const rejectAction = async (messageId: string, actionIndex: number) => {
+    const action = messages.find((message) => message.id === messageId)?.actions[actionIndex]
+    if (!action || !['pending', 'failed'].includes(action.status) || actionLocks.current.has(messageId + ':' + actionIndex)) return
+    try { await updateActionStatus(messageId, actionIndex, 'rejected'); setActionState(messageId, actionIndex, 'rejected') }
+    catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao recusar ação.') }
+  }
+  return { conversations, activeConversation, messages, context, loading, sending, error, hasOlder, retryAvailable,
+    loadConversations, loadOlder, selectConversation, createNewConversation, deleteConversation, renameConversation,
+    changePreferences, sendMessage, retryLast, cancelGeneration, confirmAction, rejectAction, refreshContext }
 }

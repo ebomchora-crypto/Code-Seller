@@ -1,17 +1,35 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, Pencil } from 'lucide-react'
 import { ContextBadge } from '@/components/autopilot/ContextBadge'
 import { MessageList } from '@/components/autopilot/MessageList'
 import { MessageInput } from '@/components/autopilot/MessageInput'
 import { QuickPrompts } from '@/components/autopilot/QuickPrompts'
-import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage } from '@/types'
+import { DEFAULT_COPILOT_PREFERENCES, type AutoPilotContext, type AutoPilotConversation, type AutoPilotMessage, type CopilotPreferences } from '@/types'
+
+const PREFERENCES_STORAGE_KEY = 'code-sellers-copilot-preferences'
+
+function readPreferences(): CopilotPreferences {
+  try {
+    const saved = localStorage.getItem(PREFERENCES_STORAGE_KEY)
+    return saved ? { ...DEFAULT_COPILOT_PREFERENCES, ...JSON.parse(saved) } : DEFAULT_COPILOT_PREFERENCES
+  } catch {
+    return DEFAULT_COPILOT_PREFERENCES
+  }
+}
 
 interface ChatInterfaceProps {
   conversation: AutoPilotConversation | null
   messages: AutoPilotMessage[]
   context: AutoPilotContext | null
   sending: boolean
-  onSendMessage: (content: string) => void
+  generating: boolean
+  hasOlder: boolean
+  retryAvailable: boolean
+  onLoadOlder: () => void
+  onRetry: () => void
+  onCancel: () => void
+  onPreferencesChange: (value: CopilotPreferences) => void
+  onSendMessage: (content: string, preferences?: CopilotPreferences) => void
   onConfirmAction: (messageId: string, actionIndex: number) => void
   onRejectAction: (messageId: string, actionIndex: number) => void
   onRefreshContext: () => void
@@ -24,6 +42,13 @@ export function ChatInterface({
   messages,
   context,
   sending,
+  generating,
+  hasOlder,
+  retryAvailable,
+  onLoadOlder,
+  onRetry,
+  onCancel,
+  onPreferencesChange,
   onSendMessage,
   onConfirmAction,
   onRejectAction,
@@ -34,6 +59,30 @@ export function ChatInterface({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(conversation?.title ?? 'Nova conversa')
   const [refreshing, setRefreshing] = useState(false)
+  const [preferences, setPreferences] = useState<CopilotPreferences>(readPreferences)
+  useEffect(() => {
+    setPreferences(conversation?.preferences ?? readPreferences())
+  }, [conversation?.id])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
+    } catch {
+      // O Copilot continua funcional mesmo quando o navegador bloqueia o armazenamento local.
+    }
+  }, [preferences])
+
+  function sendWithPreferences(content: string) {
+    onSendMessage(content, preferences)
+  }
+  function changePreferences(value: CopilotPreferences) {
+    setPreferences(value)
+    onPreferencesChange(value)
+  }
+
+  function requestVariation(instruction: string, responseContent: string) {
+    sendWithPreferences(`${instruction}\n\nUse como base esta resposta específica:\n${responseContent}`)
+  }
 
   function handleTitleBlur() {
     setEditingTitle(false)
@@ -94,21 +143,42 @@ export function ChatInterface({
         <ContextBadge context={context} onRefresh={handleRefresh} refreshing={refreshing} />
       </div>
 
-      {messages.length === 0 ? (
+      {messages.length === 0 && !context?.selected_lead ? (
         <div data-lenis-prevent className="flex flex-1 flex-col overflow-y-auto">
-          <QuickPrompts onSelect={onSendMessage} sending={sending} hasContext={context !== null} context={context} />
+          <QuickPrompts
+            onSelect={sendWithPreferences}
+            sending={sending}
+            hasContext={context !== null}
+            context={context}
+            preferences={preferences}
+            onPreferencesChange={changePreferences}
+          />
         </div>
       ) : (
         <>
           <div className="flex min-h-0 flex-1 flex-col">
             <MessageList
+              contact={context?.selected_lead?.contact}
+              onContextChanged={onRefreshContext}
               messages={messages}
-              sending={sending}
+              sending={generating}
+              hasOlder={hasOlder}
+              retryAvailable={retryAvailable}
+              onLoadOlder={onLoadOlder}
+              onRetry={onRetry}
+              onCancel={onCancel}
               onConfirmAction={onConfirmAction}
               onRejectAction={onRejectAction}
+              onRequestVariation={(instruction, responseContent) => requestVariation(instruction, responseContent)}
             />
           </div>
-          <MessageInput onSend={onSendMessage} sending={sending} hasContext={context !== null} />
+          <MessageInput
+            onSend={sendWithPreferences}
+            sending={sending}
+            hasContext={context !== null}
+            preferences={preferences}
+            onPreferencesChange={changePreferences}
+          />
         </>
       )}
     </div>

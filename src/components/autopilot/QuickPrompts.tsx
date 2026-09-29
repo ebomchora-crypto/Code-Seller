@@ -1,15 +1,18 @@
 import { AlertTriangle, BarChart2, CheckSquare, MessageSquare, Send, User, type LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { CopilotComposer } from '@/components/autopilot/CopilotComposer'
+import { CopilotPreferencesBar } from '@/components/autopilot/CopilotPreferencesBar'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { EASE_PREMIUM } from '@/utils/animations'
-import type { AutoPilotContext, QuickPrompt } from '@/types'
+import type { AutoPilotContext, CopilotPreferences, QuickPrompt } from '@/types'
 
 interface QuickPromptsProps {
   onSelect: (prompt: string) => void
   sending: boolean
   hasContext: boolean
+  preferences: CopilotPreferences
+  onPreferencesChange: (value: CopilotPreferences) => void
 }
 
 const ICONS: Record<string, LucideIcon> = {
@@ -82,7 +85,7 @@ interface WelcomeProps extends QuickPromptsProps {
 
 // Tela inicial do CS Copilot: orbe, saudação ciente dos dados, compositor
 // grande e sugestões em cards.
-export function QuickPrompts({ onSelect, sending, hasContext, context }: WelcomeProps) {
+export function QuickPrompts({ onSelect, sending, hasContext, context, preferences, onPreferencesChange }: WelcomeProps) {
   const reducedMotion = useReducedMotion()
   const summary = context?.summary
   const reveal = (delay: number) => ({
@@ -110,7 +113,10 @@ export function QuickPrompts({ onSelect, sending, hasContext, context }: Welcome
       </motion.p>
 
       <motion.div {...reveal(0.2)} className="mt-8 w-full">
-        <CopilotComposer onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
+        <CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} />
+        <div className="mt-2">
+          <CopilotComposer onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
+        </div>
       </motion.div>
 
       <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,13 +1,22 @@
 import { useEffect, useRef } from 'react'
 import { MessageBubble } from '@/components/autopilot/MessageBubble'
 import { TypingIndicator } from '@/components/autopilot/TypingIndicator'
-import type { AutoPilotMessage } from '@/types'
+import { Button } from '@/components/ui/Button'
+import type { AutoPilotMessage, Contact } from '@/types'
 
 interface MessageListProps {
+  contact?: Contact
+  onContextChanged?: () => void
   messages: AutoPilotMessage[]
   sending: boolean
+  hasOlder: boolean
+  retryAvailable: boolean
+  onLoadOlder: () => void
+  onRetry: () => void
+  onCancel: () => void
   onConfirmAction: (messageId: string, actionIndex: number) => void
   onRejectAction: (messageId: string, actionIndex: number) => void
+  onRequestVariation: (instruction: string, responseContent: string) => void
 }
 
 function dateSeparatorLabel(value: string): string {
@@ -24,7 +33,8 @@ function dateSeparatorLabel(value: string): string {
   return date.toLocaleDateString('pt-BR')
 }
 
-export function MessageList({ messages, sending, onConfirmAction, onRejectAction }: MessageListProps) {
+export function MessageList({ messages, sending, hasOlder, retryAvailable, onLoadOlder, onRetry, onCancel,
+  onConfirmAction, onRejectAction, onRequestVariation, contact, onContextChanged }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -44,6 +54,8 @@ export function MessageList({ messages, sending, onConfirmAction, onRejectAction
   return (
     <div data-lenis-prevent className="flex-1 overflow-y-auto">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-8">
+        {hasOlder && <Button variant="secondary" className="self-center" onClick={onLoadOlder}>Carregar mensagens anteriores</Button>}
+        {messages.length === 0 && !sending && <p className="py-8 text-center text-sm text-[var(--text-muted)]">Ainda não há mensagens. Pergunte sobre este lead para começar.</p>}
         {itemsWithSeparators.map(({ message, label, showSeparator }) => {
           return (
             <div key={message.id} className="flex flex-col gap-6">
@@ -57,15 +69,20 @@ export function MessageList({ messages, sending, onConfirmAction, onRejectAction
                 </div>
               )}
               <MessageBubble
+                contact={contact}
+                onContextChanged={onContextChanged}
                 message={message}
                 onConfirmAction={(actionIndex) => onConfirmAction(message.id, actionIndex)}
                 onRejectAction={(actionIndex) => onRejectAction(message.id, actionIndex)}
+                onRequestVariation={(instruction, response) => onRequestVariation(instruction, response)}
+                sending={sending}
               />
             </div>
           )
         })}
 
-        {sending && <TypingIndicator />}
+        {sending && <TypingIndicator onCancel={onCancel} />}
+        {retryAvailable && !sending && <Button variant="secondary" className="self-start" onClick={onRetry}>Tentar resposta novamente</Button>}
         <div ref={bottomRef} />
       </div>
     </div>

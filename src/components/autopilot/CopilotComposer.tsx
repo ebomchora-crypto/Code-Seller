@@ -11,7 +11,7 @@ interface CopilotComposerProps {
 }
 
 const MIN_HEIGHT = { large: 76, compact: 48 }
-const MAX_HEIGHT = 200
+const MAX_HEIGHT = 'min(40dvh, 360px)'
 
 export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' }: CopilotComposerProps) {
   const [value, setValue] = useState('')
@@ -22,7 +22,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
     const textarea = textareaRef.current
     if (!textarea) return
     textarea.style.height = `${MIN_HEIGHT[size]}px`
-    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, MIN_HEIGHT[size]), MAX_HEIGHT)}px`
+    textarea.style.height = `min(${Math.max(textarea.scrollHeight, MIN_HEIGHT[size])}px, ${MAX_HEIGHT})`
   }, [size])
 
   useEffect(() => {
@@ -36,6 +36,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) return
     if (!shouldSubmitChat(event.key, event.shiftKey)) return
     event.preventDefault()
     submit()
@@ -61,7 +62,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
           <span
             className={cn('size-1.5 rounded-full', hasContext ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'animate-pulse bg-[var(--accent-solid)]')}
           />
-          {hasContext ? 'Lendo seus dados' : 'Carregando seus dados…'}
+          {hasContext ? 'Contexto pronto' : 'Carregando seus dados…'}
         </span>
 
         <div className="flex items-center gap-3">

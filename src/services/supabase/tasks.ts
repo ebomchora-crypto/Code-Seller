@@ -9,6 +9,9 @@ interface RawTaskTag {
 }
 
 interface RawTaskRow {
+  kind?: Task['kind']
+  followup_step?: number | null
+  copilot_key?: string | null
   id: string
   user_id: string
   title: string
@@ -34,6 +37,9 @@ interface RawTaskRow {
 
 function mapTask(row: RawTaskRow): Task {
   return {
+    kind: row.kind,
+    followup_step: row.followup_step,
+    copilot_key: row.copilot_key,
     id: row.id,
     user_id: row.user_id,
     title: row.title,

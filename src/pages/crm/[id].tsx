@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ChevronLeft, CodeXml } from 'lucide-react'
+import { ChevronLeft, CodeXml, Sparkles } from 'lucide-react'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Spinner } from '@/components/ui/Spinner'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -59,6 +59,9 @@ export default function ContactDetailPage() {
             onDealLinked={() => void refetch()}
             actions={(buttonClass) => (
               <>
+                <Link to={'/copilot?contact=' + contact.id} className={buttonClass}>
+                  <Sparkles className="size-4 text-emerald-500" />CS Copilot
+                </Link>
                 <SendMessageButton
                   className={buttonClass}
                   target={{ contact: { id: contact.id, name: contact.name, phone: contact.phone, city: contact.city, niche: contact.niche } }}
