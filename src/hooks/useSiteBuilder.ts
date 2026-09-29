@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { normalizePart, parseActions, parsePart, partOrder, type SiteAsset, type SiteParts } from '../../supabase/functions/code-maker/site'
+import { normalizePart, parseActions, parsePart, simpleFooter, partOrder, type SiteAsset, type SiteParts } from '../../supabase/functions/code-maker/site'
 import {
   getSite,
   listSiteVersions,
@@ -117,7 +117,8 @@ export function useSiteBuilder(siteId: string) {
               (text) => queueProgress((state) => ({ ...state, [partId]: { status: 'writing', text } })),
               signal,
             )
-            const html = normalizePart(partId, parsePart(full).html)
+            const parsed = normalizePart(partId, parsePart(full).html)
+            const html = parsed || (partId === 'footer' && current.plan ? simpleFooter(current.plan, current.brief) : parsed)
             queueProgress((state) => ({ ...state, [partId]: { status: 'done', text: full } }))
             setBuiltParts((parts) => ({ ...parts, [partId]: html }))
             return

@@ -714,8 +714,13 @@ export function normalizePart(partId: string, html: string): string {
   }
   if (partId === 'footer') {
     const found = findElement(html, 'footer')
-    // Sem <footer> mas com seções/cabeçalho: a IA escreveu outra coisa. Vazio = gerar de novo.
-    if (!found) return /<(section|header|main)\b/i.test(html) ? '' : balanceHtml(html)
+    if (!found) {
+      // Sem <footer>: se parece o site inteiro (cabeçalho/várias seções), descarta
+      // (quem chama usa o rodapé simples); senão, embrulha como rodapé.
+      const sections = (html.match(/<section\b/gi) ?? []).length
+      if (/<(header|main)\b/i.test(html) || sections > 1) return ''
+      return `<footer>\n${balanceHtml(html)}\n</footer>`
+    }
     const footer = balanceHtml(html.slice(found.start, found.end))
     // O botão flutuante de WhatsApp vem logo depois do rodapé.
     const rest = html.slice(found.end)
@@ -727,6 +732,29 @@ export function normalizePart(partId: string, html: string): string {
   const section = balanceHtml(html.slice(found.start, found.end))
   // Os links do menu usam o id da seção: mantém o que veio, só completa se faltar.
   return /^<section\b[^>]*\sid\s*=/i.test(section) ? section : section.replace(/^<section\b/i, `<section id="${partId}"`)
+}
+
+// Rodapé de reserva, montado aqui: usado quando a IA não entrega um rodapé
+// aproveitável — o site nunca fica travado por causa dele.
+export function simpleFooter(plan: SitePlan, brief: SiteBrief): string {
+  const phone = phoneDigits(brief.phone)
+  const name = escapeHtml(brief.businessName || plan.title)
+  const text = textOn(plan, 'ink')
+  const links = plan.sections
+    .filter((section) => section.id !== 'hero')
+    .slice(0, 6)
+    .map((section) => `<a href="#${section.id}" class="hover:text-${text}">${escapeHtml(section.label)}</a>`)
+    .join('')
+  const whatsapp = phone
+    ? `\n<a href="https://wa.me/55${phone}" target="_blank" rel="noopener" aria-label="Conversar pelo WhatsApp" class="fixed bottom-5 right-5 z-50 flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105"><svg viewBox="0 0 24 24" class="size-7" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1a17 17 0 0 1-1.7-.6 13.4 13.4 0 0 1-5.2-4.6c-.4-.5-1-1.4-1-2.7 0-1.2.7-1.9.9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.7-.1 1.3Z"/></svg></a>`
+    : ''
+  return `<footer class="bg-ink py-12 text-${text}">
+<div class="mx-auto flex max-w-6xl flex-col gap-6 px-5 md:flex-row md:items-center md:justify-between md:px-8">
+<div><p class="font-display text-xl font-semibold">${name}</p>${brief.city ? `<p class="mt-1 text-sm text-${text}/70">${escapeHtml(brief.city)}</p>` : ''}</div>
+<nav class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-${text}/70">${links}</nav>
+</div>
+<p class="mx-auto mt-8 max-w-6xl px-5 text-xs text-${text}/60 md:px-8">© <span data-year></span> ${name}</p>
+</footer>${whatsapp}`
 }
 
 export function parsePart(text: string): { html: string; complete: boolean } {

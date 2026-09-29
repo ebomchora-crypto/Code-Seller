@@ -192,8 +192,11 @@ test('normalizePart deixa cada parte só com o seu bloco', () => {
   )
   assert.equal(normalizePart('faq', '<section class="bg-paper" id="duvidas"><p>q'), '<section class="bg-paper" id="duvidas"><p>q</p></section>')
   assert.equal(normalizePart('faq', '<section class="bg-paper"><p>q</p></section>'), '<section id="faq" class="bg-paper"><p>q</p></section>')
-  // Rodapé sem <footer> que trouxe o site inteiro: descartado (gera de novo).
+  // Rodapé sem <footer> que trouxe o site inteiro: descartado (usa o rodapé simples).
   assert.equal(normalizePart('footer', '<div>menu</div><main><section id="hero">x</section></main>'), '')
+  // Rodapé escrito sem a tag <footer> (ex.: numa <div> ou <section>): vira rodapé.
+  assert.equal(normalizePart('footer', '<div class="py-8">© Loja</div>'), '<footer>\n<div class="py-8">© Loja</div>\n</footer>')
+  assert.equal(normalizePart('footer', '<section id="rodape"><p>© Loja</p></section>'), '<footer>\n<section id="rodape"><p>© Loja</p></section>\n</footer>')
   // A limpeza de <head> não pode apagar <header>.
   assert.equal(cleanFragment('<head><title>x</title></head><header data-header>a</header>'), '<title>x</title><header data-header>a</header>')
   // Idempotente: normalizar de novo não muda nada.

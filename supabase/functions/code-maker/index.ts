@@ -29,6 +29,7 @@ import {
   parseEdit,
   normalizePart,
   parsePart,
+  simpleFooter,
   parsePlan,
   partOrder,
   PART_SYSTEM,
@@ -354,7 +355,9 @@ Deno.serve(async (req: Request) => {
           { role: 'user', content: buildPartMessage(partId, planForAi, site.brief) },
         ],
         finish: async (full) => {
-          const html = normalizePart(partId, parsePart(full).html)
+          let html = normalizePart(partId, parsePart(full).html)
+          // Rodapé que não veio certo: usa o rodapé simples em vez de travar o site.
+          if (!html && partId === 'footer') html = simpleFooter(planForAi, site.brief)
           if (!html) return 'A IA devolveu esta parte vazia. Tente de novo.'
           const { data: merged, error } = await admin.rpc('code_maker_merge_part', { p_site: site.id, p_part: partId, p_html: html })
           if (error) throw error
