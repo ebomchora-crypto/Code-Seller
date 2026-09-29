@@ -1,5 +1,6 @@
-import { ChevronDown } from 'lucide-react'
-import type { CopilotLanguage, CopilotLength, CopilotPreferences, CopilotTone, SalesPlaybook } from '@/types'
+import { useId, useState } from 'react'
+import { ChevronDown, SlidersHorizontal } from 'lucide-react'
+import { DEFAULT_COPILOT_PREFERENCES, type CopilotLanguage, type CopilotLength, type CopilotPreferences, type CopilotTone, type SalesPlaybook } from '@/types'
 
 interface CopilotPreferencesBarProps {
   value: CopilotPreferences
@@ -8,6 +9,14 @@ interface CopilotPreferencesBarProps {
 
 const CONTROL_CLASS =
   'h-9 w-full min-w-0 appearance-none rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] pl-2.5 pr-7 text-[12px] text-[var(--text-primary)] outline-none transition-colors hover:border-[var(--border-default)] focus:border-[var(--accent-ring)]'
+
+const PLAYBOOK_LABELS: Record<Exclude<SalesPlaybook, 'none'>, string> = {
+  call_first: 'Call First',
+  whatsapp: 'Venda pelo WhatsApp',
+  prototype_first: 'Protótipo Primeiro',
+  lead_recovery: 'Recuperação de Lead',
+  follow_up: 'Follow-up',
+}
 
 function PreferenceSelect<T extends string>({
   id,
@@ -42,14 +51,30 @@ function PreferenceSelect<T extends string>({
 }
 
 export function CopilotPreferencesBar({ value, onChange }: CopilotPreferencesBarProps) {
+  const [expanded, setExpanded] = useState(false)
+  const controlsId = useId()
+  const customized = value.tone !== DEFAULT_COPILOT_PREFERENCES.tone
+    || value.length !== DEFAULT_COPILOT_PREFERENCES.length
+    || value.language !== DEFAULT_COPILOT_PREFERENCES.language
   return (
-    <div className="grid grid-cols-2 gap-x-2.5 gap-y-2 sm:grid-cols-4">
+    <div>
+      <button type="button" aria-expanded={expanded} aria-controls={controlsId}
+        onClick={() => setExpanded((current) => !current)}
+        className="inline-flex min-h-9 items-center gap-2 rounded-md px-2 text-xs text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]">
+        <SlidersHorizontal className="size-4" aria-hidden />
+        Ajustar resposta
+        {value.playbook !== 'none' && <span className="max-w-[38vw] truncate font-medium text-[var(--accent-text)] sm:max-w-40">{PLAYBOOK_LABELS[value.playbook]}</span>}
+        {customized && <span className="size-1.5 rounded-full bg-[var(--accent-solid)]" aria-label="Preferências de estilo personalizadas" />}
+        <ChevronDown className={'size-3.5 transition-transform ' + (expanded ? 'rotate-180' : '')} aria-hidden />
+      </button>
+      {expanded && <div id={controlsId} className="mt-1 grid grid-cols-2 gap-x-2.5 gap-y-2 pb-2 sm:grid-cols-4">
       <PreferenceSelect<SalesPlaybook>
         id="copilot-playbook"
         label="Playbook"
         value={value.playbook}
         onChange={(playbook) => onChange({ ...value, playbook })}
         options={[
+          { value: 'none', label: 'Conversa livre' },
           { value: 'call_first', label: 'Call First' },
           { value: 'whatsapp', label: 'Venda pelo WhatsApp' },
           { value: 'prototype_first', label: 'Protótipo Primeiro' },
@@ -95,6 +120,7 @@ export function CopilotPreferencesBar({ value, onChange }: CopilotPreferencesBar
           { value: 'es', label: 'Espanhol' },
         ]}
       />
+      </div>}
     </div>
   )
 }

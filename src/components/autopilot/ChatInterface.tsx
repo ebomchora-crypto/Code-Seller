@@ -1,26 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Menu, Pencil } from 'lucide-react'
 import { ContextBadge } from '@/components/autopilot/ContextBadge'
 import { MessageList } from '@/components/autopilot/MessageList'
 import { MessageInput } from '@/components/autopilot/MessageInput'
 import { QuickPrompts } from '@/components/autopilot/QuickPrompts'
-import { DEFAULT_COPILOT_PREFERENCES, type AutoPilotContext, type AutoPilotConversation, type AutoPilotMessage, type CopilotPreferences } from '@/types'
-
-const PREFERENCES_STORAGE_KEY = 'code-sellers-copilot-preferences'
-
-function readPreferences(): CopilotPreferences {
-  try {
-    const saved = localStorage.getItem(PREFERENCES_STORAGE_KEY)
-    return saved ? { ...DEFAULT_COPILOT_PREFERENCES, ...JSON.parse(saved) } : DEFAULT_COPILOT_PREFERENCES
-  } catch {
-    return DEFAULT_COPILOT_PREFERENCES
-  }
-}
+import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage, CopilotPreferences } from '@/types'
 
 interface ChatInterfaceProps {
   conversation: AutoPilotConversation | null
   messages: AutoPilotMessage[]
   context: AutoPilotContext | null
+  preferences: CopilotPreferences
   sending: boolean
   generating: boolean
   hasOlder: boolean
@@ -41,6 +31,7 @@ export function ChatInterface({
   conversation,
   messages,
   context,
+  preferences,
   sending,
   generating,
   hasOlder,
@@ -59,24 +50,11 @@ export function ChatInterface({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(conversation?.title ?? 'Nova conversa')
   const [refreshing, setRefreshing] = useState(false)
-  const [preferences, setPreferences] = useState<CopilotPreferences>(readPreferences)
-  useEffect(() => {
-    setPreferences(conversation?.preferences ?? readPreferences())
-  }, [conversation?.id])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
-    } catch {
-      // O Copilot continua funcional mesmo quando o navegador bloqueia o armazenamento local.
-    }
-  }, [preferences])
 
   function sendWithPreferences(content: string) {
     onSendMessage(content, preferences)
   }
   function changePreferences(value: CopilotPreferences) {
-    setPreferences(value)
     onPreferencesChange(value)
   }
 

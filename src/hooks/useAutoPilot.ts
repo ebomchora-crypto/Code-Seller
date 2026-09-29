@@ -16,6 +16,7 @@ export function useAutoPilot(contactId?: string) {
   const [activeConversation, setActiveConversation] = useState<AutoPilotConversation | null>(null)
   const [messages, setMessages] = useState<AutoPilotMessage[]>([])
   const [context, setContext] = useState<AutoPilotContext | null>(null)
+  const [preferences, setPreferences] = useState<CopilotPreferences>(DEFAULT_COPILOT_PREFERENCES)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [hasOlder, setHasOlder] = useState(false)
@@ -23,7 +24,6 @@ export function useAutoPilot(contactId?: string) {
   const epoch = useRef(0)
   const sendLock = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
-  const lastPreferences = useRef<CopilotPreferences>(DEFAULT_COPILOT_PREFERENCES)
   const actionLocks = useRef(new Set<string>())
   const refreshContext = useCallback(async () => {
     const scope = epoch.current
@@ -34,13 +34,14 @@ export function useAutoPilot(contactId?: string) {
   }, [contactId])
   const loadConversations = useCallback(async () => {
     const scope = ++epoch.current
-    setLoading(true); setError(null); setContext(null); setMessages([]); setActiveConversation(null); setHasOlder(false)
+    setLoading(true); setError(null); setContext(null); setMessages([]); setActiveConversation(null); setHasOlder(false); setPreferences(DEFAULT_COPILOT_PREFERENCES)
     if (!user) { setConversations([]); setLoading(false); return }
     try {
       const [list, snapshot] = await Promise.all([getConversations(contactId), buildAutoPilotContext(contactId)])
       const conversation = contactId && list[0] ? await getConversationById(list[0].id) : null
       if (scope !== epoch.current) return
       setConversations(list); setContext(snapshot); setActiveConversation(conversation); setMessages(conversation?.messages ?? [])
+      setPreferences(conversation?.preferences ?? DEFAULT_COPILOT_PREFERENCES)
       setHasOlder((conversation?.messages?.length ?? 0) === 100)
     } catch (err) { if (scope === epoch.current) setError(err instanceof Error ? err.message : 'Não foi possível abrir o CS Copilot.') }
     finally { if (scope === epoch.current) setLoading(false) }
@@ -55,13 +56,14 @@ export function useAutoPilot(contactId?: string) {
       if (scope !== epoch.current) return
       if (!conversation || (conversation.contact_id ?? undefined) !== contactId) throw new Error('Conversa indisponível neste contexto.')
       setActiveConversation(conversation); setMessages(conversation.messages ?? [])
+      setPreferences(conversation.preferences ?? DEFAULT_COPILOT_PREFERENCES)
       setHasOlder((conversation.messages?.length ?? 0) === 100)
     } catch (err) { if (scope === epoch.current) setError(err instanceof Error ? err.message : 'Falha ao abrir conversa.') }
     finally { if (scope === epoch.current) setLoading(false) }
   }, [contactId])
   const createNewConversation = useCallback(async () => {
     if (sendLock.current || contactId) return
-    epoch.current++; setActiveConversation(null); setMessages([]); setError(null); setHasOlder(false)
+    epoch.current++; setActiveConversation(null); setMessages([]); setError(null); setHasOlder(false); setPreferences(DEFAULT_COPILOT_PREFERENCES)
   }, [contactId])
   const loadOlder = useCallback(async () => {
     if (!activeConversation || !messages[0] || !hasOlder) return
@@ -72,7 +74,7 @@ export function useAutoPilot(contactId?: string) {
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao carregar histórico anterior.') }
   }, [activeConversation, messages, hasOlder])
   const changePreferences = useCallback(async (preferences: CopilotPreferences) => {
-    lastPreferences.current = preferences
+    setPreferences(preferences)
     if (!activeConversation) return
     try {
       await updateConversationPreferences(activeConversation.id, preferences)
@@ -84,7 +86,7 @@ export function useAutoPilot(contactId?: string) {
     try {
       await removeConversation(id)
       setConversations((current) => current.filter((item) => item.id !== id))
-      if (activeConversation?.id === id) { setActiveConversation(null); setMessages([]) }
+      if (activeConversation?.id === id) { setActiveConversation(null); setMessages([]); setPreferences(DEFAULT_COPILOT_PREFERENCES) }
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao excluir conversa.') }
   }, [activeConversation])
   const renameConversation = useCallback(async (id: string, title: string) => {
@@ -94,9 +96,8 @@ export function useAutoPilot(contactId?: string) {
       setConversations((current) => current.map((item) => item.id === id ? { ...item, title } : item))
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao renomear conversa.') }
   }, [])
-  const sendMessage = useCallback(async (content: string, preferences: CopilotPreferences = DEFAULT_COPILOT_PREFERENCES, retry = false) => {
+  const sendMessage = useCallback(async (content: string, selectedPreferences: CopilotPreferences = preferences, retry = false) => {
     if (!user || !content.trim() || loading || sendLock.current) return
-    lastPreferences.current = preferences
     sendLock.current = true; setSending(true); setError(null)
     const controller = new AbortController()
     abortRef.current = controller
@@ -107,7 +108,7 @@ export function useAutoPilot(contactId?: string) {
       let conversation = activeConversation
       let history = messages
       if (!conversation) {
-        conversation = await createConversation(contactId ? snapshot.selected_lead!.contact.name : 'Nova conversa', contactId, preferences)
+        conversation = await createConversation(contactId ? snapshot.selected_lead!.contact.name : 'Nova conversa', contactId, selectedPreferences)
         history = (await getConversationById(conversation.id))?.messages ?? []
       }
       const currentConversation = conversation
@@ -142,7 +143,7 @@ export function useAutoPilot(contactId?: string) {
       const response = await sendAutoPilotMessage(history.map((message) => ({
         role: message.role,
         content: message.content + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
-      })), snapshot, trimmed, preferences, controller.signal)
+      })), snapshot, trimmed, selectedPreferences, controller.signal)
       const parsed = parseAutoPilotResponse(response)
       const answer = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'assistant',
         content: parsed.text, analysis: parsed.analysis, actions: parsed.actions.map((action) => ({ ...action, status: 'pending' })) })
@@ -164,11 +165,11 @@ export function useAutoPilot(contactId?: string) {
       if (!contactId && conversation.title === 'Nova conversa') await renameConversation(conversation.id, generateConversationTitle(trimmed))
     } catch (err) { if (scope === epoch.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Falha ao consultar o CS Copilot.') }
     finally { if (abortRef.current === controller) abortRef.current = null; sendLock.current = false; setSending(false) }
-  }, [user, loading, contactId, activeConversation, messages, hasOlder, renameConversation])
+  }, [user, loading, contactId, activeConversation, messages, hasOlder, preferences, renameConversation])
   const cancelGeneration = () => abortRef.current?.abort()
   const retryAvailable = messages.at(-1)?.role === 'user' && Boolean(activeConversation)
   const retryLast = () => {
-    if (retryAvailable) void sendMessage(messages.at(-1)!.content, activeConversation?.preferences ?? lastPreferences.current, true)
+    if (retryAvailable) void sendMessage(messages.at(-1)!.content, preferences, true)
   }
   const setActionState = (id: string, index: number, status: ActionStatus) => {
     setMessages((current) => current.map((message) => message.id === id
@@ -209,7 +210,7 @@ export function useAutoPilot(contactId?: string) {
     try { await updateActionStatus(messageId, actionIndex, 'rejected'); setActionState(messageId, actionIndex, 'rejected') }
     catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao recusar ação.') }
   }
-  return { conversations, activeConversation, messages, context, loading, sending, error, hasOlder, retryAvailable,
+  return { conversations, activeConversation, messages, context, preferences, loading, sending, error, hasOlder, retryAvailable,
     loadConversations, loadOlder, selectConversation, createNewConversation, deleteConversation, renameConversation,
     changePreferences, sendMessage, retryLast, cancelGeneration, confirmAction, rejectAction, refreshContext }
 }

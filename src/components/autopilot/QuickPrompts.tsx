@@ -113,10 +113,8 @@ export function QuickPrompts({ onSelect, sending, hasContext, context, preferenc
       </motion.p>
 
       <motion.div {...reveal(0.2)} className="mt-8 w-full">
-        <CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} />
-        <div className="mt-2">
-          <CopilotComposer onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
-        </div>
+        <CopilotComposer onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
+        <div className="mt-1"><CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} /></div>
       </motion.div>
 
       <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">

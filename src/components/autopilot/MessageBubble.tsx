@@ -27,10 +27,10 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
   const [copied, setCopied] = useState(false)
   const isUser = message.role === 'user'
   const onRequestVariation = (instruction: string, content: string) =>
-    requestVariation(instruction, message.analysis?.suggested_message || content)
+    requestVariation(instruction, (contact && message.analysis?.suggested_message) || content)
 
   async function handleCopy() {
-    try { await navigator.clipboard.writeText(message.analysis?.suggested_message || message.content.replace(ACTION_MARKER_REGEX, '').trim()) }
+    try { await navigator.clipboard.writeText((contact && message.analysis?.suggested_message) || message.content.replace(ACTION_MARKER_REGEX, '').trim()) }
     catch { toast.error('Não foi possível copiar.'); return }
     setCopied(true)
     toast.success('Texto copiado.')
@@ -107,15 +107,15 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
           </button>
           {!isUser && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <button type="button" disabled={sending} onClick={() => onRequestVariation('Gere outra versão, mantendo a estratégia comercial.', message.content)} title="Gerar outra versão" aria-label="Gerar outra versão" className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Gere outra versão desta resposta, preservando os fatos e a intenção do pedido.', message.content)} title="Gerar outra versão" aria-label="Gerar outra versão" className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">
                 <RotateCw className="size-3.5" /> Outra versão
               </button>
-              <button type="button" disabled={sending} onClick={() => onRequestVariation('Deixe a mensagem sugerida mais curta, sem perder o objetivo.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais curta</button>
-              <button type="button" disabled={sending} onClick={() => onRequestVariation('Reescreva a mensagem sugerida de forma mais natural e conversada.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais natural</button>
-              <button type="button" disabled={sending} onClick={() => onRequestVariation('Reescreva a mensagem sugerida com tom mais profissional, sem ficar rígida.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais profissional</button>
-              <button type="button" disabled={sending} onClick={() => onRequestVariation('Prepare um follow-up adequado ao histórico. Se houver contexto suficiente e um contato correspondente no CRM, sugira também uma tarefa de follow-up com data segura; se faltar data ou identificação do contato, pergunte antes de propor a tarefa.', message.content)} title="Agendar follow-up" aria-label="Agendar follow-up" className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Deixe esta resposta mais curta, sem perder o objetivo.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais curta</button>
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Reescreva esta resposta de forma mais natural.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais natural</button>
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Reescreva esta resposta com tom mais profissional, sem ficar rígida.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais profissional</button>
+              {contact && <button type="button" disabled={sending} onClick={() => onRequestVariation('Prepare um follow-up adequado ao histórico. Se houver contexto suficiente e um contato correspondente no CRM, sugira também uma tarefa de follow-up com data segura; se faltar data ou identificação do contato, pergunte antes de propor a tarefa.', message.content)} title="Agendar follow-up" aria-label="Agendar follow-up" className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">
                 <CalendarPlus className="size-3.5" /> Agendar follow-up
-              </button>
+              </button>}
             </div>
           )}
         </div>

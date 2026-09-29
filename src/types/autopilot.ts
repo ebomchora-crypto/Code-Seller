@@ -28,7 +28,7 @@ export interface LeadContext {
   commercial_memory?: string | null
 }
 
-export type SalesPlaybook = 'call_first' | 'whatsapp' | 'prototype_first' | 'lead_recovery' | 'follow_up'
+export type SalesPlaybook = 'none' | 'call_first' | 'whatsapp' | 'prototype_first' | 'lead_recovery' | 'follow_up'
 export type CopilotTone = 'natural' | 'professional' | 'casual' | 'direct' | 'consultative' | 'formal'
 export type CopilotLength = 'short' | 'medium' | 'detailed'
 export type CopilotLanguage = 'auto' | 'pt_br' | 'pt_pt' | 'en' | 'es'
@@ -41,7 +41,7 @@ export interface CopilotPreferences {
 }
 
 export const DEFAULT_COPILOT_PREFERENCES: CopilotPreferences = {
-  playbook: 'call_first',
+  playbook: 'none',
   tone: 'natural',
   length: 'medium',
   language: 'auto',

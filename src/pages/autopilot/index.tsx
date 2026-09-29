@@ -6,12 +6,6 @@ import { ChatInterface } from '@/components/autopilot/ChatInterface'
 import { CopilotToday } from '@/components/autopilot/CopilotToday'
 import { LeadPanel, leadPrompts } from '@/components/autopilot/LeadPanel'
 import { useAutoPilot } from '@/hooks/useAutoPilot'
-import { DEFAULT_COPILOT_PREFERENCES, type CopilotPreferences } from '@/types'
-
-function savedPreferences(): CopilotPreferences {
-  try { return { ...DEFAULT_COPILOT_PREFERENCES, ...JSON.parse(localStorage.getItem('code-sellers-copilot-preferences') ?? '{}') } }
-  catch { return DEFAULT_COPILOT_PREFERENCES }
-}
 
 function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const copilot = useAutoPilot(contactId)
@@ -22,14 +16,15 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const lead = copilot.context?.selected_lead
   const analysis = [...copilot.messages].reverse().find((message) => message.analysis)?.analysis ?? lead?.previous_analysis ?? null
   const intent = params.get('intent')
+  const { sendMessage, preferences, loading, sending, error } = copilot
   useEffect(() => {
-    if (!intent || !lead || copilot.loading || copilot.sending || copilot.error || intentStarted.current) return
+    if (!intent || !lead || loading || sending || error || intentStarted.current) return
     const prompt = leadPrompts[intent as keyof typeof leadPrompts]
     if (!prompt) return
     intentStarted.current = true
-    void copilot.sendMessage(prompt, copilot.activeConversation?.preferences ?? savedPreferences())
+    void sendMessage(prompt, preferences)
     setParams((current) => { const next = new URLSearchParams(current); next.delete('intent'); return next }, { replace: true })
-  }, [intent, lead, copilot.loading, copilot.sending, copilot.error, copilot.sendMessage, setParams])
+  }, [intent, lead, loading, sending, error, sendMessage, preferences, setParams])
   return <div className="relative flex min-h-0 flex-1 flex-col">
     {copilot.error && <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-red-500/20 px-4 py-3 text-sm text-red-500">
       <span>{copilot.error}</span><button className="underline" onClick={() => void (copilot.activeConversation ? copilot.selectConversation(copilot.activeConversation.id) : copilot.loadConversations())}>Tentar novamente</button>
@@ -45,7 +40,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
           onCreate={() => { void copilot.createNewConversation(); setSidebarOpen(false) }} onDelete={(id) => void copilot.deleteConversation(id)} />
       </div>}
       {sidebarOpen && !contactId && <button aria-label="Fechar conversas" onClick={() => setSidebarOpen(false)} className="absolute inset-0 z-20 bg-black/40 lg:hidden" />}
-      <ChatInterface conversation={copilot.activeConversation} messages={copilot.messages} context={copilot.context}
+      <ChatInterface conversation={copilot.activeConversation} messages={copilot.messages} context={copilot.context} preferences={copilot.preferences}
         sending={copilot.sending || copilot.loading || !copilot.context}
         generating={copilot.sending} hasOlder={copilot.hasOlder} retryAvailable={copilot.retryAvailable}
         onLoadOlder={() => void copilot.loadOlder()} onRetry={copilot.retryLast} onCancel={copilot.cancelGeneration}
@@ -61,7 +56,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
         <div className={'absolute inset-y-0 right-0 z-30 w-[min(340px,92vw)] shrink-0 bg-[var(--bg-card)] xl:static xl:block xl:w-[300px] ' + (leadOpen ? 'block' : 'hidden')}>
           <button className="absolute right-2 top-1 z-10 rounded-lg bg-[var(--bg-card)] p-2 xl:hidden" title="Fechar painel" aria-label="Fechar painel" onClick={() => setLeadOpen(false)}><X className="size-4" /></button>
           <LeadPanel key={lead.contact.id} lead={lead} analysis={analysis} sending={copilot.sending || copilot.loading}
-            onPrompt={(prompt) => { void copilot.sendMessage(prompt, copilot.activeConversation?.preferences ?? savedPreferences()); setLeadOpen(false) }} onChanged={copilot.refreshContext} />
+            onPrompt={(prompt) => { void copilot.sendMessage(prompt, copilot.preferences); setLeadOpen(false) }} onChanged={copilot.refreshContext} />
         </div>
       </>}
     </div>
