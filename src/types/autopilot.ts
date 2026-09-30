@@ -155,7 +155,7 @@ export interface AutoPilotContext {
 export interface QuickPrompt {
   id: string
   label: string
-  prompt: string
+  draft: string
   icon: string // nome do ícone Lucide
   category: 'analysis' | 'message' | 'task' | 'follow_up'
 }

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getChatSubmission, shouldSubmitChat } from '@/components/autopilot/composer.utils'
+import { applyQuickPromptDraft, getChatSubmission, shouldSubmitChat } from '@/components/autopilot/composer.utils'
 
 interface CopilotComposerProps {
   onSend: (content: string) => void
   sending: boolean
   hasContext: boolean
   size?: 'large' | 'compact'
+  draft?: { content: string }
 }
 
 const MIN_HEIGHT = { large: 76, compact: 48 }
-const MAX_HEIGHT = 'min(40dvh, 360px)'
+const MAX_HEIGHT = 'min(32dvh, 240px)'
 
-export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' }: CopilotComposerProps) {
+export function CopilotComposer({ onSend, sending, hasContext, size = 'compact', draft }: CopilotComposerProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const submission = getChatSubmission(value)
@@ -28,6 +29,12 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
   useEffect(() => {
     adjustHeight()
   }, [adjustHeight, value])
+
+  useEffect(() => {
+    if (!draft) return
+    setValue((current) => applyQuickPromptDraft(current, draft.content))
+    requestAnimationFrame(() => textareaRef.current?.focus())
+  }, [draft])
 
   function submit() {
     if (!submission || sending) return
@@ -53,7 +60,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
         rows={1}
         aria-label="Mensagem para o CS Copilot"
         placeholder={size === 'large' ? 'Pergunte sobre seus contatos, negócios, tarefas ou peça uma mensagem…' : 'Responda ou peça outra coisa…'}
-        className="block w-full resize-none bg-transparent px-5 pt-4 text-[15px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-60"
+        className="block w-full resize-none overflow-y-auto bg-transparent px-5 pt-4 text-[15px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-60"
         style={{ height: MIN_HEIGHT[size] }}
       />
 

@@ -6,3 +6,7 @@ export function getChatSubmission(value: string): string | null {
 export function shouldSubmitChat(key: string, shiftKey: boolean): boolean {
   return key === 'Enter' && !shiftKey
 }
+
+export function applyQuickPromptDraft(current: string, draft: string): string {
+  return current.trim() ? current : draft
+}
