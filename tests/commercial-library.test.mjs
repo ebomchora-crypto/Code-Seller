@@ -25,6 +25,16 @@ test('objections contain practical guidance and three responses', () => {
   }
 })
 
+test('objection responses avoid yes-or-no closes', () => {
+  const objections = COMMERCIAL_MATERIALS.filter((item) => item.category === 'objections')
+  const binaryClose = /(?:você sabe|você tem alguma referência|essa divisão te atenderia|podemos rever objetivo|há algo específico que precisa|não precisamos se você preferir)[^?]*\?/i
+  for (const item of objections) {
+    for (const key of ['body', 'short', 'consultative']) {
+      assert.doesNotMatch(item[key], binaryClose, `${item.id}: ${key}`)
+    }
+  }
+})
+
 test('search ignores accents and combines category and stage filters', () => {
   assert.ok(searchCommercialMaterials('prototipo').some((item) => item.title.toLowerCase().includes('protótipo')))
   assert.ok(searchCommercialMaterials('preco').some((item) => item.title.includes('preço')))
