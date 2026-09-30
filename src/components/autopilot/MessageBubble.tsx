@@ -27,7 +27,7 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
   const [copied, setCopied] = useState(false)
   const isUser = message.role === 'user'
   const onRequestVariation = (instruction: string, content: string) =>
-    requestVariation(instruction, (contact && message.analysis?.suggested_message) || content)
+    requestVariation(instruction, message.analysis?.suggested_message || content)
 
   async function handleCopy() {
     try { await navigator.clipboard.writeText((contact && message.analysis?.suggested_message) || message.content.replace(ACTION_MARKER_REGEX, '').trim()) }
@@ -64,7 +64,7 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
           <span className="text-[var(--text-muted)]">{formatTime(message.created_at)}</span>
         </p>
         <div className="text-[var(--text-primary)]">
-          {contact && message.analysis && <LeadAnalysisCard message={message} contact={contact} sending={sending} onPrompt={onRequestVariation} onSaved={() => onContextChanged?.()} />}
+          {message.analysis && <LeadAnalysisCard message={message} contact={contact} sending={sending} onPrompt={onRequestVariation} onSaved={() => onContextChanged?.()} />}
           {segments.map((segment, index) => {
             if (index % 2 === 1) {
               const actionIndex = Number(segment)
@@ -91,7 +91,7 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
           })}
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-3">
+        {!message.analysis && <div className="mt-2 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleCopy}
@@ -118,7 +118,7 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
               </button>}
             </div>
           )}
-        </div>
+        </div>}
       </div>
     </div>
   )
