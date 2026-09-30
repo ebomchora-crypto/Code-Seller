@@ -36,3 +36,12 @@ test('validates structured AI output', () => {
   assert.equal(result.follow_up_at, null)
   assert.equal(parseLeadAnalysis({...result,interest:'alto'}).interest, 'Alto')
 })
+
+test('keeps legacy analysis compatible with safe presentation defaults', () => {
+  const result = parseLeadAnalysis({interest:'Alto',stage:'Negociação',evidence:'Pediu proposta',objection:'',summary:'Resumo',next_action:'Enviar',suggested_message:'Mensagem',follow_up_at:null})
+  assert.equal(result.mode, 'analysis')
+  assert.equal(result.risk, 'Não identificado')
+  assert.equal(result.reason, '')
+  assert.equal(result.strategy, '')
+  assert.equal(result.next_step, '')
+})

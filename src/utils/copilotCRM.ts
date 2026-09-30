@@ -1,6 +1,6 @@
 import type { Contact, Interaction } from '../types/crm'
 import type { Task } from '../types/tasks'
-import type { LeadAnalysis } from '../types/autopilot'
+import type { CommercialResponseMode, LeadAnalysis } from '../types/autopilot'
 
 export type FollowUpState = 'pendente' | 'hoje' | 'atrasado' | 'concluído' | 'cancelado'
 export type AttentionKind = 'follow_up' | 'next_action' | 'reply' | 'waiting' | 'prototype' | 'meeting' | 'inactive'
@@ -52,11 +52,17 @@ export function parseLeadAnalysis(value: unknown): LeadAnalysis | null {
   if (fields.some((key) => typeof row[key] !== 'string')) return null
   const interest = (['Baixo', 'Moderado', 'Alto', 'Indeterminado'] as const)
     .find((level) => level.toLowerCase() === String(row.interest).trim().toLowerCase()) ?? 'Indeterminado'
+  const mode = (['quick_reply', 'analysis', 'objection', 'follow_up'] as const)
+    .find((candidate) => candidate === String(row.mode)) ?? 'analysis'
   const followUp = typeof row.follow_up_at === 'string' && Number.isFinite(Date.parse(row.follow_up_at))
     ? row.follow_up_at : null
-  return { interest, stage: row.stage as string, evidence: row.evidence as string, objection: row.objection as string,
+  return { mode: mode as CommercialResponseMode, interest, stage: row.stage as string, evidence: row.evidence as string, objection: row.objection as string,
+    risk: typeof row.risk === 'string' && row.risk.trim() ? row.risk : 'Não identificado',
     summary: row.summary as string, next_action: row.next_action as string,
-    suggested_message: row.suggested_message as string, follow_up_at: followUp }
+    reason: typeof row.reason === 'string' ? row.reason : '',
+    strategy: typeof row.strategy === 'string' ? row.strategy : '',
+    suggested_message: row.suggested_message as string,
+    next_step: typeof row.next_step === 'string' ? row.next_step : '', follow_up_at: followUp }
 }
 
 export function buildAttentionItems(contacts: Contact[], interactions: Interaction[], tasks: Task[], now = new Date()): AttentionItem[] {

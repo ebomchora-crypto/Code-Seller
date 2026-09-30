@@ -4,6 +4,7 @@ import { parseLeadAnalysis } from './copilotCRM'
 import type { LeadAnalysis } from '@/types'
 
 const ACTION_TAG_REGEX = /<action>([\s\S]*?)<\/action>/g
+const COMMERCIAL_RESPONSE_TAG_REGEX = /<(commercial_response|lead_analysis)>([\s\S]*?)<\/\1>/g
 const VALID_ACTION_TYPES: ActionType[] = [
   'create_task',
   'update_deal_stage',
@@ -59,7 +60,7 @@ export function parseAutoPilotResponse(rawContent: string): ParsedResponse {
   let analysis: LeadAnalysis | null = null
 
   const text = rawContent
-    .replace(/<lead_analysis>([\s\S]*?)<\/lead_analysis>/g, (_match, inner: string) => {
+    .replace(COMMERCIAL_RESPONSE_TAG_REGEX, (_match, _tag: string, inner: string) => {
       try { analysis = parseLeadAnalysis(JSON.parse(inner)) } catch { /* Keep the readable response on malformed output. */ }
       return ''
     })

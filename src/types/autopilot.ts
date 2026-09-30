@@ -5,14 +5,21 @@ import type { OnlineProposal } from './onlineProposal'
 
 export type MessageRole = 'user' | 'assistant'
 
+export type CommercialResponseMode = 'quick_reply' | 'analysis' | 'objection' | 'follow_up'
+
 export interface LeadAnalysis {
+  mode: CommercialResponseMode
   interest: 'Baixo' | 'Moderado' | 'Alto' | 'Indeterminado'
   stage: string
   evidence: string
   objection: string
+  risk: string
   summary: string
   next_action: string
+  reason: string
+  strategy: string
   suggested_message: string
+  next_step: string
   follow_up_at: string | null
 }
 

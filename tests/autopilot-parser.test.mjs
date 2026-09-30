@@ -7,6 +7,16 @@ const { parseAutoPilotResponse, serializeContext } = await server.ssrLoadModule(
 await server.close()
 
 const analysis = {interest:'Alto',stage:'Proposta',evidence:'Pediu preco',objection:'',summary:'Resumo',next_action:'Confirmar escopo',suggested_message:'Qual o escopo?',follow_up_at:null}
+const commercial = {mode:'quick_reply',interest:'Moderado',stage:'Interesse',evidence:'Perguntou o preço',objection:'Não identificada',risk:'Responder sem preço',summary:'O lead gostou e perguntou o valor.',next_action:'Responder à pergunta',reason:'Evita atrito.',strategy:'Informar o valor e avançar.',suggested_message:'O investimento é R$ 500.',next_step:'Aguardar a resposta.',follow_up_at:null}
+
+test('extracts the complete commercial response contract', () => {
+  const result = parseAutoPilotResponse('<commercial_response>'+JSON.stringify(commercial)+'</commercial_response>')
+  assert.equal(result.analysis.mode, 'quick_reply')
+  assert.equal(result.analysis.risk, 'Responder sem preço')
+  assert.equal(result.analysis.strategy, 'Informar o valor e avançar.')
+  assert.equal(result.text, '')
+})
+
 test('extracts analysis and preserves independent action markers', () => {
   const action = {type:'create_task',label:'Confirmar',description:'Uma tarefa',payload:{title:'Confirmar escopo'}}
   const result = parseAutoPilotResponse('Contexto\n<lead_analysis>'+JSON.stringify(analysis)+'</lead_analysis><action>'+JSON.stringify(action)+'</action>')
