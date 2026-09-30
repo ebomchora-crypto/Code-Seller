@@ -10,6 +10,9 @@ interface ActionBlockProps {
 // Ação que o CS Copilot quer executar no sistema — nada acontece sem o
 // usuário confirmar.
 export function ActionBlock({ action, onConfirm, onReject }: ActionBlockProps) {
+  if (action.status === 'confirmed') {
+    return <div role="status" className="my-3 rounded-lg border border-[var(--border-default)] p-3 text-sm text-[var(--text-muted)]">Ação confirmada: {action.label}. Consulte o CRM para acompanhar.</div>
+  }
   if (action.status === 'executed') {
     return (
       <div className="flex animate-fade-in items-start gap-3 rounded-[18px] border border-emerald-500/25 bg-emerald-500/[0.07] p-3.5">

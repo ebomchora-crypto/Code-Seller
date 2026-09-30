@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Check, Copy } from 'lucide-react'
+import { CalendarPlus, Check, Copy, RotateCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { ActionBlock } from '@/components/autopilot/ActionBlock'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
-import type { AutoPilotMessage } from '@/types'
+import type { AutoPilotMessage, Contact } from '@/types'
+import { LeadAnalysisCard } from './LeadAnalysisCard'
 
 interface MessageBubbleProps {
+  contact?: Contact
+  onContextChanged?: () => void
   message: AutoPilotMessage
   onConfirmAction: (actionIndex: number) => void
   onRejectAction: (actionIndex: number) => void
+  onRequestVariation: (instruction: string, responseContent: string) => void
+  sending: boolean
 }
 
 const ACTION_MARKER_REGEX = /\{\{ACTION:(\d+)\}\}/g
@@ -18,12 +23,15 @@ function formatTime(value: string): string {
   return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function MessageBubble({ message, onConfirmAction, onRejectAction }: MessageBubbleProps) {
+export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequestVariation: requestVariation, sending, contact, onContextChanged }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false)
   const isUser = message.role === 'user'
+  const onRequestVariation = (instruction: string, content: string) =>
+    requestVariation(instruction, message.analysis?.suggested_message || content)
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(message.content.replace(ACTION_MARKER_REGEX, '').trim())
+    try { await navigator.clipboard.writeText((contact && message.analysis?.suggested_message) || message.content.replace(ACTION_MARKER_REGEX, '').trim()) }
+    catch { toast.error('Não foi possível copiar.'); return }
     setCopied(true)
     toast.success('Texto copiado.')
     setTimeout(() => setCopied(false), 1500)
@@ -56,6 +64,7 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction }: Mess
           <span className="text-[var(--text-muted)]">{formatTime(message.created_at)}</span>
         </p>
         <div className="text-[var(--text-primary)]">
+          {message.analysis && <LeadAnalysisCard message={message} contact={contact} sending={sending} onPrompt={onRequestVariation} onSaved={() => onContextChanged?.()} />}
           {segments.map((segment, index) => {
             if (index % 2 === 1) {
               const actionIndex = Number(segment)
@@ -82,11 +91,11 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction }: Mess
           })}
         </div>
 
-        <div className="mt-2 flex items-center gap-3">
+        {!message.analysis && <div className="mt-2 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11.5px] text-[var(--text-muted)] opacity-0 transition-all duration-150 hover:text-[var(--text-primary)] focus:opacity-100 group-hover:opacity-100"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11.5px] text-[var(--text-muted)] transition-all duration-150 hover:text-[var(--text-primary)]"
             aria-label="Copiar mensagem"
           >
             {copied ? (
@@ -96,7 +105,20 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction }: Mess
             )}
             {copied ? 'Copiado' : 'Copiar'}
           </button>
-        </div>
+          {!isUser && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Gere outra versão desta resposta, preservando os fatos e a intenção do pedido.', message.content)} title="Gerar outra versão" aria-label="Gerar outra versão" className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+                <RotateCw className="size-3.5" /> Outra versão
+              </button>
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Deixe esta resposta mais curta, sem perder o objetivo.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais curta</button>
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Reescreva esta resposta de forma mais natural.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais natural</button>
+              <button type="button" disabled={sending} onClick={() => onRequestVariation('Reescreva esta resposta com tom mais profissional, sem ficar rígida.', message.content)} className="inline-flex h-7 items-center rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">Mais profissional</button>
+              {contact && <button type="button" disabled={sending} onClick={() => onRequestVariation('Prepare um follow-up adequado ao histórico. Se houver contexto suficiente e um contato correspondente no CRM, sugira também uma tarefa de follow-up com data segura; se faltar data ou identificação do contato, pergunte antes de propor a tarefa.', message.content)} title="Agendar follow-up" aria-label="Agendar follow-up" className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+                <CalendarPlus className="size-3.5" /> Agendar follow-up
+              </button>}
+            </div>
+          )}
+        </div>}
       </div>
     </div>
   )

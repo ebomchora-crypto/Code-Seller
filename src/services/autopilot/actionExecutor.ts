@@ -29,23 +29,30 @@ async function executeCreateTask(payload: Record<string, unknown>): Promise<void
     ? (priorityRaw as TaskPriority)
     : 'medium'
   const dueDate = optionalString(payload, 'due_date')
+  if (dueDate && !Number.isFinite(Date.parse(dueDate))) throw new Error('Data da tarefa inválida.')
+  const kind = ['follow_up', 'meeting', 'next_action'].includes(String(payload.kind))
+    ? payload.kind as 'follow_up' | 'meeting' | 'next_action' : 'task'
   const contactId = optionalString(payload, 'contact_id')
   const dealId = optionalString(payload, 'deal_id')
 
   if (contactId && !(await getContactById(contactId))) {
     throw new Error('O contato referenciado por esta ação não existe mais.')
   }
-  if (dealId && !(await getDealById(dealId))) {
-    throw new Error('O negócio referenciado por esta ação não existe mais.')
+  if (dealId) {
+    const deal = await getDealById(dealId)
+    if (!deal) throw new Error('O negócio referenciado por esta ação não existe mais.')
+    if (contactId && deal.contact_id !== contactId) throw new Error('O negócio não pertence ao contato desta ação.')
   }
 
   await createTask({
+    kind,
+    followup_step: kind === 'follow_up' ? 1 : null,
     title,
-    description: null,
+    description: optionalString(payload, 'description'),
     status: 'todo',
     priority,
     due_date: dueDate,
-    reminder_at: null,
+    reminder_at: dueDate,
     contact_id: contactId,
     deal_id: dealId,
     assigned_to: null,
@@ -83,6 +90,9 @@ async function executeCreateInteraction(payload: Record<string, unknown>): Promi
   const typeRaw = payload.type
   const content = requireString(payload, 'content')
   const occurredAt = optionalString(payload, 'occurred_at') ?? new Date().toISOString()
+  if (!Number.isFinite(Date.parse(occurredAt)) || Date.parse(occurredAt) > Date.now() + 60000) {
+    throw new Error('Informe uma data válida para a interação já realizada.')
+  }
 
   if (!INTERACTION_TYPE_VALUES.includes(typeRaw as InteractionType)) {
     throw new Error('Ação inválida: tipo de interação desconhecido.')

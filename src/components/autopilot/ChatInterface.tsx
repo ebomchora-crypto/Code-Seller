@@ -4,14 +4,22 @@ import { ContextBadge } from '@/components/autopilot/ContextBadge'
 import { MessageList } from '@/components/autopilot/MessageList'
 import { MessageInput } from '@/components/autopilot/MessageInput'
 import { QuickPrompts } from '@/components/autopilot/QuickPrompts'
-import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage } from '@/types'
+import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage, CopilotPreferences } from '@/types'
 
 interface ChatInterfaceProps {
   conversation: AutoPilotConversation | null
   messages: AutoPilotMessage[]
   context: AutoPilotContext | null
+  preferences: CopilotPreferences
   sending: boolean
-  onSendMessage: (content: string) => void
+  generating: boolean
+  hasOlder: boolean
+  retryAvailable: boolean
+  onLoadOlder: () => void
+  onRetry: () => void
+  onCancel: () => void
+  onPreferencesChange: (value: CopilotPreferences) => void
+  onSendMessage: (content: string, preferences?: CopilotPreferences) => void
   onConfirmAction: (messageId: string, actionIndex: number) => void
   onRejectAction: (messageId: string, actionIndex: number) => void
   onRefreshContext: () => void
@@ -23,7 +31,15 @@ export function ChatInterface({
   conversation,
   messages,
   context,
+  preferences,
   sending,
+  generating,
+  hasOlder,
+  retryAvailable,
+  onLoadOlder,
+  onRetry,
+  onCancel,
+  onPreferencesChange,
   onSendMessage,
   onConfirmAction,
   onRejectAction,
@@ -34,6 +50,17 @@ export function ChatInterface({
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState(conversation?.title ?? 'Nova conversa')
   const [refreshing, setRefreshing] = useState(false)
+
+  function sendWithPreferences(content: string) {
+    onSendMessage(content, preferences)
+  }
+  function changePreferences(value: CopilotPreferences) {
+    onPreferencesChange(value)
+  }
+
+  function requestVariation(instruction: string, responseContent: string) {
+    sendWithPreferences(`${instruction}\n\nUse como base esta resposta específica:\n${responseContent}`)
+  }
 
   function handleTitleBlur() {
     setEditingTitle(false)
@@ -94,21 +121,42 @@ export function ChatInterface({
         <ContextBadge context={context} onRefresh={handleRefresh} refreshing={refreshing} />
       </div>
 
-      {messages.length === 0 ? (
+      {messages.length === 0 && !context?.selected_lead ? (
         <div data-lenis-prevent className="flex flex-1 flex-col overflow-y-auto">
-          <QuickPrompts onSelect={onSendMessage} sending={sending} hasContext={context !== null} context={context} />
+          <QuickPrompts
+            onSelect={sendWithPreferences}
+            sending={sending}
+            hasContext={context !== null}
+            context={context}
+            preferences={preferences}
+            onPreferencesChange={changePreferences}
+          />
         </div>
       ) : (
         <>
           <div className="flex min-h-0 flex-1 flex-col">
             <MessageList
+              contact={context?.selected_lead?.contact}
+              onContextChanged={onRefreshContext}
               messages={messages}
-              sending={sending}
+              sending={generating}
+              hasOlder={hasOlder}
+              retryAvailable={retryAvailable}
+              onLoadOlder={onLoadOlder}
+              onRetry={onRetry}
+              onCancel={onCancel}
               onConfirmAction={onConfirmAction}
               onRejectAction={onRejectAction}
+              onRequestVariation={(instruction, responseContent) => requestVariation(instruction, responseContent)}
             />
           </div>
-          <MessageInput onSend={onSendMessage} sending={sending} hasContext={context !== null} />
+          <MessageInput
+            onSend={sendWithPreferences}
+            sending={sending}
+            hasContext={context !== null}
+            preferences={preferences}
+            onPreferencesChange={changePreferences}
+          />
         </>
       )}
     </div>

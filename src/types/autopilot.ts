@@ -1,4 +1,58 @@
+import type { Contact, Interaction } from './crm'
+import type { Deal, DealActivity } from './deals'
+import type { Task } from './tasks'
+import type { OnlineProposal } from './onlineProposal'
+
 export type MessageRole = 'user' | 'assistant'
+
+export type CommercialResponseMode = 'quick_reply' | 'analysis' | 'objection' | 'follow_up'
+
+export interface LeadAnalysis {
+  mode: CommercialResponseMode
+  interest: 'Baixo' | 'Moderado' | 'Alto' | 'Indeterminado'
+  stage: string
+  evidence: string
+  objection: string
+  risk: string
+  summary: string
+  next_action: string
+  reason: string
+  strategy: string
+  suggested_message: string
+  next_step: string
+  follow_up_at: string | null
+}
+
+export interface LeadContext {
+  contact: Contact
+  deals: Deal[]
+  interactions: Interaction[]
+  activities: DealActivity[]
+  tasks: Task[]
+  prototypes: Array<{ id: string; name: string; slug: string; status: string; published: boolean; created_at: string; brief?: Record<string, unknown> }>
+  proposals: OnlineProposal[]
+  previous_analysis: LeadAnalysis | null
+  commercial_memory?: string | null
+}
+
+export type SalesPlaybook = 'none' | 'call_first' | 'whatsapp' | 'prototype_first' | 'lead_recovery' | 'follow_up'
+export type CopilotTone = 'natural' | 'professional' | 'casual' | 'direct' | 'consultative' | 'formal'
+export type CopilotLength = 'short' | 'medium' | 'detailed'
+export type CopilotLanguage = 'auto' | 'pt_br' | 'pt_pt' | 'en' | 'es'
+
+export interface CopilotPreferences {
+  playbook: SalesPlaybook
+  tone: CopilotTone
+  length: CopilotLength
+  language: CopilotLanguage
+}
+
+export const DEFAULT_COPILOT_PREFERENCES: CopilotPreferences = {
+  playbook: 'none',
+  tone: 'natural',
+  length: 'medium',
+  language: 'auto',
+}
 
 export type ActionType = 'create_task' | 'update_deal_stage' | 'create_interaction' | 'update_contact_status'
 
@@ -13,6 +67,7 @@ export interface ProposedAction {
 }
 
 export interface AutoPilotMessage {
+  analysis?: LeadAnalysis | null
   id: string
   conversation_id: string
   user_id: string
@@ -23,6 +78,9 @@ export interface AutoPilotMessage {
 }
 
 export interface AutoPilotConversation {
+  contact_id?: string | null
+  commercial_memory?: string | null
+  preferences?: CopilotPreferences | null
   id: string
   user_id: string
   title: string
@@ -32,6 +90,9 @@ export interface AutoPilotConversation {
 }
 
 export interface AutoPilotContext {
+  selected_lead?: LeadContext
+  now?: string
+  timezone?: string
   user: {
     name: string
     email: string
@@ -53,6 +114,14 @@ export interface AutoPilotContext {
     status: string
     niche: string | null
     last_interaction: string | null
+  }>
+  recent_interactions: Array<{
+    id: string
+    contact_id: string
+    contact_name: string
+    type: string
+    content: string
+    occurred_at: string
   }>
   active_deals: Array<{
     id: string
@@ -86,7 +155,7 @@ export interface AutoPilotContext {
 export interface QuickPrompt {
   id: string
   label: string
-  prompt: string
+  draft: string
   icon: string // nome do ícone Lucide
   category: 'analysis' | 'message' | 'task' | 'follow_up'
 }

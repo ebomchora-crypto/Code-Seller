@@ -1,15 +1,19 @@
-import { AlertTriangle, BarChart2, CheckSquare, MessageSquare, Send, User, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, BarChart2, MessageSquare, Pencil, RotateCcw, Send, Users, type LucideIcon } from 'lucide-react'
+import { useRef } from 'react'
 import { motion } from 'motion/react'
-import { CopilotComposer } from '@/components/autopilot/CopilotComposer'
+import { CopilotComposer, type CopilotComposerHandle } from '@/components/autopilot/CopilotComposer'
+import { CopilotPreferencesBar } from '@/components/autopilot/CopilotPreferencesBar'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { EASE_PREMIUM } from '@/utils/animations'
-import type { AutoPilotContext, QuickPrompt } from '@/types'
+import type { AutoPilotContext, CopilotPreferences, QuickPrompt } from '@/types'
 
 interface QuickPromptsProps {
   onSelect: (prompt: string) => void
   sending: boolean
   hasContext: boolean
+  preferences: CopilotPreferences
+  onPreferencesChange: (value: CopilotPreferences) => void
 }
 
 const ICONS: Record<string, LucideIcon> = {
@@ -17,63 +21,72 @@ const ICONS: Record<string, LucideIcon> = {
   AlertTriangle,
   MessageSquare,
   Send,
-  User,
-  CheckSquare,
+  Users,
+  RotateCcw,
+  Pencil,
 }
 
-export const QUICK_PROMPTS: QuickPrompt[] = [
+const QUICK_PROMPTS: QuickPrompt[] = [
   {
-    id: 'analyze_pipeline',
-    label: 'Analisar meu pipeline',
-    prompt: 'Analise meu pipeline atual e me diga quais deals merecem atenção prioritária esta semana.',
+    id: 'analyze_conversation',
+    label: 'Analisar conversa',
+    draft: 'Analise esta conversa detalhadamente. Considere o histórico inteiro e me diga a etapa, o interesse, a objeção, o risco, a próxima ação, a mensagem pronta e o follow-up sugerido.\n\nCole a conversa aqui:\n',
     icon: 'BarChart2',
     category: 'analysis',
   },
   {
-    id: 'stalled_deals',
-    label: 'Ver deals parados',
-    prompt: 'Quais negócios estão parados há mais tempo? O que você sugere fazer com cada um?',
-    icon: 'AlertTriangle',
-    category: 'follow_up',
-  },
-  {
-    id: 'generate_approach',
-    label: 'Gerar abordagem para lead',
-    prompt: 'Me ajude a gerar uma mensagem de abordagem para um novo lead. Me pergunte as informações necessárias.',
+    id: 'what_to_reply',
+    label: 'O que respondo?',
+    draft: 'O que eu respondo? Priorize a mensagem pronta e explique a estratégia em uma linha.\n\nÚltimas mensagens da conversa:\n',
     icon: 'MessageSquare',
     category: 'message',
   },
   {
     id: 'follow_up',
     label: 'Criar follow-up',
-    prompt: 'Preciso criar mensagens de follow-up para deals que não tiveram atividade recente. Me mostre quais são e sugira mensagens.',
+    draft: 'Crie um follow-up adequado para este caso.\n\nÚltima interação:\nDias sem resposta:\nEtapa da venda:\nContexto:\n',
     icon: 'Send',
     category: 'follow_up',
   },
   {
-    id: 'summarize_contact',
-    label: 'Resumir contato',
-    prompt: 'Me ajude a criar um resumo completo de um contato específico. Qual contato você quer resumir?',
-    icon: 'User',
+    id: 'handle_objection',
+    label: 'Quebrar objeção',
+    draft: 'Quebre esta objeção com uma resposta humana, sem pressionar. Explique a leitura e o próximo passo.\n\nObjeção do lead:\n',
+    icon: 'AlertTriangle',
+    category: 'message',
+  },
+  {
+    id: 'prepare_meeting',
+    label: 'Preparar reunião',
+    draft: 'Prepare esta reunião comercial. Organize o contexto, as perguntas de diagnóstico, as objeções e o próximo passo.\n\nContexto conhecido:\n',
+    icon: 'Users',
     category: 'analysis',
   },
   {
-    id: 'suggest_tasks',
-    label: 'Sugerir tarefas',
-    prompt: 'Com base no meu pipeline e nos deals parados, quais tarefas você sugere que eu crie para esta semana?',
-    icon: 'CheckSquare',
-    category: 'task',
+    id: 'recover_lead',
+    label: 'Recuperar lead',
+    draft: 'Me ajude a recuperar este lead sem inventar urgência. Gere uma mensagem curta e diga quando encerrar se não houver resposta.\n\nÚltimo contato e contexto:\n',
+    icon: 'RotateCcw',
+    category: 'follow_up',
+  },
+  {
+    id: 'create_message',
+    label: 'Criar mensagem',
+    draft: 'Crie uma mensagem comercial humana para WhatsApp.\n\nObjetivo da mensagem:\nContexto do lead:\nInformações que precisam aparecer:\n',
+    icon: 'Pencil',
+    category: 'message',
   },
 ]
 
 // Uma linha explicando o que cada sugestão entrega.
 const DESCRIPTIONS: Record<string, string> = {
-  analyze_pipeline: 'Quais negócios merecem atenção esta semana',
-  stalled_deals: 'O que está parado e como destravar',
-  generate_approach: 'Mensagem pronta para um lead novo',
-  follow_up: 'Retome quem esfriou, com texto pronto',
-  summarize_contact: 'Tudo sobre um contato em poucas linhas',
-  suggest_tasks: 'Um plano de tarefas para a semana',
+  analyze_conversation: 'Leitura completa do histórico e próxima ação',
+  what_to_reply: 'Mensagem pronta primeiro, sem textão',
+  follow_up: 'Retomada certa para o tempo e a etapa',
+  handle_objection: 'Entenda o bloqueio e responda sem pressão',
+  prepare_meeting: 'Perguntas, contexto e objetivo da conversa',
+  recover_lead: 'Reabra a conversa sem inventar urgência',
+  create_message: 'Texto humano para o objetivo que você definir',
 }
 
 interface WelcomeProps extends QuickPromptsProps {
@@ -82,8 +95,9 @@ interface WelcomeProps extends QuickPromptsProps {
 
 // Tela inicial do CS Copilot: orbe, saudação ciente dos dados, compositor
 // grande e sugestões em cards.
-export function QuickPrompts({ onSelect, sending, hasContext, context }: WelcomeProps) {
+export function QuickPrompts({ onSelect, sending, hasContext, context, preferences, onPreferencesChange }: WelcomeProps) {
   const reducedMotion = useReducedMotion()
+  const composerRef = useRef<CopilotComposerHandle>(null)
   const summary = context?.summary
   const reveal = (delay: number) => ({
     initial: reducedMotion ? false : { opacity: 0, y: 14, filter: 'blur(6px)' },
@@ -92,7 +106,7 @@ export function QuickPrompts({ onSelect, sending, hasContext, context }: Welcome
   })
 
   return (
-    <div className="m-auto flex w-full max-w-3xl flex-col items-center px-5 py-10 sm:px-8">
+    <div className="m-auto flex w-full max-w-5xl flex-col items-center px-5 py-10 sm:px-8">
       <motion.div {...reveal(0)}>
         <CopilotOrb size="lg" />
       </motion.div>
@@ -110,17 +124,18 @@ export function QuickPrompts({ onSelect, sending, hasContext, context }: Welcome
       </motion.p>
 
       <motion.div {...reveal(0.2)} className="mt-8 w-full">
-        <CopilotComposer onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
+        <CopilotComposer ref={composerRef} onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
+        <div className="mt-1"><CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} /></div>
       </motion.div>
 
-      <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
         {QUICK_PROMPTS.map((quickPrompt) => {
           const Icon = ICONS[quickPrompt.icon] ?? MessageSquare
           return (
             <button
               key={quickPrompt.id}
               type="button"
-              onClick={() => onSelect(quickPrompt.prompt)}
+              onClick={() => composerRef.current?.applyDraft(quickPrompt.draft)}
               disabled={sending}
               className="group flex items-start gap-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-ring)] disabled:cursor-not-allowed disabled:opacity-50"
             >

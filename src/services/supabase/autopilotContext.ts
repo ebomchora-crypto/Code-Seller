@@ -4,8 +4,10 @@ import { getDeals } from '@/services/supabase/deals'
 import { getTaskMetrics, getTasks } from '@/services/supabase/tasks'
 import { getFinancialMetrics } from '@/services/supabase/financialMetrics'
 import type { AutoPilotContext } from '@/types'
+import { getLeadContext } from './copilotCRM'
 
 const MAX_ITEMS_PER_CATEGORY = 10
+const MAX_RECENT_INTERACTIONS = 30
 const STALL_THRESHOLD_DAYS = 7
 
 function daysSince(date: Date): number {
@@ -17,10 +19,25 @@ function daysSince(date: Date): number {
 // financeiro) — só a busca de "última atividade por deal" (para deals
 // parados) e "última interação por contato" são consultas novas, pois não
 // existia antes uma função que agregasse isso entre múltiplos registros.
-export async function buildAutoPilotContext(): Promise<AutoPilotContext> {
+export async function buildAutoPilotContext(contactId?: string): Promise<AutoPilotContext> {
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw new Error(userError.message)
   if (!userData.user) throw new Error('Usuário não autenticado.')
+
+  if (contactId) {
+    const lead = await getLeadContext(contactId)
+    return {
+      user: { name: userData.user.user_metadata?.name ?? userData.user.email ?? 'Usuário', email: userData.user.email ?? '' },
+      now: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      selected_lead: lead,
+      summary: { total_contacts: 1, active_deals: lead.deals.filter((deal) => deal.status === 'open').length,
+        pipeline_value: lead.deals.filter((deal) => deal.status === 'open').reduce((sum, deal) => sum + (deal.value ?? 0), 0),
+        conversion_rate: 0, pending_tasks: lead.tasks.filter((task) => ['todo', 'in_progress'].includes(task.status)).length,
+        overdue_tasks: lead.tasks.filter((task) => ['todo', 'in_progress'].includes(task.status) && task.due_date && Date.parse(task.due_date) < Date.now()).length,
+        monthly_income: 0, monthly_expense: 0, receivables_total: 0 },
+      recent_contacts: [], recent_interactions: [], active_deals: [], overdue_tasks: [], stalled_deals: [],
+    }
+  }
 
   const [contactsResult, dealsResult, taskMetrics, overdueTasksResult, financialMetrics] = await Promise.all([
     getContacts({ pageSize: MAX_ITEMS_PER_CATEGORY, sortColumn: 'created_at', sortDirection: 'desc' }),
@@ -40,17 +57,28 @@ export async function buildAutoPilotContext(): Promise<AutoPilotContext> {
   // Última interação por contato (para os contatos recentes exibidos no contexto)
   const contactIds = contactsResult.data.map((contact) => contact.id)
   const lastInteractionByContact = new Map<string, string>()
+  const recentInteractions: AutoPilotContext['recent_interactions'] = []
+  const contactNameById = new Map(contactsResult.data.map((contact) => [contact.id, contact.name]))
   if (contactIds.length > 0) {
     const { data: interactions } = await supabase
       .from('interactions')
-      .select('contact_id, occurred_at')
+      .select('id, contact_id, type, content, occurred_at')
       .in('contact_id', contactIds)
       .order('occurred_at', { ascending: false })
+      .limit(MAX_RECENT_INTERACTIONS)
 
     for (const row of interactions ?? []) {
       if (!lastInteractionByContact.has(row.contact_id)) {
         lastInteractionByContact.set(row.contact_id, row.occurred_at)
       }
+      recentInteractions.push({
+        id: row.id,
+        contact_id: row.contact_id,
+        contact_name: contactNameById.get(row.contact_id) ?? 'Contato',
+        type: row.type,
+        content: row.content.slice(0, 1200),
+        occurred_at: row.occurred_at,
+      })
     }
   }
 
@@ -93,6 +121,7 @@ export async function buildAutoPilotContext(): Promise<AutoPilotContext> {
     }))
 
   return {
+    now: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     user: {
       name: (userData.user.user_metadata?.name as string | undefined) ?? userData.user.email ?? 'Usuário',
       email: userData.user.email ?? '',
@@ -115,6 +144,7 @@ export async function buildAutoPilotContext(): Promise<AutoPilotContext> {
       niche: contact.niche,
       last_interaction: lastInteractionByContact.get(contact.id) ?? null,
     })),
+    recent_interactions: recentInteractions,
     active_deals: openDeals.slice(0, MAX_ITEMS_PER_CATEGORY).map((deal) => ({
       id: deal.id,
       title: deal.title,

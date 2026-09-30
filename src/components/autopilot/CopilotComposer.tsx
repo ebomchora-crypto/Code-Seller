@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getChatSubmission, shouldSubmitChat } from '@/components/autopilot/composer.utils'
+import { applyQuickPromptDraft, getChatSubmission, shouldSubmitChat } from '@/components/autopilot/composer.utils'
 
 interface CopilotComposerProps {
   onSend: (content: string) => void
@@ -10,10 +10,17 @@ interface CopilotComposerProps {
   size?: 'large' | 'compact'
 }
 
-const MIN_HEIGHT = { large: 76, compact: 48 }
-const MAX_HEIGHT = 200
+export interface CopilotComposerHandle {
+  applyDraft: (content: string) => void
+}
 
-export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' }: CopilotComposerProps) {
+const MIN_HEIGHT = { large: 76, compact: 48 }
+const MAX_HEIGHT = 'min(32dvh, 240px)'
+
+export const CopilotComposer = forwardRef<CopilotComposerHandle, CopilotComposerProps>(function CopilotComposer(
+  { onSend, sending, hasContext, size = 'compact' },
+  ref,
+) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const submission = getChatSubmission(value)
@@ -22,12 +29,19 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
     const textarea = textareaRef.current
     if (!textarea) return
     textarea.style.height = `${MIN_HEIGHT[size]}px`
-    textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, MIN_HEIGHT[size]), MAX_HEIGHT)}px`
+    textarea.style.height = `min(${Math.max(textarea.scrollHeight, MIN_HEIGHT[size])}px, ${MAX_HEIGHT})`
   }, [size])
 
   useEffect(() => {
     adjustHeight()
   }, [adjustHeight, value])
+
+  useImperativeHandle(ref, () => ({
+    applyDraft(content: string) {
+      setValue((current) => applyQuickPromptDraft(current, content))
+      requestAnimationFrame(() => textareaRef.current?.focus())
+    },
+  }), [])
 
   function submit() {
     if (!submission || sending) return
@@ -36,6 +50,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) return
     if (!shouldSubmitChat(event.key, event.shiftKey)) return
     event.preventDefault()
     submit()
@@ -52,7 +67,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
         rows={1}
         aria-label="Mensagem para o CS Copilot"
         placeholder={size === 'large' ? 'Pergunte sobre seus contatos, negócios, tarefas ou peça uma mensagem…' : 'Responda ou peça outra coisa…'}
-        className="block w-full resize-none bg-transparent px-5 pt-4 text-[15px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-60"
+        className="block w-full resize-none overflow-y-auto bg-transparent px-5 pt-4 text-[15px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-60"
         style={{ height: MIN_HEIGHT[size] }}
       />
 
@@ -61,7 +76,7 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
           <span
             className={cn('size-1.5 rounded-full', hasContext ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'animate-pulse bg-[var(--accent-solid)]')}
           />
-          {hasContext ? 'Lendo seus dados' : 'Carregando seus dados…'}
+          {hasContext ? 'Contexto pronto' : 'Carregando seus dados…'}
         </span>
 
         <div className="flex items-center gap-3">
@@ -84,4 +99,4 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact' 
       </div>
     </div>
   )
-}
+})

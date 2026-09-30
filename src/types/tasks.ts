@@ -6,6 +6,9 @@ export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type TaskRecurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export interface Task {
+  kind?: 'task' | 'follow_up' | 'meeting' | 'next_action'
+  followup_step?: number | null
+  copilot_key?: string | null
   id: string
   user_id: string
   title: string
@@ -14,6 +17,7 @@ export interface Task {
   priority: TaskPriority
   due_date: string | null
   reminder_at: string | null
+  reminder_seen_at?: string | null
   contact_id: string | null
   deal_id: string | null
   assigned_to: string | null

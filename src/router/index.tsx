@@ -29,6 +29,7 @@ const PortfolioPage = lazyPage(() => import('@/pages/portfolio'))
 const AcademyPage = lazyPage(() => import('@/pages/academy'))
 const AcademyLessonPage = lazyPage(() => import('@/pages/academy/lesson'))
 const AcademyKitPage = lazyPage(() => import('@/pages/academy/kit'))
+const CommercialLibraryPage = lazyPage(() => import('@/pages/academy/library'))
 const PublicPortfolioPage = lazyPage(() => import('@/pages/public-portfolio'))
 const PublicLeadFormPage = lazyPage(() => import('@/pages/public-lead-form'))
 const PublicProposalPage = lazyPage(() => import('@/pages/public-proposal'))
@@ -97,6 +98,7 @@ export function AppRouter() {
             <Route path="/aluno" element={<AcademyPage />} />
             <Route path="/aluno/licao/:id" element={<AcademyLessonPage />} />
             <Route path="/aluno/kit" element={<AcademyKitPage />} />
+            <Route path="/aluno/biblioteca" element={<CommercialLibraryPage />} />
             <Route path="/prospection" element={<ProspectionPage />} />
             <Route path="/crm" element={<CrmPage />} />
             <Route path="/crm/:id" element={<ContactDetailPage />} />
