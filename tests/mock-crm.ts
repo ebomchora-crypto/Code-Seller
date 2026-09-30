@@ -7,11 +7,14 @@ const contact = (id: string, name: string) => ({id, name, user_id:user.id, statu
 const leadA = contact('00000000-0000-4000-8000-000000000002','Lead Teste Alfa')
 const leadB = contact('00000000-0000-4000-8000-000000000003','Lead Teste Beta')
 const task = {id:'00000000-0000-4000-8000-000000000004', user_id:user.id, contact_id:leadA.id, deal_id:null, title:'Retomar proposta Alfa', description:null, status:'todo', kind:'follow_up', followup_step:1, copilot_key:null, due_date:date(-1), reminder_at:date(-1), reminder_seen_at:date(-1), created_at:date(-2), updated_at:date(-2), recurrence:'none', recurrence_end_date:null, parent_task_id:null, completed_at:null, position:0, priority:'medium', assigned_to:null, task_tags:[]}
+const fixtureConversation = {id:'00000000-0000-4000-8000-000000000010',user_id:user.id,contact_id:null,title:'Resposta pronta de teste',preferences:null,commercial_memory:null,created_at:date(-1),updated_at:date(0)}
+const fixtureAnalysis = {mode:'quick_reply',interest:'Moderado',stage:'Interesse',evidence:'O lead gostou e perguntou o preço.',objection:'Não identificada',risk:'Desviar da pergunta pode gerar atrito.',summary:'O lead demonstrou interesse e pediu o valor.',next_action:'Responder ao preço agora.',reason:'A pergunta foi direta.',strategy:'Responder com objetividade e manter o avanço.',suggested_message:'Que bom que gostou! O investimento para este escopo é de R$ 500. Qual parte você gostaria que eu detalhasse primeiro?',next_step:'Se ele demonstrar interesse, alinhe escopo e prazo.',follow_up_at:null}
+const fixtureMessage = {id:'00000000-0000-4000-8000-000000000011',conversation_id:fixtureConversation.id,user_id:user.id,role:'assistant',content:'',analysis:fixtureAnalysis,actions:[],created_at:date(0)}
 type Row = Record<string, any>
 const db: Record<string, Row[]> = {
   contacts:[leadA,leadB], tasks:[task], deals:[],
   interactions:[{id:crypto.randomUUID(),user_id:user.id,contact_id:leadA.id,type:'whatsapp',direction:'inbound',content:'Gostei do prototipo. Podemos conversar amanha?',occurred_at:date(-0.1),created_at:date(-0.1),metadata:null}],
-  autopilot_conversations:[],autopilot_messages:[],sites:[],deal_activities:[],online_proposals:[],
+  autopilot_conversations:[fixtureConversation],autopilot_messages:[fixtureMessage],sites:[],deal_activities:[],online_proposals:[],
   user_profiles:[{id:user.id,full_name:'Teste local',company_name:'Teste'}], message_templates:[], portfolio_pages:[],
   academy_progress:[],
 }

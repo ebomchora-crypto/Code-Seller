@@ -1,7 +1,7 @@
 import { AlertTriangle, BarChart2, MessageSquare, Pencil, RotateCcw, Send, Users, type LucideIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef } from 'react'
 import { motion } from 'motion/react'
-import { CopilotComposer } from '@/components/autopilot/CopilotComposer'
+import { CopilotComposer, type CopilotComposerHandle } from '@/components/autopilot/CopilotComposer'
 import { CopilotPreferencesBar } from '@/components/autopilot/CopilotPreferencesBar'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
@@ -26,7 +26,7 @@ const ICONS: Record<string, LucideIcon> = {
   Pencil,
 }
 
-export const QUICK_PROMPTS: QuickPrompt[] = [
+const QUICK_PROMPTS: QuickPrompt[] = [
   {
     id: 'analyze_conversation',
     label: 'Analisar conversa',
@@ -97,7 +97,7 @@ interface WelcomeProps extends QuickPromptsProps {
 // grande e sugestões em cards.
 export function QuickPrompts({ onSelect, sending, hasContext, context, preferences, onPreferencesChange }: WelcomeProps) {
   const reducedMotion = useReducedMotion()
-  const [draft, setDraft] = useState<{ content: string }>()
+  const composerRef = useRef<CopilotComposerHandle>(null)
   const summary = context?.summary
   const reveal = (delay: number) => ({
     initial: reducedMotion ? false : { opacity: 0, y: 14, filter: 'blur(6px)' },
@@ -106,7 +106,7 @@ export function QuickPrompts({ onSelect, sending, hasContext, context, preferenc
   })
 
   return (
-    <div className="m-auto flex w-full max-w-3xl flex-col items-center px-5 py-10 sm:px-8">
+    <div className="m-auto flex w-full max-w-5xl flex-col items-center px-5 py-10 sm:px-8">
       <motion.div {...reveal(0)}>
         <CopilotOrb size="lg" />
       </motion.div>
@@ -124,18 +124,18 @@ export function QuickPrompts({ onSelect, sending, hasContext, context, preferenc
       </motion.p>
 
       <motion.div {...reveal(0.2)} className="mt-8 w-full">
-        <CopilotComposer onSend={onSelect} sending={sending} hasContext={hasContext} size="large" draft={draft} />
+        <CopilotComposer ref={composerRef} onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
         <div className="mt-1"><CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} /></div>
       </motion.div>
 
-      <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
         {QUICK_PROMPTS.map((quickPrompt) => {
           const Icon = ICONS[quickPrompt.icon] ?? MessageSquare
           return (
             <button
               key={quickPrompt.id}
               type="button"
-              onClick={() => setDraft({ content: quickPrompt.draft })}
+              onClick={() => composerRef.current?.applyDraft(quickPrompt.draft)}
               disabled={sending}
               className="group flex items-start gap-3 rounded-[18px] border border-[var(--border-subtle)] bg-[var(--bg-card)] p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-ring)] disabled:cursor-not-allowed disabled:opacity-50"
             >

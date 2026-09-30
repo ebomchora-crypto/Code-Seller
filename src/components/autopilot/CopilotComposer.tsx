@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowUp, LoaderCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { applyQuickPromptDraft, getChatSubmission, shouldSubmitChat } from '@/components/autopilot/composer.utils'
@@ -8,13 +8,19 @@ interface CopilotComposerProps {
   sending: boolean
   hasContext: boolean
   size?: 'large' | 'compact'
-  draft?: { content: string }
+}
+
+export interface CopilotComposerHandle {
+  applyDraft: (content: string) => void
 }
 
 const MIN_HEIGHT = { large: 76, compact: 48 }
 const MAX_HEIGHT = 'min(32dvh, 240px)'
 
-export function CopilotComposer({ onSend, sending, hasContext, size = 'compact', draft }: CopilotComposerProps) {
+export const CopilotComposer = forwardRef<CopilotComposerHandle, CopilotComposerProps>(function CopilotComposer(
+  { onSend, sending, hasContext, size = 'compact' },
+  ref,
+) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const submission = getChatSubmission(value)
@@ -30,11 +36,12 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact',
     adjustHeight()
   }, [adjustHeight, value])
 
-  useEffect(() => {
-    if (!draft) return
-    setValue((current) => applyQuickPromptDraft(current, draft.content))
-    requestAnimationFrame(() => textareaRef.current?.focus())
-  }, [draft])
+  useImperativeHandle(ref, () => ({
+    applyDraft(content: string) {
+      setValue((current) => applyQuickPromptDraft(current, content))
+      requestAnimationFrame(() => textareaRef.current?.focus())
+    },
+  }), [])
 
   function submit() {
     if (!submission || sending) return
@@ -92,4 +99,4 @@ export function CopilotComposer({ onSend, sending, hasContext, size = 'compact',
       </div>
     </div>
   )
-}
+})
