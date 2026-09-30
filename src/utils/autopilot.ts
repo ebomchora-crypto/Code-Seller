@@ -1,4 +1,5 @@
 import type { ActionType, AutoPilotContext, ProposedAction } from '@/types'
+import { leadContextForAI } from './aiLeadContext'
 import { parseLeadAnalysis } from './copilotCRM'
 import type { LeadAnalysis } from '@/types'
 
@@ -83,8 +84,5 @@ export function generateConversationTitle(firstMessage: string): string {
 export function serializeContext(context: AutoPilotContext): string {
   const lead = context.selected_lead
   if (!lead) return JSON.stringify(context)
-  return JSON.stringify({ ...context, selected_lead: {
-    ...lead,
-    proposals: lead.proposals.map((row) => ({ ...row, token: undefined })),
-  } })
+  return JSON.stringify({ ...context, selected_lead: leadContextForAI(lead) })
 }

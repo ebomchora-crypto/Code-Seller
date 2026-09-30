@@ -6,6 +6,8 @@ import { ChatInterface } from '@/components/autopilot/ChatInterface'
 import { CopilotToday } from '@/components/autopilot/CopilotToday'
 import { LeadPanel, leadPrompts } from '@/components/autopilot/LeadPanel'
 import { useAutoPilot } from '@/hooks/useAutoPilot'
+import { commercialMaterialPrompt, getCommercialMaterial } from '@/data/commercial-library'
+import { toast } from 'sonner'
 
 function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const copilot = useAutoPilot(contactId)
@@ -13,18 +15,29 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [leadOpen, setLeadOpen] = useState(false)
   const intentStarted = useRef(false)
+  const materialStarted = useRef(false)
   const lead = copilot.context?.selected_lead
   const analysis = [...copilot.messages].reverse().find((message) => message.analysis)?.analysis ?? lead?.previous_analysis ?? null
   const intent = params.get('intent')
+  const materialId = params.get('material')
   const { sendMessage, preferences, loading, sending, error } = copilot
   useEffect(() => {
-    if (!intent || !lead || loading || sending || error || intentStarted.current) return
+    if (!intent || materialId || !lead || loading || sending || error || intentStarted.current) return
     const prompt = leadPrompts[intent as keyof typeof leadPrompts]
     if (!prompt) return
     intentStarted.current = true
     void sendMessage(prompt, preferences)
     setParams((current) => { const next = new URLSearchParams(current); next.delete('intent'); return next }, { replace: true })
-  }, [intent, lead, loading, sending, error, sendMessage, preferences, setParams])
+  }, [intent, materialId, lead, loading, sending, error, sendMessage, preferences, setParams])
+  useEffect(() => {
+    if (!materialId || loading || sending || error || !copilot.context || materialStarted.current) return
+    if (contactId && !lead) return
+    materialStarted.current = true
+    const material = getCommercialMaterial(materialId)
+    if (material) void sendMessage(commercialMaterialPrompt(material), preferences)
+    else toast.error('Material da Biblioteca não encontrado.')
+    setParams((current) => { const next = new URLSearchParams(current); next.delete('material'); return next }, { replace: true })
+  }, [materialId, loading, sending, error, copilot.context, contactId, lead, sendMessage, preferences, setParams])
   return <div className="relative flex min-h-0 flex-1 flex-col">
     {copilot.error && <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-red-500/20 px-4 py-3 text-sm text-red-500">
       <span>{copilot.error}</span><button className="underline" onClick={() => void (copilot.activeConversation ? copilot.selectConversation(copilot.activeConversation.id) : copilot.loadConversations())}>Tentar novamente</button>

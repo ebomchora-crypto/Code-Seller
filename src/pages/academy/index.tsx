@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BookOpen, Check, Clock, FileText, MessageSquareText, Sparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, BookMarked, Check, Clock, FileText, MessageSquareText, Sparkles } from 'lucide-react'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useAcademyProgress } from '@/hooks/useAcademyProgress'
 import { ACADEMY_LESSONS, ACADEMY_MODULES, KIT_PROMPTS, KIT_PROPOSALS, KIT_SCRIPTS, lessonKey } from '@/data/academy'
+import { COMMERCIAL_MATERIALS } from '@/data/commercial-library'
 
 const KIT_CARDS = [
   { tab: 'prompts', title: 'Prompts', description: 'Para criar sites, sistemas e vender com IA', count: KIT_PROMPTS.length, icon: Sparkles },
@@ -21,7 +22,7 @@ export default function AcademyPage() {
     <PageWrapper>
       <PageHeader
         title="Área do aluno"
-        subtitle="O método Code Sellers em lições curtas, e o Kit com prompts, scripts e propostas prontos para usar."
+        subtitle="O método em lições curtas, materiais de execução e respostas para situações reais de venda."
       />
 
       <section className="relative mt-8 overflow-hidden rounded-[28px] border border-[#a78bfa]/25 bg-[radial-gradient(120%_140%_at_100%_0%,#3b1d6e_0%,#1a0f2e_42%,#0b0812_100%)] p-6 text-white sm:p-8">
@@ -118,6 +119,17 @@ export default function AcademyPage() {
           )
         })}
       </div>
+
+      <section className="mt-8 border-t border-[var(--border-subtle)] pt-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div><div className="flex items-center gap-2"><BookMarked className="size-5 text-[var(--accent-text)]" /><h2 className="font-display text-[20px] font-semibold text-[var(--text-primary)]">Biblioteca Comercial</h2></div><p className="mt-1 text-sm text-[var(--text-muted)]">Scripts, objeções, follow-ups e prompts para a próxima conversa.</p></div>
+          <Link to="/aluno/biblioteca" className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent-tint)] px-4 py-2 text-sm font-semibold text-[var(--accent-text)] hover:brightness-110">Abrir biblioteca <ArrowRight className="size-4" /></Link>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">{[
+          { label: 'Objeções', category: 'objections' }, { label: 'Follow-ups', category: 'followups' },
+          { label: 'Scripts', category: 'scripts' }, { label: 'Prompts', category: 'prompts' },
+        ].map((entry) => <Link key={entry.category} to={`/aluno/biblioteca?categoria=${entry.category}`} className="rounded-lg border border-[var(--border-default)] px-3 py-2 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]">{entry.label} <span className="ml-1 font-semibold text-[var(--text-primary)]">{COMMERCIAL_MATERIALS.filter((item) => item.category === entry.category).length}</span></Link>)}</div>
+      </section>
 
       <div className="mt-8">
         <h2 className="font-display text-[20px] font-semibold tracking-tight text-[var(--text-primary)]">Kit de execução</h2>

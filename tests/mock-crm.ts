@@ -13,8 +13,9 @@ const db: Record<string, Row[]> = {
   interactions:[{id:crypto.randomUUID(),user_id:user.id,contact_id:leadA.id,type:'whatsapp',direction:'inbound',content:'Gostei do prototipo. Podemos conversar amanha?',occurred_at:date(-0.1),created_at:date(-0.1),metadata:null}],
   autopilot_conversations:[],autopilot_messages:[],sites:[],deal_activities:[],online_proposals:[],
   user_profiles:[{id:user.id,full_name:'Teste local',company_name:'Teste'}], message_templates:[], portfolio_pages:[],
+  academy_progress:[],
 }
-const ref = new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0]
+const ref = new URL(import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co').hostname.split('.')[0]
 localStorage.setItem('sb-' + ref + '-auth-token', JSON.stringify({access_token:'test.fixture.signature',refresh_token:'fixture-only',expires_at:Math.floor(now/1000)+86400,token_type:'bearer',user}))
 const originalFetch = window.fetch.bind(window)
 const respond = (body: unknown, status=200) => new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}})
@@ -35,6 +36,7 @@ window.fetch = async (input, init) => {
     const payload = await request.json()
     if (payload.mode === 'commercial_memory') return respond({memory:'Lead demonstrou interesse e pediu continuidade da conversa.'})
     const history = JSON.stringify(payload)
+    if (history.includes('preferences') && history.includes('material')) return respond({choices:[{message:{role:'assistant',content:'Mensagem personalizada para Lead Teste Alfa.'}}]})
     const name = history.includes('Lead Teste Alfa') ? 'Alfa' : 'Beta'
     const analysis = {interest:'alto',stage:'Negociacao',evidence:'O lead pediu uma conversa.',objection:'Nenhuma registrada',summary:'Interesse no site de ' + name, next_action:'Agendar conversa com ' + name, suggested_message:'Oi, '+name+'! Podemos conversar amanha as 10h?',follow_up_at:date(2)}
     return respond({choices:[{message:{role:'assistant',content:'<lead_analysis>'+JSON.stringify(analysis)+'</lead_analysis>'}}]})
@@ -53,7 +55,7 @@ window.fetch = async (input, init) => {
   const rows = db[table] ?? []
   const matches = (row: Row) => [...url.searchParams].every(([key,value]) => {
     if (['select','order','limit','offset'].includes(key)) return true
-    if (key==='or') return value.includes(row.contact_id) || Boolean(row.deal_id && value.includes(row.deal_id))
+    if (key==='or') return table==='contacts' ? value.toLowerCase().includes(String(row.name).toLowerCase().split(' ')[0]) || String(row.name).toLowerCase().includes(value.match(/%([^%]+)%/)?.[1]?.toLowerCase()??'') : value.includes(row.contact_id) || Boolean(row.deal_id && value.includes(row.deal_id))
     if (key==='autopilot_conversations.contact_id') return db.autopilot_conversations.some(c=>c.id===row.conversation_id && c.contact_id===value.slice(3))
     if (value.startsWith('eq.')) return String(row[key])===value.slice(3)
     if (value==='is.null') return row[key]==null
@@ -69,6 +71,9 @@ window.fetch = async (input, init) => {
   } else if (request.method==='PATCH') {
     const value = await request.json()
     result.forEach(row=>Object.assign(row,value)); writes++; updateAudit()
+  } else if (request.method==='DELETE') {
+    db[table] = rows.filter(row => !result.includes(row)); writes++; updateAudit()
+    result = []
   }
   const order = url.searchParams.get('order')
   if (order) {
