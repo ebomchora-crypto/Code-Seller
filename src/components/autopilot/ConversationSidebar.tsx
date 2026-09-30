@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageSquare, Plus, Trash2 } from 'lucide-react'
+import { MessageSquare, PanelLeftClose, Plus, Trash2 } from 'lucide-react'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -10,6 +10,8 @@ interface ConversationSidebarProps {
   conversations: AutoPilotConversation[]
   activeConversationId: string | null
   loading: boolean
+  collapsed: boolean
+  onToggleCollapsed: () => void
   onSelect: (id: string) => void
   onCreate: () => void
   onDelete: (id: string) => void
@@ -19,6 +21,8 @@ export function ConversationSidebar({
   conversations,
   activeConversationId,
   loading,
+  collapsed,
+  onToggleCollapsed,
   onSelect,
   onCreate,
   onDelete,
@@ -26,27 +30,32 @@ export function ConversationSidebar({
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   return (
-    <div className="relative flex h-full w-full flex-col border-r border-[var(--border-subtle)] bg-[var(--panel-bg)] lg:bg-black/[0.015] lg:dark:bg-white/[0.015]">
-      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-[var(--border-subtle)] px-4">
-        <CopilotOrb size="sm" />
-        <span className="min-w-0">
+    <div data-collapsed={collapsed} className="relative flex h-full w-full flex-col border-r border-[var(--border-subtle)] bg-[var(--panel-bg)] lg:bg-black/[0.015] lg:dark:bg-white/[0.015]">
+      <div className={`flex h-16 shrink-0 items-center border-b border-[var(--border-subtle)] ${collapsed ? 'justify-center px-2' : 'gap-2.5 px-4'}`}>
+        <button type="button" onClick={collapsed ? onToggleCollapsed : undefined} aria-label={collapsed ? 'Expandir conversas' : undefined} title={collapsed ? 'Expandir conversas' : undefined} className={collapsed ? 'flex size-10 items-center justify-center rounded-full hover:bg-[var(--bg-muted)]' : 'pointer-events-none'}>
+          <CopilotOrb size="sm" />
+        </button>
+        {!collapsed && <span className="min-w-0 flex-1">
           <span className="block font-display text-[14.5px] font-semibold leading-tight text-[var(--text-primary)]">CS Copilot</span>
           <span className="block text-[11.5px] leading-tight text-[var(--text-muted)]">Seu assistente de vendas</span>
-        </span>
+        </span>}
+        {!collapsed && <button type="button" onClick={onToggleCollapsed} aria-label="Recolher conversas" title="Recolher conversas" className="hidden size-8 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] lg:flex"><PanelLeftClose className="size-4" /></button>}
       </div>
 
       <div className="p-3">
         <button
           type="button"
           onClick={onCreate}
-          className="flex h-10 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-[13.5px] font-medium text-white shadow-[0_8px_22px_-10px_rgba(124,58,237,0.9)] transition hover:brightness-110"
+          aria-label="Nova conversa"
+          title={collapsed ? 'Nova conversa' : undefined}
+          className={`flex h-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-[13.5px] font-medium text-white shadow-[0_8px_22px_-10px_rgba(124,58,237,0.9)] transition hover:brightness-110 ${collapsed ? 'mx-auto w-10' : 'w-full gap-2'}`}
         >
           <Plus className="size-4" strokeWidth={2.4} />
-          Nova conversa
+          {!collapsed && 'Nova conversa'}
         </button>
       </div>
 
-      <p className="px-5 pb-1.5 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">Conversas</p>
+      {!collapsed && <p className="px-5 pb-1.5 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">Conversas</p>}
 
       <div data-lenis-prevent className="scrollbar-none flex-1 overflow-y-auto px-2 pb-3">
         {loading ? (
@@ -55,7 +64,7 @@ export function ConversationSidebar({
             <Skeleton className="h-12 w-full rounded-xl" />
             <Skeleton className="h-12 w-full rounded-xl" />
           </div>
-        ) : conversations.length === 0 ? (
+        ) : conversations.length === 0 && !collapsed ? (
           <p className="px-3 py-3 text-[13px] leading-relaxed text-[var(--text-muted)]">
             Nenhuma conversa ainda. Faça sua primeira pergunta ao lado.
           </p>
@@ -63,6 +72,12 @@ export function ConversationSidebar({
           <ul className="flex flex-col gap-0.5">
             {conversations.map((conversation) => {
               const active = conversation.id === activeConversationId
+              if (collapsed) return <li key={conversation.id} className="flex justify-center">
+                <button type="button" onClick={() => onSelect(conversation.id)} aria-label={conversation.title} title={conversation.title}
+                  className={`flex size-10 items-center justify-center rounded-lg border transition-colors ${active ? 'border-[var(--nav-active-border)] bg-[var(--nav-active-bg)] text-[var(--accent-text)]' : 'border-transparent text-[var(--text-muted)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)]'}`}>
+                  <MessageSquare className="size-4" />
+                </button>
+              </li>
               return (
                 <li key={conversation.id}>
                   <div

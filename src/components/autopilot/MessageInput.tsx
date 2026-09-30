@@ -12,7 +12,7 @@ interface MessageInputProps {
 
 export function MessageInput({ onSend, sending, hasContext, preferences, onPreferencesChange }: MessageInputProps) {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-2 px-4 pb-4 pt-2 sm:px-8 sm:pb-6">
+    <div className="mx-auto w-full max-w-5xl space-y-2 px-4 pb-4 pt-2 sm:px-8 sm:pb-6 lg:px-10">
       <CopilotComposer onSend={onSend} sending={sending} hasContext={hasContext} />
       <CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} />
     </div>

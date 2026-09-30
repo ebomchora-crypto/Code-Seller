@@ -7,12 +7,14 @@ import { CopilotToday } from '@/components/autopilot/CopilotToday'
 import { LeadPanel, leadPrompts } from '@/components/autopilot/LeadPanel'
 import { useAutoPilot } from '@/hooks/useAutoPilot'
 import { commercialMaterialPrompt, getCommercialMaterial } from '@/data/commercial-library'
+import { readCopilotSidebarCollapsed, writeCopilotSidebarCollapsed } from '@/utils/copilotLayout'
 import { toast } from 'sonner'
 
 function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const copilot = useAutoPilot(contactId)
   const [params, setParams] = useSearchParams()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && readCopilotSidebarCollapsed(window.localStorage))
   const [leadOpen, setLeadOpen] = useState(false)
   const intentStarted = useRef(false)
   const materialStarted = useRef(false)
@@ -21,6 +23,13 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const intent = params.get('intent')
   const materialId = params.get('material')
   const { sendMessage, preferences, loading, sending, error } = copilot
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((current) => {
+      const next = !current
+      writeCopilotSidebarCollapsed(window.localStorage, next)
+      return next
+    })
+  }
   useEffect(() => {
     if (!intent || materialId || !lead || loading || sending || error || intentStarted.current) return
     const prompt = leadPrompts[intent as keyof typeof leadPrompts]
@@ -44,11 +53,12 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
     </div>}
     {contactId && <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border-subtle)] px-4 py-2">
       <Link className="min-w-0 truncate text-sm font-medium" to={'/crm/' + contactId}>{lead?.contact.name ?? 'Carregando lead…'}</Link>
-      <button className="inline-flex shrink-0 items-center gap-2 p-2 text-sm xl:hidden" onClick={() => setLeadOpen(!leadOpen)} aria-expanded={leadOpen}><PanelRight className="size-4" />Lead e ações</button>
+      <button className="inline-flex shrink-0 items-center gap-2 rounded-lg p-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]" onClick={() => setLeadOpen(!leadOpen)} aria-expanded={leadOpen}><PanelRight className="size-4" />{leadOpen ? 'Fechar painel' : 'Lead e ações'}</button>
     </div>}
     <div className="relative flex min-h-0 flex-1 overflow-hidden">
-      {!contactId && <div className={'absolute inset-y-0 left-0 z-30 w-[270px] bg-[var(--bg-card)] lg:static lg:translate-x-0 ' + (sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
+      {!contactId && <div className={'absolute inset-y-0 left-0 z-30 w-[270px] bg-[var(--bg-card)] transition-[width,transform] duration-200 lg:static lg:translate-x-0 ' + (sidebarOpen ? 'translate-x-0 ' : '-translate-x-full ') + (sidebarCollapsed ? 'lg:w-16' : 'lg:w-[270px]')}>
         <ConversationSidebar conversations={copilot.conversations} activeConversationId={copilot.activeConversation?.id ?? null}
+          collapsed={sidebarCollapsed && !sidebarOpen} onToggleCollapsed={toggleSidebarCollapsed}
           loading={copilot.loading} onSelect={(id) => { void copilot.selectConversation(id); setSidebarOpen(false) }}
           onCreate={() => { void copilot.createNewConversation(); setSidebarOpen(false) }} onDelete={(id) => void copilot.deleteConversation(id)} />
       </div>}
@@ -66,7 +76,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
         onOpenSidebar={() => contactId ? setLeadOpen(true) : setSidebarOpen(true)} />
       {lead && <>
         {leadOpen && <button aria-label="Fechar painel do lead" className="absolute inset-0 z-20 bg-black/40 xl:hidden" onClick={() => setLeadOpen(false)} />}
-        <div className={'absolute inset-y-0 right-0 z-30 w-[min(340px,92vw)] shrink-0 bg-[var(--bg-card)] xl:static xl:block xl:w-[300px] ' + (leadOpen ? 'block' : 'hidden')}>
+        <div className={'absolute inset-y-0 right-0 z-30 w-[min(340px,92vw)] shrink-0 bg-[var(--bg-card)] xl:static xl:w-[300px] ' + (leadOpen ? 'block' : 'hidden')}>
           <button className="absolute right-2 top-1 z-10 rounded-lg bg-[var(--bg-card)] p-2 xl:hidden" title="Fechar painel" aria-label="Fechar painel" onClick={() => setLeadOpen(false)}><X className="size-4" /></button>
           <LeadPanel key={lead.contact.id} lead={lead} analysis={analysis} sending={copilot.sending || copilot.loading}
             onPrompt={(prompt) => { void copilot.sendMessage(prompt, copilot.preferences); setLeadOpen(false) }} onChanged={copilot.refreshContext} />
