@@ -12,6 +12,8 @@ interface HunterSearchPanelProps {
   recent: RecentProspectSearch[]
   searching: boolean
   resultCount: number
+  hasWebsite?: 'all' | 'yes' | 'no'
+  onHasWebsiteChange?: (value: 'all' | 'yes' | 'no') => void
   onSearch: (params: ProspectSearchParams) => void
 }
 
@@ -34,6 +36,8 @@ export function HunterSearchPanel({
   recent,
   searching,
   resultCount,
+  hasWebsite,
+  onHasWebsiteChange,
   onSearch,
 }: HunterSearchPanelProps) {
   const [niche, setNiche] = useState(initial?.niche ?? '')
@@ -122,6 +126,34 @@ export function HunterSearchPanel({
                     type="button"
                     aria-pressed={active}
                     onClick={() => setOffer(option.value)}
+                    className={`h-8 rounded-full border px-3 text-[12.5px] font-medium transition-all duration-200 ${
+                      active
+                        ? 'border-[#c4b5fd]/60 bg-[#8b5cf6]/30 text-white'
+                        : 'border-white/[0.12] text-white/60 hover:border-white/25 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 text-[12.5px] text-white/55">Tem site?</span>
+              {(
+                [
+                  { value: 'all', label: 'Todos' },
+                  { value: 'yes', label: 'Sim' },
+                  { value: 'no', label: 'Não' },
+                ] as const
+              ).map((option) => {
+                const active = (hasWebsite ?? 'all') === option.value
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onHasWebsiteChange?.(option.value)}
                     className={`h-8 rounded-full border px-3 text-[12.5px] font-medium transition-all duration-200 ${
                       active
                         ? 'border-[#c4b5fd]/60 bg-[#8b5cf6]/30 text-white'

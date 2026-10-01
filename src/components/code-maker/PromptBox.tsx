@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { ArrowUp, ChevronDown, Loader2 } from 'lucide-react'
+import { ArrowUp, ChevronDown, Eraser, Loader2 } from 'lucide-react'
 import type { SiteStyle } from '../../../supabase/functions/code-maker/site'
 import { AttachButton, AttachmentTray, type AttachmentsState } from '@/components/code-maker/Attachments'
 
@@ -65,12 +65,14 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
   const current = STYLES.find((option) => option.value === style) ?? STYLES[0]
   const canSend = value.trim().length >= 8 && !busy && !disabled && !attachments.uploading
 
-  // Cresce com o texto (até um limite).
+  // Cresce com o texto (sem limite artificial, suportando especificações longas).
   useEffect(() => {
     const element = textarea.current
     if (!element) return
     element.style.height = 'auto'
-    element.style.height = `${Math.min(element.scrollHeight, 320)}px`
+    const newHeight = Math.min(element.scrollHeight, 480)
+    element.style.height = `${newHeight}px`
+    element.style.overflowY = element.scrollHeight > 480 ? 'auto' : 'hidden'
   }, [value])
 
   useEffect(() => {
@@ -87,6 +89,11 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       submit()
+      return
+    }
+    if (event.key === 'Escape' && value) {
+      event.preventDefault()
+      onChange('')
     }
   }
 
@@ -127,7 +134,6 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
           }
         }}
         rows={3}
-        maxLength={4000}
         disabled={busy || disabled}
         placeholder={PLACEHOLDERS[placeholder]}
         aria-label="Descreva o site que você quer"
@@ -182,8 +188,19 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
             </ul>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {footnote && <span className="hidden text-[12px] tabular-nums text-[var(--text-muted)] sm:inline">{footnote}</span>}
+          {value.trim().length > 0 && !busy && !disabled && (
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              title="Limpar texto (Esc)"
+              aria-label="Limpar texto"
+              className="flex size-9 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
+            >
+              <Eraser className="size-4" />
+            </button>
+          )}
           <button
             type="submit"
             disabled={!canSend}

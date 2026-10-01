@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, Crosshair, Gauge, Plus, SearchX, UserPlus, X } from 'lucide-react'
+import { Check, ChevronDown, Crosshair, Download, FileSpreadsheet, FileText, Gauge, Plus, SearchX, UserPlus, X } from 'lucide-react'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -11,6 +11,7 @@ import { ProspectCard } from '@/components/prospection/ProspectCard'
 import { OutreachModal } from '@/components/prospection/OutreachModal'
 import { useProspection } from '@/hooks/useProspection'
 import { countActiveProspectFilters } from '@/utils/prospection'
+import { exportProspectsToCSV, exportProspectsToExcel, buildProspectionFilename } from '@/utils/prospectionExport'
 import type { ProspectFilters, ScoredProspect } from '@/types'
 
 const SORT_OPTIONS: { value: ProspectFilters['sort']; label: string }[] = [
@@ -60,6 +61,7 @@ export default function ProspectionPage() {
   const hunter = useProspection()
   const [outreachFor, setOutreachFor] = useState<ScoredProspect | null>(null)
   const [scanningCity, setScanningCity] = useState<string | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const searching = hunter.status === 'searching'
   const hasResults = hunter.params !== null && hunter.status !== 'searching' && hunter.status !== 'error'
@@ -68,6 +70,12 @@ export default function ProspectionPage() {
   const allSelected = selectable.length > 0 && selectable.every((prospect) => hunter.selected.has(prospect.id))
   const selectedProspects = hunter.scored.filter((prospect) => hunter.selected.has(prospect.id))
   const bulkImporting = selectedProspects.some((prospect) => hunter.importing.has(prospect.id))
+
+  const totalCount = hunter.scored.length
+  const withoutSiteCount = hunter.scored.filter((p) => p.website_kind === 'none' || p.website_kind === 'social').length
+  const withSiteCount = hunter.scored.filter((p) => p.website_kind === 'site').length
+
+  const filename = buildProspectionFilename(hunter.params?.city, hunter.params?.niche)
 
   return (
     <PageWrapper>
@@ -85,6 +93,8 @@ export default function ProspectionPage() {
           recent={hunter.recent}
           searching={searching}
           resultCount={hunter.scored.length}
+          hasWebsite={hunter.filters.hasWebsite}
+          onHasWebsiteChange={(hasWebsite) => hunter.setFilters({ hasWebsite })}
           onSearch={(params) => {
             setScanningCity(params.city)
             void hunter.search(params)
@@ -128,58 +138,230 @@ export default function ProspectionPage() {
           </div>
 
           <Card className="overflow-hidden !p-0">
-            <div className="flex flex-col gap-3 border-b border-[var(--border-subtle)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                {hasResults && selectable.length > 0 && (
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={allSelected}
-                    aria-label="Selecionar todas"
-                    onClick={hunter.selectAllVisible}
-                    className={`flex size-5 items-center justify-center rounded-md border transition-colors ${
-                      allSelected
-                        ? 'border-transparent bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white'
-                        : 'border-[var(--border-strong)] hover:border-[var(--accent-ring)]'
-                    }`}
-                  >
-                    {allSelected && <Check className="size-3.5" strokeWidth={3} />}
-                  </button>
-                )}
-                <p className="text-[13.5px] text-[var(--text-muted)]">
-                  {searching ? (
-                    <>
-                      Varrendo <span className="font-medium text-[var(--text-primary)]">{scanningCity ?? 'a região'}</span>…
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-semibold tabular-nums text-[var(--text-primary)]">{hunter.visible.length}</span>{' '}
-                      {hunter.visible.length === 1 ? 'empresa' : 'empresas'}
-                      {highCount > 0 && (
+            {/* Header: Estado da busca + Filtro visual em abas + Ordenar + Exportar */}
+            <div className="flex flex-col gap-3 border-b border-[var(--border-subtle)] px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {hasResults && selectable.length > 0 && (
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={allSelected}
+                      aria-label="Selecionar todas"
+                      onClick={hunter.selectAllVisible}
+                      className={`flex size-5 items-center justify-center rounded-md border transition-colors ${
+                        allSelected
+                          ? 'border-transparent bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white'
+                          : 'border-[var(--border-strong)] hover:border-[var(--accent-ring)]'
+                      }`}
+                    >
+                      {allSelected && <Check className="size-3.5" strokeWidth={3} />}
+                    </button>
+                  )}
+                  <p className="text-[13.5px] text-[var(--text-muted)]">
+                    {searching ? (
+                      <>
+                        Varrendo <span className="font-medium text-[var(--text-primary)]">{scanningCity ?? 'a região'}</span>…
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold tabular-nums text-[var(--text-primary)]">{hunter.visible.length}</span>{' '}
+                        {hunter.visible.length === 1 ? 'empresa' : 'empresas'}
+                        {highCount > 0 && (
+                          <>
+                            {' · '}
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">{highCount} com potencial alto</span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {hasResults && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Filtro visual instantâneo (Sem site / Com site / Todos) */}
+                    <div className="flex items-center rounded-xl bg-[var(--bg-muted)] p-1 text-[12px] font-medium">
+                      <button
+                        type="button"
+                        onClick={() => hunter.setFilters({ hasWebsite: 'all' })}
+                        className={`rounded-lg px-2.5 py-1 transition ${
+                          (hunter.filters.hasWebsite ?? 'all') === 'all'
+                            ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Todos ({totalCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => hunter.setFilters({ hasWebsite: 'no' })}
+                        className={`rounded-lg px-2.5 py-1 transition ${
+                          hunter.filters.hasWebsite === 'no'
+                            ? 'bg-[var(--bg-card)] text-emerald-600 dark:text-emerald-400 shadow-sm'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Sem site ({withoutSiteCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => hunter.setFilters({ hasWebsite: 'yes' })}
+                        className={`rounded-lg px-2.5 py-1 transition ${
+                          hunter.filters.hasWebsite === 'yes'
+                            ? 'bg-[var(--bg-card)] text-[var(--accent-text)] shadow-sm'
+                            : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Com site ({withSiteCount})
+                      </button>
+                    </div>
+
+                    {/* Menu Exportar */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setExportOpen((open) => !open)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] px-3 text-[13px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent-ring)] hover:text-[var(--text-primary)]"
+                        aria-expanded={exportOpen}
+                      >
+                        <Download className="size-3.5" />
+                        Exportar
+                        <ChevronDown className="size-3" />
+                      </button>
+                      {exportOpen && (
                         <>
-                          {' · '}
-                          <span className="font-medium text-emerald-600 dark:text-emerald-400">{highCount} com potencial alto</span>
+                          <button
+                            type="button"
+                            className="fixed inset-0 z-30"
+                            onClick={() => setExportOpen(false)}
+                            aria-hidden="true"
+                          />
+                          <div className="absolute right-0 top-full z-40 mt-1 w-64 rounded-2xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1.5 shadow-[var(--shadow-modal)]">
+                            {selectedProspects.length > 0 && (
+                              <div className="border-b border-[var(--border-subtle)] pb-1 mb-1">
+                                <p className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                  {selectedProspects.length} selecionados
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    exportProspectsToCSV(selectedProspects, `${filename}_selecionados`, hunter.params?.niche)
+                                    setExportOpen(false)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                                >
+                                  <FileText className="size-3.5 text-purple-500" />
+                                  Exportar selecionados (CSV)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    exportProspectsToExcel(selectedProspects, `${filename}_selecionados`, hunter.params?.niche)
+                                    setExportOpen(false)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                                >
+                                  <FileSpreadsheet className="size-3.5 text-emerald-500" />
+                                  Exportar selecionados (Excel)
+                                </button>
+                              </div>
+                            )}
+
+                            {hunter.visible.length !== hunter.scored.length && (
+                              <div className="border-b border-[var(--border-subtle)] pb-1 mb-1">
+                                <p className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                  {hunter.visible.length} filtrados
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    exportProspectsToCSV(hunter.visible, `${filename}_filtrados`, hunter.params?.niche)
+                                    setExportOpen(false)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                                >
+                                  <FileText className="size-3.5 text-purple-500" />
+                                  Exportar filtrados (CSV)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    exportProspectsToExcel(hunter.visible, `${filename}_filtrados`, hunter.params?.niche)
+                                    setExportOpen(false)
+                                  }}
+                                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                                >
+                                  <FileSpreadsheet className="size-3.5 text-emerald-500" />
+                                  Exportar filtrados (Excel)
+                                </button>
+                              </div>
+                            )}
+
+                            <p className="px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                              Todos ({hunter.scored.length})
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                exportProspectsToCSV(hunter.scored, filename, hunter.params?.niche)
+                                setExportOpen(false)
+                              }}
+                              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                            >
+                              <FileText className="size-3.5 text-purple-500" />
+                              Exportar todos (CSV)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                exportProspectsToExcel(hunter.scored, filename, hunter.params?.niche)
+                                setExportOpen(false)
+                              }}
+                              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                            >
+                              <FileSpreadsheet className="size-3.5 text-emerald-500" />
+                              Exportar todos (Excel .xlsx)
+                            </button>
+                          </div>
                         </>
                       )}
-                    </>
-                  )}
-                </p>
+                    </div>
+
+                    {/* Ordenação */}
+                    <label className="flex items-center gap-1.5 text-[13px] text-[var(--text-muted)]">
+                      <select
+                        value={hunter.filters.sort}
+                        onChange={(event) => hunter.setFilters({ sort: event.target.value as ProspectFilters['sort'] })}
+                        className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] px-3 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-ring)]"
+                      >
+                        {SORT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                )}
               </div>
 
-              <label className="flex items-center gap-2 text-[13px] text-[var(--text-muted)]">
-                Ordenar
-                <select
-                  value={hunter.filters.sort}
-                  onChange={(event) => hunter.setFilters({ sort: event.target.value as ProspectFilters['sort'] })}
-                  className="h-9 rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] px-3 text-[13px] text-[var(--text-primary)] outline-none focus:border-[var(--accent-ring)]"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              {/* Linha com resumo dos números: X sem site, Y com site */}
+              {hasResults && (
+                <div className="flex flex-wrap items-center gap-4 text-[12px] text-[var(--text-muted)]">
+                  <span>
+                    Encontradas: <strong className="text-[var(--text-primary)]">{totalCount}</strong>
+                  </span>
+                  <span>·</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    <strong>{withoutSiteCount}</strong> sem site (potenciais clientes)
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <strong>{withSiteCount}</strong> com site
+                  </span>
+                </div>
+              )}
             </div>
 
             {searching ? (
@@ -222,13 +404,14 @@ export default function ProspectionPage() {
         </div>
       )}
 
+      {/* Barra de ação flutuante com itens selecionados */}
       <AnimatePresence>
         {hunter.selected.size > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
-            className="fixed inset-x-4 bottom-5 z-40 mx-auto flex max-w-lg items-center justify-between gap-3 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] py-2.5 pl-5 pr-2.5 shadow-[var(--shadow-modal)]"
+            className="fixed inset-x-4 bottom-5 z-40 mx-auto flex max-w-xl items-center justify-between gap-3 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] py-2.5 pl-5 pr-2.5 shadow-[var(--shadow-modal)]"
           >
             <span className="text-[13.5px] text-[var(--text-secondary)]">
               <span className="font-semibold tabular-nums text-[var(--text-primary)]">{hunter.selected.size}</span>{' '}
@@ -242,6 +425,14 @@ export default function ProspectionPage() {
                 className="flex size-9 items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
               >
                 <X className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => exportProspectsToExcel(selectedProspects, `${filename}_selecionados`, hunter.params?.niche)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-muted)] px-3 text-[12.5px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)] transition"
+              >
+                <FileSpreadsheet className="size-3.5 text-emerald-500" />
+                Exportar Excel
               </button>
               <Button className="rounded-xl" loading={bulkImporting} onClick={() => void hunter.importMany(selectedProspects)}>
                 {!bulkImporting && <Plus className="size-4" strokeWidth={2.4} />}

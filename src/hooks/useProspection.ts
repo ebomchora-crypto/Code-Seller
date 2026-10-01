@@ -14,6 +14,7 @@ import {
 } from '@/services/supabase/prospection'
 import { startProspecting } from '@/services/supabase/followup'
 import { applyProspectFilters, DEFAULT_PROSPECT_FILTERS, scoreProspect } from '@/utils/prospection'
+import { deduplicateProspects } from '@/utils/prospectionDuplicates'
 import type {
   Prospect,
   ProspectFilters,
@@ -159,7 +160,8 @@ export function useProspection() {
 
   const importMany = useCallback(
     async (prospects: Prospect[]) => {
-      const pending = prospects.filter((prospect) => !imported.has(prospect.id))
+      const unique = deduplicateProspects(prospects)
+      const pending = unique.filter((prospect) => !imported.has(prospect.id))
       if (pending.length === 0) return
       const ids = pending.map((prospect) => prospect.id)
       setImporting((current) => new Set([...current, ...ids]))

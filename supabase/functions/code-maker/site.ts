@@ -273,7 +273,8 @@ Formato do JSON:
 "business": copie do pedido. Se o pedido não disser o nome, crie um nome curto e plausível; cidade e WhatsApp só se estiverem escritos no pedido (senão null).
 
 Regras do plano:
-- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
+- INTERPRETAÇÃO DE PROMPTS EXTENSOS: Leia o pedido do usuário por completo. Quando o prompt for uma especificação estruturada (com requisitos, seções, regras de negócio ou estilo), trate como especificação técnica mandatória. Identifique TODOS os requisitos antes de planejar e contemple cada um deles. Nunca ignore seções ou implemente apenas uma fração do pedido.
+- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho e atenda a todos os itens requisitados no pedido. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
 - Alterne "bg" entre as seções para dar ritmo (nunca 3 seguidas iguais); use "ink" ou "brand" em 1 ou 2 seções de destaque.
 - Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Fontes que combinem e existam no Google Fonts.
 - Cada "brief" deve ser específico do negócio (serviços, preços "a partir de", diferenciais, dúvidas reais), não genérico.`

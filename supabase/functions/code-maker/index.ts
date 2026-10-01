@@ -110,7 +110,7 @@ async function uniqueSlug(admin: SupabaseClient, name: string): Promise<string> 
 function cleanBrief(input: Record<string, unknown>, userId: string): SiteBrief | null {
   const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
   const businessName = text(input.businessName, 120)
-  const details = text(input.details, 4000)
+  const details = text(input.details, 200_000)
   if (!businessName && !details) return null
   const style = ['auto', 'dark', 'minimal', 'elegant', 'vibrant'].includes(String(input.style)) ? (input.style as SiteBrief['style']) : 'auto'
   const rating = Number(input.rating)
@@ -381,7 +381,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // action === 'edit'
-    const instruction = String(body.instruction ?? '').trim().slice(0, 2000)
+    const instruction = String(body.instruction ?? '').trim().slice(0, 200_000)
     if (!instruction) return json({ error: 'Diga o que você quer mudar.' }, 400)
     if (site.status !== 'ready') return json({ error: 'Espere o site terminar de ser gerado.' }, 409)
     // Imagens anexadas junto com o pedido: passam a fazer parte do site

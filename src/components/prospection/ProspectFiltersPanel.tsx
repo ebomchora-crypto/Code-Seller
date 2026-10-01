@@ -59,6 +59,26 @@ export function ProspectFiltersPanel({ filters, onChange, onReset }: ProspectFil
         )}
       </div>
 
+      <Group title="Tem site?">
+        {(
+          [
+            { value: 'all', label: 'Todos' },
+            { value: 'yes', label: 'Sim' },
+            { value: 'no', label: 'Não' },
+          ] as const
+        ).map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={(filters.hasWebsite ?? 'all') === option.value}
+            onClick={() => onChange({ hasWebsite: option.value })}
+            className={chipClass((filters.hasWebsite ?? 'all') === option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </Group>
+
       <Group title="Presença online">
         {(Object.keys(WEBSITE_KIND_LABELS) as WebsiteKind[]).map((kind) => (
           <button

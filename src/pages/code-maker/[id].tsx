@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   Copy,
   Download,
+  Eraser,
   ExternalLink,
   Link2,
   Monitor,
@@ -167,6 +168,11 @@ export default function CodeMakerEditorPage() {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       void submitEdit()
+      return
+    }
+    if (event.key === 'Escape' && instruction) {
+      event.preventDefault()
+      setInstruction('')
     }
   }
 
@@ -472,13 +478,23 @@ export default function CodeMakerEditorPage() {
                     }
                   }}
                   rows={2}
-                  maxLength={2000}
                   disabled={!ready || busy}
                   placeholder={
                     busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança… ex.: troque o título do topo' : 'Espere o site ficar pronto'
                   }
-                  className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed"
+                  className="max-h-80 min-h-[44px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed overflow-y-auto"
                 />
+                {instruction.trim().length > 0 && !busy && (
+                  <button
+                    type="button"
+                    onClick={() => setInstruction('')}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+                    title="Limpar (Esc)"
+                    aria-label="Limpar texto"
+                  >
+                    <Eraser className="size-3.5" />
+                  </button>
+                )}
                 {busy ? (
                   <button
                     type="button"

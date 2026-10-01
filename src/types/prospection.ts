@@ -64,6 +64,7 @@ export interface RecentProspectSearch {
 }
 
 export interface ProspectFilters {
+  hasWebsite?: 'all' | 'yes' | 'no'
   websiteKinds: WebsiteKind[]
   minReviews: number
   minRating: number

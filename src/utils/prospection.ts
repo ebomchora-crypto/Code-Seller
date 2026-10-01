@@ -28,6 +28,7 @@ export const POTENTIAL_LABELS: Record<PotentialLevel, string> = {
 }
 
 export const DEFAULT_PROSPECT_FILTERS: ProspectFilters = {
+  hasWebsite: 'all',
   websiteKinds: [],
   minReviews: 0,
   minRating: 0,
@@ -106,6 +107,10 @@ export function applyProspectFilters(
   importedIds: Set<string>,
 ): ScoredProspect[] {
   const filtered = prospects.filter((prospect) => {
+    // Filtro "Tem site?": Sim / Não / Todos
+    if (filters.hasWebsite === 'yes' && prospect.website_kind !== 'site') return false
+    if (filters.hasWebsite === 'no' && prospect.website_kind === 'site') return false
+
     if (filters.websiteKinds.length > 0 && !filters.websiteKinds.includes(prospect.website_kind)) return false
     if (prospect.reviews < filters.minReviews) return false
     if (filters.minRating > 0 && (prospect.rating ?? 0) < filters.minRating) return false
@@ -126,6 +131,7 @@ export function applyProspectFilters(
 
 export function countActiveProspectFilters(filters: ProspectFilters): number {
   return (
+    (filters.hasWebsite && filters.hasWebsite !== 'all' ? 1 : 0) +
     (filters.websiteKinds.length > 0 ? 1 : 0) +
     (filters.minReviews > 0 ? 1 : 0) +
     (filters.minRating > 0 ? 1 : 0) +
