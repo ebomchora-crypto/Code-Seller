@@ -10,6 +10,20 @@ test('price interest uses a concise reply without hiding a known price', () => {
   assert.match(commercialRequestGuidance('Gostei, quanto custa?'), /não esconda um preço conhecido/i)
 })
 
+test('first price question tries a short conversation first, insistence gets the price', () => {
+  const first = commercialRequestGuidance('Gostei, quanto custa?')
+  assert.match(first, /primeira vez/i)
+  assert.match(first, /conversa breve/i)
+  assert.equal(readCommercialSignals('Gostei, quanto custa?').priceInsisted, false)
+  for (const message of ['Mas quanto custa?', 'Me passa o valor.', 'Quero saber o preço antes.']) {
+    assert.equal(readCommercialSignals(message).priceInsisted, true, message)
+    const guidance = commercialRequestGuidance(message)
+    assert.match(guidance, /insistiu no preço/i, message)
+    assert.match(guidance, /responda diretamente sobre o preço/i, message)
+    assert.doesNotMatch(guidance, /primeira vez/i, message)
+  }
+})
+
 test('meeting refusal overrides call-first and asks for a direct price answer', () => {
   const guidance = commercialRequestGuidance('Não quero reunião, manda o valor.')
   assert.equal(readCommercialSignals('Não quero reunião, manda o valor.').meetingRefused, true)
