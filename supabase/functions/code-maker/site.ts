@@ -1001,6 +1001,19 @@ ${BASE_SCRIPT}
 </html>`
 }
 
+// O site abre direto em /apelido. Estes nomes são telas do próprio Code Sellers
+// e não podem virar apelido (a mesma lista está no banco, em 0034).
+export const RESERVED_SLUGS = [
+  'login', 'register', 'forgot-password', 'proposta', 'sala-de-receita', 'aluno', 'prospection', 'crm',
+  'portfolio', 'deals', 'financial', 'tasks', 'relatorios', 'copilot', 'autopilot', 'code-maker', 'settings',
+  'support', 'agenda', 'assets', 'downloads', 'api', 'admin', 'app', 'auth', 'dashboard', 'entrar', 'cadastro',
+  'termos', 'privacidade', 'ajuda', 'suporte', 'precos', 'planos', 'blog', 'reset-password', 'signup', 'logout',
+] as const
+
+export function isReservedSlug(slug: string): boolean {
+  return (RESERVED_SLUGS as readonly string[]).includes(slug)
+}
+
 export function phoneDigits(phone: string | null | undefined): string | null {
   let digits = phone?.replace(/\D/g, '') ?? ''
   if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2)

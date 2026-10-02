@@ -25,6 +25,7 @@ import {
   CONTINUE_PROMPT,
   EDIT_SYSTEM,
   fillBrief,
+  isReservedSlug,
   joinContinuation,
   parseEdit,
   normalizePart,
@@ -118,6 +119,7 @@ async function uniqueSlug(admin: SupabaseClient, name: string): Promise<string> 
   const base = slugify(name)
   for (let attempt = 0; attempt < 30; attempt++) {
     const candidate = attempt === 0 ? base : `${base}-${attempt + 1}`
+    if (isReservedSlug(candidate)) continue
     const { data } = await admin.from('sites').select('id').eq('slug', candidate).maybeSingle()
     if (!data) return candidate
   }

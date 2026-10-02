@@ -29,6 +29,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteSite, restoreSiteVersion, updateSite, type SiteVersion } from '@/services/supabase/codeMaker'
 import { downloadName, publicSiteUrl, SLUG_PATTERN, slugify } from '@/utils/codeMakerStream'
+import { isReservedSlug } from '../../../supabase/functions/code-maker/site'
 
 type LeftTab = 'acoes' | 'codigo'
 type MobileView = 'acoes' | 'codigo' | 'previa'
@@ -211,6 +212,10 @@ export default function CodeMakerEditorPage() {
       toast.error('Use de 3 a 48 caracteres: letras, números e hífen.')
       return
     }
+    if (isReservedSlug(next)) {
+      toast.error('Esse nome é usado pelo próprio sistema. Escolha outro.')
+      return
+    }
     setSavingSlug(true)
     try {
       builder.setSite(await updateSite(site!.id, { slug: next }))
@@ -278,7 +283,7 @@ export default function CodeMakerEditorPage() {
             title="Mudar o link"
           >
             <Link2 className="size-3 shrink-0" />
-            <span className="truncate">/s/{site.slug}</span>
+            <span className="truncate">/{site.slug}</span>
           </button>
         </div>
 
@@ -569,7 +574,7 @@ export default function CodeMakerEditorPage() {
           <label className="flex flex-col gap-1.5">
             <span className="text-[13px] font-medium text-[var(--text-secondary)]">Endereço</span>
             <div className="flex items-center overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]">
-              <span className="shrink-0 pl-3 text-[13px] text-[var(--text-muted)]">{window.location.host}/s/</span>
+              <span className="shrink-0 pl-3 text-[13px] text-[var(--text-muted)]">{window.location.host}/</span>
               <input
                 value={slugDraft}
                 onChange={(event) => setSlugDraft(event.target.value.toLowerCase())}
@@ -594,7 +599,7 @@ export default function CodeMakerEditorPage() {
       <ConfirmDialog
         open={confirmDelete}
         title="Apagar site?"
-        message={`O site ${site.name} e o link /s/${site.slug} deixam de existir. Não dá para desfazer.`}
+        message={`O site ${site.name} e o link /${site.slug} deixam de existir. Não dá para desfazer.`}
         confirmLabel="Apagar"
         danger
         loading={deleting}

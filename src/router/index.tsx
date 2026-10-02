@@ -116,6 +116,9 @@ export function AppRouter() {
             <Route path="/support" element={<SupportPage />} />
           </Route>
 
+          {/* Link curto dos sites do Code Maker (/apelido). As telas acima têm prioridade. */}
+          <Route path="/:slug" element={<PublicSitePage />} />
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

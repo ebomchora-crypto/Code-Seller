@@ -143,6 +143,7 @@ export async function updateSite(id: string, changes: Partial<Pick<Site, 'name' 
   const { data, error } = await supabase.from('sites').update(changes).eq('id', id).select('*').single()
   if (error) {
     if (error.code === '23505') throw new Error('Esse link já está em uso. Escolha outro.')
+    if (error.code === '23514' && error.message.includes('reserved')) throw new Error('Esse nome é usado pelo próprio sistema. Escolha outro.')
     if (error.code === '23514') throw new Error('Use só letras minúsculas, números e hífen (3 a 48 caracteres).')
     throw new Error(error.message)
   }

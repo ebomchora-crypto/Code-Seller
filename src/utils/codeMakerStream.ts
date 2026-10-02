@@ -53,7 +53,7 @@ export function slugify(value: string): string {
 }
 
 export function publicSiteUrl(slug: string, origin = typeof window !== 'undefined' ? window.location.origin : 'https://codesellers.vercel.app'): string {
-  return `${origin}/s/${slug}`
+  return `${origin}/${slug}`
 }
 
 // Executa tarefas com no máximo `limit` ao mesmo tempo.

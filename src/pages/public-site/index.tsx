@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
+import NotFoundPage from '@/pages/not-found'
 import { getPublicSite } from '@/services/supabase/codeMaker'
 import { SITE_SANDBOX } from '@/components/code-maker/SitePreview'
 import { frameDocument } from '@/utils/codeMakerStream'
@@ -12,10 +13,11 @@ function titleOf(html: string, fallback: string): string {
   return decoder.value || fallback
 }
 
-// Site criado no Code Maker: /s/:apelido. O site roda num quadro isolado,
+// Site criado no Code Maker: /:apelido (e o link antigo /s/:apelido). O site roda num quadro isolado,
 // sem acesso ao Code Sellers.
 export default function PublicSitePage() {
   const { slug = '' } = useParams()
+  const shortLink = !useLocation().pathname.startsWith('/s/')
   const [site, setSite] = useState<{ name: string; html: string } | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
 
@@ -46,6 +48,9 @@ export default function PublicSitePage() {
       />
     )
   }
+
+  // No link curto, endereço que não é site cai na página de "não encontrado" do sistema.
+  if (status === 'missing' && shortLink) return <NotFoundPage />
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-2 bg-[#faf9f7] px-6 text-center text-[#18181b]">

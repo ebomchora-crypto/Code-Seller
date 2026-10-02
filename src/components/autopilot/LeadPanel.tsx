@@ -54,7 +54,7 @@ export function LeadPanel({ lead, analysis, sending, onPrompt, onChanged }: {
   }
   function openMode(value: NonNullable<typeof mode>) {
     setMode(value); setOccurredAt(localDateTime(new Date()))
-    setNotes(value === 'prototype' && lead.prototypes[0] ? 'Protótipo enviado: ' + lead.prototypes[0].name + ' · ' + window.location.origin + '/s/' + lead.prototypes[0].slug : '')
+    setNotes(value === 'prototype' && lead.prototypes[0] ? 'Protótipo enviado: ' + lead.prototypes[0].name + ' · ' + window.location.origin + '/' + lead.prototypes[0].slug : '')
   }
   async function saveForm() {
     if (mode === 'stage') {
@@ -116,7 +116,7 @@ export function LeadPanel({ lead, analysis, sending, onPrompt, onChanged }: {
     </details>
     <details className="mt-4 border-t border-[var(--border-subtle)] pt-4">
       <summary className="cursor-pointer text-sm font-semibold">Protótipos e propostas</summary>
-      <ul className="mt-3 space-y-2 text-xs">{lead.prototypes.map((site) => <li key={site.id}>{site.name} · {site.status}{site.published && site.status === 'ready' && <Link className="ml-2 underline" to={'/s/' + site.slug} target="_blank">Abrir</Link>}</li>)}
+      <ul className="mt-3 space-y-2 text-xs">{lead.prototypes.map((site) => <li key={site.id}>{site.name} · {site.status}{site.published && site.status === 'ready' && <Link className="ml-2 underline" to={'/' + site.slug} target="_blank">Abrir</Link>}</li>)}
         {lead.proposals.map((proposal) => <li key={proposal.id}>{proposal.title} · {proposal.status}</li>)}</ul>
       <Button className="mt-3" size="sm" variant="secondary" onClick={() => openMode('prototype')}>Registrar envio de protótipo</Button>
     </details>
