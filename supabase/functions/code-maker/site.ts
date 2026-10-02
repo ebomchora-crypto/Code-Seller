@@ -3,10 +3,21 @@
 // a base (cores, fontes, menu, animações) é montada aqui, sempre igual e
 // sempre funcionando.
 
+import { normalizeSpecification, type CodeMakerSpecification, type RecentEditContext } from './spec.ts'
+
 export type SiteStyle = 'auto' | 'dark' | 'minimal' | 'elegant' | 'vibrant'
 
 export interface SiteBrief {
   businessName: string
+  mode?: 'lead_prototype'
+  contactRoutes?: {
+    goal: 'whatsapp' | 'quote' | 'booking' | 'call' | 'institutional' | 'lead_capture'
+    actionLabel: string
+    primary: string | null
+    confirmedWhatsapp: string | null
+    contacts: string[]
+    openingHours: string[]
+  }
   niche?: string | null
   city?: string | null
   phone?: string | null
@@ -16,6 +27,7 @@ export interface SiteBrief {
   reviews?: number | null
   // Logo e fotos enviadas pelo usuário (URLs públicas).
   assets?: SiteAsset[] | null
+  specification?: CodeMakerSpecification
 }
 
 export interface SiteAsset {
@@ -30,6 +42,7 @@ export interface PlanSection {
   label: string
   brief: string
   bg: SectionBackground
+  requirementIds?: string[]
 }
 
 export interface SitePlan {
@@ -48,6 +61,8 @@ export interface SitePlan {
   }
   fonts: { display: string; body: string }
   sections: PlanSection[]
+  globalRequirementIds?: string[]
+  specification?: CodeMakerSpecification
 }
 
 export type SiteParts = Record<string, string>
@@ -267,19 +282,20 @@ Formato do JSON:
   "theme": "dark" ou "light",
   "palette": { "brand": "#hex cor principal", "brandDark": "#hex mais escura da principal", "accent": "#hex acento", "ink": "#hex texto principal (no dark é claro, no light é quase preto)", "paper": "#hex fundo principal", "surface": "#hex fundo alternativo/cartões", "muted": "#hex texto secundário" },
   "fonts": { "display": "nome exato de uma fonte do Google Fonts para títulos", "body": "nome exato de uma fonte do Google Fonts para texto" },
-  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "brief": "o que a seção mostra, com conteúdo específico e a ideia de layout", "bg": "paper" | "surface" | "ink" | "brand" } ],
+  "globalRequirementIds": ["IDs dos requisitos transversais da especificação"],
+  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "brief": "o que a seção mostra, com conteúdo específico e a ideia de layout", "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
   "business": { "name": "nome do negócio", "niche": "nicho em poucas palavras", "city": "cidade ou null", "phone": "WhatsApp só com dígitos ou null" }
 }
 "business": copie do pedido. Se o pedido não disser o nome, crie um nome curto e plausível; cidade e WhatsApp só se estiverem escritos no pedido (senão null).
 
 Regras do plano:
-- INTERPRETAÇÃO DE PROMPTS EXTENSOS: Leia o pedido do usuário por completo. Quando o prompt for uma especificação estruturada (com requisitos, seções, regras de negócio ou estilo), trate como especificação técnica mandatória. Identifique TODOS os requisitos antes de planejar e contemple cada um deles. Nunca ignore seções ou implemente apenas uma fração do pedido.
-- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho e atenda a todos os itens requisitados no pedido. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
+- A especificação é obrigatória quando fornecida. Copie seus IDs: globalRequirementIds para requisitos transversais e requirementIds em cada seção. Todo requisito aplicável deve ser atribuído. Requisitos backend limitados permanecem limitações explícitas. Não declare que estão implementados. Respeite constraints, forbiddenChanges, relevantFiles, dependencies e validation.
+- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
 - Alterne "bg" entre as seções para dar ritmo (nunca 3 seguidas iguais); use "ink" ou "brand" em 1 ou 2 seções de destaque.
 - Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Fontes que combinem e existam no Google Fonts.
 - Cada "brief" deve ser específico do negócio (serviços, preços "a partir de", diferenciais, dúvidas reais), não genérico.`
 
-export function buildPlanMessage(brief: SiteBrief): string {
+export function buildPlanMessage(brief: SiteBrief, includeLiteral = true): string {
   const phone = phoneDigits(brief.phone)
   return [
     brief.businessName ? `Negócio: ${brief.businessName}` : 'Negócio: (tire o nome e os dados do pedido abaixo)',
@@ -291,7 +307,8 @@ export function buildPlanMessage(brief: SiteBrief): string {
     brief.assets?.length
       ? `O usuário enviou ${logoOf(brief) ? 'a logo' : 'nenhuma logo'} e ${brief.assets.filter((asset) => asset.kind === 'photo').length} foto(s) do próprio negócio: o site vai usá-las. ${logoOf(brief) ? 'Escolha cores que combinem com uma logo de verdade (sóbrias, sem brigar com ela).' : ''}`
       : null,
-    brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
+    brief.specification ? `Especificação completa com IDs obrigatórios:\n${JSON.stringify(brief.specification)}` : null,
+    includeLiteral && brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
   ]
     .filter(Boolean)
     .join('\n')
@@ -379,11 +396,20 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
     .slice(0, 6)
     .map((section) => `${section.label} (#${section.id})`)
     .join(', ')
+  const prototype = brief.mode === 'lead_prototype'
+  const routes = prototype ? brief.contactRoutes : null
+  const target = routes?.primary ?? (routes?.goal === 'institutional' ? `#${plan.sections.find(section=>section.id === 'servicos')?.id ?? plan.sections.find(section=>section.id !== 'hero')?.id ?? 'hero'}` : '#contato')
+  const leadAction = routes?.primary || routes?.goal === 'institutional'
+    ? `botao de acao "${routes?.actionLabel ?? 'Conhecer a empresa'}" com link ${target}`
+    : 'link interno para #contato com texto de contato pendente; nao prometer envio nem rotular esta ancora como WhatsApp'
+  const leadRules = prototype ? ` Regras especificas deste prototipo: Nao inventar horarios, precos, contatos, agendamento confirmado ou outros fatos. Telefone nao confirma WhatsApp. ${routes?.openingHours.length ? `Horarios reais fornecidos: ${JSON.stringify(routes.openingHours)}.` : 'Nenhum horario real foi fornecido: omitir horarios ou indicar que estao pendentes.'}` : ''
+  const headerAction = prototype ? leadAction : `botão de ação para o WhatsApp (${whatsapp})`
 
   if (partId === 'header') {
-    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com ${logoOf(brief) ? 'a LOGO do negócio (imagem enviada — veja abaixo)' : 'logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho)'}, menu com os links: ${nav}, e botão de ação para o WhatsApp (${whatsapp}). No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — no topo o texto do cabeçalho é text-${textOn(plan, plan.sections[0]?.bg ?? 'paper')}; ao rolar ele ganha fundo bg-paper/85 com backdrop-blur (o script marca [data-scrolled]) e o texto passa a text-${textOn(plan, 'paper')}. Escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:text-${textOn(plan, 'paper')} data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm). O painel do menu mobile tem fundo bg-paper e texto text-${textOn(plan, 'paper')}.`
+    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com ${logoOf(brief) ? 'a LOGO do negócio (imagem enviada — veja abaixo)' : 'logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho)'}, menu com os links: ${nav}, e ${headerAction}. No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — no topo o texto do cabeçalho é text-${textOn(plan, plan.sections[0]?.bg ?? 'paper')}; ao rolar ele ganha fundo bg-paper/85 com backdrop-blur (o script marca [data-scrolled]) e o texto passa a text-${textOn(plan, 'paper')}. Escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:text-${textOn(plan, 'paper')} data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm). O painel do menu mobile tem fundo bg-paper e texto text-${textOn(plan, 'paper')}.${leadRules}`
   }
   if (partId === 'footer') {
+    if (prototype) return `Escreva o RODAPE: <footer> com nome do negocio, frase curta, links do menu (${nav}), cidade ${brief.city ?? 'nao informada'} e "© <span data-year></span> ${brief.businessName}". ${routes?.contacts.length ? `Exibir somente estes canais reais: ${JSON.stringify(routes.contacts)}.` : 'Contato pendente: nao criar canal ficticio.'} ${routes?.confirmedWhatsapp ? `Pode adicionar botao flutuante de WhatsApp somente para o destino confirmado ${routes.confirmedWhatsapp}, com aria-label.` : 'Nao adicionar botao flutuante de WhatsApp nem usar #contato como se fosse WhatsApp.'}${leadRules}`
     return `Escreva o RODAPÉ: <footer> com o nome do negócio, frase curta, links do menu (${nav}), contato (WhatsApp ${phone ?? 'não informado'}, cidade ${brief.city ?? ''}), horário de funcionamento plausível e "© <span data-year></span> ${brief.businessName}". Depois do </footer>, um botão flutuante de WhatsApp: <a href="${whatsapp}" ... class="fixed bottom-5 right-5 z-50 ... bg-[#25D366] ..."> com o ícone do WhatsApp em SVG e aria-label.`
   }
   const section = plan.sections.find((item) => item.id === partId)
@@ -391,20 +417,30 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
   const sectionText = textOn(plan, section?.bg ?? 'paper')
   const hero =
     partId === 'hero'
-      ? ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de destaques verdadeiros logo abaixo (a reputação real, se informada; senão, facilidades como agendamento, horário ou localização) e um visual marcante (foto grande em cartão arredondado com 1–2 cartões flutuantes com informações verdadeiras como horário, preço a partir de ou bairro, ou foto de fundo com gradiente por cima).'
+      ? prototype
+        ? ` Esta e a primeira secao: min-h-[88vh], pt-28 para o cabecalho fixo, titulo curto e especifico em text-5xl md:text-7xl, subtitulo e ${leadAction}. Usar destaques somente de fatos fornecidos e visual coerente com o negocio; nao criar numeros, horarios ou precos para preencher o layout.`
+        : ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de destaques verdadeiros logo abaixo (a reputação real, se informada; senão, facilidades como agendamento, horário ou localização) e um visual marcante (foto grande em cartão arredondado com 1–2 cartões flutuantes com informações verdadeiras como horário, preço a partir de ou bairro, ou foto de fundo com gradiente por cima).'
       : ''
   return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}". Briefing: ${section?.brief ?? ''}${hero}${
     ` Fundo desta seção: ${bgClass} — texto principal text-${sectionText}, secundário text-${sectionText}/70.`
-  } Link do WhatsApp: ${whatsapp}.`
+  } ${prototype ? `Acao de contato: ${leadAction}.${leadRules}` : `Link do WhatsApp: ${whatsapp}.`}`
 }
 
 export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrief): string {
+  const specification = brief.specification ?? plan.specification
+  const ids = new Set([...(plan.globalRequirementIds ?? []), ...(plan.sections.find(section=>section.id === partId)?.requirementIds ?? [])])
+  const scoped = specification ? {
+    constraints: specification.constraints, forbiddenChanges: specification.forbiddenChanges,
+    requirements: specification.requirements.filter(requirement=>ids.has(requirement.id) && requirement.status !== 'limited'),
+    limitations: specification.limitations,
+  } : null
+  const {specification: _specification, ...visualPlan} = plan
   return [
     `Negócio: ${brief.businessName}${brief.niche ? ` · ${brief.niche}` : ''}${brief.city ? ` · ${brief.city}` : ''}`,
     brief.reviews && brief.rating ? `Reputação real: nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações` : null,
-    brief.details?.trim() ? `Pedido do cliente: ${brief.details.trim()}` : null,
+    scoped ? `Requisitos desta parte:\n${JSON.stringify(scoped)}` : brief.details?.trim() ? `Pedido do cliente: ${brief.details.trim()}` : null,
     realFacts(brief),
-    `Plano do site (siga à risca):\n${JSON.stringify(plan)}`,
+    `Plano do site (siga à risca):\n${JSON.stringify(visualPlan)}`,
     imagesMessage(brief),
     contrastGuide(plan),
     partInstructions(partId, plan, brief),
@@ -419,6 +455,7 @@ function realFacts(brief: SiteBrief): string {
     brief.rating && brief.reviews
       ? `nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações (reais, pode usar)`
       : 'nenhuma nota nem avaliação informada — NÃO mostre nota, estrelas, avaliações nem depoimentos'
+  if (brief.mode === 'lead_prototype') return `FATOS REAIS DO NEGOCIO: ${reputation}. Use somente fatos fornecidos e confirmados; inferencias continuam hipoteses. Nao invente ano de fundacao, experiencia, quantidade de clientes, precos, descontos ou horarios. Precos e horarios reais informados podem ser usados; sem eles, omitir ou indicar que estao pendentes, nunca criar valores plausiveis nem "a partir de" ficticio.`
   return `FATOS REAIS DO NEGÓCIO: ${reputation}. Não existe nenhum outro número sobre o negócio: não escreva ano de fundação, anos de experiência nem quantidade de clientes/atendimentos que não estejam no pedido do cliente. Preços e horários informados podem ser usados; sem eles, use "a partir de" plausível.`
 }
 
@@ -443,13 +480,14 @@ FORMATO DA RESPOSTA (sem nada antes ou depois):
 - (2 a 6 itens curtos, 1ª pessoa, em linguagem simples, sem termos técnicos, contando exatamente o que você mudou)
 </acoes>
 Depois, só o que muda:
-- Parte alterada: <parte id="id">HTML completo da parte</parte>
+- Ajuste localizado em parte existente (preferido para texto, imagem, link ou classe): <substituir id="id">{"antes":"trecho EXATO do código atual, único nesta parte","depois":"novo trecho"}</substituir>. Use JSON válido; preserve todos os outros caracteres. Pode repetir para trechos diferentes.
+- Parte redesenhada por pedido explícito: <parte id="id">HTML completo da parte</parte>
 - Nova seção: <parte id="novo-id" depois="id-da-parte-anterior" rotulo="Nome no menu">HTML da seção</parte>
 - Remover uma seção: <remover id="id"/>
 - Mudar cores ou fontes do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}}</tema>
 Mantenha tudo o que não foi pedido exatamente igual. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
 
-export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = []): string {
+export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = [], recent: RecentEditContext[] = []): string {
   const current = partOrder(plan)
     .filter((id) => parts[id])
     .map((id) => `<parte id="${id}">\n${parts[id]}\n</parte>`)
@@ -457,13 +495,16 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
   return [
     `Negócio: ${brief.businessName}${brief.niche ? ` · ${brief.niche}` : ''}${brief.city ? ` · ${brief.city}` : ''}`,
     `Tema atual: ${JSON.stringify({ palette: plan.palette, fonts: plan.fonts, theme: plan.theme })}`,
+    `Estrutura existente: ${JSON.stringify(plan.sections.map(({id,label})=>({id,label})))}`,
+    brief.specification ? `Requisitos e restrições existentes:\n${JSON.stringify(brief.specification)}` : brief.details ? `Pedido original:\n${brief.details}` : null,
+    recent.length ? `Alterações anteriores, da mais recente para a mais antiga:\n${JSON.stringify(recent)}` : null,
     contrastGuide(plan),
     `Partes atuais do site:\n${current}`,
     imagesMessage(brief, fresh),
     fresh.length > 0
       ? `O usuário anexou ${fresh.length} imagem(ns) junto com este pedido (marcadas como "anexada agora" acima): use-as onde ele pedir; se ele não disser onde, a logo vai no cabeçalho/rodapé e as fotos no topo ou na galeria.`
       : null,
-    `Pedido do usuário: ${instruction.trim()}`,
+    `Pedido atual do usuário (prioridade máxima):\n${instruction.trim()}`,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -541,6 +582,9 @@ export function stripInventedClaims(text: string, brief: SiteBrief): string {
 export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   if (!raw || typeof raw !== 'object') return null
   const input = raw as Record<string, any>
+  const specification = brief.specification ?? (input.specification ? normalizeSpecification(input.specification, brief.details ?? '') : undefined)
+  const validIds = new Set(specification?.requirements.map(requirement=>requirement.id) ?? [])
+  const requirementIds = (value: unknown): string[] => Array.isArray(value) ? [...new Set(value.filter((id): id is string => typeof id === 'string' && validIds.has(id)))] : []
   const palette = { ...DEFAULT_PALETTE }
   for (const key of Object.keys(palette) as (keyof SitePlan['palette'])[]) {
     const value = input.palette?.[key]
@@ -559,6 +603,7 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
       label: String(item?.label ?? id).slice(0, 30),
       brief: stripInventedClaims(String(item?.brief ?? ''), brief).slice(0, 800),
       bg,
+      requirementIds: requirementIds(item.requirementIds),
     })
   }
   if (sections.length === 0) return null
@@ -577,7 +622,8 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
       display: cleanFont(input.fonts?.display, 'Inter'),
       body: cleanFont(input.fonts?.body, 'Inter'),
     },
-    sections: sections.slice(0, 10),
+    sections,
+    ...(specification ? {specification, globalRequirementIds:requirementIds(input.globalRequirementIds)} : {}),
   }
 }
 
@@ -739,6 +785,7 @@ export function normalizePart(partId: string, html: string): string {
 // aproveitável — o site nunca fica travado por causa dele.
 export function simpleFooter(plan: SitePlan, brief: SiteBrief): string {
   const phone = phoneDigits(brief.phone)
+  const whatsappUrl = brief.mode === 'lead_prototype' ? brief.contactRoutes?.confirmedWhatsapp : phone ? `https://wa.me/55${phone}` : null
   const name = escapeHtml(brief.businessName || plan.title)
   const text = textOn(plan, 'ink')
   const links = plan.sections
@@ -746,8 +793,8 @@ export function simpleFooter(plan: SitePlan, brief: SiteBrief): string {
     .slice(0, 6)
     .map((section) => `<a href="#${section.id}" class="hover:text-${text}">${escapeHtml(section.label)}</a>`)
     .join('')
-  const whatsapp = phone
-    ? `\n<a href="https://wa.me/55${phone}" target="_blank" rel="noopener" aria-label="Conversar pelo WhatsApp" class="fixed bottom-5 right-5 z-50 flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105"><svg viewBox="0 0 24 24" class="size-7" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1a17 17 0 0 1-1.7-.6 13.4 13.4 0 0 1-5.2-4.6c-.4-.5-1-1.4-1-2.7 0-1.2.7-1.9.9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.7-.1 1.3Z"/></svg></a>`
+  const whatsapp = whatsappUrl
+    ? `\n<a href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener" aria-label="Conversar pelo WhatsApp" class="fixed bottom-5 right-5 z-50 flex size-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105"><svg viewBox="0 0 24 24" class="size-7" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.6 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1a17 17 0 0 1-1.7-.6 13.4 13.4 0 0 1-5.2-4.6c-.4-.5-1-1.4-1-2.7 0-1.2.7-1.9.9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.7-.1 1.3Z"/></svg></a>`
     : ''
   return `<footer class="bg-ink py-12 text-${text}">
 <div class="mx-auto flex max-w-6xl flex-col gap-6 px-5 md:flex-row md:items-center md:justify-between md:px-8">
@@ -771,12 +818,28 @@ export function parsePart(text: string): { html: string; complete: boolean } {
 export interface EditResult {
   actions: string[]
   parts: { id: string; html: string; after?: string; label?: string }[]
+  replacements?: { id: string; before: string; after: string }[]
   removals: string[]
   theme: { palette?: Partial<SitePlan['palette']>; fonts?: Partial<SitePlan['fonts']> } | null
 }
 
 export function parseEdit(text: string): EditResult {
   const parts: EditResult['parts'] = []
+  const replacements: NonNullable<EditResult['replacements']> = []
+  for (const match of text.matchAll(/<substituir\s+id="([^"]+)">([\s\S]*?)<\/substituir>/gi)) {
+    try {
+      const patch = JSON.parse(match[2])
+      const id = cleanId(match[1])
+      if (!id || typeof patch.antes !== 'string' || !patch.antes || typeof patch.depois !== 'string') throw new Error()
+      replacements.push({ id, before: patch.antes, after: patch.depois })
+    } catch {
+      throw new Error('A edição veio incompleta. Tente novamente.')
+    }
+  }
+  if ((text.match(/<substituir\b/gi) ?? []).length !== replacements.length ||
+      (text.match(/<parte\b/gi) ?? []).length !== (text.match(/<\/parte>/gi) ?? []).length) {
+    throw new Error('A edição veio incompleta. Tente novamente.')
+  }
   for (const match of text.matchAll(/<parte\s+([^>]*)>([\s\S]*?)<\/parte>/gi)) {
     const attrs = match[1]
     const id = cleanId(attrs.match(/id="([^"]+)"/i)?.[1])
@@ -795,13 +858,24 @@ export function parseEdit(text: string): EditResult {
       theme = null
     }
   }
-  return { actions: parseActions(text), parts, removals, theme }
+  return { actions: parseActions(text), parts, replacements, removals, theme }
 }
 
 // Aplica uma alteração ao plano e às partes (sem mexer no original).
 export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): { plan: SitePlan; parts: SiteParts } {
   const nextPlan: SitePlan = { ...plan, palette: { ...plan.palette }, fonts: { ...plan.fonts }, sections: [...plan.sections] }
   const nextParts: SiteParts = { ...parts }
+
+  for (const patch of edit.replacements ?? []) {
+    const source = nextParts[patch.id]
+    if (!source || source.indexOf(patch.before) < 0 || source.indexOf(patch.before) !== source.lastIndexOf(patch.before) ||
+        edit.parts.some(part => part.id === patch.id) || edit.removals.includes(patch.id)) {
+      throw new Error('O trecho da edição não corresponde a uma única parte atual. Tente novamente.')
+    }
+    const updated = source.replace(patch.before, () => patch.after)
+    if (!updated.trim() || /<(?:script|style)\b/i.test(updated)) throw new Error('O trecho da edição é inválido. Tente novamente.')
+    nextParts[patch.id] = updated
+  }
 
   for (const id of edit.removals) {
     if (id === 'header' || id === 'footer' || id === 'hero') continue
@@ -810,7 +884,7 @@ export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): {
   }
   for (const part of edit.parts) {
     const html = normalizePart(part.id, part.html)
-    if (!html) continue
+    if (!html) throw new Error('A IA devolveu uma parte vazia. Tente novamente.')
     const known = part.id === 'header' || part.id === 'footer' || nextPlan.sections.some((section) => section.id === part.id)
     if (!known) {
       const index = part.after ? nextPlan.sections.findIndex((section) => section.id === part.after) : -1
