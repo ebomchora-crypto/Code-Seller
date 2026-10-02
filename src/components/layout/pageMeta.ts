@@ -1,8 +1,9 @@
+// Mesmos grupos do menu lateral (navConfig.ts).
 const PAGE_SECTIONS = [
-  { paths: ['/aluno'], label: 'Principal' },
-  { paths: ['/prospection', '/crm', '/portfolio', '/deals'], label: 'Vendas' },
-  { paths: ['/financial', '/tasks', '/relatorios'], label: 'Gestão' },
-  { paths: ['/copilot', '/code-maker'], label: 'IA' },
+  { paths: ['/prospection', '/crm'], label: 'Encontrar clientes' },
+  { paths: ['/copilot', '/code-maker', '/deals', '/portfolio'], label: 'Vender' },
+  { paths: ['/tasks', '/financial', '/relatorios'], label: 'Organizar' },
+  { paths: ['/aluno'], label: 'Aprender' },
   { paths: ['/settings', '/support'], label: 'Conta' },
 ] as const
 

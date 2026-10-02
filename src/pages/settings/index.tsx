@@ -18,6 +18,15 @@ import { useSettings } from '@/hooks/useSettings'
 import { useAuthContext } from '@/stores/AuthContext'
 import { CATEGORY_COLOR_SWATCHES } from '@/types'
 
+// Título de cada grupo de seções (os mesmos grupos do menu da esquerda).
+function GroupTitle({ children, first = false }: { children: string; first?: boolean }) {
+  return (
+    <h2 className={`text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] ${first ? '' : 'mt-4'}`}>
+      {children}
+    </h2>
+  )
+}
+
 export default function SettingsPage() {
   const { user } = useAuthContext()
   const {
@@ -85,6 +94,8 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-6">
+            <GroupTitle first>Sua conta</GroupTitle>
+
             <ProfileSection
               profile={profile}
               userEmail={user?.email ?? ''}
@@ -99,6 +110,12 @@ export default function SettingsPage() {
             <SecuritySection />
 
             <PreferencesSection profile={profile} onSave={updateProfile} saving={saving} />
+
+            <NotificationsSection preferences={notificationPrefs} loading={loading} onSave={updateNotificationPrefs} />
+
+            {isDesktopApp() && <DesktopAppSection />}
+
+            <GroupTitle>Como você vende</GroupTitle>
 
             <PipelineSection
               stages={pipelineStages}
@@ -116,6 +133,12 @@ export default function SettingsPage() {
               onReorder={reorderCRMStatuses}
             />
 
+            <TemplatesSection />
+
+            <FollowUpSection />
+
+            <GroupTitle>Conexões</GroupTitle>
+
             <IntegrationsSection
               integrations={integrations}
               onConnect={connectIntegration}
@@ -123,14 +146,6 @@ export default function SettingsPage() {
             />
 
             <CalendarFeedSection />
-
-            <TemplatesSection />
-
-            <FollowUpSection />
-
-            <NotificationsSection preferences={notificationPrefs} loading={loading} onSave={updateNotificationPrefs} />
-
-            {isDesktopApp() && <DesktopAppSection />}
           </div>
         </div>
     </PageWrapper>

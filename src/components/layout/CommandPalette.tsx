@@ -16,6 +16,8 @@ interface PaletteItem {
   hint?: string
   icon: IconType
   to: string
+  /** Arquivo (Baixar app): abre direto, sem passar pelo roteador. */
+  download?: boolean
 }
 
 const ACTIONS: PaletteItem[] = [
@@ -27,7 +29,8 @@ const ACTIONS: PaletteItem[] = [
 ]
 
 const PAGES: PaletteItem[] = navGroups.flatMap((group) =>
-  group.items.map((item) => ({ id: `page-${item.path}`, group: 'Páginas', label: item.label, icon: item.icon, to: item.path })),
+  // Dentro do app de Windows não oferece baixar o app (igual ao menu lateral).
+  group.items.filter((item) => !(item.download && typeof window !== 'undefined' && window.codeSellersDesktop)).map((item) => ({ id: `page-${item.path}`, group: 'Páginas', label: item.label, hint: item.hint, icon: item.icon, to: item.path, download: item.download })),
 )
 
 function normalize(value: string): string {
@@ -131,7 +134,8 @@ export function CommandPalette() {
 
   const items = useMemo(() => {
     const needle = normalize(term)
-    const matches = (item: PaletteItem) => !needle || normalize(item.label).includes(needle)
+    // Busca também pela explicação: "achar empresas" encontra o Buyers Hunter.
+    const matches = (item: PaletteItem) => !needle || normalize(`${item.label} ${item.hint ?? ''}`).includes(needle)
     return [...ACTIONS.filter(matches), ...PAGES.filter(matches), ...records]
   }, [term, records])
 
@@ -143,7 +147,8 @@ export function CommandPalette() {
 
   function run(item: PaletteItem) {
     close()
-    navigate(item.to)
+    if (item.download) window.location.assign(item.to)
+    else navigate(item.to)
   }
 
   function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {

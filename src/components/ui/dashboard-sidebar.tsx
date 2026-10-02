@@ -146,12 +146,12 @@ export function DashboardSidebar({
           data-lenis-prevent
           className={cn(
             'scrollbar-none flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4',
-            collapsed ? 'mt-3 gap-3' : 'mt-2 gap-6 [@media(max-height:780px)]:gap-3',
+            collapsed ? 'mt-3 gap-3' : 'mt-2 gap-5 [@media(max-height:780px)]:gap-3',
           )}
         >
           {groups.map((group) => (
             <section key={group.label} className="flex flex-col gap-1" aria-label={group.label}>
-              {!collapsed && (
+              {!collapsed && !group.hideLabel && (
                 <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] [@media(max-height:780px)]:mb-0">
                   {group.label}
                 </p>
@@ -194,7 +194,7 @@ export function DashboardSidebar({
                       key={item.path}
                       href={item.path}
                       download
-                      title={collapsed ? item.label : undefined}
+                      title={`${item.label}: ${item.hint}`}
                       onClick={onCloseMobile}
                       className={itemClassName}
                     >
@@ -207,7 +207,7 @@ export function DashboardSidebar({
                   <Link
                     key={item.path}
                     to={item.path}
-                    title={collapsed ? item.label : undefined}
+                    title={`${item.label}: ${item.hint}`}
                     aria-current={isActive ? 'page' : undefined}
                     onClick={onCloseMobile}
                     className={itemClassName}
