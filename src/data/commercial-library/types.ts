@@ -1,4 +1,4 @@
-export type CommercialCategory = 'scripts' | 'objections' | 'followups' | 'copies' | 'prompts' | 'universal'
+export type CommercialCategory = 'scripts' | 'objections' | 'followups' | 'copies' | 'prompts' | 'universal' | 'estudos'
 export type CommercialStage = 'interesse' | 'previa' | 'reuniao' | 'diagnostico' | 'valor' | 'preco' | 'follow_up' | 'fechamento' | 'recuperacao'
 
 export interface CommercialMaterial {

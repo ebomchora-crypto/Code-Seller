@@ -1,10 +1,11 @@
 import { OBJECTIONS } from './objections.ts'
 import { SCRIPTS, FOLLOWUPS, COPIES, PROMPTS, UNIVERSAL } from './materials.ts'
+import { STUDIES } from './studies.ts'
 import type { CommercialCategory, CommercialMaterial, CommercialStage } from './types.ts'
 
 export type { CommercialCategory, CommercialMaterial, CommercialStage } from './types.ts'
 
-export const COMMERCIAL_MATERIALS: CommercialMaterial[] = [...SCRIPTS, ...OBJECTIONS, ...FOLLOWUPS, ...COPIES, ...PROMPTS, ...UNIVERSAL]
+export const COMMERCIAL_MATERIALS: CommercialMaterial[] = [...SCRIPTS, ...OBJECTIONS, ...FOLLOWUPS, ...COPIES, ...PROMPTS, ...UNIVERSAL, ...STUDIES]
 const byId = new Map(COMMERCIAL_MATERIALS.map((item) => [item.id, item]))
 
 export function getCommercialMaterial(id: string | null | undefined): CommercialMaterial | undefined {

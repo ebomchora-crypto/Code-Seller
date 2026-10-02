@@ -43,7 +43,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
     if (contactId && !lead) return
     materialStarted.current = true
     const material = getCommercialMaterial(materialId)
-    if (material) void sendMessage(commercialMaterialPrompt(material), preferences)
+    if (material && material.category !== 'estudos') void sendMessage(commercialMaterialPrompt(material), preferences)
     else toast.error('Material da Biblioteca não encontrado.')
     setParams((current) => { const next = new URLSearchParams(current); next.delete('material'); return next }, { replace: true })
   }, [materialId, loading, sending, error, copilot.context, contactId, lead, sendMessage, preferences, setParams])
