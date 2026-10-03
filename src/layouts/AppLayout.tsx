@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { BillingBanner } from '@/components/billing/BillingBanner'
 import { useLocation, useOutlet } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
@@ -101,6 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Painel de conteúdo: um cartão grande e arredondado "apoiado" na casca,
           com o menu do lado de fora — no mobile ocupa a tela toda. */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--panel-bg)] transition-colors duration-300 lg:my-2.5 lg:mr-2.5 lg:rounded-[26px] lg:border lg:border-[var(--panel-border)] lg:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.55)]">
+        <BillingBanner />
         <Header onOpenMobileMenu={() => setMobileOpen(true)} theme={resolvedTheme} onToggleTheme={toggleTheme} />
         <main
           ref={mainRef}

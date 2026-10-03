@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Spinner } from '@/components/ui/Spinner'
 import { isDesktopApp } from '@/utils/desktop'
 import { AppLayout } from '@/layouts/AppLayout'
+import { BillingGate } from '@/components/billing/BillingGate'
 
 const DashboardPage = lazyPage(() => import('@/pages/dashboard'))
 const LandingPage = lazyPage(() => import('@/pages/landing'))
@@ -113,9 +114,11 @@ export function RootRoute() {
   return (
     <Suspense fallback={<RouteFallback />}>
       {user ? (
-        <AppLayout>
-          <DashboardPage />
-        </AppLayout>
+        <BillingGate>
+          <AppLayout>
+            <DashboardPage />
+          </AppLayout>
+        </BillingGate>
       ) : (
         <LandingPage />
       )}

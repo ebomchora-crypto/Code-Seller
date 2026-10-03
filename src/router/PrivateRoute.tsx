@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '@/stores/AuthContext'
+import { BillingGate } from '@/components/billing/BillingGate'
 import { Spinner } from '@/components/ui/Spinner'
 
 interface PrivateRouteProps {
@@ -9,7 +10,6 @@ interface PrivateRouteProps {
 
 export function PrivateRoute({ children }: PrivateRouteProps) {
   const { user, loading } = useAuthContext()
-
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -22,5 +22,5 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
     return <Navigate to="/login" replace />
   }
 
-  return <>{children}</>
+  return <BillingGate>{children}</BillingGate>
 }

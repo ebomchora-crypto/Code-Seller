@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
 import { SettingsNav } from '@/components/settings/SettingsNav'
 import { ProfileSection } from '@/components/settings/ProfileSection'
+import { PlanSection } from '@/components/settings/PlanSection'
 import { SecuritySection } from '@/components/settings/SecuritySection'
 import { PreferencesSection } from '@/components/settings/PreferencesSection'
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection'
@@ -73,6 +74,8 @@ export default function SettingsPage() {
               onDeleteLogo={deleteCompanyLogo}
               saving={saving}
             />
+
+            <PlanSection />
 
             <SecuritySection />
 

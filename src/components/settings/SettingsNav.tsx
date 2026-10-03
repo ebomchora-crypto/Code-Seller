@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Bell,
   CalendarDays,
+  CreditCard,
   MessageSquareText,
   Monitor,
   Repeat,
@@ -28,6 +29,7 @@ const SETTINGS_GROUPS: { label: string; items: SettingsNavItem[] }[] = [
     label: 'Sua conta',
     items: [
       { id: 'perfil', label: 'Perfil', icon: User },
+      { id: 'plano', label: 'Meu plano', icon: CreditCard },
       { id: 'segurança', label: 'Segurança', icon: Shield },
       { id: 'preferências', label: 'Preferências', icon: SettingsIcon },
       { id: 'notificações', label: 'Notificações', icon: Bell },
