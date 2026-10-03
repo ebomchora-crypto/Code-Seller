@@ -56,7 +56,7 @@ export function LandingHero() {
         {/* Headline + card lateral, dentro do mesmo bloco do buraco negro.
             pb maior pra abrir respiro até o wordmark gigante lá embaixo —
             antes colava direto nos botões. */}
-        <div className="relative z-10 px-6 pb-[18rem] pt-28 sm:pb-48 lg:px-8 lg:pb-56 lg:pt-36">
+        <div className="relative z-10 px-6 pb-[18rem] pt-32 sm:pb-48 lg:px-8 lg:pb-56 lg:pt-36">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -64,27 +64,30 @@ export function LandingHero() {
             className="relative mx-auto w-full max-w-[1280px]"
           >
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px] lg:items-start lg:gap-10">
-              <div className="max-w-xl">
-                <motion.div variants={fadeInUp}>
+              {/* No celular tudo centralizado, alinhado com o buraco negro e o
+                  wordmark; uma frase por linha no título. */}
+              <div className="mx-auto max-w-xl text-center lg:mx-0 lg:text-left">
+                <motion.div variants={fadeInUp} className="hidden lg:block">
                   <LandingEyebrow>Code Sellers + Buyers Hunter</LandingEyebrow>
                 </motion.div>
 
                 <motion.h1
                   variants={fadeInUp}
-                  className="mt-5 text-[26px] font-medium leading-[1.12] tracking-[-0.03em] text-landing-text sm:text-[34px] lg:text-[2.5rem]"
+                  className="text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-[38px] lg:mt-5 lg:text-[2.5rem]"
                 >
-                  Crie com IA. Encontre clientes.{' '}
-                  <span className="font-semibold text-landing-primary-hover">Venda com método.</span>
+                  <span className="block lg:inline">Crie com IA.</span>{' '}
+                  <span className="block lg:inline">Encontre clientes.</span>{' '}
+                  <span className="block font-semibold text-landing-primary-hover">Venda com método.</span>
                 </motion.h1>
 
                 <motion.p
                   variants={fadeInUp}
-                  className="mt-3 max-w-md text-[13.5px] leading-relaxed text-landing-text-secondary sm:mt-4 sm:text-[15px]"
+                  className="mx-auto mt-4 max-w-md text-balance text-[14px] leading-relaxed text-landing-text-secondary sm:text-[15px] lg:mx-0"
                 >
-                  Sites com IA, empresas certas e a venda até o fim.
+                  Do site ao cliente pagante, num lugar só.
                 </motion.p>
 
-                <motion.div variants={fadeInUp} className="mt-6 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
+                <motion.div variants={fadeInUp} className="mt-7 flex flex-wrap items-center justify-center gap-2 sm:mt-8 sm:gap-3 lg:justify-start">
                   <LandingButton className={HERO_BUTTON} onClick={() => navigate('/login')}>Acessar a plataforma</LandingButton>
                   <LandingButton
                     variant="secondary"
@@ -103,7 +106,7 @@ export function LandingHero() {
               >
                 <LandingEyebrow>7 dias grátis</LandingEyebrow>
                 <h2 className="mt-3 text-base font-semibold leading-snug text-landing-text">
-                  Do prompt ao pagamento, num lugar só.
+                  Teste tudo, sem cartão.
                 </h2>
                 <button
                   type="button"
