@@ -41,6 +41,8 @@ export interface ProspectUsage {
   limit: number
   /** Teste grátis conta por dia; os planos pagos, por mês. */
   period?: 'day' | 'month'
+  /** Empresas por busca permitidas no plano (teste grátis: 10). */
+  max_results?: number
 }
 
 export const MAX_LEADS_PER_SEARCH = 30

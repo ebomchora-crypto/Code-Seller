@@ -3,7 +3,7 @@ import { ChevronDown, Globe2, History, Map as MapIcon, MapPin, Search, Store } f
 import { COUNTRIES, DEFAULT_COUNTRY, findCountry } from '../../../supabase/functions/_shared/countries'
 import { Spinner } from '@/components/ui/Spinner'
 import { OFFER_OPTIONS } from '@/utils/prospection'
-import { DEFAULT_LEADS_COUNT, LEADS_OPTIONS } from '@/types/prospection'
+import { DEFAULT_LEADS_COUNT, LEADS_OPTIONS, MAX_LEADS_PER_SEARCH } from '@/types/prospection'
 import type { ProspectOffer, ProspectSearchParams, ProspectUsage, RecentProspectSearch } from '@/types'
 
 interface HunterSearchPanelProps {
@@ -66,7 +66,11 @@ export function HunterSearchPanel({
     }
   }
   const [offer, setOffer] = useState<ProspectOffer>(initial?.offer ?? 'site')
-  const [maxResults, setMaxResults] = useState(initial?.maxResults ?? DEFAULT_LEADS_COUNT)
+  const [pickedResults, setMaxResults] = useState(initial?.maxResults ?? DEFAULT_LEADS_COUNT)
+  // No teste grátis o servidor limita as empresas por busca; só mostra o que cabe.
+  const resultsCap = usage?.max_results ?? MAX_LEADS_PER_SEARCH
+  const leadsOptions = LEADS_OPTIONS.filter((option) => option <= resultsCap)
+  const maxResults = Math.min(pickedResults, resultsCap)
 
   const notConfigured = usage !== null && !usage.configured
   const limitReached = usage !== null && usage.configured && usage.limit > 0 && usage.used >= usage.limit
@@ -224,7 +228,7 @@ export function HunterSearchPanel({
 
             <div className="flex flex-wrap items-center gap-2">
               <span className="mr-1 text-[12.5px] text-white/55">Quantidade de leads</span>
-              {LEADS_OPTIONS.map((option) => {
+              {leadsOptions.map((option) => {
                 const active = maxResults === option
                 return (
                   <button
@@ -242,6 +246,9 @@ export function HunterSearchPanel({
                   </button>
                 )
               })}
+              {resultsCap < MAX_LEADS_PER_SEARCH && (
+                <span className="text-[12px] text-white/45">No teste grátis, até {resultsCap} por busca.</span>
+              )}
             </div>
           </form>
 

@@ -35,7 +35,7 @@ import {
   type WebsiteSearch,
 } from './prospect.ts'
 import { findCountry, internationalPhone, type Country } from '../_shared/countries.ts'
-import { hunterDailyLimitMessage, NO_ACCESS_MESSAGE, planUsage } from '../_shared/plan.ts'
+import { hunterDailyLimitMessage, NO_ACCESS_MESSAGE, planUsage, TRIAL_RESULTS_PER_SEARCH } from '../_shared/plan.ts'
 
 const APIFY_RUN_URL = 'https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?memory=1024'
 const DEFAULT_RESULTS = 20
@@ -155,11 +155,13 @@ Deno.serve(async (req: Request) => {
 
     const plan = await planUsage(userId, userData.user.email)
     const daily = plan.hunter_daily_limit !== null
+    // No teste grátis cada busca traz menos empresas (custo de quem ainda não paga).
+    const maxResults = plan.plan === 'trial' ? TRIAL_RESULTS_PER_SEARCH : MAX_RESULTS_PER_SEARCH
 
     if (body.action === 'usage') {
       return json(daily
-        ? { configured: Boolean(apifyToken), used: plan.hunter_used_today, limit: plan.hunter_daily_limit, period: 'day' }
-        : { configured: Boolean(apifyToken), used, limit, period: 'month' })
+        ? { configured: Boolean(apifyToken), used: plan.hunter_used_today, limit: plan.hunter_daily_limit, period: 'day', max_results: maxResults }
+        : { configured: Boolean(apifyToken), used, limit, period: 'month', max_results: maxResults })
     }
 
     if (body.action !== 'search') return fail('invalid_input', 'Ação inválida.', 400)
@@ -181,7 +183,7 @@ Deno.serve(async (req: Request) => {
       return fail('limit_reached', `Você usou as ${limit} buscas deste mês. O limite renova no dia 1º.`, 429)
     }
 
-    const wanted = Math.min(Math.max(Math.round(Number(body.maxResults)) || DEFAULT_RESULTS, 1), MAX_RESULTS_PER_SEARCH)
+    const wanted = Math.min(Math.max(Math.round(Number(body.maxResults)) || DEFAULT_RESULTS, 1), maxResults)
     const website: WebsiteSearch = isWebsiteSearch(body.website) ? body.website : 'all'
     const location = [city, state, country.searchName].filter(Boolean).join(', ')
     const createdAt = new Date().toISOString()

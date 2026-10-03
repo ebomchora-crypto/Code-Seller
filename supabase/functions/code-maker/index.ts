@@ -15,7 +15,7 @@
 // code_maker_model). Deploy: supabase functions deploy code-maker --no-verify-jwt
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { NO_ACCESS_MESSAGE, planUsage, sitesLimitMessage } from '../_shared/plan.ts'
+import { editsLimit, editsLimitMessage, NO_ACCESS_MESSAGE, planUsage, sitesLimitMessage } from '../_shared/plan.ts'
 import {
   applyEdit,
   assembleSite,
@@ -50,7 +50,6 @@ const corsHeaders = {
 }
 
 const AI_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
-const EDITS_PER_DAY = 60
 const CALLS_PER_DAY = 600
 // O servidor corta cada chamada em 150 s; paramos antes e continuamos depois.
 const CALL_BUDGET_MS = 115_000
@@ -341,7 +340,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'usage') {
       const [sites, edits] = await Promise.all([countToday(admin, user.id, 'create'), countToday(admin, user.id, 'edit')])
-      return json({ sites_today: sites, sites_limit: usage.sites_limit, edits_today: edits, edits_limit: EDITS_PER_DAY })
+      return json({ sites_today: sites, sites_limit: usage.sites_limit, edits_today: edits, edits_limit: editsLimit(usage) })
     }
 
     if (!usage.access) return json({ error: NO_ACCESS_MESSAGE }, 402)
@@ -621,8 +620,9 @@ Deno.serve(async (req: Request) => {
       brief = { ...site.brief, assets: [...kept, ...fresh].slice(-12) }
     }
     if (!partial) {
-      if ((await countToday(admin, user.id, 'edit')) >= EDITS_PER_DAY) {
-        return json({ error: `Você já fez ${EDITS_PER_DAY} alterações hoje. Amanhã libera de novo.` }, 429)
+      const limit = editsLimit(usage)
+      if (limit !== null && (await countToday(admin, user.id, 'edit')) >= limit) {
+        return json({ error: editsLimitMessage(usage) }, 429)
       }
       await admin.from('code_maker_calls').insert({ user_id: user.id, kind: 'edit' })
     }

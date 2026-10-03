@@ -6,9 +6,9 @@ import { PLAN_PRICE_LABEL, checkoutUrl } from '@/services/supabase/billing'
 
 const TRIAL = [
   '7 dias para usar tudo, sem cartão',
-  '1 busca de empresas por dia no Buyers Hunter',
+  '1 busca por dia no Buyers Hunter (até 10 empresas)',
   '5 mensagens por dia no CS Copilot',
-  '2 sites por dia no Code Maker',
+  '2 sites por dia no Code Maker, com selo do Code Sellers',
   'CRM, negócios, propostas e financeiro',
 ]
 

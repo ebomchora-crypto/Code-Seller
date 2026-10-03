@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import NotFoundPage from '@/pages/not-found'
-import { getPublicSite } from '@/services/supabase/codeMaker'
+import { getPublicSite, type PublicSite } from '@/services/supabase/codeMaker'
 import { SITE_SANDBOX } from '@/components/code-maker/SitePreview'
 import { frameDocument } from '@/utils/codeMakerStream'
 
@@ -18,8 +18,8 @@ function titleOf(html: string, fallback: string): string {
 export default function PublicSitePage() {
   const { slug = '' } = useParams()
   const shortLink = !useLocation().pathname.startsWith('/s/')
-  const [site, setSite] = useState<{ name: string; html: string } | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
+  const [site, setSite] = useState<PublicSite | null>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'offline' | 'error'>('loading')
 
   useEffect(() => {
     let cancelled = false
@@ -27,8 +27,8 @@ export default function PublicSitePage() {
       .then((data) => {
         if (cancelled) return
         setSite(data)
-        setStatus(data ? 'ready' : 'missing')
-        if (data) document.title = titleOf(data.html, data.name)
+        setStatus(!data ? 'missing' : data.offline || !data.html ? 'offline' : 'ready')
+        if (data) document.title = data.html ? titleOf(data.html, data.name) : data.name
       })
       .catch(() => !cancelled && setStatus('error'))
     return () => {
@@ -36,16 +36,30 @@ export default function PublicSitePage() {
     }
   }, [slug])
 
-  const doc = useMemo(() => (site ? frameDocument(site.html) : null), [site])
+  const doc = useMemo(() => (site?.html ? frameDocument(site.html) : null), [site])
 
   if (status === 'ready' && doc) {
     return (
-      <iframe
-        title={site?.name ?? 'Site'}
-        sandbox={SITE_SANDBOX}
-        srcDoc={doc}
-        className="fixed inset-0 h-dvh w-full border-0 bg-white"
-      />
+      <>
+        <iframe
+          title={site?.name ?? 'Site'}
+          sandbox={SITE_SANDBOX}
+          srcDoc={doc}
+          className="fixed inset-0 h-dvh w-full border-0 bg-white"
+        />
+        {/* Selo do teste grátis: fica fora do quadro do site, então não some editando o site. */}
+        {site?.badge && (
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener"
+            className="fixed bottom-4 left-4 z-10 inline-flex items-center gap-2 rounded-full border border-black/10 bg-[#0b0b0f] py-2 pl-2 pr-3.5 text-[12.5px] font-medium text-white shadow-[0_10px_30px_-8px_rgba(0,0,0,0.45)] transition-transform hover:-translate-y-0.5"
+          >
+            <img src="/logo.png" alt="" className="size-5 rounded-md object-contain" />
+            Feito com Code Sellers
+          </a>
+        )}
+      </>
     )
   }
 
@@ -58,9 +72,15 @@ export default function PublicSitePage() {
         <span className="size-8 animate-spin rounded-full border-2 border-[#18181b]/15 border-t-[#18181b]/60" aria-label="Carregando" />
       ) : (
         <>
-          <p className="text-[22px] font-semibold tracking-tight">{status === 'missing' ? 'Site não encontrado' : 'Não foi possível abrir o site'}</p>
+          <p className="text-[22px] font-semibold tracking-tight">
+            {status === 'missing' ? 'Site não encontrado' : status === 'offline' ? 'Site fora do ar' : 'Não foi possível abrir o site'}
+          </p>
           <p className="max-w-sm text-[14.5px] text-[#18181b]/60">
-            {status === 'missing' ? 'Confira o endereço. O site pode ter sido tirado do ar.' : 'Confira sua internet e tente de novo.'}
+            {status === 'missing'
+              ? 'Confira o endereço. O site pode ter sido tirado do ar.'
+              : status === 'offline'
+                ? 'Este site está temporariamente indisponível. Volte mais tarde.'
+                : 'Confira sua internet e tente de novo.'}
           </p>
         </>
       )}

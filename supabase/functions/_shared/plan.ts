@@ -1,7 +1,8 @@
 // Plano e uso do dia de uma conta (função usage_for no banco). Usado pelas
 // funções do servidor para bloquear quem não tem acesso e aplicar os limites
-// diários: teste grátis 2 sites, 5 mensagens do CS Copilot e 1 busca do Buyers
-// Hunter; plano pago 10 sites e 50 mensagens (Buyers Hunter: 50 buscas no mês);
+// diários: teste grátis 2 sites, 10 alterações, 5 mensagens do CS Copilot e 1
+// busca de até 10 empresas no Buyers Hunter; plano pago 10 sites, 100 alterações
+// e 50 mensagens (Buyers Hunter: 50 buscas no mês, até 30 empresas cada);
 // conta liberada sem limite (limite null).
 
 export interface PlanUsage {
@@ -17,6 +18,22 @@ export interface PlanUsage {
 }
 
 export const NO_ACCESS_MESSAGE = 'Seu teste grátis acabou. Assine o Code Sellers para continuar.'
+
+/** Empresas por busca do Buyers Hunter no teste grátis (no plano pago, até 30). */
+export const TRIAL_RESULTS_PER_SEARCH = 10
+
+/** Alterações por dia no Code Maker: teste 10, pago 100, conta liberada sem limite (null). */
+export function editsLimit(usage: PlanUsage): number | null {
+  if (usage.plan === 'exempt') return null
+  return usage.plan === 'paid' ? 100 : 10
+}
+
+export function editsLimitMessage(usage: PlanUsage): string {
+  const limit = editsLimit(usage) ?? 0
+  return usage.plan === 'trial'
+    ? `No teste grátis dá para fazer ${limit} alterações por dia. Assine para ter 100 por dia, ou volte amanhã.`
+    : `Você já fez ${limit} alterações hoje. Amanhã libera de novo.`
+}
 
 function rest(path: string, init: RequestInit): Promise<Response> {
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

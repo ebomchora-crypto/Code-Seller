@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useBilling } from '@/stores/BillingContext'
 import { assembleSite, parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
 import { useSiteBuilder } from '@/hooks/useSiteBuilder'
 import { AttachButton, AttachmentTray, useAttachments } from '@/components/code-maker/Attachments'
@@ -51,6 +52,7 @@ export default function CodeMakerEditorPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const builder = useSiteBuilder(id)
+  const billing = useBilling()
   const { site, phase } = builder
   const busy = phase !== 'idle'
 
@@ -180,7 +182,15 @@ export default function CodeMakerEditorPage() {
   async function togglePublished(value: boolean) {
     try {
       builder.setSite(await updateSite(site!.id, { published: value }))
-      toast.success(value ? 'Site no ar.' : 'Site tirado do ar.')
+      if (value && billing.status?.state === 'trial') {
+        // No teste grátis o site publicado mostra o selo e sai do ar se o teste acabar sem assinatura.
+        toast.success('Site no ar.', {
+          description: 'No teste grátis ele mostra o selo "Feito com Code Sellers" e sai do ar se o teste acabar sem assinatura.',
+          duration: 8000,
+        })
+      } else {
+        toast.success(value ? 'Site no ar.' : 'Site tirado do ar.')
+      }
     } catch (error) {
       toast.error((error as Error).message)
     }

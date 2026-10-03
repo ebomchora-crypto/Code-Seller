@@ -40,7 +40,7 @@ export interface CodeMakerUsage {
   /** null = sem limite. */
   sites_limit: number | null
   edits_today: number
-  edits_limit: number
+  edits_limit: number | null
 }
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/code-maker`
@@ -189,10 +189,18 @@ export async function restoreSiteVersion(site: Site, version: SiteVersion, html:
   return data as Site
 }
 
-export async function getPublicSite(slug: string): Promise<{ name: string; html: string } | null> {
+/** Site publicado. `badge`: dono no teste grátis (mostra o selo). `offline`: o teste do dono acabou sem assinatura. */
+export interface PublicSite {
+  name: string
+  html?: string
+  badge?: boolean
+  offline?: boolean
+}
+
+export async function getPublicSite(slug: string): Promise<PublicSite | null> {
   const { data, error } = await supabase.rpc('get_public_site', { p_slug: slug })
   if (error) throw new Error(error.message)
-  return (data as { name: string; html: string } | null) ?? null
+  return (data as PublicSite | null) ?? null
 }
 
 const ASSET_BUCKET = 'site-assets'

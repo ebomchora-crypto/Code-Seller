@@ -43,11 +43,12 @@ const sections: LegalSection[] = [
       'Toda conta nova tem 7 dias de teste grátis, contados a partir do cadastro, sem precisar de cartão. Durante o teste valem estes limites:',
       {
         list: [
-          '1 busca de empresas por dia no Buyers Hunter;',
+          '1 busca por dia no Buyers Hunter, com até 10 empresas;',
           '5 mensagens por dia no CS Copilot;',
-          '2 sites por dia no Code Maker.',
+          '2 sites e 10 alterações por dia no Code Maker.',
         ],
       },
+      'Sites publicados durante o teste mostram o selo "Feito com Code Sellers" e saem do ar se o teste terminar sem assinatura. Ao assinar, o selo some e eles voltam ao ar.',
       'Quando o teste termina, o acesso ao painel fica bloqueado até você assinar. Os dados que você cadastrou continuam guardados, como explica a Política de Privacidade. O teste grátis vale uma vez por pessoa.',
     ],
   },
@@ -77,9 +78,9 @@ const sections: LegalSection[] = [
       'Para manter o serviço rápido e estável para todos, o plano pago tem estes limites:',
       {
         list: [
-          '50 buscas de empresas por mês no Buyers Hunter;',
+          '50 buscas por mês no Buyers Hunter, com até 30 empresas cada;',
           '50 mensagens por dia no CS Copilot;',
-          '10 sites por dia no Code Maker.',
+          '10 sites e 100 alterações por dia no Code Maker.',
         ],
       },
       'Os limites diários recomeçam à meia-noite (horário de Brasília) e o mensal, no primeiro dia de cada mês. Se for preciso ajustar um limite, avisaremos antes.',
