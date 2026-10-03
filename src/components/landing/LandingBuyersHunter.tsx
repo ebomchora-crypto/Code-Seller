@@ -3,10 +3,10 @@ import { LandingFadeIn } from '@/components/landing/LandingFadeIn'
 import { LandingKicker } from '@/components/landing/LandingKicker'
 
 const checklist = [
-  'Método Code Sellers para criar soluções com IA',
-  'Buyers Hunter para encontrar clientes qualificados',
-  'Playbook de venda com oferta, abordagem e fechamento',
-  'Kit de execução com prompts, scripts e proposta',
+  'Code Maker: sites com IA',
+  'Buyers Hunter: empresas para abordar',
+  'CS Copilot: ajuda em cada conversa',
+  'CRM, propostas e o método completo',
 ]
 
 // "O ecossistema completo" — fundo roxo vivo com manchas de luz e sombra à
@@ -23,25 +23,15 @@ export function LandingBuyersHunter() {
             {/* Esquerda — destaque roxo com feixe de luz */}
             <div className="cs-accent-card flex flex-col px-7 pb-12 pt-9 lg:p-12">
               <div className="relative z-10 flex h-full flex-col text-center lg:text-left">
-                <LandingKicker tone="dark">O ecossistema completo</LandingKicker>
+                <LandingKicker tone="dark">Tudo incluso</LandingKicker>
                 <h2 className="text-[52px] font-normal leading-[0.95] tracking-[-0.06em] lg:text-[64px]">
                   Crie.
                   <br />
                   Encontre. Venda.
                 </h2>
                 <p className="mx-auto mt-7 max-w-[460px] text-[16px] leading-7 text-white/[0.74] lg:mx-0 lg:text-[17px]">
-                  IA para construir. Buyers Hunter para encontrar. Método para fechar. Um único
-                  caminho para transformar habilidade em dinheiro no bolso.
+                  Tudo o que você precisa para vender sites, num lugar só.
                 </p>
-
-                <div className="mt-auto pt-14 lg:pt-16">
-                  <p className="text-[11px] uppercase tracking-[0.17em] text-white/[0.56]">
-                    Da ideia ao dinheiro no bolso.
-                  </p>
-                  <p className="font-display mx-auto mt-2 max-w-[310px] text-[26px] leading-[1.12] tracking-[-0.045em] lg:mx-0 lg:max-w-none lg:text-[40px] lg:leading-[1.08]">
-                    VOCÊ CRIA. VOCÊ ENCONTRA. VOCÊ VENDE.
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -49,7 +39,7 @@ export function LandingBuyersHunter() {
             <div className="relative bg-[#0f0d14] px-6 py-9 sm:px-7 lg:p-12">
               <div className="text-center">
                 <p className="text-[11px] font-medium uppercase tracking-[0.19em] text-[#c4b5fd]">
-                  Tudo o que entra no seu arsenal
+                  O que você recebe
                 </p>
 
                 <div className="cs-console mt-6 rounded-[20px] border border-[#a78bfa]/30 bg-black/35 p-5 text-left">
@@ -74,16 +64,12 @@ export function LandingBuyersHunter() {
                         Clientes qualificados na mira.
                       </p>
                       <p className="mt-3 text-[13px] leading-5 text-white/[0.52]">
-                        Busque empresas qualificadas e coloque oportunidades reais no seu radar.
+                        Empresas por nicho e cidade, com contato.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <p className="mx-auto mt-5 max-w-[480px] text-[15px] leading-7 text-white/[0.58] lg:text-[16px]">
-                  Você não entra apenas para aprender. Entra para executar o ciclo completo e chegar à
-                  venda.
-                </p>
               </div>
 
               <div className="mt-8 grid gap-3">
@@ -107,7 +93,7 @@ export function LandingBuyersHunter() {
                 onClick={() => navigate('/login')}
                 className="cs-enroll-button mt-7 flex min-h-[58px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-full bg-[#fff] px-5 text-center text-[14px] font-semibold uppercase text-[#151318] shadow-[0_16px_45px_rgba(255,255,255,0.1)] sm:gap-5 sm:px-7 sm:text-[15px]"
               >
-                Acessar o ecossistema
+                Começar grátis
                 <span aria-hidden>↗</span>
               </button>
             </div>

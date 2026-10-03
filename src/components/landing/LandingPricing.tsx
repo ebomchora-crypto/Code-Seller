@@ -34,10 +34,10 @@ export function LandingPricing() {
             Preço
           </LandingKicker>
           <h2 className="mx-auto max-w-2xl font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[44px]">
-            Comece grátis. Assine quando fechar o primeiro cliente.
+            Comece grátis. Assine quando vender.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[15px] leading-7 text-white/60">
-            Um site vendido paga meses de assinatura. Cancele quando quiser.
+            Cancele quando quiser.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export function LandingPricing() {
               Assinar agora
             </a>
             <p className="relative mt-3 text-center text-[12.5px] leading-5 text-white/50">
-              Depois de pagar, crie sua conta com o mesmo e-mail da compra.
+              Use o mesmo e-mail na compra e na conta.
             </p>
           </div>
         </div>

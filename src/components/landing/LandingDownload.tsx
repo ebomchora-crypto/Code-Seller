@@ -41,12 +41,10 @@ export function LandingDownload() {
                 Novidade
               </span>
               <h2 className="mt-4 max-w-lg font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.03em] sm:text-[42px]">
-                Code Sellers, direto na sua área de trabalho.
+                App para Windows.
               </h2>
               <p className="mt-4 max-w-md text-[15px] leading-7 text-white/65">
-                Um app de Windows pra você abrir seu CRM, o Buyers Hunter e o CS Copilot com um
-                clique — sem precisar de aba de navegador aberta. Entre com sua conta de sempre e
-                continue de onde parou.
+                O Code Sellers a um clique, com avisos das suas tarefas.
               </p>
 
               <ul className="mt-7 flex flex-wrap gap-2.5">
@@ -75,10 +73,10 @@ export function LandingDownload() {
                   onClick={() => signUpToDownload('portable')}
                   className="inline-flex h-[52px] items-center justify-center rounded-full border border-white/15 px-6 text-[14px] font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white"
                 >
-                  Versão portátil (sem instalar)
+                  Versão portátil
                 </button>
               </div>
-              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta grátis para baixar · Windows 10 ou 11 · 64 bits</p>
+              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta grátis para baixar · Windows 10 ou 11</p>
             </div>
 
             <div className="relative hidden lg:block" aria-hidden>

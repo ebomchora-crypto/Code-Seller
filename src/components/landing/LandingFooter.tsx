@@ -21,7 +21,7 @@ export function LandingFooter() {
               <span className="font-display text-[24px] tracking-[-0.03em] text-white">Code Sellers</span>
             </div>
             <p className="mt-5 text-sm leading-6 text-white/[0.66]">
-              Crie com IA, encontre empresas qualificadas e transforme projetos em vendas.
+              Crie com IA, encontre clientes e venda.
             </p>
           </div>
 

@@ -14,17 +14,15 @@ export function LandingCtaBanner() {
       <div aria-hidden className="cs-final-orbit" />
 
       <LandingFadeIn className="relative z-10 mx-auto w-full max-w-[1200px] text-center">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-white/[0.58]">Crie. Encontre. Venda.</p>
-        <h2 className="mx-auto mt-7 max-w-[1000px] text-[44px] font-normal leading-[0.96] tracking-[-0.06em] sm:text-[58px] lg:text-[78px] lg:leading-[0.94] lg:tracking-[-0.065em]">
-          Seu próximo cliente não precisa aparecer por acaso. Encontre. Venda. Coloque dinheiro no
-          bolso.
+        <h2 className="mx-auto max-w-[1000px] text-[44px] font-normal leading-[0.96] tracking-[-0.06em] sm:text-[58px] lg:text-[78px] lg:leading-[0.94] lg:tracking-[-0.065em]">
+          Seu próximo cliente não aparece por acaso.
         </h2>
         <button
           type="button"
           onClick={() => navigate('/login')}
           className="cs-dark-button mt-10 inline-flex min-h-[60px] items-center gap-3 whitespace-nowrap rounded-full bg-black px-6 text-[15px] font-medium text-white sm:gap-6 sm:px-9 sm:text-[16px]"
         >
-          Encontrar meu próximo cliente
+          Encontrar clientes
           <span aria-hidden>↗</span>
         </button>
       </LandingFadeIn>

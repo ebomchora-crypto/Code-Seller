@@ -81,8 +81,7 @@ export function LandingHero() {
                   variants={fadeInUp}
                   className="mt-3 max-w-md text-[13.5px] leading-relaxed text-landing-text-secondary sm:mt-4 sm:text-[15px]"
                 >
-                  Transforme ideias em sites e sistemas, encontre empresas que realmente precisam
-                  deles e conduza a venda até o fechamento.
+                  Sites com IA, empresas certas e a venda até o fim.
                 </motion.p>
 
                 <motion.div variants={fadeInUp} className="mt-6 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
@@ -102,25 +101,18 @@ export function LandingHero() {
                 variants={fadeInUp}
                 className="hidden rounded-landing-lg border border-white/20 bg-white/[0.06] p-6 shadow-landing-card backdrop-blur-2xl backdrop-saturate-150 lg:block"
               >
-                <LandingEyebrow>Da ideia ao dinheiro no bolso</LandingEyebrow>
+                <LandingEyebrow>7 dias grátis</LandingEyebrow>
                 <h2 className="mt-3 text-base font-semibold leading-snug text-landing-text">
-                  Uma rota completa para sair do prompt e chegar ao pagamento.
+                  Do prompt ao pagamento, num lugar só.
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-landing-text-secondary">
-                  Você cria a solução, encontra as empresas certas e aprende a conduzir a conversa
-                  até fechar a venda.
-                </p>
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
                   className="group mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-landing-md bg-landing-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-landing-primary-hover"
                 >
-                  Começar minha rota
+                  Começar grátis
                   <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </button>
-                <p className="mt-3 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-landing-text-muted">
-                  Criar · Encontrar · Vender
-                </p>
               </motion.div>
             </div>
           </motion.div>

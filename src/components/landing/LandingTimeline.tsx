@@ -4,7 +4,6 @@ import { LandingKicker } from '@/components/landing/LandingKicker'
 interface Step {
   number: string
   label: string
-  description: string
 }
 
 interface Phase {
@@ -24,30 +23,30 @@ const phases: Phase[] = [
     label: 'Criar',
     title: 'Da ideia à oferta.',
     steps: [
-      { number: '01', label: 'Ideia', description: 'Um problema real que vale a pena resolver.' },
-      { number: '02', label: 'Construção', description: 'A solução criada com IA, funcionando de verdade.' },
-      { number: '03', label: 'Oferta', description: 'O projeto embalado como algo que se vende.' },
+      { number: '01', label: 'Ideia' },
+      { number: '02', label: 'Construção com IA' },
+      { number: '03', label: 'Oferta' },
     ],
     outcome: 'Oferta pronta pra vender',
   },
   {
     number: '02',
     label: 'Encontrar',
-    title: 'Das empresas certas à primeira conversa.',
+    title: 'Das empresas certas à conversa.',
     steps: [
-      { number: '04', label: 'Prospecção', description: 'Empresas certas, encontradas com o Buyers Hunter.' },
-      { number: '05', label: 'Abordagem', description: 'A primeira conversa, sem parecer spam.' },
+      { number: '04', label: 'Prospecção' },
+      { number: '05', label: 'Abordagem' },
     ],
     outcome: 'Empresas certas na mira',
   },
   {
     number: '03',
     label: 'Vender',
-    title: 'Da demo ao dinheiro no bolso.',
+    title: 'Da demonstração ao pagamento.',
     steps: [
-      { number: '06', label: 'Demo', description: 'Mostrar a solução resolvendo o problema, ao vivo.' },
-      { number: '07', label: 'Proposta', description: 'Escopo, prazo e valor, por escrito.' },
-      { number: '08', label: 'Fechamento', description: 'Cliente pagante, dinheiro no bolso.' },
+      { number: '06', label: 'Demonstração' },
+      { number: '07', label: 'Proposta' },
+      { number: '08', label: 'Fechamento' },
     ],
     outcome: 'Cliente pagante',
   },
@@ -55,7 +54,7 @@ const phases: Phase[] = [
 
 function PhaseCard({ phase }: { phase: Phase }) {
   return (
-    <article className="cs-step group h-full min-h-[440px] px-6 pb-6 pt-7 sm:px-[30px] sm:pb-[26px] sm:pt-[30px]">
+    <article className="cs-step group h-full min-h-[360px] px-6 pb-6 pt-7 sm:px-[30px] sm:pb-[26px] sm:pt-[30px]">
       <span aria-hidden className="cs-step-ghost">
         {phase.number}
       </span>
@@ -83,10 +82,7 @@ function PhaseCard({ phase }: { phase: Phase }) {
         {phase.steps.map((step) => (
           <li key={step.number} className="grid grid-cols-[34px_1fr] border-t border-white/[0.08] py-4">
             <span className="pt-[3px] font-mono text-[11px] text-[#b79cff]">{step.number}</span>
-            <div>
-              <p className="font-display text-[17px] tracking-[-0.02em] text-white">{step.label}</p>
-              <p className="mt-1 text-[13px] leading-5 text-white/[0.52]">{step.description}</p>
-            </div>
+            <p className="font-display text-[17px] tracking-[-0.02em] text-white">{step.label}</p>
           </li>
         ))}
       </ol>
@@ -106,27 +102,11 @@ export function LandingTimeline() {
 
       <div className="relative z-10 mx-auto w-full max-w-[1280px] px-5 sm:px-8 lg:px-12">
         <LandingFadeIn>
-          <div className="grid gap-9 lg:grid-cols-[1.1fr_0.62fr] lg:items-end lg:gap-20">
-            <div className="text-center lg:text-left">
-              <LandingKicker tone="dark">O processo</LandingKicker>
-              <h2 className="text-[42px] font-normal leading-[0.98] tracking-[-0.055em] sm:text-[52px] lg:text-[60px]">
-                O ciclo completo.
-                <span className="mt-3 block text-[#a78bfa]">8 etapas, 3 movimentos.</span>
-              </h2>
-            </div>
-
-            <div className="cs-glass-card">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#c4b5fd]">
-                  Criar • Encontrar • Vender
-                </span>
-                <span className="font-mono text-[13px] text-white/40">01 — 08</span>
-              </div>
-              <p className="pt-4 text-[15px] leading-7 text-white/60">
-                Cada etapa termina com algo concreto e já empurra a próxima — da ideia ao dinheiro no
-                bolso.
-              </p>
-            </div>
+          <div className="text-center lg:text-left">
+            <LandingKicker tone="dark">O método</LandingKicker>
+            <h2 className="text-[42px] font-normal leading-[0.98] tracking-[-0.055em] sm:text-[52px] lg:text-[60px]">
+              Criar. Encontrar. <span className="text-[#a78bfa]">Vender.</span>
+            </h2>
           </div>
         </LandingFadeIn>
 
@@ -139,9 +119,6 @@ export function LandingTimeline() {
           ))}
         </div>
 
-        <p className="mt-8 hidden justify-end text-[11px] font-medium uppercase tracking-[0.16em] text-white/[0.38] lg:flex">
-          Crie com IA. Encontre com o Buyers Hunter. Venda com método.
-        </p>
       </div>
     </section>
   )

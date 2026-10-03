@@ -6,46 +6,12 @@ import { LandingKicker } from '@/components/landing/LandingKicker'
 const EASE = [0.22, 1, 0.36, 1] as const
 
 const faqItems = [
-  {
-    question: 'Preciso saber programar?',
-    answer: 'Não. O método ensina a usar IA pra criar sites e sistemas — a habilidade que você desenvolve é conduzir a IA e refinar o resultado, não escrever código do zero.',
-  },
-  {
-    question: 'Posso começar sem portfólio?',
-    answer: 'Sim. O primeiro módulo existe justamente pra isso: sair com um projeto real construído, que vira o início do seu portfólio.',
-  },
-  {
-    question: 'Funciona para sites?',
-    answer: 'Sim — sites institucionais, landing pages e páginas de conversão fazem parte do que você aprende a criar e vender.',
-  },
-  {
-    question: 'Funciona para sistemas?',
-    answer: 'Sim. Além de sites, o método cobre sistemas e automações mais complexas, voltadas a resolver um problema comercial específico.',
-  },
-  {
-    question: 'O que é a Buyers Hunter?',
-    answer: 'É a ferramenta de prospecção do ecossistema — encontra empresas com potencial real de compra, pra você não abordar no escuro. Não se confunde com o método Code Sellers.',
-  },
-  {
-    question: 'O método ensina prospecção?',
-    answer: 'Sim. Encontrar as empresas certas é uma etapa do processo, com o Buyers Hunter como ferramenta de apoio.',
-  },
-  {
-    question: 'O método ensina venda?',
-    answer: 'Sim — oferta, abordagem, demonstração, proposta e fechamento fazem parte do conteúdo, não só a parte técnica de criação.',
-  },
-  {
-    question: 'Preciso pagar ferramentas?',
-    answer: 'O método usa ferramentas de IA amplamente disponíveis, muitas com planos gratuitos suficientes pra começar.',
-  },
-  {
-    question: 'Quanto custa?',
-    answer: 'R$ 99,90 por mês, com 7 dias de teste grátis sem cartão. Você cancela quando quiser.',
-  },
-  {
-    question: 'Como participo?',
-    answer: 'Crie sua conta grátis e use por 7 dias. Para continuar depois do teste, assine o plano mensal com o mesmo e-mail da conta.',
-  },
+  { question: 'Preciso saber programar?', answer: 'Não. A IA escreve o código; você aprende a conduzir.' },
+  { question: 'Serve para sites e sistemas?', answer: 'Sim. Sites, landing pages e sistemas sob medida.' },
+  { question: 'O que é o Buyers Hunter?', answer: 'A ferramenta que encontra empresas por nicho e cidade para você abordar.' },
+  { question: 'Ensina a vender?', answer: 'Sim: oferta, abordagem, proposta e fechamento.' },
+  { question: 'Quanto custa?', answer: 'R$ 99,90 por mês. Os primeiros 7 dias são grátis, sem cartão.' },
+  { question: 'Posso cancelar?', answer: 'Sim, quando quiser, sem multa.' },
 ]
 
 function FAQItem({
@@ -121,14 +87,10 @@ export function LandingFAQ() {
 
       <div className="relative mx-auto grid w-full max-w-[1280px] gap-12 px-5 pb-24 pt-[134px] sm:px-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-20 lg:px-12 lg:pb-28 lg:pt-[200px]">
         <LandingFadeIn className="text-center lg:text-left">
-          <LandingKicker>Antes de decidir</LandingKicker>
+          <LandingKicker>FAQ</LandingKicker>
           <h2 className="text-[40px] font-normal leading-[0.98] tracking-[-0.055em] sm:text-[48px] lg:text-[56px]">
-            As dúvidas que travam quase todo iniciante.
+            Dúvidas comuns.
           </h2>
-          <p className="mx-auto mt-7 max-w-[460px] text-[16px] leading-7 text-[rgba(60,48,80,0.72)] lg:mx-0 lg:text-[17px]">
-            O método existe justamente pra remover a distância entre aprender uma ferramenta e
-            conseguir entregar algo comercial.
-          </p>
         </LandingFadeIn>
 
         <LandingFadeIn delay={0.08}>

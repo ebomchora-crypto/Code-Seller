@@ -69,18 +69,14 @@ export function LandingProblem() {
           <LandingEyebrow tone="light">O ciclo que gera receita</LandingEyebrow>
           <h2 className="mt-4 text-3xl font-medium leading-[1.12] tracking-[-0.03em] text-landing-text-dark sm:text-4xl lg:text-5xl">
             Criar é só o começo.{' '}
-            <span className="font-semibold text-landing-primary">O dinheiro entra quando você encontra e vende.</span>
+            <span className="font-semibold text-landing-primary">O dinheiro entra quando você vende.</span>
           </h2>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-[#4a4750]">
-            A maioria aprende ferramenta. Poucos aprendem a transformar habilidade em oferta,
-            oportunidade e venda.
-          </p>
           <button
             type="button"
             onClick={() => navigate('/login')}
             className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-landing-text-dark px-6 text-sm font-semibold text-white transition-colors duration-200 hover:bg-black"
           >
-            Quero transformar em venda
+            Começar agora
             <ArrowUpRight className="h-4 w-4" />
           </button>
         </Reveal>

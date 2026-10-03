@@ -4,7 +4,6 @@ import { LandingHero } from '@/components/landing/LandingHero'
 import { LandingProblem } from '@/components/landing/LandingProblem'
 import { LandingModules } from '@/components/landing/LandingModules'
 import { LandingBuyersHunter } from '@/components/landing/LandingBuyersHunter'
-import { LandingEcosystem } from '@/components/landing/LandingEcosystem'
 import { LandingTimeline } from '@/components/landing/LandingTimeline'
 import { LandingBenefits } from '@/components/landing/LandingBenefits'
 import { LandingDownload } from '@/components/landing/LandingDownload'
@@ -62,7 +61,6 @@ export default function LandingPage() {
         <LandingProblem />
         <LandingModules />
         <LandingBuyersHunter />
-        <LandingEcosystem />
         <LandingTimeline />
         <LandingBenefits />
         <LandingCtaBanner />

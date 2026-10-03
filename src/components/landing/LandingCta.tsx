@@ -18,10 +18,6 @@ export function LandingCta() {
           <br />
           precisa virar venda.
         </h2>
-        <p className="mx-auto mt-5 max-w-[440px] text-[15px] leading-6 text-[#2a2533]">
-          Entre pra aprender a criar com IA, encontrar clientes com o Buyers Hunter e
-          vender com o método Code Sellers.
-        </p>
       </LandingFadeIn>
 
       <div

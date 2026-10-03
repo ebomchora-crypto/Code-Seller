@@ -63,7 +63,6 @@ function ValueMockup() {
             </div>
           </div>
         ))}
-        <p className="pt-1 text-xs text-white/40">Projeto pronto pra ser apresentado, não só entregue.</p>
       </div>
     </MockupFrame>
   )
@@ -137,33 +136,29 @@ const modules: ModuleEntry[] = [
   {
     phase: 'CRIAR',
     title: 'Crie sites com IA em minutos.',
-    description:
-      'Transforme prompts em soluções reais, responsivas e prontas para apresentar — mesmo começando do zero.',
-    delivery: 'Primeiro projeto funcionando e pronto pra mostrar',
+    description: 'Do prompt ao site pronto, sem saber programar.',
+    delivery: 'Primeiro projeto no ar',
     visual: <GeneratorMockup />,
   },
   {
     phase: 'VALORIZAR',
     title: 'Faça seu projeto parecer premium.',
-    description:
-      'Aprenda design, copy e apresentação para sair do genérico, aumentar a percepção de valor e cobrar mais.',
-    delivery: 'Projeto profissional pronto para vender',
+    description: 'Design, texto e apresentação para cobrar mais.',
+    delivery: 'Projeto pronto para vender',
     visual: <ValueMockup />,
   },
   {
     phase: 'RESOLVER',
-    title: 'Construa sistemas que empresas realmente precisam.',
-    description:
-      'Encontre dores reais de um negócio e transforme-as em sistemas, automações e demos que mostram a solução funcionando.',
-    delivery: 'Demo resolvendo um problema comercial real',
+    title: 'Crie sistemas que empresas precisam.',
+    description: 'Resolva um problema real e mostre funcionando.',
+    delivery: 'Demo de um problema real',
     visual: <SystemMockup />,
   },
   {
     phase: 'VENDER',
-    title: 'Encontre clientes. Conduza a venda.',
-    description:
-      'Use o Buyers Hunter para encontrar oportunidades e um processo estruturado para conduzir cada conversa até o fechamento.',
-    delivery: 'Pipeline real de potenciais clientes',
+    title: 'Encontre clientes. Feche a venda.',
+    description: 'Buyers Hunter para achar empresas e um roteiro para fechar.',
+    delivery: 'Lista real de clientes',
     visual: <PipelineMockup />,
   },
 ]
@@ -209,7 +204,7 @@ function ModuleRow({ module, index }: { module: ModuleEntry; index: number }) {
 
           <div className="cs-module-outcome mt-8 grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-2 rounded-[18px] py-[18px] pl-5 pr-[18px]">
             <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#5b21b6]">
-              Entrega do módulo
+              Você sai com
             </span>
             <span className="text-[15px] font-medium leading-[1.45] text-[rgba(35,22,56,0.9)]">{module.delivery}</span>
             <span
@@ -230,26 +225,11 @@ export function LandingModules() {
     <section id="modulos" className="cs-curriculum py-24 text-[#151318] lg:py-28">
       <div className="relative z-10 mx-auto w-full max-w-[1280px] px-5 sm:px-8 lg:px-12">
         <LandingFadeIn>
-          <div className="grid gap-9 border-b border-[rgba(41,25,60,0.14)] pb-9 lg:grid-cols-[1.08fr_0.52fr] lg:items-end lg:gap-20 lg:pb-[52px]">
-            <div className="text-center lg:text-left">
-              <LandingKicker>Da ideia ao dinheiro</LandingKicker>
-              <h2 className="mx-auto max-w-[760px] text-[42px] font-normal leading-[0.95] tracking-[-0.06em] sm:text-[52px] lg:mx-0 lg:text-[62px]">
-                4 entregas. De ideia a cliente pagante.
-              </h2>
-            </div>
-
-            <div className="cs-route-summary">
-              <div className="flex items-center justify-between border-b border-[rgba(43,24,70,0.12)] pb-5">
-                <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#5b21b6]">
-                  Aprenda fazendo
-                </span>
-                <span className="font-mono text-[13px] text-[rgba(38,23,60,0.42)]">01 — 04</span>
-              </div>
-              <p className="pt-5 text-[16px] leading-7 text-[rgba(48,36,70,0.68)]">
-                Cada etapa termina com algo que você pode mostrar, oferecer e vender. Nada fica preso
-                no tutorial.
-              </p>
-            </div>
+          <div className="border-b border-[rgba(41,25,60,0.14)] pb-9 text-center lg:pb-[52px] lg:text-left">
+            <LandingKicker>Módulos</LandingKicker>
+            <h2 className="mx-auto max-w-[760px] text-[42px] font-normal leading-[0.95] tracking-[-0.06em] sm:text-[52px] lg:mx-0 lg:text-[62px]">
+              4 etapas. Da ideia ao cliente.
+            </h2>
           </div>
         </LandingFadeIn>
 
