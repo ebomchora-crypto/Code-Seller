@@ -54,9 +54,9 @@ interface ChatCompletionResponse {
 }
 interface MemoryResponse { memory?: string; error?: string }
 
-async function chatCompletion(messages: ChatCompletionMessage[], mode?: 'copilot', signal?: AbortSignal): Promise<string> {
+async function chatCompletion(messages: ChatCompletionMessage[], mode?: 'copilot', signal?: AbortSignal, images?: string[]): Promise<string> {
   const { data, error } = await supabase.functions.invoke<ChatCompletionResponse>('ai-chat', {
-    body: { messages, mode },
+    body: { messages, mode, ...(images?.length ? { images } : {}) },
     signal,
   })
 
@@ -253,6 +253,7 @@ export async function sendAutoPilotMessage(
   userMessage: string,
   preferences: CopilotPreferences,
   signal?: AbortSignal,
+  attachments?: { text: string; images: string[] },
 ): Promise<string> {
   const systemPrompt = AUTOPILOT_SYSTEM_PROMPT
     .replace('{context}', 'O contexto atualizado vem na próxima mensagem de sistema.')
@@ -265,8 +266,9 @@ export async function sendAutoPilotMessage(
     // Histórico enviado à API: apenas role e content limpo — sem actions nem
     // qualquer outro metadado.
     ...messages,
-    { role: 'user', content: userMessage },
-  ], 'copilot', signal)
+    // Arquivos anexados: o texto dos documentos vai junto; as imagens seguem à parte.
+    { role: 'user', content: userMessage + (attachments?.text ?? '') },
+  ], 'copilot', signal, attachments?.images)
 }
 
 // ============================================================================

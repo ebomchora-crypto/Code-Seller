@@ -1,7 +1,8 @@
 import { CopilotComposer } from '@/components/autopilot/CopilotComposer'
+import type { PreparedAttachment } from '@/utils/copilotAttachments'
 
 interface MessageInputProps {
-  onSend: (content: string) => void
+  onSend: (content: string, attachments?: PreparedAttachment[]) => void
   sending: boolean
   hasContext: boolean
 }

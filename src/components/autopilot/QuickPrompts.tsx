@@ -6,9 +6,10 @@ import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { EASE_PREMIUM } from '@/utils/animations'
 import type { AutoPilotContext, QuickPrompt } from '@/types'
+import type { PreparedAttachment } from '@/utils/copilotAttachments'
 
 interface QuickPromptsProps {
-  onSelect: (prompt: string) => void
+  onSelect: (prompt: string, attachments?: PreparedAttachment[]) => void
   sending: boolean
   hasContext: boolean
 }

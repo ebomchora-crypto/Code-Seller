@@ -66,6 +66,17 @@ export interface ProposedAction {
   status: ActionStatus
 }
 
+// Arquivo anexado a uma mensagem do CS Copilot. Guarda o texto lido do
+// documento e uma miniatura da imagem (a imagem inteira só vai para a IA).
+export interface CopilotAttachment {
+  name: string
+  kind: 'image' | 'document'
+  size: number
+  text?: string
+  thumb?: string
+  truncated?: boolean
+}
+
 export interface AutoPilotMessage {
   analysis?: LeadAnalysis | null
   id: string
@@ -74,6 +85,7 @@ export interface AutoPilotMessage {
   role: MessageRole
   content: string // texto limpo (sem as tags <action>)
   actions: ProposedAction[] // ações extraídas da resposta
+  attachments?: CopilotAttachment[]
   created_at: string
 }
 

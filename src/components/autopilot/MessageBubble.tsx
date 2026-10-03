@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { CalendarPlus, Check, Copy, RotateCw } from 'lucide-react'
+import { CalendarPlus, Check, Copy, FileText, RotateCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { ActionBlock } from '@/components/autopilot/ActionBlock'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
-import type { AutoPilotMessage, Contact } from '@/types'
+import type { AutoPilotMessage, Contact, CopilotAttachment } from '@/types'
+import { DEFAULT_ATTACHMENT_PROMPT, formatFileSize } from '@/utils/copilotAttachments'
 import { LeadAnalysisCard } from './LeadAnalysisCard'
 
 interface MessageBubbleProps {
@@ -21,6 +22,39 @@ const ACTION_MARKER_REGEX = /\{\{ACTION:(\d+)\}\}/g
 
 function formatTime(value: string): string {
   return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
+// Arquivos que o usuário anexou: miniatura das imagens e etiqueta dos documentos.
+function MessageAttachments({ attachments }: { attachments: CopilotAttachment[] }) {
+  return (
+    <div className="mb-1.5 flex flex-wrap justify-end gap-2">
+      {attachments.map((file, index) =>
+        file.thumb ? (
+          <img
+            key={index}
+            src={file.thumb}
+            alt={file.name}
+            title={file.name}
+            className="size-24 rounded-2xl border border-[var(--border-subtle)] object-cover sm:size-28"
+          />
+        ) : (
+          <div
+            key={index}
+            title={file.name}
+            className="flex h-14 max-w-[240px] items-center gap-2.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] pl-2 pr-3.5"
+          >
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-tint)] text-[var(--accent-text)]">
+              <FileText className="size-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[12.5px] font-medium text-[var(--text-primary)]">{file.name}</span>
+              <span className="block text-[11px] text-[var(--text-muted)]">{formatFileSize(file.size)}</span>
+            </span>
+          </div>
+        ),
+      )}
+    </div>
+  )
 }
 
 export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequestVariation: requestVariation, sending, contact, onContextChanged }: MessageBubbleProps) {
@@ -40,10 +74,13 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
   if (isUser) {
     return (
       <div className="flex animate-float-up justify-end">
-        <div className="max-w-[85%] sm:max-w-[75%]">
-          <div className="rounded-[20px] rounded-br-md bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-4 py-3 text-white shadow-[0_12px_30px_-14px_rgba(124,58,237,0.9)]">
-            <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed">{message.content}</p>
-          </div>
+        <div className="flex max-w-[85%] flex-col items-end sm:max-w-[75%]">
+          {message.attachments && message.attachments.length > 0 && <MessageAttachments attachments={message.attachments} />}
+          {!(message.attachments?.length && message.content === DEFAULT_ATTACHMENT_PROMPT) && (
+            <div className="rounded-[20px] rounded-br-md bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-4 py-3 text-white shadow-[0_12px_30px_-14px_rgba(124,58,237,0.9)]">
+              <p className="whitespace-pre-wrap text-[14.5px] leading-relaxed">{message.content}</p>
+            </div>
+          )}
           <p className="mt-1 px-1 text-right text-[11px] text-[var(--text-muted)]">{formatTime(message.created_at)}</p>
         </div>
       </div>

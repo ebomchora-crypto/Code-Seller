@@ -8,6 +8,7 @@ import { executeAction } from '@/services/autopilot/actionExecutor'
 import { sendAutoPilotMessage, summarizeCommercialMemory } from '@/integrations/ai'
 import { generateConversationTitle, parseAutoPilotResponse } from '@/utils/autopilot'
 import { useAuthContext } from '@/stores/AuthContext'
+import { attachmentsPromptBlock, storedAttachment, type PreparedAttachment } from '@/utils/copilotAttachments'
 import { DEFAULT_COPILOT_PREFERENCES, type AutoPilotContext, type AutoPilotConversation, type AutoPilotMessage, type CopilotPreferences, type ActionStatus } from '@/types'
 
 export function useAutoPilot(contactId?: string) {
@@ -25,6 +26,8 @@ export function useAutoPilot(contactId?: string) {
   const sendLock = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
   const actionLocks = useRef(new Set<string>())
+  // Imagens inteiras da última mensagem enviada (no banco fica só a miniatura), para "tentar de novo".
+  const lastImages = useRef<{ messageId: string; images: string[] } | null>(null)
   const refreshContext = useCallback(async () => {
     const scope = epoch.current
     try {
@@ -96,7 +99,8 @@ export function useAutoPilot(contactId?: string) {
       setConversations((current) => current.map((item) => item.id === id ? { ...item, title } : item))
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao renomear conversa.') }
   }, [])
-  const sendMessage = useCallback(async (content: string, selectedPreferences: CopilotPreferences = preferences, retry = false) => {
+  const sendMessage = useCallback(async (content: string, selectedPreferences: CopilotPreferences = preferences, retry = false,
+    files: PreparedAttachment[] = []) => {
     if (!user || !content.trim() || loading || sendLock.current) return
     sendLock.current = true; setSending(true); setError(null)
     const controller = new AbortController()
@@ -116,11 +120,19 @@ export function useAutoPilot(contactId?: string) {
         setContext(snapshot); setActiveConversation(conversation); setMessages(history)
         setConversations((current) => current.some((item) => item.id === currentConversation.id) ? current : [currentConversation, ...current])
       }
+      let attachments = files.map(storedAttachment)
+      let images = files.flatMap((file) => file.images)
       if (retry) {
-        if (history.at(-1)?.role !== 'user' || history.at(-1)?.content !== trimmed) throw new Error('Não há mensagem pendente para tentar novamente.')
+        const pending = history.at(-1)
+        if (pending?.role !== 'user' || pending.content !== trimmed) throw new Error('Não há mensagem pendente para tentar novamente.')
+        attachments = pending.attachments ?? []
+        images = lastImages.current?.messageId === pending.id ? lastImages.current.images
+          : attachments.flatMap((file) => (file.thumb ? [file.thumb] : []))
         history = history.slice(0, -1)
       } else {
-        const saved = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'user', content: trimmed, actions: [] })
+        const saved = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'user', content: trimmed, actions: [],
+          ...(attachments.length ? { attachments } : {}) })
+        lastImages.current = images.length ? { messageId: saved.id, images } : null
         if (scope === epoch.current) setMessages((current) => [...current, saved])
       }
       if (contactId && !conversation.commercial_memory && history.length) {
@@ -142,8 +154,10 @@ export function useAutoPilot(contactId?: string) {
       }
       const response = await sendAutoPilotMessage(history.map((message) => ({
         role: message.role,
-        content: message.content + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
-      })), snapshot, trimmed, selectedPreferences, controller.signal)
+        content: message.content + attachmentsPromptBlock(message.attachments, 'history')
+          + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
+      })), snapshot, trimmed, selectedPreferences, controller.signal,
+      attachments.length ? { text: attachmentsPromptBlock(attachments, 'current'), images } : undefined)
       const parsed = parseAutoPilotResponse(response)
       const answer = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'assistant',
         content: parsed.text, analysis: parsed.analysis, actions: parsed.actions.map((action) => ({ ...action, status: 'pending' })) })

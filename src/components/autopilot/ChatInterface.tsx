@@ -5,6 +5,7 @@ import { MessageList } from '@/components/autopilot/MessageList'
 import { MessageInput } from '@/components/autopilot/MessageInput'
 import { QuickPrompts } from '@/components/autopilot/QuickPrompts'
 import type { AutoPilotContext, AutoPilotConversation, AutoPilotMessage } from '@/types'
+import type { PreparedAttachment } from '@/utils/copilotAttachments'
 
 interface ChatInterfaceProps {
   conversation: AutoPilotConversation | null
@@ -17,7 +18,7 @@ interface ChatInterfaceProps {
   onLoadOlder: () => void
   onRetry: () => void
   onCancel: () => void
-  onSendMessage: (content: string) => void
+  onSendMessage: (content: string, attachments?: PreparedAttachment[]) => void
   onConfirmAction: (messageId: string, actionIndex: number) => void
   onRejectAction: (messageId: string, actionIndex: number) => void
   onRefreshContext: () => void

@@ -70,7 +70,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
         sending={copilot.sending || copilot.loading || !copilot.context}
         generating={copilot.sending} hasOlder={copilot.hasOlder} retryAvailable={copilot.retryAvailable}
         onLoadOlder={() => void copilot.loadOlder()} onRetry={copilot.retryLast} onCancel={copilot.cancelGeneration}
-        onSendMessage={(content) => void copilot.sendMessage(content)}
+        onSendMessage={(content, attachments) => void copilot.sendMessage(content, copilot.preferences, false, attachments)}
         onConfirmAction={(messageId, actionIndex) => void copilot.confirmAction(messageId, actionIndex)}
         onRejectAction={(messageId, actionIndex) => void copilot.rejectAction(messageId, actionIndex)}
         onRefreshContext={copilot.refreshContext}
