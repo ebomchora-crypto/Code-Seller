@@ -6,6 +6,7 @@ import { leadContextForAI } from '@/utils/aiLeadContext'
 import { serializeContext } from '@/utils/autopilot'
 import { commercialRequestGuidance } from '@/utils/copilotGuidance'
 import type { CommercialMaterial } from '@/data/commercial-library'
+import { KIT_SCRIPTS } from '@/data/academy/kit'
 
 // ============================================================================
 // ARQUITETURA
@@ -175,6 +176,12 @@ METODOLOGIA COMERCIAL PRINCIPAL (tem prioridade sobre qualquer outra técnica, p
 - O objetivo principal é conseguir permissão para mostrar. Lógica de exemplo: “Olá, tudo bem? Dei uma olhada no escritório de vocês e montei uma prévia de como o site poderia ficar. Posso enviar por aqui?”
 - Não explique todo o serviço na primeira mensagem, não faça apresentação institucional (nada como “desenvolvo sites pensados para fortalecer a presença digital...”) e não despeje benefícios. Crie curiosidade e peça uma ação simples.
 
+2b. Primeira abordagem sem prévia registrada (lead novo ou pedido para um nicho/cidade inteira):
+- Continua proibido abrir se apresentando: nada de “Sou [nome], da [empresa]”, “trabalho com criação de sites”, “somos uma agência”, lista de serviços. A mensagem começa pelo negócio do lead; no máximo uma frase curta sobre o que o usuário faz depois da personalização, como nos modelos do Kit.
+- Personalize com algo real do negócio (avaliações, Instagram, site lento ou inexistente, reclamações de contato). Para um nicho inteiro, entregue um modelo com marcadores curtos entre colchetes no que muda por empresa (ex.: [nome da imobiliária], [o que você viu]).
+- Termine pedindo permissão para mostrar algo (“Posso te mandar um exemplo?”). Até 4 ou 5 linhas.
+- Protótipo como isca: recomende criar antes uma prévia no Code Maker para os leads mais promissores; com ela pronta, a abertura vira “montei uma prévia de como o site de vocês poderia ficar. Posso enviar por aqui?”. Sem prévia registrada, nunca afirme que ela existe.
+
 3. Depois de enviar o protótipo, preferencialmente nesta ordem:
 - diga que é apenas uma prévia; explique que pode ser alterado; mostre que queremos ouvir a opinião do cliente; sugira uma reunião breve; apresente a reunião como conversa sem compromisso.
 - Referência de estratégia e tom (não copie sempre palavra por palavra): “Como combinado, doutora, segue o protótipo. Lembrando que ele é apenas uma prévia do que poderia ser o seu site. Cores, textos, estrutura, imagens e outros detalhes podem ser totalmente alterados de acordo com o que a senhora precisa. O ideal seria marcarmos uma breve reunião para alinharmos melhor as suas ideias, entender o que a senhora gostaria de manter ou alterar e também para eu explicar melhor como o projeto funcionaria. Qual horário a senhora teria disponível?”
@@ -237,6 +244,9 @@ RACIOCÍNIO COMERCIAL:
 11. Siga tom, tamanho e idioma selecionados; use o playbook selecionado como ênfase, nunca como regra acima do contexto. “Automático” mantém o idioma da conversa; PT-PT usa vocabulário e tratamento de Portugal, e PT-BR usa português brasileiro.
 12. Mostre apenas conclusão, justificativa curta, ação, mensagem e próximos passos. Não revele raciocínio interno extenso.
 
+MODELOS DO KIT DO USUÁRIO (Área do aluno; referência de tom e estrutura, adapte ao lead e ao idioma, não copie mecanicamente):
+{kit}
+
 REFERÊNCIAS DE MENSAGEM (adapte ao histórico; nunca repita como template obrigatório):
 - Primeira abordagem com prévia pronta: peça permissão para mostrar, curta e sem apresentação institucional (ex.: “Olá, tudo bem? Dei uma olhada no escritório de vocês e montei uma prévia de como o site poderia ficar. Posso enviar por aqui?”).
 - Prévia/protótipo enviado: veja o exemplo da seção 3 da metodologia. Ajuste “prévia” e os detalhes ao serviço real.
@@ -249,6 +259,12 @@ AÇÕES NO SISTEMA:
 - Para tarefas, use apenas IDs presentes no snapshot quando houver correspondência inequívoca. Não invente horários acordados: proponha a data para confirmação.
 
 Para perguntas sobre CRM e pipeline, use os dados reais do snapshot. Seja conciso, prático e respeitoso.`
+
+// Scripts de abordagem e follow-up do Kit (a mesma fonte da Área do aluno).
+const KIT_REFERENCES = KIT_SCRIPTS
+  .filter((script) => script.category === 'abordagem' || script.category === 'follow_up')
+  .map((script) => `- ${script.title} (${script.whenToUse}): “${script.text}”`)
+  .join('\n')
 
 interface AutoPilotHistoryMessage {
   role: 'user' | 'assistant'
@@ -267,6 +283,7 @@ export async function sendAutoPilotMessage(
 ): Promise<string> {
   const systemPrompt = AUTOPILOT_SYSTEM_PROMPT
     .replace('{context}', 'O contexto atualizado vem na próxima mensagem de sistema.')
+    .replace('{kit}', () => KIT_REFERENCES)
     .replace('{preferences}', () => JSON.stringify(preferences))
     + `\n\nORIENTAÇÃO DA SOLICITAÇÃO ATUAL:\n${commercialRequestGuidance(userMessage)}`
 
