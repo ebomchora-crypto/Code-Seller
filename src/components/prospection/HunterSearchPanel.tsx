@@ -252,7 +252,9 @@ export function HunterSearchPanel({
           )}
           {limitReached && (
             <p className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] px-4 py-3 text-[13px] leading-5 text-amber-100">
-              Você usou as {usage?.limit} buscas deste mês. O limite renova no dia 1º.
+              {usage?.period === 'day'
+                ? `No teste grátis dá para fazer ${usage.limit} ${usage.limit === 1 ? 'busca' : 'buscas'} por dia. Assine para ter 50 buscas por mês, ou volte amanhã.`
+                : `Você usou as ${usage?.limit} buscas deste mês. O limite renova no dia 1º.`}
             </p>
           )}
 
@@ -284,7 +286,7 @@ export function HunterSearchPanel({
           {usage?.configured && usage.limit > 0 && (
             <div className="w-full">
               <div className="flex items-baseline justify-between text-[12px] text-white/55">
-                <span>Buscas no mês</span>
+                <span>{usage.period === 'day' ? 'Buscas hoje' : 'Buscas no mês'}</span>
                 <span className="tabular-nums text-white/80">
                   {usage.used} de {usage.limit}
                 </span>
@@ -303,7 +305,7 @@ export function HunterSearchPanel({
 
       {usage?.configured && usage.limit > 0 && (
         <p className="relative mt-5 text-[12px] tabular-nums text-white/50 lg:hidden">
-          {usage.used} de {usage.limit} buscas usadas este mês
+          {usage.used} de {usage.limit} {usage.period === 'day' ? 'buscas usadas hoje' : 'buscas usadas este mês'}
         </p>
       )}
     </section>

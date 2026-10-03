@@ -1,7 +1,8 @@
 // Plano e uso do dia de uma conta (função usage_for no banco). Usado pelas
 // funções do servidor para bloquear quem não tem acesso e aplicar os limites
-// diários: teste grátis 1 site e 3 mensagens do CS Copilot; plano pago 10 sites
-// e 50 mensagens; conta liberada sem limite (limite null).
+// diários: teste grátis 2 sites, 5 mensagens do CS Copilot e 1 busca do Buyers
+// Hunter; plano pago 10 sites e 50 mensagens (Buyers Hunter: 50 buscas no mês);
+// conta liberada sem limite (limite null).
 
 export interface PlanUsage {
   access: boolean
@@ -11,6 +12,8 @@ export interface PlanUsage {
   copilot_limit: number | null
   sites_used: number
   sites_limit: number | null
+  hunter_used_today: number
+  hunter_daily_limit: number | null
 }
 
 export const NO_ACCESS_MESSAGE = 'Seu teste grátis acabou. Assine o Code Sellers para continuar.'
@@ -43,6 +46,11 @@ export function copilotLimitMessage(usage: PlanUsage): string {
 
 export function sitesLimitMessage(usage: PlanUsage): string {
   return usage.plan === 'trial'
-    ? `No teste grátis dá para criar ${usage.sites_limit} site por dia. Assine para criar até 10 por dia — e dá para continuar alterando o que já existe.`
+    ? `No teste grátis dá para criar ${usage.sites_limit} ${usage.sites_limit === 1 ? 'site' : 'sites'} por dia. Assine para criar até 10 por dia — e dá para continuar alterando o que já existe.`
     : `Você já criou ${usage.sites_limit} sites hoje. Amanhã libera de novo — e dá para alterar os que já existem.`
+}
+
+export function hunterDailyLimitMessage(usage: PlanUsage): string {
+  const limit = usage.hunter_daily_limit ?? 0
+  return `No teste grátis dá para fazer ${limit} ${limit === 1 ? 'busca' : 'buscas'} por dia. Assine para ter 50 buscas por mês, ou volte amanhã.`
 }

@@ -39,6 +39,8 @@ export interface ProspectUsage {
   configured: boolean
   used: number
   limit: number
+  /** Teste grátis conta por dia; os planos pagos, por mês. */
+  period?: 'day' | 'month'
 }
 
 export const MAX_LEADS_PER_SEARCH = 30

@@ -19,7 +19,8 @@
 // country: código ISO de 2 letras (padrão BR). A busca acontece nesse país, no
 // idioma dele, e os telefones voltam com o código do país (+351, +55...).
 // maxResults: quantos leads trazer (1 a MAX_RESULTS_PER_SEARCH, padrão 20).
-// Cada busca conta 1 no limite mensal, não importa a quantidade pedida.
+// Cada busca conta 1 no limite, não importa a quantidade pedida. Teste grátis:
+// limite por dia (usage_for no banco); demais planos: limite mensal.
 // Persist normalized provider observations to enrich leads imported into the CRM.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -34,7 +35,7 @@ import {
   type WebsiteSearch,
 } from './prospect.ts'
 import { findCountry, internationalPhone, type Country } from '../_shared/countries.ts'
-import { NO_ACCESS_MESSAGE, planUsage } from '../_shared/plan.ts'
+import { hunterDailyLimitMessage, NO_ACCESS_MESSAGE, planUsage } from '../_shared/plan.ts'
 
 const APIFY_RUN_URL = 'https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?memory=1024'
 const DEFAULT_RESULTS = 20
@@ -152,13 +153,18 @@ Deno.serve(async (req: Request) => {
       website?: string
     }
 
+    const plan = await planUsage(userId, userData.user.email)
+    const daily = plan.hunter_daily_limit !== null
+
     if (body.action === 'usage') {
-      return json({ configured: Boolean(apifyToken), used, limit })
+      return json(daily
+        ? { configured: Boolean(apifyToken), used: plan.hunter_used_today, limit: plan.hunter_daily_limit, period: 'day' }
+        : { configured: Boolean(apifyToken), used, limit, period: 'month' })
     }
 
     if (body.action !== 'search') return fail('invalid_input', 'Ação inválida.', 400)
     // Sem teste grátis válido nem assinatura em dia, não busca.
-    if (!(await planUsage(userId, userData.user.email)).access) return fail('no_access', NO_ACCESS_MESSAGE, 402)
+    if (!plan.access) return fail('no_access', NO_ACCESS_MESSAGE, 402)
     if (!apifyToken) return fail('not_configured', 'A busca ainda não está disponível.', 503)
 
     const niche = body.niche?.trim().slice(0, 80) ?? ''
@@ -168,7 +174,10 @@ Deno.serve(async (req: Request) => {
     if (niche.length < 2 || city.length < 2) {
       return fail('invalid_input', 'Informe o nicho e a cidade.', 400)
     }
-    if (used >= limit) {
+    if (daily && plan.hunter_used_today >= plan.hunter_daily_limit!) {
+      return fail('limit_reached', hunterDailyLimitMessage(plan), 429)
+    }
+    if (!daily && used >= limit) {
       return fail('limit_reached', `Você usou as ${limit} buscas deste mês. O limite renova no dia 1º.`, 429)
     }
 
@@ -204,7 +213,9 @@ Deno.serve(async (req: Request) => {
 
     return json({
       results,
-      usage: { configured: true, used: used + 1, limit },
+      usage: daily
+        ? { configured: true, used: plan.hunter_used_today + 1, limit: plan.hunter_daily_limit, period: 'day' }
+        : { configured: true, used: used + 1, limit, period: 'month' },
     })
   } catch (error) {
     console.error('buyers-hunter', error)

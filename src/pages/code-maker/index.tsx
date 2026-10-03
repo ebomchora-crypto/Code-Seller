@@ -175,7 +175,7 @@ export default function CodeMakerPage() {
         {limitReached ? (
           <p className="relative mt-4 text-[13.5px] text-amber-600 dark:text-amber-300">
             {billing?.state === 'trial'
-              ? 'No teste grátis dá para criar 1 site por dia. Assine para criar até 10 por dia — e dá para continuar alterando o que já existe.'
+              ? `No teste grátis dá para criar ${usage?.sites_limit} sites por dia. Assine para criar até 10 por dia — e dá para continuar alterando o que já existe.`
               : `Você já criou os ${usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.`}
           </p>
         ) : (
