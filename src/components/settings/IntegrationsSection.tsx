@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Plug } from 'lucide-react'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
-import { Modal } from '@/components/ui/Modal'
-import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { IntegrationCard } from '@/components/settings/IntegrationCard'
 import { WebhookModal } from '@/components/settings/WebhookModal'
@@ -34,36 +31,10 @@ const INTEGRATION_META: Partial<Record<IntegrationType, IntegrationMeta>> = {
     description: 'Mande contatos, negócios e tarefas para qualquer sistema, na hora em que acontecem.',
     icon: 'Webhook',
   },
-  google_contacts: {
-    type: 'google_contacts',
-    label: 'Contatos do Google',
-    description: 'Traga seus contatos do Google para o CRM em 1 minuto, pelo arquivo que o próprio Google gera.',
-    icon: 'Users',
-    no_connection: true,
-    action_label: 'Importar agora',
-  },
 }
 
-const GOOGLE_STEPS = [
-  <>
-    Abra <strong>contacts.google.com</strong> com a conta Google que tem os contatos.
-  </>,
-  <>
-    Selecione os contatos (ou nenhum, para levar todos) e clique em <strong>Exportar</strong>.
-  </>,
-  <>
-    Escolha <strong>CSV do Google</strong> e baixe o arquivo.
-  </>,
-  <>
-    Aqui no CRM, clique em <strong>Importar CSV</strong> e envie o arquivo. Nome, e-mail, telefone, cidade e observações
-    são reconhecidos sozinhos.
-  </>,
-]
-
 export function IntegrationsSection({ integrations, onConnect, onDisconnect }: IntegrationsSectionProps) {
-  const navigate = useNavigate()
   const [webhookOpen, setWebhookOpen] = useState(false)
-  const [googleOpen, setGoogleOpen] = useState(false)
   const [disconnectingType, setDisconnectingType] = useState<IntegrationType | null>(null)
 
   const webhook = integrations.find((integration) => integration.type === 'webhook')
@@ -104,18 +75,17 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
 
   function openFor(type: IntegrationType) {
     if (type === 'webhook') setWebhookOpen(true)
-    if (type === 'google_contacts') setGoogleOpen(true)
   }
 
   return (
     <>
       <SettingsSection id="integrações" icon={Plug} title="Integrações" description="Conecte o Code Sellers a outras ferramentas.">
         <SettingsNote>
-          O Webhook manda cada contato, negócio ou tarefa concluída na hora para o endereço que você escolher — o card mostra
-          se o último envio chegou. Os contatos do Google entram pelo arquivo que o Google exporta.
+          O Webhook manda cada contato, negócio ou tarefa concluída na hora para o endereço que você escolher. O card mostra se o
+          último envio chegou.
         </SettingsNote>
 
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-3">
           {configs.map((config) => (
             <IntegrationCard
               key={config.type}
@@ -137,25 +107,6 @@ export function IntegrationsSection({ integrations, onConnect, onDisconnect }: I
         }}
         onSave={(config) => onConnect('webhook', config)}
       />
-
-      <Modal open={googleOpen} onClose={() => setGoogleOpen(false)} title="Trazer contatos do Google" size="sm">
-        <ol className="flex flex-col gap-3">
-          {GOOGLE_STEPS.map((step, index) => (
-            <li key={index} className="flex gap-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-tint)] text-[12px] font-semibold text-[var(--accent-text)]">
-                {index + 1}
-              </span>
-              <span className="pt-0.5">{step}</span>
-            </li>
-          ))}
-        </ol>
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setGoogleOpen(false)}>
-            Fechar
-          </Button>
-          <Button onClick={() => navigate('/crm?importar=1')}>Abrir importação</Button>
-        </div>
-      </Modal>
 
       <ConfirmDialog
         open={disconnectingType !== null}

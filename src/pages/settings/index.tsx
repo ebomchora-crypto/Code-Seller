@@ -5,8 +5,6 @@ import { SettingsNav } from '@/components/settings/SettingsNav'
 import { ProfileSection } from '@/components/settings/ProfileSection'
 import { SecuritySection } from '@/components/settings/SecuritySection'
 import { PreferencesSection } from '@/components/settings/PreferencesSection'
-import { PipelineSection } from '@/components/settings/PipelineSection'
-import { CRMStatusSection } from '@/components/settings/CRMStatusSection'
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection'
 import { CalendarFeedSection } from '@/components/settings/CalendarFeedSection'
 import { NotificationsSection } from '@/components/settings/NotificationsSection'
@@ -16,7 +14,6 @@ import { DesktopAppSection } from '@/components/settings/DesktopAppSection'
 import { isDesktopApp } from '@/utils/desktop'
 import { useSettings } from '@/hooks/useSettings'
 import { useAuthContext } from '@/stores/AuthContext'
-import { CATEGORY_COLOR_SWATCHES } from '@/types'
 
 // Título de cada grupo de seções (os mesmos grupos do menu da esquerda).
 function GroupTitle({ children, first = false }: { children: string; first?: boolean }) {
@@ -32,8 +29,6 @@ export default function SettingsPage() {
   const {
     profile,
     notificationPrefs,
-    pipelineStages,
-    crmStatuses,
     integrations,
     loading,
     saving,
@@ -43,14 +38,6 @@ export default function SettingsPage() {
     uploadCompanyLogo,
     deleteCompanyLogo,
     updateNotificationPrefs,
-    createPipelineStage,
-    updatePipelineStage,
-    deletePipelineStage,
-    reorderPipelineStages,
-    createCRMStatus,
-    updateCRMStatus,
-    deleteCRMStatus,
-    reorderCRMStatuses,
     connectIntegration,
     disconnectIntegration,
   } = useSettings()
@@ -63,26 +50,6 @@ export default function SettingsPage() {
     const timer = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
     return () => window.clearTimeout(timer)
   }, [location.hash, loading])
-
-  function handleCreatePipelineStage() {
-    void createPipelineStage({
-      name: 'Nova etapa',
-      color: CATEGORY_COLOR_SWATCHES[pipelineStages.length % CATEGORY_COLOR_SWATCHES.length],
-      position: pipelineStages.length,
-      default_probability: 0,
-      is_won: false,
-      is_lost: false,
-    })
-  }
-
-  function handleCreateCRMStatus() {
-    void createCRMStatus({
-      name: 'Novo status',
-      color: CATEGORY_COLOR_SWATCHES[crmStatuses.length % CATEGORY_COLOR_SWATCHES.length],
-      position: crmStatuses.length,
-      is_default: false,
-    })
-  }
 
   return (
     <PageWrapper>
@@ -116,22 +83,6 @@ export default function SettingsPage() {
             {isDesktopApp() && <DesktopAppSection />}
 
             <GroupTitle>Como você vende</GroupTitle>
-
-            <PipelineSection
-              stages={pipelineStages}
-              onCreate={handleCreatePipelineStage}
-              onUpdate={updatePipelineStage}
-              onDelete={deletePipelineStage}
-              onReorder={reorderPipelineStages}
-            />
-
-            <CRMStatusSection
-              statuses={crmStatuses}
-              onCreate={handleCreateCRMStatus}
-              onUpdate={updateCRMStatus}
-              onDelete={deleteCRMStatus}
-              onReorder={reorderCRMStatuses}
-            />
 
             <TemplatesSection />
 

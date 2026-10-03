@@ -2,20 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useAuthContext } from '@/stores/AuthContext'
 import {
-  createCRMStatus as createCRMStatusService,
-  deleteCRMStatus as deleteCRMStatusService,
-  getCRMStatuses,
-  reorderCRMStatuses as reorderCRMStatusesService,
-  updateCRMStatus as updateCRMStatusService,
-} from '@/services/supabase/crmStatuses'
-import {
-  createPipelineStage as createPipelineStageService,
-  deletePipelineStage as deletePipelineStageService,
-  getPipelineStages,
-  reorderPipelineStages as reorderPipelineStagesService,
-  updatePipelineStage as updatePipelineStageService,
-} from '@/services/supabase/pipelineStages'
-import {
   getNotificationPreferences,
   updateNotificationPreferences as updateNotificationPreferencesService,
 } from '@/services/supabase/notificationPreferences'
@@ -31,10 +17,8 @@ import {
   uploadCompanyLogo as uploadCompanyLogoService,
 } from '@/services/supabase/userProfile'
 import type {
-  CRMStatus,
   Integration,
   NotificationPreferences,
-  PipelineStage,
   UserProfile,
 } from '@/types'
 
@@ -42,8 +26,6 @@ export function useSettings() {
   const { profile, updateProfile: updateAuthProfile, refreshProfile } = useAuthContext()
 
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(null)
-  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([])
-  const [crmStatuses, setCrmStatuses] = useState<CRMStatus[]>([])
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -53,15 +35,8 @@ export function useSettings() {
     setLoading(true)
     setError(null)
     try {
-      const [prefs, stages, statuses, integrationsList] = await Promise.all([
-        getNotificationPreferences(),
-        getPipelineStages(),
-        getCRMStatuses(),
-        getIntegrations(),
-      ])
+      const [prefs, integrationsList] = await Promise.all([getNotificationPreferences(), getIntegrations()])
       setNotificationPrefs(prefs)
-      setPipelineStages(stages)
-      setCrmStatuses(statuses)
       setIntegrations(integrationsList)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível carregar as configurações.')
@@ -157,92 +132,6 @@ export function useSettings() {
     }
   }, [])
 
-  const createPipelineStage = useCallback(async (data: Omit<PipelineStage, 'id' | 'user_id' | 'created_at'>) => {
-    try {
-      const stage = await createPipelineStageService(data)
-      setPipelineStages((current) => [...current, stage])
-      toast.success('Etapa criada com sucesso.')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível criar a etapa.')
-    }
-  }, [])
-
-  const updatePipelineStage = useCallback(async (id: string, data: Partial<PipelineStage>) => {
-    try {
-      const updated = await updatePipelineStageService(id, data)
-      setPipelineStages((current) => current.map((stage) => (stage.id === id ? updated : stage)))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível atualizar a etapa.')
-    }
-  }, [])
-
-  const deletePipelineStage = useCallback(async (id: string) => {
-    try {
-      await deletePipelineStageService(id)
-      setPipelineStages((current) => current.filter((stage) => stage.id !== id))
-      toast.success('Etapa removida.')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível remover a etapa.')
-    }
-  }, [])
-
-  const reorderPipelineStages = useCallback(async (updates: { id: string; position: number }[]) => {
-    const previous = pipelineStages
-    setPipelineStages((current) => {
-      const byId = new Map(updates.map((update) => [update.id, update.position]))
-      return [...current].sort((a, b) => (byId.get(a.id) ?? a.position) - (byId.get(b.id) ?? b.position))
-    })
-    try {
-      await reorderPipelineStagesService(updates)
-    } catch (err) {
-      setPipelineStages(previous)
-      toast.error(err instanceof Error ? err.message : 'Não foi possível reordenar as etapas.')
-    }
-  }, [pipelineStages])
-
-  const createCRMStatus = useCallback(async (data: Omit<CRMStatus, 'id' | 'user_id' | 'created_at'>) => {
-    try {
-      const status = await createCRMStatusService(data)
-      setCrmStatuses((current) => [...current, status])
-      toast.success('Status criado com sucesso.')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível criar o status.')
-    }
-  }, [])
-
-  const updateCRMStatus = useCallback(async (id: string, data: Partial<CRMStatus>) => {
-    try {
-      const updated = await updateCRMStatusService(id, data)
-      setCrmStatuses((current) => current.map((status) => (status.id === id ? updated : status)))
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível atualizar o status.')
-    }
-  }, [])
-
-  const deleteCRMStatus = useCallback(async (id: string) => {
-    try {
-      await deleteCRMStatusService(id)
-      setCrmStatuses((current) => current.filter((status) => status.id !== id))
-      toast.success('Status removido.')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Não foi possível remover o status.')
-    }
-  }, [])
-
-  const reorderCRMStatuses = useCallback(async (updates: { id: string; position: number }[]) => {
-    const previous = crmStatuses
-    setCrmStatuses((current) => {
-      const byId = new Map(updates.map((update) => [update.id, update.position]))
-      return [...current].sort((a, b) => (byId.get(a.id) ?? a.position) - (byId.get(b.id) ?? b.position))
-    })
-    try {
-      await reorderCRMStatusesService(updates)
-    } catch (err) {
-      setCrmStatuses(previous)
-      toast.error(err instanceof Error ? err.message : 'Não foi possível reordenar os status.')
-    }
-  }, [crmStatuses])
-
   const connectIntegration = useCallback(async (type: Integration['type'], config: Record<string, unknown>) => {
     try {
       const updated = await updateIntegrationStatus(type, 'connected', config)
@@ -272,8 +161,6 @@ export function useSettings() {
   return {
     profile,
     notificationPrefs,
-    pipelineStages,
-    crmStatuses,
     integrations,
     loading,
     saving,
@@ -285,14 +172,6 @@ export function useSettings() {
     uploadCompanyLogo,
     deleteCompanyLogo,
     updateNotificationPrefs,
-    createPipelineStage,
-    updatePipelineStage,
-    deletePipelineStage,
-    reorderPipelineStages,
-    createCRMStatus,
-    updateCRMStatus,
-    deleteCRMStatus,
-    reorderCRMStatuses,
     connectIntegration,
     disconnectIntegration,
   }

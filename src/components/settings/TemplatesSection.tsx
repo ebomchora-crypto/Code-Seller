@@ -17,6 +17,15 @@ interface Draft {
   body: string
 }
 
+// Na ordem da venda, com uma linha dizendo onde cada tipo é usado.
+const TEMPLATE_GROUPS: { category: TemplateCategory; hint: string }[] = [
+  { category: 'abordagem', hint: 'O primeiro contato com quem ainda não te conhece.' },
+  { category: 'follow_up', hint: 'Vão nos retornos do follow-up automático: o 1º no 1º retorno, o 2º no 2º, e assim por diante.' },
+  { category: 'proposta', hint: 'Para enviar e acompanhar a proposta.' },
+  { category: 'cobranca', hint: 'Para lembrar pagamentos.' },
+  { category: 'outro', hint: 'Qualquer outra mensagem.' },
+]
+
 const fieldClass =
   'w-full rounded-xl border border-[var(--border-default)] bg-[var(--field-bg)] px-4 text-[14px] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent-ring)] focus:ring-4 focus:ring-[var(--accent-tint)]'
 
@@ -70,8 +79,8 @@ export function TemplatesSection() {
     <SettingsSection
       id="modelos"
       icon={MessageSquareText}
-      title="Modelos de mensagem"
-      description="Textos prontos para o WhatsApp, preenchidos com os dados do contato."
+      title="Mensagens prontas"
+      description="Textos prontos para o WhatsApp. O nome do contato e os outros dados entram sozinhos na hora de enviar."
       action={
         <Button
           size="sm"
@@ -84,46 +93,63 @@ export function TemplatesSection() {
       }
     >
       {loading ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-28 w-full rounded-2xl" />
+            <Skeleton key={index} className="h-14 w-full rounded-2xl" />
           ))}
         </div>
       ) : error ? (
         <p className="text-[13.5px] text-red-500">{error}</p>
+      ) : templates.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-[var(--border-default)] px-4 py-6 text-center text-[13.5px] text-[var(--text-muted)]">
+          Nenhum modelo ainda. Crie o primeiro em “Novo modelo”.
+        </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {templates.map((template) => (
-            <div key={template.id} className="group flex flex-col rounded-2xl border border-[var(--border-default)] p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-[14px] font-medium text-[var(--text-primary)]">{template.name}</p>
-                  <span className="mt-1 inline-block rounded-full bg-[var(--accent-tint)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-text)]">
-                    {TEMPLATE_CATEGORY_LABELS[template.category]}
-                  </span>
+        <div className="flex flex-col gap-5">
+          {TEMPLATE_GROUPS.map((group) => {
+            const items = templates.filter((template) => template.category === group.category)
+            if (!items.length) return null
+            return (
+              <div key={group.category}>
+                <div className="mb-2 flex flex-wrap items-baseline gap-x-2 px-1">
+                  <h3 className="text-[13.5px] font-semibold text-[var(--text-primary)]">{TEMPLATE_CATEGORY_LABELS[group.category]}</h3>
+                  <span className="text-[12px] text-[var(--text-muted)]">{group.hint}</span>
                 </div>
-                <div className="flex shrink-0 gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setDraft({ id: template.id, name: template.name, category: template.category, body: template.body })}
-                    aria-label={`Editar ${template.name}`}
-                    className="flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent-text)]"
-                  >
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(template)}
-                    aria-label={`Excluir ${template.name}`}
-                    className="flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-red-500/10 hover:text-red-500"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                <div className="divide-y divide-[var(--border-subtle)] rounded-2xl border border-[var(--border-default)]">
+                  {items.map((template) => (
+                    <div key={template.id} className="flex items-center gap-3 px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={() => setDraft({ id: template.id, name: template.name, category: template.category, body: template.body })}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <span className="block truncate text-[14px] font-medium text-[var(--text-primary)]">{template.name}</span>
+                        <span className="block truncate text-[12.5px] text-[var(--text-muted)]">{template.body}</span>
+                      </button>
+                      <div className="flex shrink-0 gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setDraft({ id: template.id, name: template.name, category: template.category, body: template.body })}
+                          aria-label={`Editar ${template.name}`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent-text)]"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleting(template)}
+                          aria-label={`Excluir ${template.name}`}
+                          className="flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-red-500/10 hover:text-red-500"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <p className="mt-2 line-clamp-3 text-[12.5px] leading-5 text-[var(--text-muted)]">{template.body}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

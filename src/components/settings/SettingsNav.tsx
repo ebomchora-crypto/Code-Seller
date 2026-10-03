@@ -5,11 +5,9 @@ import {
   MessageSquareText,
   Monitor,
   Repeat,
-  GitBranch,
   Plug,
   Settings as SettingsIcon,
   Shield,
-  Tags,
   User,
   type LucideIcon,
 } from 'lucide-react'
@@ -39,10 +37,8 @@ const SETTINGS_GROUPS: { label: string; items: SettingsNavItem[] }[] = [
   {
     label: 'Como você vende',
     items: [
-      { id: 'pipeline', label: 'Pipeline', icon: GitBranch },
-      { id: 'crm-status', label: 'Status do CRM', icon: Tags },
-      { id: 'modelos', label: 'Modelos', icon: MessageSquareText },
-      { id: 'follow-up', label: 'Follow-up', icon: Repeat },
+      { id: 'modelos', label: 'Mensagens prontas', icon: MessageSquareText },
+      { id: 'follow-up', label: 'Follow-up automático', icon: Repeat },
     ],
   },
   {
