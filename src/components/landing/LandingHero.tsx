@@ -26,8 +26,10 @@ export function LandingHero() {
   const navigate = useNavigate()
   const narrow = useNarrow()
 
+  // overflow-x-clip (não hidden): hidden vira área de rolagem própria e, no
+  // celular, o dedo rolava só a seção em vez da página.
   return (
-    <section className="relative w-full overflow-x-hidden">
+    <section className="relative w-full overflow-x-clip">
       {/* BlackHoleHeroSection (WebGL) intocado — só o conteúdo por cima muda. */}
       <BlackHoleHeroSection
         focus={narrow ? [0.5, 0.8] : [0.72, 0.48]}
