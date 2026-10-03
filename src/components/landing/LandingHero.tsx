@@ -22,6 +22,9 @@ function useNarrow(query = '(max-width: 767px)') {
   return narrow
 }
 
+// No celular os dois botões ficam lado a lado e menores, pra não cobrir o buraco negro.
+const HERO_BUTTON = '!h-11 min-w-fit flex-1 whitespace-nowrap !px-3 !text-[13.5px] sm:!h-12 sm:flex-none sm:!px-6 sm:!text-[15px]'
+
 export function LandingHero() {
   const navigate = useNavigate()
   const narrow = useNarrow()
@@ -32,7 +35,7 @@ export function LandingHero() {
     <section className="relative w-full overflow-x-clip">
       {/* BlackHoleHeroSection (WebGL) intocado — só o conteúdo por cima muda. */}
       <BlackHoleHeroSection
-        focus={narrow ? [0.5, 0.8] : [0.72, 0.48]}
+        focus={narrow ? [0.5, 0.8] : [0.585, 0.45]}
         scrim={narrow ? 'top' : 'left'}
         scrimStrength={0.92}
         distance={24}
@@ -53,7 +56,7 @@ export function LandingHero() {
         {/* Headline + card lateral, dentro do mesmo bloco do buraco negro.
             pb maior pra abrir respiro até o wordmark gigante lá embaixo —
             antes colava direto nos botões. */}
-        <div className="relative z-10 px-6 pb-40 pt-28 sm:pb-48 lg:px-8 lg:pb-56 lg:pt-36">
+        <div className="relative z-10 px-6 pb-[18rem] pt-28 sm:pb-48 lg:px-8 lg:pb-56 lg:pt-36">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -68,7 +71,7 @@ export function LandingHero() {
 
                 <motion.h1
                   variants={fadeInUp}
-                  className="mt-6 text-3xl font-medium leading-[1.1] tracking-[-0.03em] text-landing-text sm:text-4xl lg:text-[2.75rem]"
+                  className="mt-5 text-[26px] font-medium leading-[1.12] tracking-[-0.03em] text-landing-text sm:text-[34px] lg:text-[2.5rem]"
                 >
                   Crie com IA. Encontre clientes.{' '}
                   <span className="font-semibold text-landing-primary-hover">Venda com método.</span>
@@ -76,16 +79,17 @@ export function LandingHero() {
 
                 <motion.p
                   variants={fadeInUp}
-                  className="mt-4 max-w-md text-sm leading-relaxed text-landing-text-secondary sm:text-base"
+                  className="mt-3 max-w-md text-[13.5px] leading-relaxed text-landing-text-secondary sm:mt-4 sm:text-[15px]"
                 >
                   Transforme ideias em sites e sistemas, encontre empresas que realmente precisam
                   deles e conduza a venda até o fechamento.
                 </motion.p>
 
-                <motion.div variants={fadeInUp} className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                  <LandingButton onClick={() => navigate('/login')}>Acessar a plataforma</LandingButton>
+                <motion.div variants={fadeInUp} className="mt-6 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
+                  <LandingButton className={HERO_BUTTON} onClick={() => navigate('/login')}>Acessar a plataforma</LandingButton>
                   <LandingButton
                     variant="secondary"
+                    className={HERO_BUTTON}
                     onClick={() => document.getElementById('metodo')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   >
                     Conhecer o método
