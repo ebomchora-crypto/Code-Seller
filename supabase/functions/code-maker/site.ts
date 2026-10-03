@@ -582,12 +582,12 @@ export function stripInventedClaims(text: string, brief: SiteBrief): string {
     .trim()
 }
 
-// Confere e completa o plano: nunca deixa o site sem cores/fontes válidas.
 // Idioma do site: pt-BR por padrão; outro só quando o pedido pede.
 function cleanLang(value: unknown): string {
   return typeof value === 'string' && /^[a-z]{2}(?:-[A-Z]{2})?$/.test(value.trim()) ? value.trim() : 'pt-BR'
 }
 
+// Confere e completa o plano: nunca deixa o site sem cores/fontes válidas.
 export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   if (!raw || typeof raw !== 'object') return null
   const input = raw as Record<string, any>
