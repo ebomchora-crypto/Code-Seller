@@ -32,6 +32,11 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
           <p className="mt-2 text-[14.5px] text-[var(--text-muted)]">
             {outdated ? 'Recarregue para abrir a versão mais recente do Code Sellers.' : 'Recarregue a página para continuar. Seus dados estão salvos.'}
           </p>
+          {!outdated && error.message && (
+            <p className="mt-4 break-words rounded-xl bg-black/[0.04] px-3 py-2 font-mono text-[11px] text-[var(--text-muted)] dark:bg-white/[0.04]">
+              Detalhe para o suporte: {error.message.slice(0, 200)}
+            </p>
+          )}
           <button
             type="button"
             onClick={() => window.location.reload()}
