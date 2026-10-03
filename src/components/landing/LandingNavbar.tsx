@@ -84,14 +84,31 @@ export function LandingNavbar() {
           </button>
         </div>
 
-        <AnimatePresence>
-          {mobileOpen && (
-            <motion.div
-              initial={reducedMotion ? false : { opacity: 0, y: -8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={reducedMotion ? undefined : { opacity: 0, y: -8, scale: 0.98 }}
+      </div>
+
+      {/* Menu do celular fora da pílula: vidro dentro de vidro não desfoca e o
+          texto do Hero aparecia por trás. Fundo sólido + página escurecida. */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-hidden
+              tabIndex={-1}
+              onClick={() => setMobileOpen(false)}
+              initial={reducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reducedMotion ? undefined : { opacity: 0 }}
               transition={{ duration: duration.enter, ease: easing.standard }}
-              className="absolute inset-x-0 top-[72px] mx-2 flex flex-col gap-1 rounded-2xl border border-white/[0.12] bg-[rgba(10,10,12,0.85)] p-3 shadow-glass-strong backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
+              className="fixed inset-0 -z-10 cursor-default bg-black/70 backdrop-blur-sm lg:hidden"
+            />
+            <motion.nav
+              aria-label="Menu"
+              initial={reducedMotion ? false : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={{ duration: duration.enter, ease: easing.standard }}
+              className="mx-auto mt-2 flex w-full max-w-[1280px] flex-col rounded-[24px] border border-white/[0.12] bg-[#0c0b10] p-2 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)] lg:hidden"
             >
               <a
                 href="#"
@@ -100,7 +117,7 @@ export function LandingNavbar() {
                   setMobileOpen(false)
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
+                className="rounded-2xl px-4 py-3.5 text-[16px] font-medium text-white/85 transition-colors active:bg-white/[0.06]"
               >
                 Início
               </a>
@@ -109,11 +126,12 @@ export function LandingNavbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
+                  className="rounded-2xl px-4 py-3.5 text-[16px] font-medium text-white/85 transition-colors active:bg-white/[0.06]"
                 >
                   {link.label}
                 </a>
               ))}
+              <div className="mx-4 my-2 h-px bg-white/[0.08]" />
               <button
                 type="button"
                 onClick={() => {
@@ -121,21 +139,31 @@ export function LandingNavbar() {
                   rememberDownloadIntent('setup')
                   navigate('/register')
                 }}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white"
+                className="flex items-center gap-2 rounded-2xl px-4 py-3.5 text-left text-[16px] font-medium text-white/85 transition-colors active:bg-white/[0.06]"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-[18px] w-[18px] text-white/60" />
                 Baixar app para Windows
               </button>
-              <Button
-                className="mt-1 w-full !bg-landing-primary !text-white hover:!bg-landing-primary-hover"
-                onClick={() => navigate('/login')}
-              >
-                Login
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 p-1">
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  className="h-12 rounded-full border border-white/15 text-[15px] font-semibold text-white transition-colors active:bg-white/[0.06]"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="h-12 rounded-full bg-landing-primary text-[15px] font-semibold text-white transition-colors active:bg-landing-primary-hover"
+                >
+                  Começar grátis
+                </button>
+              </div>
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   )
 }
