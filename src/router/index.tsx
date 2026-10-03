@@ -35,6 +35,8 @@ const PublicLeadFormPage = lazyPage(() => import('@/pages/public-lead-form'))
 const PublicProposalPage = lazyPage(() => import('@/pages/public-proposal'))
 const PublicSitePage = lazyPage(() => import('@/pages/public-site'))
 const RevenueRoomPage = lazyPage(() => import('@/pages/revenue-room'))
+const TermsPage = lazyPage(() => import('@/pages/legal/terms'))
+const PrivacyPage = lazyPage(() => import('@/pages/legal/privacy'))
 const NotFoundPage = lazyPage(() => import('@/pages/not-found'))
 
 function RouteFallback() {
@@ -84,6 +86,8 @@ export function AppRouter() {
           <Route path="/proposta/:token" element={<PublicProposalPage />} />
           {/* Sites criados no Code Maker. */}
           <Route path="/s/:slug" element={<PublicSitePage />} />
+          <Route path="/termos" element={<TermsPage />} />
+          <Route path="/privacidade" element={<PrivacyPage />} />
 
           <Route
             path="/sala-de-receita"

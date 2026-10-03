@@ -1,8 +1,11 @@
+import { Link } from 'react-router-dom'
+
 const footerLinks = [
   { href: '#', label: 'Início' },
   { href: '#metodo', label: 'Método' },
   { href: '#buyershunter', label: 'Buyers Hunter' },
   { href: '#modulos', label: 'Módulos' },
+  { href: '#precos', label: 'Preço' },
   { href: '#faq', label: 'FAQ' },
 ]
 
@@ -41,8 +44,16 @@ export function LandingFooter() {
           </nav>
         </div>
 
-        <div className="mt-12 border-t border-white/[0.12] py-7 text-center">
-          <p className="text-sm text-white/40">© 2026 Code Sellers. Todos os direitos reservados.</p>
+        <div className="mt-12 flex flex-col items-center gap-3 border-t border-white/[0.12] py-7 sm:flex-row sm:justify-between">
+          <p className="text-center text-sm text-white/40">© 2026 Code Sellers. Todos os direitos reservados.</p>
+          <div className="flex gap-6 text-sm text-white/55">
+            <Link to="/termos" className="transition-colors hover:text-white">
+              Termos de Uso
+            </Link>
+            <Link to="/privacidade" className="transition-colors hover:text-white">
+              Política de Privacidade
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

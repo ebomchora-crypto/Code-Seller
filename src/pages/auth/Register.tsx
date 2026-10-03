@@ -101,6 +101,18 @@ export default function RegisterPage() {
         <GoogleButton onBeforeRedirect={() => setRememberSession(true)} onError={setError} />
       </div>
 
+      <p className="mt-6 text-center text-[12.5px] leading-5 text-[#6b6875]">
+        Ao criar sua conta, você concorda com os{' '}
+        <Link to="/termos" target="_blank" className="font-medium text-[#7c3aed] underline-offset-2 hover:underline">
+          Termos de Uso
+        </Link>{' '}
+        e a{' '}
+        <Link to="/privacidade" target="_blank" className="font-medium text-[#7c3aed] underline-offset-2 hover:underline">
+          Política de Privacidade
+        </Link>
+        .
+      </p>
+
       <p className="mt-8 text-center text-[14px] text-[#6b6875]">
         Já tem conta?{' '}
         <Link to="/login" className="font-medium text-[#7c3aed] transition hover:text-[#5b21b6]">
