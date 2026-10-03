@@ -10,6 +10,7 @@ import type { RevenueDataPoint } from '@/types'
 import { useRevealOnScroll } from '@/hooks/useScrollAnimation'
 import { fadeInUp } from '@/utils/animations'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { formatMoney } from '@/utils/currency'
 
 interface RevenueChartProps {
   data: RevenueDataPoint[]
@@ -24,7 +25,7 @@ function formatCompactBRL(value: number): string {
 }
 
 function formatFullBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function CustomTooltip({ active, payload }: TooltipContentProps) {

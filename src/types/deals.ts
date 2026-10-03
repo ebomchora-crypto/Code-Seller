@@ -36,6 +36,8 @@ export interface Deal {
   contact_id: string | null
   title: string
   value: number | null
+  /** Moeda do valor (BRL, USD, EUR, GBP). */
+  currency?: string
   status: DealStatus
   stage: DealStage
   probability: number

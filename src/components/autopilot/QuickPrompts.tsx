@@ -2,18 +2,15 @@ import { AlertTriangle, BarChart2, MessageSquare, Pencil, RotateCcw, Send, Users
 import { useRef } from 'react'
 import { motion } from 'motion/react'
 import { CopilotComposer, type CopilotComposerHandle } from '@/components/autopilot/CopilotComposer'
-import { CopilotPreferencesBar } from '@/components/autopilot/CopilotPreferencesBar'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { EASE_PREMIUM } from '@/utils/animations'
-import type { AutoPilotContext, CopilotPreferences, QuickPrompt } from '@/types'
+import type { AutoPilotContext, QuickPrompt } from '@/types'
 
 interface QuickPromptsProps {
   onSelect: (prompt: string) => void
   sending: boolean
   hasContext: boolean
-  preferences: CopilotPreferences
-  onPreferencesChange: (value: CopilotPreferences) => void
 }
 
 const ICONS: Record<string, LucideIcon> = {
@@ -95,7 +92,7 @@ interface WelcomeProps extends QuickPromptsProps {
 
 // Tela inicial do CS Copilot: orbe, saudação ciente dos dados, compositor
 // grande e sugestões em cards.
-export function QuickPrompts({ onSelect, sending, hasContext, context, preferences, onPreferencesChange }: WelcomeProps) {
+export function QuickPrompts({ onSelect, sending, hasContext, context }: WelcomeProps) {
   const reducedMotion = useReducedMotion()
   const composerRef = useRef<CopilotComposerHandle>(null)
   const summary = context?.summary
@@ -106,7 +103,7 @@ export function QuickPrompts({ onSelect, sending, hasContext, context, preferenc
   })
 
   return (
-    <div className="m-auto flex w-full max-w-5xl flex-col items-center px-5 py-10 sm:px-8">
+    <div className="m-auto flex w-full max-w-4xl flex-col items-center px-5 py-10 sm:px-8">
       <motion.div {...reveal(0)}>
         <CopilotOrb size="lg" />
       </motion.div>
@@ -125,7 +122,6 @@ export function QuickPrompts({ onSelect, sending, hasContext, context, preferenc
 
       <motion.div {...reveal(0.2)} className="mt-8 w-full">
         <CopilotComposer ref={composerRef} onSend={onSelect} sending={sending} hasContext={hasContext} size="large" />
-        <div className="mt-1"><CopilotPreferencesBar value={preferences} onChange={onPreferencesChange} /></div>
       </motion.div>
 
       <motion.div {...reveal(0.28)} className="mt-6 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">

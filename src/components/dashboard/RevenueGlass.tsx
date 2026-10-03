@@ -4,6 +4,8 @@ import { AnimatedCounter } from '@/components/ui/animated-counter'
 import { useRevenuePeriod } from '@/hooks/useRevenuePeriod'
 import { formatRangeLabel, PERIOD_OPTIONS, toDateInput } from '@/utils/revenuePeriod'
 import type { CustomRange, DashboardMetric, RevenueDataPoint, RevenuePeriod, RevenueSource } from '@/types'
+import { formatMoney } from '@/utils/currency'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 
 interface RevenueGlassProps {
   /** Receita do mês já calculada pelo Dashboard — usada enquanto o card carrega. */
@@ -48,7 +50,7 @@ const TITLES: Record<RevenueSource, Record<RevenuePeriod, string>> = {
 }
 
 function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 const SPARK_WIDTH = 248
@@ -134,9 +136,10 @@ export function RevenueGlass({ revenue, monthlySeries, loading }: RevenueGlassPr
     : `${change?.label ?? ''}${change ? ' · ' : ''}${formatRangeLabel(range)}`
 
   return (
-    <div className="relative w-full rounded-[22px] border border-white/15 bg-white/[0.08] p-5 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:w-[312px]">
+    <div className="relative w-full rounded-[22px] border border-white/15 bg-white/[0.08] p-5 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:w-[360px]">
       <div ref={pickerRef}>
-        <div role="group" aria-label="Período da receita" className="flex rounded-full bg-black/25 p-0.5">
+        <div className="flex items-center gap-1.5">
+        <div role="group" aria-label="Período da receita" className="flex min-w-0 flex-1 rounded-full bg-black/25 p-0.5">
           {PERIOD_OPTIONS.map((option) => {
             const active = choice.period === option.value
             return (
@@ -155,6 +158,8 @@ export function RevenueGlass({ revenue, monthlySeries, loading }: RevenueGlassPr
               </button>
             )
           })}
+        </div>
+        <CurrencySelect variant="glass" size="sm" />
         </div>
 
         {pickerOpen && (

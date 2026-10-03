@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { buildSeries, computeChange, entriesInRange } from '@/utils/revenuePeriod'
 import type { ResolvedRange, RevenueEntry, RevenueSource, RevenueSummary } from '@/types'
+import { getViewCurrency } from '@/utils/currency'
 
 const UNDEFINED_COLUMN = '42703'
 
@@ -32,7 +33,8 @@ export function wonDate(deal: { won_at?: string | null; updated_at: string }): s
 // sempre >= won_at, então filtrar por updated_at nunca perde um ganho.
 export async function selectWonDeals<T>(columns: string, since: Date | null): Promise<T[]> {
   const run = (select: string) => {
-    let query = supabase.from('deals').select(select).eq('status', 'won')
+    // Só a moeda escolhida para os totais.
+    let query = supabase.from('deals').select(select).eq('status', 'won').eq('currency', getViewCurrency())
     if (since) query = query.gte('updated_at', since.toISOString())
     return query
   }
@@ -70,6 +72,7 @@ async function fetchPaidTransactions(type: 'income' | 'expense', since: Date): P
     .select('id, description, amount, date, paid_at, contact:contacts(name)')
     .eq('type', type)
     .eq('status', 'paid')
+    .eq('currency', getViewCurrency())
     .or(`paid_at.gte.${since.toISOString()},date.gte.${sinceDay}`)
 
   if (error) throw new Error(error.message)

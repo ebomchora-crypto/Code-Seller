@@ -1,5 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
+import { prospectPhone } from '@/utils/prospection'
 import type {
   Prospect,
   ProspectErrorCode,
@@ -52,7 +53,7 @@ export function searchProspects(params: ProspectSearchParams): Promise<ProspectS
 export async function getRecentSearches(limit = 6): Promise<RecentProspectSearch[]> {
   const { data, error } = await supabase
     .from('prospect_searches')
-    .select('niche, city, offer, created_at')
+    .select('niche, city, state, country, offer, created_at')
     .order('created_at', { ascending: false })
     .limit(40)
 
@@ -61,7 +62,7 @@ export async function getRecentSearches(limit = 6): Promise<RecentProspectSearch
   const seen = new Set<string>()
   const recent: RecentProspectSearch[] = []
   for (const row of (data ?? []) as RecentProspectSearch[]) {
-    const key = `${row.niche.toLowerCase()}|${row.city.toLowerCase()}`
+    const key = `${row.niche.toLowerCase()}|${row.city.toLowerCase()}|${(row.state ?? '').toLowerCase()}|${row.country ?? 'BR'}`
     if (seen.has(key)) continue
     seen.add(key)
     recent.push(row)
@@ -110,7 +111,10 @@ export async function importProspects(prospects: Prospect[], niche: string): Pro
   const rows = prospects.map((prospect) => ({
     user_id: userId,
     name: prospect.name,
-    phone: prospect.phone,
+    // Fora do Brasil o telefone já vai com o código do país (+351...), para o
+    // WhatsApp abrir no número certo.
+    phone: prospectPhone(prospect),
+    country: prospect.country ?? null,
     niche: prospect.category ?? niche,
     city: prospect.city,
     state: prospect.state && prospect.state.length === 2 ? prospect.state : null,

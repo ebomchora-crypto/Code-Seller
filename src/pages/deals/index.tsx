@@ -14,6 +14,7 @@ import { PipelineMetrics } from '@/components/deals/PipelineMetrics'
 import { useDeals } from '@/hooks/useDeals'
 import type { Deal } from '@/types'
 import { useOpenOnParam } from '@/hooks/useOpenOnParam'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 
 export default function DealsPage() {
   const { deals, metrics, loading, error, filters, setFilters, clearFilters, hasActiveFilters, view, setView, refetch, deleteDeal, updateStage } =
@@ -75,6 +76,7 @@ export default function DealsPage() {
           subtitle="O que você está vendendo e o que já vendeu. Venda ganha vai sozinha para o Financeiro."
           actions={
             <>
+              <CurrencySelect className="[&_select]:h-11" />
               <div
                 role="group"
                 aria-label="Modo de visualização"

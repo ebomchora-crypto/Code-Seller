@@ -149,6 +149,7 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
           <Input
             label="WhatsApp / telefone"
             placeholder="(11) 99999-9999"
+            helperText="Fora do Brasil, comece com + e o código do país (ex.: +351)."
             inputMode="tel"
             value={form.phone}
             onChange={(event) => updateField('phone', event.target.value)}

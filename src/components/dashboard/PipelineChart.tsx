@@ -9,6 +9,7 @@ import type { PipelineDataPoint } from '@/types'
 import { useRevealOnScroll } from '@/hooks/useScrollAnimation'
 import { EASE_PREMIUM, fadeInUp } from '@/utils/animations'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { formatMoney } from '@/utils/currency'
 
 interface PipelineChartProps {
   data: PipelineDataPoint[]
@@ -18,7 +19,7 @@ interface PipelineChartProps {
 }
 
 function formatFullBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 // Funil em barras horizontais: cada etapa com quantos negócios tem e quanto

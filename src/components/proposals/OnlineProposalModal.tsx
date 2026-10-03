@@ -26,6 +26,7 @@ import {
   validateProposalDraft,
 } from '@/utils/onlineProposal'
 import type { Deal, OnlineProposal, ProposalOption } from '@/types'
+import { currencyOf, currencySymbol } from '@/utils/currency'
 
 interface OnlineProposalModalProps {
   open: boolean
@@ -116,7 +117,7 @@ function ProposalRow({ proposal, phone, onCancel }: { proposal: OnlineProposal; 
       {proposal.status === 'approved' && (
         <p className="mt-3 rounded-xl bg-emerald-500/[0.08] px-3.5 py-2.5 text-[13.5px] text-[var(--text-primary)]">
           <strong>{proposal.responder_name}</strong> aprovou <strong>{proposal.chosen_option_name}</strong>
-          {proposal.chosen_price !== null && ` (${formatCurrency(proposal.chosen_price)})`}
+          {proposal.chosen_price !== null && ` (${formatCurrency(proposal.chosen_price, proposal.currency)})`}
           {proposal.responded_at && ` em ${formatDate(proposal.responded_at, true)}`}.
           {proposal.response_note && <span className="mt-1 block text-[var(--text-secondary)]">“{proposal.response_note}”</span>}
         </p>
@@ -148,6 +149,7 @@ function ProposalRow({ proposal, phone, onCancel }: { proposal: OnlineProposal; 
 }
 
 function OptionEditor({
+  currency,
   option,
   index,
   canRemove,
@@ -155,6 +157,7 @@ function OptionEditor({
   onRemove,
   onRecommend,
 }: {
+  currency?: string
   option: ProposalOption
   index: number
   canRemove: boolean
@@ -194,7 +197,7 @@ function OptionEditor({
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_160px]">
         <Input label="Nome" value={option.name} maxLength={60} onChange={(event) => onChange({ ...option, name: event.target.value })} />
         <Input
-          label="Valor (R$)"
+          label={`Valor (${currencySymbol(currencyOf(currency))})`}
           inputMode="decimal"
           placeholder="0,00"
           value={priceText}
@@ -390,6 +393,7 @@ export function OnlineProposalModal({ open, onClose, deal, onChanged }: OnlinePr
               <div className="flex flex-col gap-3">
                 {options.map((option, index) => (
                   <OptionEditor
+                    currency={deal.currency}
                     key={option.id}
                     option={option}
                     index={index}

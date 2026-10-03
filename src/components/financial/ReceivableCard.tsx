@@ -72,7 +72,7 @@ export function ReceivableCard({ receivable, onMarkAsPaid, onUpdateDueDate, onCa
 
       <div className="mt-3 flex items-end justify-between gap-3">
         <p className="font-display text-[20px] font-bold leading-none tabular-nums text-[var(--text-primary)]">
-          {formatCurrency(receivable.amount)}
+          {formatCurrency(receivable.amount, receivable.currency)}
         </p>
         {!editingDueDate && (
           <p className={`flex items-center gap-1 text-[12.5px] font-medium ${dueDateIndicatorClass(receivable.due_date, receivable.status)}`}>

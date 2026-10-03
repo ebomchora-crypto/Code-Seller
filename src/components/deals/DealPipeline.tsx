@@ -17,7 +17,7 @@ import {
 import { DealCard } from '@/components/deals/DealCard'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { DEAL_STAGES, formatCurrency } from '@/utils/deals'
+import { DEAL_STAGES, formatCurrency, sumInViewCurrency } from '@/utils/deals'
 import type { Deal, DealStage } from '@/types'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { duration, easing } from '@/motion/tokens'
@@ -63,7 +63,7 @@ function DealDraggable({ deal, index }: { deal: Deal; index: number }) {
 function PipelineColumn({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   const config = DEAL_STAGES.find((item) => item.key === stage)!
-  const totalValue = deals.reduce((sum, deal) => sum + (deal.value ?? 0), 0)
+  const totalValue = sumInViewCurrency(deals)
   const closed = stage === 'won' || stage === 'lost'
 
   return (
@@ -120,7 +120,7 @@ function ClosedZone({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage })
   const [expanded, setExpanded] = useState(false)
   const config = DEAL_STAGES.find((item) => item.key === stage)!
-  const total = deals.reduce((sum, deal) => sum + (deal.value ?? 0), 0)
+  const total = sumInViewCurrency(deals)
   const sorted = [...deals].sort((a, b) => closedAt(b) - closedAt(a))
   const shown = expanded ? sorted : sorted.slice(0, CLOSED_PREVIEW)
 
@@ -154,7 +154,7 @@ function ClosedZone({ stage, deals }: { stage: DealStage; deals: Deal[] }) {
                   <span className="block truncate font-medium text-[var(--text-primary)]">{deal.title}</span>
                   {deal.contact && <span className="block truncate text-[11.5px] text-[var(--text-muted)]">{deal.contact.name}</span>}
                 </span>
-                <span className="shrink-0 font-semibold tabular-nums text-[var(--text-secondary)]">{formatCurrency(deal.value)}</span>
+                <span className="shrink-0 font-semibold tabular-nums text-[var(--text-secondary)]">{formatCurrency(deal.value, deal.currency)}</span>
               </Link>
             </li>
           ))}
@@ -226,7 +226,7 @@ export function DealPipeline({ deals, loading, onStageChange }: DealPipelineProp
 
   if (!wide) {
     const inTab = deals.filter((deal) => deal.stage === tab)
-    const tabTotal = inTab.reduce((sum, deal) => sum + (deal.value ?? 0), 0)
+    const tabTotal = sumInViewCurrency(inTab)
     return (
       <div className="flex flex-col gap-4">
         <BoardTabs

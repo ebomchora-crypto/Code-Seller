@@ -13,14 +13,27 @@
 // 'buyers_hunter_monthly_limit' na tabela public.app_config (só o servidor lê).
 //
 // Ações (POST com JSON):
-//   { action: 'usage' }                                        → { configured, used, limit }
-//   { action: 'search', niche, city, offer?, maxResults? }      → { results, usage }
+//   { action: 'usage' }                                                         → { configured, used, limit }
+//   { action: 'search', niche, city, state?, country?, offer?, maxResults?, website? } → { results, usage }
 //
+// country: código ISO de 2 letras (padrão BR). A busca acontece nesse país, no
+// idioma dele, e os telefones voltam com o código do país (+351, +55...).
 // maxResults: quantos leads trazer (1 a MAX_RESULTS_PER_SEARCH, padrão 20).
 // Cada busca conta 1 no limite mensal, não importa a quantidade pedida.
-// Os resultados não são gravados: só o histórico da busca (prospect_searches).
+// Persist normalized provider observations to enrich leads imported into the CRM.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import {
+  filterSearchResults,
+  normalizePlace,
+  mergeProviderResults,
+  searchRuns,
+  type ApifyPlace,
+  type NormalizedProspect,
+  type ProviderRun,
+  type WebsiteSearch,
+} from './prospect.ts'
+import { findCountry, internationalPhone, type Country } from '../_shared/countries.ts'
 
 const APIFY_RUN_URL = 'https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?memory=1024'
 const DEFAULT_RESULTS = 20
@@ -31,86 +44,6 @@ const DEFAULT_MONTHLY_LIMIT = 50
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-type WebsiteKind = 'none' | 'social' | 'site'
-
-interface ProspectResult {
-  id: string
-  name: string
-  category: string | null
-  address: string | null
-  city: string | null
-  state: string | null
-  phone: string | null
-  phone_international: string | null
-  website: string | null
-  website_kind: WebsiteKind
-  rating: number | null
-  reviews: number
-  maps_url: string | null
-}
-
-// Formato do ator compass/crawler-google-places (Apify).
-interface ApifyPlace {
-  placeId: string
-  title?: string
-  categoryName?: string
-  address?: string
-  city?: string
-  state?: string
-  website?: string
-  phone?: string
-  phoneUnformatted?: string
-  totalScore?: number
-  reviewsCount?: number
-  url?: string
-  permanentlyClosed?: boolean
-  temporarilyClosed?: boolean
-}
-
-const SOCIAL_HOSTS = [
-  'instagram.com',
-  'facebook.com',
-  'fb.com',
-  'linktr.ee',
-  'wa.me',
-  'whatsapp.com',
-  'api.whatsapp.com',
-  'tiktok.com',
-  'linkedin.com',
-  'ifood.com.br',
-  'goo.gl',
-  'g.page',
-  'business.site',
-]
-
-function classifyWebsite(url: string | undefined): WebsiteKind {
-  if (!url) return 'none'
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, '')
-    return SOCIAL_HOSTS.some((social) => host === social || host.endsWith(`.${social}`)) ? 'social' : 'site'
-  } catch {
-    return 'site'
-  }
-}
-
-function normalize(place: ApifyPlace): ProspectResult {
-  return {
-    id: place.placeId,
-    name: place.title ?? 'Empresa sem nome',
-    category: place.categoryName ?? null,
-    address: place.address ?? null,
-    city: place.city ?? null,
-    state: place.state ?? null,
-    phone: place.phone ?? null,
-    phone_international: place.phoneUnformatted ?? null,
-    website: place.website ?? null,
-    website_kind: classifyWebsite(place.website),
-    rating: place.totalScore ?? null,
-    reviews: place.reviewsCount ?? 0,
-    maps_url: place.url ?? null,
-  }
 }
 
 function json(body: unknown, status = 200) {
@@ -129,8 +62,53 @@ function monthStartIso(): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
 }
 
+function isWebsiteSearch(value: unknown): value is WebsiteSearch {
+  return value === 'all' || value === 'yes' || value === 'no'
+}
+
+async function fetchProviderRun(
+  run: ProviderRun,
+  input: { token: string; niche: string; location: string; country: Country; createdAt: string },
+): Promise<NormalizedProspect[]> {
+  const upstream = await fetch(APIFY_RUN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${input.token}`,
+    },
+    body: JSON.stringify({
+      searchStringsArray: [input.niche],
+      locationQuery: input.location,
+      language: input.country.language,
+      maxCrawledPlacesPerSearch: run.maxResults,
+      skipClosedPlaces: true,
+      website: run.website,
+    }),
+  })
+
+  if (!upstream.ok) {
+    console.error('buyers-hunter upstream', upstream.status, await upstream.text())
+    throw new Error(`upstream:${upstream.status}`)
+  }
+
+  const payload = (await upstream.json()) as ApifyPlace[]
+  return payload
+    .filter((place) => place.placeId && !place.permanentlyClosed && !place.temporarilyClosed)
+    .map((place) => {
+      const prospect = normalizePlace(place, run.provenance, input.createdAt)
+      const country = prospect.country?.toUpperCase() || input.country.code
+      return {
+        ...prospect,
+        country,
+        // Telefone pronto para o WhatsApp, com o código do país da busca.
+        phone_international: internationalPhone(prospect.phone, prospect.phone_international, country),
+      }
+    })
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return fail('invalid_input', 'Método inválido.', 405)
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -166,8 +144,11 @@ Deno.serve(async (req: Request) => {
       action?: string
       niche?: string
       city?: string
+      state?: string
+      country?: string
       offer?: string
       maxResults?: number
+      website?: string
     }
 
     if (body.action === 'usage') {
@@ -179,6 +160,8 @@ Deno.serve(async (req: Request) => {
 
     const niche = body.niche?.trim().slice(0, 80) ?? ''
     const city = body.city?.trim().slice(0, 80) ?? ''
+    const state = body.state?.trim().slice(0, 80) ?? ''
+    const country = findCountry(body.country)
     if (niche.length < 2 || city.length < 2) {
       return fail('invalid_input', 'Informe o nicho e a cidade.', 400)
     }
@@ -187,38 +170,34 @@ Deno.serve(async (req: Request) => {
     }
 
     const wanted = Math.min(Math.max(Math.round(Number(body.maxResults)) || DEFAULT_RESULTS, 1), MAX_RESULTS_PER_SEARCH)
-
-    const upstream = await fetch(APIFY_RUN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apifyToken}`,
-      },
-      body: JSON.stringify({
-        searchStringsArray: [niche],
-        locationQuery: `${city}, Brazil`,
-        language: 'pt-BR',
-        maxCrawledPlacesPerSearch: wanted,
-        skipClosedPlaces: true,
-      }),
-    })
-
-    if (!upstream.ok) {
-      console.error('buyers-hunter upstream', upstream.status, await upstream.text())
+    const website: WebsiteSearch = isWebsiteSearch(body.website) ? body.website : 'all'
+    const location = [city, state, country.searchName].filter(Boolean).join(', ')
+    const createdAt = new Date().toISOString()
+    let results: NormalizedProspect[]
+    try {
+      const batches = await Promise.all(
+        searchRuns({ website, maxResults: wanted }).map((run) =>
+          fetchProviderRun(run, { token: apifyToken, niche, location, country, createdAt }),
+        ),
+      )
+      results = filterSearchResults(mergeProviderResults(batches.flat()), website).slice(0, wanted)
+    } catch (reason) {
+      console.error('buyers-hunter provider runs', reason)
       return fail('upstream_error', 'Não foi possível buscar empresas agora. Tente de novo em instantes.', 502)
     }
-
-    const payload = (await upstream.json()) as ApifyPlace[]
-    const results = payload.filter((place) => !place.permanentlyClosed && !place.temporarilyClosed).map(normalize)
 
     const { error: insertError } = await admin.from('prospect_searches').insert({
       user_id: userId,
       niche,
       city,
+      state: state || null,
+      country: country.code,
       offer: body.offer ?? null,
+      website_filter: website,
       results_count: results.length,
+      results,
     })
-    if (insertError) console.error('buyers-hunter insert', insertError.message)
+    if (insertError) throw new Error(insertError.message)
 
     return json({
       results,

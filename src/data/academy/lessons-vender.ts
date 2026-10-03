@@ -107,7 +107,7 @@ O **follow-up automático** do app cria essas tarefas com lembrete e a mensagem 
 - Envie **no mesmo dia ou no seguinte** à conversa. Proposta fria perde força.
 - Use o **CS Copilot** no negócio para gerar a primeira versão e revise.
 - **Combine o retorno:** "Consegue me dar um retorno até quinta?" — e crie a tarefa.
-- Depois do "sim", gere o **Contrato** no próprio negócio.`,
+- Depois do "sim", formalize com o cliente o escopo, o prazo e o pagamento antes de começar.`,
     checklist: [
       'Adaptei um modelo de proposta do Kit ao meu pacote principal',
       'Gerei uma proposta com o CS Copilot em um negócio real',

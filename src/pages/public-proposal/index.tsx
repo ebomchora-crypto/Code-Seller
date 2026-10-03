@@ -154,7 +154,7 @@ export default function PublicProposalPage() {
         <Notice
           icon={<CheckCircle2 className="size-6" />}
           title="Proposta aprovada!"
-          text={`${approvedOption ? `Você escolheu ${approvedOption.name}${approvedOption.price ? ` (${formatCurrency(approvedOption.price)})` : ''}. ` : ''}${sellerName} já recebeu sua confirmação e vai entrar em contato para os próximos passos.`}
+          text={`${approvedOption ? `Você escolheu ${approvedOption.name}${approvedOption.price ? ` (${formatCurrency(approvedOption.price, proposal.currency)})` : ''}. ` : ''}${sellerName} já recebeu sua confirmação e vai entrar em contato para os próximos passos.`}
           action={questionHref && <WhatsappButton href={questionHref} label={`Falar com ${sellerName.split(' ')[0]}`} />}
         />
       </Shell>
@@ -264,7 +264,7 @@ export default function PublicProposalPage() {
                     Recomendada
                   </span>
                 )}
-                <p className="mt-3 font-display text-[26px] font-semibold tracking-tight">{option.price ? formatCurrency(option.price) : 'A combinar'}</p>
+                <p className="mt-3 font-display text-[26px] font-semibold tracking-tight">{option.price ? formatCurrency(option.price, proposal.currency) : 'A combinar'}</p>
                 {lines.length > 0 && (
                   <ul className="mt-3 flex flex-col gap-1.5">
                     {lines.map((line, index) => (
@@ -336,7 +336,7 @@ export default function PublicProposalPage() {
             {chosen ? (
               <>
                 Opção escolhida: <strong className="text-[#171325]">{chosen.name}</strong>
-                {chosen.price ? ` · ${formatCurrency(chosen.price)}` : ''}
+                {chosen.price ? ` · ${formatCurrency(chosen.price, proposal.currency)}` : ''}
               </>
             ) : (
               'Escolha uma das opções acima.'

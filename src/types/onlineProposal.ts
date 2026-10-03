@@ -25,6 +25,8 @@ export interface OnlineProposal {
   chosen_option_id: string | null
   chosen_option_name: string | null
   chosen_price: number | null
+  /** Moeda dos preços (a mesma do negócio). */
+  currency?: string
   responder_name: string | null
   response_note: string | null
   views: number
@@ -49,6 +51,7 @@ export interface PublicProposal {
   client_name: string | null
   body: string
   options: ProposalOption[]
+  currency?: string
   payment_terms: string | null
   valid_until: string | null
   expired: boolean

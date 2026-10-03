@@ -13,9 +13,11 @@ import type {
   PipelineDataPoint,
   RevenueDataPoint,
 } from '@/types'
+import { formatMoney } from '@/utils/currency'
+import { getViewCurrency } from '@/utils/currency'
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function startOfMonth(date: Date): Date {
@@ -64,11 +66,11 @@ const LEAN_DEAL_COLUMNS = 'id, status, stage, value, created_at, updated_at'
 
 // Inclui won_at quando a migração 0012 já rodou; senão segue sem ela.
 async function fetchLeanDeals(): Promise<LeanDeal[]> {
-  const withWonAt = await supabase.from('deals').select(`${LEAN_DEAL_COLUMNS}, won_at`)
+  const withWonAt = await supabase.from('deals').select(`${LEAN_DEAL_COLUMNS}, won_at`).eq('currency', getViewCurrency())
   if (!withWonAt.error) return (withWonAt.data ?? []) as LeanDeal[]
   if (withWonAt.error.code !== '42703') throw new Error(withWonAt.error.message)
 
-  const { data, error } = await supabase.from('deals').select(LEAN_DEAL_COLUMNS)
+  const { data, error } = await supabase.from('deals').select(LEAN_DEAL_COLUMNS).eq('currency', getViewCurrency())
   if (error) throw new Error(error.message)
   return data ?? []
 }
@@ -203,7 +205,7 @@ export async function getRevenueChart(months = 6): Promise<RevenueDataPoint[]> {
 const PIPELINE_STAGES = DEAL_STAGES.filter((stage) => stage.key !== 'won' && stage.key !== 'lost')
 
 export async function getPipelineChart(): Promise<PipelineDataPoint[]> {
-  const { data, error } = await supabase.from('deals').select('stage, value').eq('status', 'open')
+  const { data, error } = await supabase.from('deals').select('stage, value').eq('status', 'open').eq('currency', getViewCurrency())
   if (error) throw new Error(error.message)
 
   return PIPELINE_STAGES.map((stage) => {

@@ -1,6 +1,7 @@
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { TooltipContentProps } from 'recharts'
 import type { RevenuePoint } from '@/types'
+import { formatMoney } from '@/utils/currency'
 
 // value = null nos trechos que ainda não aconteceram (a linha para no agora).
 export type RoomChartPoint = Omit<RevenuePoint, 'value'> & { value: number | null }
@@ -20,7 +21,7 @@ function formatCompact(value: number): string {
 }
 
 function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return formatMoney(value)
 }
 
 function RoomTooltip({ active, payload, currentLabel, previousLabel }: TooltipContentProps & { currentLabel: string; previousLabel: string }) {

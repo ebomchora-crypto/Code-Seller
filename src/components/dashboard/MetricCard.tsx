@@ -3,6 +3,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { AnimatedCounter } from '@/components/ui/animated-counter'
 import type { DashboardMetric } from '@/types'
+import { formatMoney } from '@/utils/currency'
 
 interface MetricCardProps {
   metric?: DashboardMetric
@@ -39,8 +40,8 @@ const TONES: Record<string, string> = {
 
 function formatAnimatedValue(metric: DashboardMetric, animated: number): string {
   if (metric.value === '—') return '—'
-  if (metric.value.startsWith('R$')) {
-    return animated.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  if (/^(R\$|US\$|€|£)/.test(metric.value)) {
+    return formatMoney(animated, undefined, { decimals: false })
   }
   if (metric.value.endsWith('%')) {
     return `${Math.round(animated)}%`

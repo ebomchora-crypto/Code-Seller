@@ -48,7 +48,7 @@ export function TransactionCard({ transaction, onEdit, onMarkAsPaid, onDelete }:
             }`}
           >
             {income ? '+' : '−'}
-            {formatCurrency(transaction.amount)}
+            {formatCurrency(transaction.amount, transaction.currency)}
           </span>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--text-muted)]">

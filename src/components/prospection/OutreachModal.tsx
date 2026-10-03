@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { generateOutreachMessage } from '@/integrations/ai'
 import { useAuthContext } from '@/stores/AuthContext'
-import { whatsappUrl } from '@/utils/contactLinks'
-import { isMobilePhone, OFFER_OPTIONS, WEBSITE_KIND_LABELS } from '@/utils/prospection'
+import { OFFER_OPTIONS, prospectWhatsapp, WEBSITE_KIND_LABELS } from '@/utils/prospection'
 import type { ProspectOffer, ScoredProspect } from '@/types'
 
 interface OutreachModalProps {
@@ -55,7 +54,7 @@ export function OutreachModal({ prospect, offer, onClose }: OutreachModalProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prospect?.id])
 
-  const whatsapp = prospect && isMobilePhone(prospect.phone) ? whatsappUrl(prospect.phone) : null
+  const whatsapp = prospect ? prospectWhatsapp(prospect) : null
 
   async function copy() {
     try {

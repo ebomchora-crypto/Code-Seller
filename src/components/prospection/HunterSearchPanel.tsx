@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { History, MapPin, Search, Store } from 'lucide-react'
+import { ChevronDown, Globe2, History, Map as MapIcon, MapPin, Search, Store } from 'lucide-react'
+import { COUNTRIES, DEFAULT_COUNTRY, findCountry } from '../../../supabase/functions/_shared/countries'
 import { Spinner } from '@/components/ui/Spinner'
 import { OFFER_OPTIONS } from '@/utils/prospection'
 import { DEFAULT_LEADS_COUNT, LEADS_OPTIONS } from '@/types/prospection'
@@ -26,6 +27,16 @@ const TARGETS = [
   'left-[50%] top-[78%]',
 ]
 
+const COUNTRY_KEY = 'cs-hunter-country'
+
+function storedCountry(): string {
+  try {
+    return findCountry(localStorage.getItem(COUNTRY_KEY) ?? DEFAULT_COUNTRY).code
+  } catch {
+    return DEFAULT_COUNTRY
+  }
+}
+
 const fieldClass =
   'h-12 w-full rounded-2xl border border-white/[0.12] bg-white/[0.06] pl-11 pr-4 text-[14.5px] text-white placeholder:text-white/40 outline-none transition-all duration-200 hover:border-white/20 focus:border-[#a78bfa]/70 focus:bg-white/[0.08] focus:ring-4 focus:ring-[#8b5cf6]/20 disabled:opacity-60'
 
@@ -42,6 +53,18 @@ export function HunterSearchPanel({
 }: HunterSearchPanelProps) {
   const [niche, setNiche] = useState(initial?.niche ?? '')
   const [city, setCity] = useState(initial?.city ?? '')
+  const [state, setState] = useState(initial?.state ?? '')
+  const [country, setCountry] = useState(() => findCountry(initial?.country ?? storedCountry()).code)
+  const countryInfo = findCountry(country)
+
+  function changeCountry(code: string) {
+    setCountry(code)
+    try {
+      localStorage.setItem(COUNTRY_KEY, code)
+    } catch {
+      // Sem armazenamento local: a escolha vale só nesta visita.
+    }
+  }
   const [offer, setOffer] = useState<ProspectOffer>(initial?.offer ?? 'site')
   const [maxResults, setMaxResults] = useState(initial?.maxResults ?? DEFAULT_LEADS_COUNT)
 
@@ -53,16 +76,19 @@ export function HunterSearchPanel({
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!canSearch) return
-    onSearch({ niche: niche.trim(), city: city.trim(), offer, maxResults })
+    onSearch({ niche: niche.trim(), city: city.trim(), state: state.trim() || undefined, country, offer, maxResults })
   }
 
   function runRecent(entry: RecentProspectSearch) {
     const nextOffer = entry.offer ?? offer
+    const entryCountry = findCountry(entry.country ?? DEFAULT_COUNTRY).code
     setNiche(entry.niche)
     setCity(entry.city)
+    setState(entry.state ?? '')
+    changeCountry(entryCountry)
     setOffer(nextOffer)
     if (!notConfigured && !limitReached && !searching)
-      onSearch({ niche: entry.niche, city: entry.city, offer: nextOffer, maxResults })
+      onSearch({ niche: entry.niche, city: entry.city, state: entry.state ?? undefined, country: entryCountry, offer: nextOffer, maxResults })
   }
 
   return (
@@ -83,7 +109,7 @@ export function HunterSearchPanel({
           </h2>
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <div className="grid gap-3 md:grid-cols-2">
               <label className="relative block">
                 <span className="sr-only">Nicho</span>
                 <Store className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-white/45" />
@@ -96,12 +122,42 @@ export function HunterSearchPanel({
                 />
               </label>
               <label className="relative block">
+                <span className="sr-only">País</span>
+                <Globe2 className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-white/45" />
+                <select
+                  value={country}
+                  onChange={(event) => changeCountry(event.target.value)}
+                  className={`${fieldClass} appearance-none pr-10`}
+                >
+                  {COUNTRIES.map((option) => (
+                    <option key={option.code} value={option.code} className="bg-[#1a0f2e] text-white">
+                      {option.name} (+{option.dial})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-white/45" />
+              </label>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <label className="relative block">
+                <span className="sr-only">{countryInfo.regionLabel}</span>
+                <MapIcon className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-white/45" />
+                <input
+                  value={state}
+                  onChange={(event) => setState(event.target.value)}
+                  placeholder={`${countryInfo.regionLabel} (opcional)`}
+                  maxLength={80}
+                  className={fieldClass}
+                />
+              </label>
+              <label className="relative block">
                 <span className="sr-only">Cidade</span>
                 <MapPin className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-white/45" />
                 <input
                   value={city}
                   onChange={(event) => setCity(event.target.value)}
-                  placeholder="Cidade (ex.: Ribeirão Preto, SP)"
+                  placeholder={country === 'BR' ? 'Cidade (ex.: Ribeirão Preto)' : 'Cidade'}
                   maxLength={80}
                   className={fieldClass}
                 />
@@ -206,12 +262,12 @@ export function HunterSearchPanel({
               <span className="sr-only">Buscas recentes</span>
               {recent.map((entry) => (
                 <button
-                  key={`${entry.niche}-${entry.city}`}
+                  key={`${entry.niche}-${entry.city}-${entry.state ?? ''}-${entry.country ?? 'BR'}`}
                   type="button"
                   onClick={() => runRecent(entry)}
                   className="h-7 shrink-0 rounded-full bg-white/[0.06] px-3 text-[12px] text-white/65 transition-colors hover:bg-white/[0.12] hover:text-white"
                 >
-                  {entry.niche} · {entry.city}
+                  {entry.niche} · {entry.city}{entry.country && entry.country !== 'BR' ? ` · ${findCountry(entry.country).name}` : ''}
                 </button>
               ))}
             </div>

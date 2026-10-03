@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarDays, MessageSquare, PanelRight, X } from 'lucide-react'
+import { ArrowLeft, PanelRight, X } from 'lucide-react'
 import { ConversationSidebar } from '@/components/autopilot/ConversationSidebar'
 import { ChatInterface } from '@/components/autopilot/ChatInterface'
-import { CopilotToday } from '@/components/autopilot/CopilotToday'
 import { LeadPanel, leadPrompts } from '@/components/autopilot/LeadPanel'
 import { useAutoPilot } from '@/hooks/useAutoPilot'
 import { commercialMaterialPrompt, getCommercialMaterial } from '@/data/commercial-library'
@@ -52,7 +51,11 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
       <span>{copilot.error}</span><button className="underline" onClick={() => void (copilot.activeConversation ? copilot.selectConversation(copilot.activeConversation.id) : copilot.loadConversations())}>Tentar novamente</button>
     </div>}
     {contactId && <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border-subtle)] px-4 py-2">
-      <Link className="min-w-0 truncate text-sm font-medium" to={'/crm/' + contactId}>{lead?.contact.name ?? 'Carregando lead…'}</Link>
+      <span className="flex min-w-0 items-center gap-3">
+        <Link to={'/crm/' + contactId} title="Voltar ao contato" aria-label="Voltar ao contato" className="flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"><ArrowLeft className="size-4" /></Link>
+        <Link className="min-w-0 truncate text-sm font-medium" to={'/crm/' + contactId}>{lead?.contact.name ?? 'Carregando lead…'}</Link>
+        <Link to="/copilot" className="hidden shrink-0 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] sm:inline">Conversa geral</Link>
+      </span>
       <button className="inline-flex shrink-0 items-center gap-2 rounded-lg p-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]" onClick={() => setLeadOpen(!leadOpen)} aria-expanded={leadOpen}><PanelRight className="size-4" />{leadOpen ? 'Fechar painel' : 'Lead e ações'}</button>
     </div>}
     <div className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -63,12 +66,11 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
           onCreate={() => { void copilot.createNewConversation(); setSidebarOpen(false) }} onDelete={(id) => void copilot.deleteConversation(id)} />
       </div>}
       {sidebarOpen && !contactId && <button aria-label="Fechar conversas" onClick={() => setSidebarOpen(false)} className="absolute inset-0 z-20 bg-black/40 lg:hidden" />}
-      <ChatInterface conversation={copilot.activeConversation} messages={copilot.messages} context={copilot.context} preferences={copilot.preferences}
+      <ChatInterface conversation={copilot.activeConversation} messages={copilot.messages} context={copilot.context}
         sending={copilot.sending || copilot.loading || !copilot.context}
         generating={copilot.sending} hasOlder={copilot.hasOlder} retryAvailable={copilot.retryAvailable}
         onLoadOlder={() => void copilot.loadOlder()} onRetry={copilot.retryLast} onCancel={copilot.cancelGeneration}
-        onPreferencesChange={(value) => void copilot.changePreferences(value)}
-        onSendMessage={(content, preferences) => void copilot.sendMessage(content, preferences)}
+        onSendMessage={(content) => void copilot.sendMessage(content)}
         onConfirmAction={(messageId, actionIndex) => void copilot.confirmAction(messageId, actionIndex)}
         onRejectAction={(messageId, actionIndex) => void copilot.rejectAction(messageId, actionIndex)}
         onRefreshContext={copilot.refreshContext}
@@ -86,16 +88,12 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
   </div>
 }
 
+// O CS Copilot abre em tela cheia, fora do painel do sistema (como um app de
+// chat): conversas à esquerda, mensagens largas no centro.
 export default function CopilotPage() {
   const [params] = useSearchParams()
   const contactId = params.get('contact') || undefined
-  const chat = Boolean(contactId) || params.get('view') === 'chat'
-  return <div className="flex h-full min-h-0 flex-col overflow-hidden text-[var(--text-primary)]">
-    <nav aria-label="Visões do CS Copilot" className="flex shrink-0 gap-1 border-b border-[var(--border-subtle)] px-4 py-2">
-      <Link to="/copilot" aria-current={!chat ? 'page' : undefined} className={'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm ' + (!chat ? 'bg-[var(--bg-muted)] font-semibold' : 'text-[var(--text-muted)]')}><CalendarDays className="size-4" />Hoje</Link>
-      <Link to={contactId ? '/copilot?contact=' + contactId : '/copilot?view=chat'} aria-current={chat ? 'page' : undefined} className={'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm ' + (chat ? 'bg-[var(--bg-muted)] font-semibold' : 'text-[var(--text-muted)]')}><MessageSquare className="size-4" />Conversa</Link>
-      {contactId && <Link to="/copilot?view=chat" className="ml-auto self-center text-xs text-[var(--text-muted)]">Conversa geral</Link>}
-    </nav>
-    {chat ? <CopilotWorkspace key={contactId ?? 'general'} contactId={contactId} /> : <div className="min-h-0 flex-1"><CopilotToday /></div>}
+  return <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
+    <CopilotWorkspace key={contactId ?? 'general'} contactId={contactId} />
   </div>
 }

@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { PanelHeader } from '@/components/ui/PanelHeader'
 import { useAuthContext } from '@/stores/AuthContext'
 import { getHunterResult, getMonthForecast, type HunterResult, type MonthForecast } from '@/services/supabase/insights'
+import { currencySymbol, formatMoney, getViewCurrency } from '@/utils/currency'
 
 interface InsightsRowProps {
   /** Vendido no mês (mesmo número do card de vidro no padrão Mês · Vendido). */
@@ -15,7 +16,7 @@ interface InsightsRowProps {
 }
 
 function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function daysLeftInMonth(now = new Date()): number {
@@ -118,8 +119,8 @@ function GoalCard({ sold }: { sold: number | null }) {
             </p>
           )}
           <label className="relative block">
-            <span className="sr-only">Meta do mês em reais</span>
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[var(--text-muted)]">R$</span>
+            <span className="sr-only">Meta do mês</span>
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[14px] text-[var(--text-muted)]">{currencySymbol(getViewCurrency())}</span>
             <input
               inputMode="decimal"
               autoFocus={editing}

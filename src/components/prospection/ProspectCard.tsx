@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { AtSign, Check, CheckCircle2, CodeXml, EyeOff, Globe, MapPin, MessageCircle, Phone, Plus, Sparkles, Star } from 'lucide-react'
 import { Spinner } from '@/components/ui/Spinner'
-import { siteUrl, whatsappUrl } from '@/utils/contactLinks'
+import { siteUrl } from '@/utils/contactLinks'
 import { newSiteLink } from '@/utils/codeMakerStream'
-import { isMobilePhone, POTENTIAL_LABELS, WEBSITE_KIND_LABELS } from '@/utils/prospection'
+import { POTENTIAL_LABELS, prospectPhone, prospectWhatsapp, WEBSITE_KIND_LABELS } from '@/utils/prospection'
 import type { PotentialLevel, ScoredProspect } from '@/types'
 
 interface ProspectCardProps {
@@ -71,7 +71,7 @@ export function ProspectCard({
   onOutreach,
 }: ProspectCardProps) {
   const imported = importedContactId !== undefined
-  const whatsapp = isMobilePhone(prospect.phone) ? whatsappUrl(prospect.phone) : null
+  const whatsapp = prospectWhatsapp(prospect)
   const location = [prospect.city, prospect.state].filter(Boolean).join(' · ')
 
   return (
@@ -159,7 +159,7 @@ export function ProspectCard({
             name: prospect.name,
             niche: prospect.category,
             city: [prospect.city, prospect.state].filter(Boolean).join(', '),
-            phone: prospect.phone,
+            phone: prospectPhone(prospect),
             contactId: importedContactId,
             rating: prospect.rating,
             reviews: prospect.reviews,

@@ -1,3 +1,5 @@
+import { internationalPhone } from '../../supabase/functions/_shared/countries.ts'
+import { whatsappUrl } from './contactLinks.ts'
 import type {
   PotentialLevel,
   Prospect,
@@ -42,6 +44,18 @@ export function isMobilePhone(phone: string | null | undefined): boolean {
   let digits = phone?.replace(/\D/g, '') ?? ''
   if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2)
   return digits.length === 11 && digits[2] === '9'
+}
+
+// Telefone com o código do país quando a empresa é de fora do Brasil (+351...).
+export function prospectPhone(prospect: Pick<Prospect, 'phone' | 'phone_international' | 'country'>): string | null {
+  if (!prospect.country || prospect.country === 'BR') return prospect.phone
+  return internationalPhone(prospect.phone, prospect.phone_international, prospect.country)
+}
+
+// Link do WhatsApp da empresa: no Brasil só celular; fora, pelo código do país.
+export function prospectWhatsapp(prospect: Pick<Prospect, 'phone' | 'phone_international' | 'country'>): string | null {
+  if (!prospect.country || prospect.country === 'BR') return isMobilePhone(prospect.phone) ? whatsappUrl(prospect.phone) : null
+  return whatsappUrl(prospectPhone(prospect))
 }
 
 function formatRating(rating: number): string {

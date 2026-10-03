@@ -60,7 +60,7 @@ export function RecentDealsList({ deals, loading, error, onRetry, onCreateDeal }
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
                   <span className="font-display text-[14px] font-semibold tabular-nums text-[var(--text-primary)]">
-                    {formatCurrency(deal.value)}
+                    {formatCurrency(deal.value, deal.currency)}
                   </span>
                   <StageBadge stage={deal.stage} />
                 </div>

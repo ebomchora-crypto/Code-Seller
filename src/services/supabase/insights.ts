@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { getViewCurrency } from '@/utils/currency'
 
 // Dados dos cards "Previsão do mês" e "Buyers Hunter" do Início.
 
@@ -32,6 +33,7 @@ export async function getMonthForecast(): Promise<MonthForecast> {
     .from('deals')
     .select('value, probability, expected_close_date, status')
     .eq('status', 'open')
+    .eq('currency', getViewCurrency())
     .gte('expected_close_date', startDay)
     .lt('expected_close_date', endDay)
 
@@ -50,14 +52,14 @@ export async function getHunterResult(): Promise<HunterResult> {
   const { start } = monthBounds()
   const { data, error } = await supabase
     .from('contacts')
-    .select('id, origin, created_at, deals(status, value)')
+    .select('id, origin, created_at, deals(status, value, currency)')
     .eq('origin', 'Buyers Hunter')
 
   if (error) throw new Error(error.message)
   const contacts = ((data ?? []) as {
     origin: string | null
     created_at: string
-    deals: { status: string; value: number | null }[] | null
+    deals: { status: string; value: number | null; currency?: string }[] | null
   }[]).filter((contact) => contact.origin === 'Buyers Hunter')
 
   let withDeal = 0
@@ -68,7 +70,8 @@ export async function getHunterResult(): Promise<HunterResult> {
     if (deals.length > 0) withDeal++
     const wonDeals = deals.filter((deal) => deal.status === 'won')
     if (wonDeals.length > 0) won++
-    wonValue += wonDeals.reduce((sum, deal) => sum + Number(deal.value ?? 0), 0)
+    // Valor só na moeda escolhida para os totais.
+    wonValue += wonDeals.filter((deal) => (deal.currency ?? 'BRL') === getViewCurrency()).reduce((sum, deal) => sum + Number(deal.value ?? 0), 0)
   }
 
   // Tabela da migração 0011; sem ela, o card mostra só o funil.

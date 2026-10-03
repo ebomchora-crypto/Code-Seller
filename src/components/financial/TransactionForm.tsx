@@ -30,6 +30,8 @@ import type {
   TransactionStatus,
   TransactionType,
 } from '@/types'
+import { CurrencyField } from '@/components/ui/CurrencyField'
+import { currencyOf, formatMoney, getViewCurrency, type CurrencyCode } from '@/utils/currency'
 
 interface TransactionFormProps {
   transaction?: Transaction
@@ -41,6 +43,7 @@ interface FormState {
   type: TransactionType
   description: string
   amountCents: string
+  currency: CurrencyCode
   date: string
   dueDate: string
   categoryId: string
@@ -65,10 +68,9 @@ function centsFromAmount(amount?: number | null): string {
   return Math.round(amount * 100).toString()
 }
 
-function formatCentsAsBRL(cents: string): string {
+function formatCentsAsBRL(cents: string, currency: CurrencyCode): string {
   if (!cents) return ''
-  const value = Number(cents) / 100
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return formatMoney(Number(cents) / 100, currency)
 }
 
 function buildInitialState(transaction?: Transaction): FormState {
@@ -76,6 +78,7 @@ function buildInitialState(transaction?: Transaction): FormState {
     type: transaction?.type ?? 'income',
     description: transaction?.description ?? '',
     amountCents: centsFromAmount(transaction?.amount),
+    currency: currencyOf(transaction?.currency ?? getViewCurrency()),
     date: transaction?.date ?? todayInputValue(),
     dueDate: transaction?.due_date ?? '',
     categoryId: transaction?.category_id ?? '',
@@ -269,6 +272,8 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
         status: form.status,
         description: form.description.trim(),
         amount: Number(form.amountCents) / 100,
+        // Ligado a um negócio, o banco usa a moeda do negócio.
+        currency: form.currency,
         date: form.date,
         due_date: form.dueDate || null,
         paid_at: form.status === 'paid' ? new Date(form.paidAt).toISOString() : null,
@@ -337,14 +342,19 @@ export function TransactionForm({ transaction, onSuccess, onCancel }: Transactio
         error={errors.description}
       />
 
-      <Input
-        label="Valor"
-        required
-        placeholder="R$ 0,00"
-        value={formatCentsAsBRL(form.amountCents)}
-        onChange={(event) => handleAmountChange(event.target.value)}
-        error={errors.amountCents}
-      />
+      <div className="flex gap-2">
+        <CurrencyField value={form.currency} onChange={(code) => updateField('currency', code)} />
+        <div className="min-w-0 flex-1">
+          <Input
+            label="Valor"
+            required
+            placeholder={formatMoney(0, form.currency)}
+            value={formatCentsAsBRL(form.amountCents, form.currency)}
+            onChange={(event) => handleAmountChange(event.target.value)}
+            error={errors.amountCents}
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Input

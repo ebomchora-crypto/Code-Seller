@@ -219,7 +219,7 @@ export function TransactionList({
                               }`}
                             >
                               {income ? '+' : '−'}
-                              {formatCurrency(transaction.amount)}
+                              {formatCurrency(transaction.amount, transaction.currency)}
                             </td>
                             <td className="py-3 pl-2 pr-5">
                               <div className="flex justify-end gap-0.5 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">

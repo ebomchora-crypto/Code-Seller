@@ -1,4 +1,5 @@
 import type { TemplateCategory, TemplateContext } from '@/types'
+import { formatMoney } from './currency.ts'
 
 export const TEMPLATE_CATEGORY_LABELS: Record<TemplateCategory, string> = {
   abordagem: 'Primeira abordagem',
@@ -53,9 +54,9 @@ export const DEFAULT_TEMPLATES: { name: string; category: TemplateCategory; body
   },
 ]
 
-function formatValue(value: number | null | undefined): string {
+function formatValue(value: number | null | undefined, currency?: string | null): string {
   if (value === null || value === undefined) return ''
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: value % 1 === 0 ? 0 : 2 })
+  return formatMoney(value, currency ?? 'BRL', { decimals: value % 1 !== 0 })
 }
 
 // Troca {variavel} pelo valor do contexto. Variável sem valor vira texto vazio
@@ -68,7 +69,7 @@ export function fillTemplate(body: string, context: TemplateContext): string {
     cidade: context.cidade?.trim() ?? '',
     nicho: context.nicho?.trim() ?? '',
     negocio: context.negocio?.trim() ?? '',
-    valor: formatValue(context.valor),
+    valor: formatValue(context.valor, context.moeda),
     meu_nome: firstName,
     minha_empresa: company,
     assinatura: firstName && company ? `${firstName}, da ${company}` : firstName || company,

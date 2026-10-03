@@ -10,6 +10,7 @@ import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { getTodayFocus, type TodayFocus } from '@/services/supabase/focus'
 import { completeTask } from '@/services/supabase/tasks'
 import { formatRelativeDate } from '@/utils/date'
+import { formatMoney } from '@/utils/currency'
 
 type FocusTab = 'tasks' | 'deals' | 'receivables' | 'contacts'
 
@@ -29,8 +30,8 @@ const EMPTY_TEXT: Record<FocusTab, string> = {
 
 const MAX_ROWS = 5
 
-function formatBRL(value: number | null): string {
-  return (value ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+function formatBRL(value: number | null, currency?: string): string {
+  return formatMoney(value, currency, { decimals: false })
 }
 
 function formatDue(date: string): string {
@@ -151,7 +152,7 @@ export function FocusToday({ refreshKey = 0 }: { refreshKey?: number }) {
           to={`/deals/${deal.id}`}
           icon={<InitialsAvatar name={deal.contact_name ?? deal.title} size="sm" />}
           title={deal.title}
-          meta={`${formatBRL(deal.value)} · parado há ${deal.days_stalled} dias${deal.contact_name ? ` · ${deal.contact_name}` : ''}`}
+          meta={`${formatBRL(deal.value, deal.currency)} · parado há ${deal.days_stalled} dias${deal.contact_name ? ` · ${deal.contact_name}` : ''}`}
           action={<ArrowUpRight className="size-4 shrink-0 text-[var(--text-muted)]" />}
         />
       ))
@@ -175,7 +176,7 @@ export function FocusToday({ refreshKey = 0 }: { refreshKey?: number }) {
               {item.deal && ` · ${item.deal.title}`}
             </>
           }
-          action={<span className="shrink-0 font-display text-[14px] font-semibold tabular-nums text-[var(--text-primary)]">{formatBRL(item.amount)}</span>}
+          action={<span className="shrink-0 font-display text-[14px] font-semibold tabular-nums text-[var(--text-primary)]">{formatBRL(item.amount, item.currency)}</span>}
         />
       ))
     }

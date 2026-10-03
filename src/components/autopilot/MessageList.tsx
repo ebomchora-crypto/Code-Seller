@@ -53,7 +53,7 @@ export function MessageList({ messages, sending, hasOlder, retryAvailable, onLoa
 
   return (
     <div data-lenis-prevent className="flex-1 overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-8 lg:px-10">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-8">
         {hasOlder && <Button variant="secondary" className="self-center" onClick={onLoadOlder}>Carregar mensagens anteriores</Button>}
         {messages.length === 0 && !sending && <p className="py-8 text-center text-sm text-[var(--text-muted)]">Ainda não há mensagens. Pergunte sobre este lead para começar.</p>}
         {itemsWithSeparators.map(({ message, label, showSeparator }) => {

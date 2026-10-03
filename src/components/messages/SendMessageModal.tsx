@@ -16,7 +16,7 @@ import type { TemplateCategory } from '@/types'
 
 export interface MessageTarget {
   contact: { id: string; name: string; phone: string | null; city?: string | null; niche?: string | null } | null
-  deal?: { id: string; title: string; value: number | null } | null
+  deal?: { id: string; title: string; value: number | null; currency?: string } | null
 }
 
 interface SendMessageModalProps {
@@ -63,6 +63,7 @@ export function SendMessageModal({ open, onClose, target, initialCategory, initi
       nicho: target.contact?.niche,
       negocio: target.deal?.title,
       valor: target.deal?.value,
+      moeda: target.deal?.currency,
       meu_nome: profile?.full_name || user?.name,
       minha_empresa: profile?.company_name,
       portfolio: portfolioLink,

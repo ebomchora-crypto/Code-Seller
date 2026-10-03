@@ -14,6 +14,8 @@ export interface Prospect {
   state: string | null
   phone: string | null
   phone_international: string | null
+  /** País da empresa (ISO de 2 letras). */
+  country?: string | null
   website: string | null
   website_kind: WebsiteKind
   rating: number | null
@@ -46,6 +48,10 @@ export const DEFAULT_LEADS_COUNT = 20
 export interface ProspectSearchParams {
   niche: string
   city: string
+  /** Estado / província / distrito (opcional). */
+  state?: string
+  /** País da busca (ISO de 2 letras, padrão BR). */
+  country?: string
   offer: ProspectOffer
   /** Quantos leads trazer nesta busca (1 a MAX_LEADS_PER_SEARCH). */
   maxResults: number
@@ -59,6 +65,8 @@ export interface ProspectSearchResponse {
 export interface RecentProspectSearch {
   niche: string
   city: string
+  state?: string | null
+  country?: string | null
   offer: ProspectOffer | null
   created_at: string
 }

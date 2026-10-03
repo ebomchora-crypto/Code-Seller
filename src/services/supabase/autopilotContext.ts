@@ -5,6 +5,7 @@ import { getTaskMetrics, getTasks } from '@/services/supabase/tasks'
 import { getFinancialMetrics } from '@/services/supabase/financialMetrics'
 import type { AutoPilotContext } from '@/types'
 import { getLeadContext } from './copilotCRM'
+import { sumInViewCurrency } from '@/utils/deals'
 
 const MAX_ITEMS_PER_CATEGORY = 10
 const MAX_RECENT_INTERACTIONS = 30
@@ -31,7 +32,7 @@ export async function buildAutoPilotContext(contactId?: string): Promise<AutoPil
       now: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       selected_lead: lead,
       summary: { total_contacts: 1, active_deals: lead.deals.filter((deal) => deal.status === 'open').length,
-        pipeline_value: lead.deals.filter((deal) => deal.status === 'open').reduce((sum, deal) => sum + (deal.value ?? 0), 0),
+        pipeline_value: sumInViewCurrency(lead.deals.filter((deal) => deal.status === 'open')),
         conversion_rate: 0, pending_tasks: lead.tasks.filter((task) => ['todo', 'in_progress'].includes(task.status)).length,
         overdue_tasks: lead.tasks.filter((task) => ['todo', 'in_progress'].includes(task.status) && task.due_date && Date.parse(task.due_date) < Date.now()).length,
         monthly_income: 0, monthly_expense: 0, receivables_total: 0 },
@@ -52,7 +53,8 @@ export async function buildAutoPilotContext(contactId?: string): Promise<AutoPil
   const resolvedDeals = allDeals.filter((deal) => deal.status === 'won' || deal.status === 'lost')
   const wonDeals = resolvedDeals.filter((deal) => deal.status === 'won')
   const conversionRate = resolvedDeals.length > 0 ? (wonDeals.length / resolvedDeals.length) * 100 : 0
-  const pipelineValue = openDeals.reduce((sum, deal) => sum + (deal.value ?? 0), 0)
+  // Valor do funil na moeda escolhida para os totais (cada negócio leva a sua moeda abaixo).
+  const pipelineValue = sumInViewCurrency(openDeals)
 
   // Última interação por contato (para os contatos recentes exibidos no contexto)
   const contactIds = contactsResult.data.map((contact) => contact.id)
@@ -151,6 +153,7 @@ export async function buildAutoPilotContext(contactId?: string): Promise<AutoPil
       contact_name: deal.contact?.name ?? null,
       stage: deal.stage,
       value: deal.value,
+      currency: deal.currency ?? 'BRL',
       expected_close_date: deal.expected_close_date,
       days_in_stage: daysSince(new Date(deal.updated_at)),
     })),

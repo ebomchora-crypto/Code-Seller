@@ -13,6 +13,7 @@ import {
   type SourceDeal,
   type SourceDimension,
 } from '@/utils/salesSources'
+import { formatMoney } from '@/utils/currency'
 
 type SourcePeriod = '3m' | '6m' | '12m' | 'all'
 
@@ -35,7 +36,7 @@ function periodStart(period: SourcePeriod, now: Date): Date | null {
 }
 
 function brl(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function Segmented<T extends string>({

@@ -46,7 +46,7 @@ interface DealDetailProps {
   generatingProposal: boolean
   /** Coluna da direita (histórico). */
   history: ReactNode
-  /** Botões extras no topo (ex.: mensagem pronta, contrato). Recebem a classe dos botões do topo. */
+  /** Botões extras no topo (ex.: mensagem pronta, proposta). Recebem a classe dos botões do topo. */
   actions?: (buttonClass: string) => ReactNode
   /** Cards extras na coluna da esquerda (ex: tarefas). */
   extra?: ReactNode
@@ -138,7 +138,7 @@ export function DealDetail({
   const whatsapp = whatsappUrl(deal.contact?.phone)
 
   const infoFields: { icon: LucideIcon; label: string; value: ReactNode }[] = [
-    { icon: Wallet, label: 'Valor', value: formatCurrency(deal.value) },
+    { icon: Wallet, label: 'Valor', value: formatCurrency(deal.value, deal.currency) },
     { icon: Layers, label: 'Serviço', value: deal.service ?? '—' },
     deal.stage === 'won' && deal.won_at
       ? { icon: CalendarDays, label: 'Vendido em', value: formatDate(localDay(deal.won_at)) }
@@ -222,7 +222,7 @@ export function DealDetail({
 
           <div className="shrink-0 sm:text-right">
             <p className="font-display text-[30px] font-bold leading-none tracking-tight tabular-nums text-[var(--text-primary)]">
-              {formatCurrency(deal.value)}
+              {formatCurrency(deal.value, deal.currency)}
             </p>
             <p className="mt-1.5 text-[12.5px] text-[var(--text-muted)]">
               {deal.probability}% de chance de fechar

@@ -3,9 +3,10 @@ import { getStageConfig } from '@/utils/deals'
 import type { DealStage } from '@/types'
 import type { MonthlyReportData } from '@/services/supabase/report'
 import type { ReportBucket } from '@/utils/report'
+import { formatMoney } from './currency.ts'
 
 function brl(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function bucketTable(title: string, buckets: ReportBucket[]): string {

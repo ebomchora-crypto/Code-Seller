@@ -36,7 +36,7 @@ export function MarkAsPaidModal({ receivable, onClose, onConfirm }: MarkAsPaidMo
         <div className="flex flex-col gap-4">
           <div>
             <p className="text-[12.5px] text-[var(--text-muted)]">Valor a receber</p>
-            <p className="mt-1 font-display text-2xl font-bold tabular-nums text-[var(--text-primary)]">{formatCurrency(receivable.amount)}</p>
+            <p className="mt-1 font-display text-2xl font-bold tabular-nums text-[var(--text-primary)]">{formatCurrency(receivable.amount, receivable.currency)}</p>
             <p className="text-sm text-[var(--text-muted)]">{receivable.description}</p>
           </div>
 

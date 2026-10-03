@@ -43,7 +43,7 @@ export function DealCard({ deal, isDragging = false }: DealCardProps) {
 
       <div className="mt-2.5 flex items-baseline justify-between gap-2">
         <p className="font-display text-[17px] font-bold leading-none tracking-tight tabular-nums text-[var(--text-primary)]">
-          {formatCurrency(deal.value)}
+          {formatCurrency(deal.value, deal.currency)}
         </p>
         <span className="shrink-0 text-[11.5px] font-semibold tabular-nums" style={{ color: config.color }} title="Chance de fechar">
           {deal.probability}%

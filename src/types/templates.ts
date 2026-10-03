@@ -19,6 +19,8 @@ export interface TemplateContext {
   nicho?: string | null
   negocio?: string | null
   valor?: number | null
+  /** Moeda do valor (BRL, USD, EUR, GBP). */
+  moeda?: string | null
   meu_nome?: string | null
   minha_empresa?: string | null
   portfolio?: string | null

@@ -14,6 +14,7 @@ import { getUpcomingReminders, markRemindersSeen } from '@/services/supabase/tas
 import { cn } from '@/lib/utils'
 import { getAppSurface } from '@/layouts/appSurface'
 import { scrollAppToTop } from '@/utils/appScroll'
+import { useViewCurrency } from '@/hooks/useViewCurrency'
 
 interface AppLayoutProps {
   children?: ReactNode
@@ -78,6 +79,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const mainRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const surface = getAppSurface(pathname)
+  // Trocar a moeda dos totais recarrega a página atual com os números dessa moeda.
+  const [viewCurrency] = useViewCurrency()
 
   useReminderCheck()
 
@@ -119,7 +122,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   a interação com a página nova. */}
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
-                  key={pathname}
+                  key={`${pathname}|${viewCurrency}`}
                   className={surface.immersive ? 'h-full' : undefined}
                   initial={reducedMotion || !surface.animateOpacity ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

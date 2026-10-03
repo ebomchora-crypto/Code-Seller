@@ -9,6 +9,9 @@ import { useReducedMotion } from '@/hooks/useReducedMotion'
 import { getPeriodProfit } from '@/services/supabase/revenue'
 import { useAuthContext } from '@/stores/AuthContext'
 import type { RevenueEntry, RevenuePeriod, RevenueSource } from '@/types'
+import { currencySymbol, formatMoney, getViewCurrency } from '@/utils/currency'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
+import { useViewCurrency } from '@/hooks/useViewCurrency'
 
 type RoomPeriod = Exclude<RevenuePeriod, 'custom'>
 
@@ -54,7 +57,7 @@ function formatBRL(value: number): string {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return formatMoney(value)
 }
 
 // Número que conta do valor anterior até o novo (não volta a zero a cada
@@ -107,7 +110,7 @@ function StatPanel({ kicker, value, hint }: { kicker: string; value: string; hin
 
 // Sala de receita: tela cheia, sempre escura, feita para deixar aberta num
 // monitor ou notebook e acompanhar as vendas entrando ao vivo.
-export default function RevenueRoomPage() {
+function RevenueRoom() {
   const { user, profile } = useAuthContext()
   const reducedMotion = useReducedMotion()
   const now = useClock()
@@ -205,6 +208,7 @@ export default function RevenueRoomPage() {
               </button>
             ))}
           </div>
+          <CurrencySelect variant="glass" className="[&_select]:h-10" />
           <div role="group" aria-label="Origem" className="flex rounded-full border border-white/10 bg-black/35 p-1 backdrop-blur">
             {(
               [
@@ -318,7 +322,7 @@ export default function RevenueRoomPage() {
             </div>
 
             <p className="mt-3 flex items-baseline justify-center gap-2 font-display font-bold tabular-nums tracking-tight">
-              <span className="text-[22px] text-[#c4b5fd] sm:text-[28px]">R$</span>
+              <span className="text-[22px] text-[#c4b5fd] sm:text-[28px]">{currencySymbol(getViewCurrency())}</span>
               {loading && !summary ? (
                 <span className="inline-block h-14 w-60 animate-pulse rounded-xl bg-white/10" />
               ) : (
@@ -443,4 +447,10 @@ export default function RevenueRoomPage() {
       </AnimatePresence>
     </div>
   )
+}
+
+// Trocar a moeda recarrega a sala com os números dessa moeda.
+export default function RevenueRoomPage() {
+  const [currency] = useViewCurrency()
+  return <RevenueRoom key={currency} />
 }

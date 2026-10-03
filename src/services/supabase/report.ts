@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import { buildMonthlyReport, monthRange, type MonthlyReport, type ReportDeal, type ReportTransaction } from '@/utils/report'
 import type { SourceContact, SourceDeal } from '@/utils/salesSources'
+import { getViewCurrency } from '@/utils/currency'
 
 const DEAL_COLUMNS = 'id, title, value, status, stage, service, origin, created_at, updated_at, contact:contacts(origin)'
 
@@ -9,9 +10,8 @@ interface RawDeal extends Omit<ReportDeal, 'contact_origin'> {
 }
 
 async function fetchDeals(): Promise<ReportDeal[]> {
-  let result = await supabase.from('deals').select(`${DEAL_COLUMNS}, won_at`)
-  // Sem a migração 0012 (won_at), segue sem a coluna.
-  if (result.error?.code === '42703') result = await supabase.from('deals').select(DEAL_COLUMNS)
+  // Só a moeda escolhida para os totais.
+  const result = await supabase.from('deals').select(`${DEAL_COLUMNS}, won_at`).eq('currency', getViewCurrency())
   if (result.error) throw new Error(result.error.message)
   return ((result.data ?? []) as unknown as RawDeal[]).map(({ contact, ...deal }) => ({
     ...deal,
@@ -24,6 +24,7 @@ async function fetchTransactions(since: Date): Promise<ReportTransaction[]> {
     .from('transactions')
     .select('type, amount, date, paid_at, status')
     .eq('status', 'paid')
+    .eq('currency', getViewCurrency())
     .or(`paid_at.gte.${since.toISOString()},date.gte.${since.toISOString().slice(0, 10)}`)
   if (error) throw new Error(error.message)
   return ((data ?? []) as { type: 'income' | 'expense'; amount: number; date: string; paid_at: string | null; status: string }[])
@@ -83,6 +84,7 @@ export async function getSalesSourcesData(): Promise<{ deals: SourceDeal[]; cont
       .from('deals')
       .select('value, status, won_at, updated_at, origin, contact:contacts(origin, niche)')
       .in('status', ['won', 'lost'])
+      .eq('currency', getViewCurrency())
       .limit(10000),
     supabase.from('contacts').select('created_at, origin, niche').limit(10000),
   ])

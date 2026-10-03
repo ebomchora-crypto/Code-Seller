@@ -94,6 +94,16 @@ export function AppRouter() {
             }
           />
 
+          {/* CS Copilot em tela cheia, fora do painel do sistema. */}
+          <Route
+            path="/copilot"
+            element={
+              <PrivateRoute>
+                <CopilotPage />
+              </PrivateRoute>
+            }
+          />
+
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
             <Route path="/aluno" element={<AcademyPage />} />
             <Route path="/aluno/licao/:id" element={<AcademyLessonPage />} />
@@ -108,7 +118,6 @@ export function AppRouter() {
             <Route path="/financial" element={<FinancialPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/relatorios" element={<ReportsPage />} />
-            <Route path="/copilot" element={<CopilotPage />} />
             <Route path="/autopilot" element={<Navigate to="/copilot" replace />} />
             <Route path="/code-maker" element={<CodeMakerPage />} />
             <Route path="/code-maker/:id" element={<CodeMakerEditorPage />} />

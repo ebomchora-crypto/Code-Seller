@@ -9,6 +9,7 @@ import { ReceivableCard } from '@/components/financial/ReceivableCard'
 import { MarkAsPaidModal } from '@/components/financial/MarkAsPaidModal'
 import { formatCurrency } from '@/utils/financial'
 import type { PaymentMethod, Receivable } from '@/types'
+import { useViewCurrency } from '@/hooks/useViewCurrency'
 
 interface ReceivablesListProps {
   receivables: Receivable[]
@@ -55,9 +56,11 @@ export function ReceivablesList({
     return receivables.filter((r) => r.status === 'paid')
   }, [receivables, activeTab])
 
+  // Total em aberto só na moeda escolhida para os totais.
+  const [viewCurrency] = useViewCurrency()
   const total = useMemo(
-    () => receivables.filter((r) => r.status === 'pending').reduce((sum, r) => sum + r.amount, 0),
-    [receivables],
+    () => receivables.filter((r) => r.status === 'pending' && (r.currency ?? 'BRL') === viewCurrency).reduce((sum, r) => sum + r.amount, 0),
+    [receivables, viewCurrency],
   )
 
   async function handleConfirmPayment(paymentMethod: PaymentMethod, paidAt: string, notes: string) {

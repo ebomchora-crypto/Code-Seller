@@ -15,7 +15,6 @@ import { LinkedTasksSection } from '@/components/tasks/LinkedTasksSection'
 import { useDeal } from '@/hooks/useDeal'
 import { useAuthContext } from '@/stores/AuthContext'
 import { SendMessageButton } from '@/components/messages/SendMessageButton'
-import { ContractButton } from '@/components/contracts/ContractButton'
 import { OnlineProposalButton } from '@/components/proposals/OnlineProposalButton'
 import { AddToPortfolioButton } from '@/components/portfolio/AddToPortfolioButton'
 
@@ -79,12 +78,11 @@ export default function DealDetailPage() {
                   className={buttonClass}
                   target={{
                     contact: deal.contact ? { id: deal.contact.id, name: deal.contact.name, phone: deal.contact.phone } : null,
-                    deal: { id: deal.id, title: deal.title, value: deal.value },
+                    deal: { id: deal.id, title: deal.title, value: deal.value, currency: deal.currency },
                   }}
                   onSent={() => void refetch()}
                 />
                 <OnlineProposalButton className={buttonClass} deal={deal} onChanged={() => void refetch()} />
-                <ContractButton className={buttonClass} deal={deal} />
                 {deal.status === 'won' && <AddToPortfolioButton className={buttonClass} deal={deal} />}
               </>
             )}

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { CashFlowDataPoint, FinancialMetrics } from '@/types'
+import { getViewCurrency } from '@/utils/currency'
 
 function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1)
@@ -34,13 +35,13 @@ interface LeanReceivable {
 }
 
 async function fetchLeanTransactions(): Promise<LeanTransaction[]> {
-  const { data, error } = await supabase.from('transactions').select('type, status, amount, date')
+  const { data, error } = await supabase.from('transactions').select('type, status, amount, date').eq('currency', getViewCurrency())
   if (error) throw new Error(error.message)
   return data ?? []
 }
 
 async function fetchLeanReceivables(): Promise<LeanReceivable[]> {
-  const { data, error } = await supabase.from('receivables').select('amount, status, due_date')
+  const { data, error } = await supabase.from('receivables').select('amount, status, due_date').eq('currency', getViewCurrency())
   if (error) throw new Error(error.message)
   return data ?? []
 }
@@ -112,6 +113,7 @@ export async function getCashFlowChart(months = 6): Promise<CashFlowDataPoint[]>
     .from('transactions')
     .select('type, amount, date')
     .eq('status', 'paid')
+    .eq('currency', getViewCurrency())
     .gte('date', rangeStart.toISOString().slice(0, 10))
 
   if (error) throw new Error(error.message)

@@ -2,6 +2,7 @@
 // origem ou por nicho. Testado em src/utils/salesSources.test.mjs.
 
 import { normalizeChoice } from './choiceList.ts'
+import { formatMoney } from './currency.ts'
 
 export type SourceDimension = 'origin' | 'niche'
 
@@ -105,7 +106,7 @@ export function buildSourceStats(
 }
 
 function brl(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function percent(value: number): string {

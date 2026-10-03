@@ -129,6 +129,7 @@ export interface AutoPilotContext {
     contact_name: string | null
     stage: string
     value: number | null
+    currency?: string
     expected_close_date: string | null
     days_in_stage: number
   }>

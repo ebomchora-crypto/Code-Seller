@@ -1,3 +1,4 @@
+import { formatMoney, getViewCurrency } from './currency.ts'
 import type { Deal, DealStage, PipelineMetrics } from '@/types'
 
 export const DEAL_STAGES: {
@@ -34,9 +35,13 @@ export function calculatePipelineMetrics(deals: Deal[]): PipelineMetrics {
   let openValue = 0
   let wonCount = 0
   let lostCount = 0
+  let wonInCurrency = 0
+  // Valores só da moeda escolhida para os totais; contagens com todos.
+  const currency = getViewCurrency()
 
   for (const deal of deals) {
-    const value = deal.value ?? 0
+    const sameCurrency = (deal.currency ?? 'BRL') === currency
+    const value = sameCurrency ? deal.value ?? 0 : 0
     totalValue += value
     dealsByStage[deal.stage].count += 1
     dealsByStage[deal.stage].value += value
@@ -44,6 +49,7 @@ export function calculatePipelineMetrics(deals: Deal[]): PipelineMetrics {
     if (deal.status === 'won') {
       wonValue += value
       wonCount += 1
+      if (sameCurrency) wonInCurrency += 1
     } else if (deal.status === 'lost') {
       lostValue += value
       lostCount += 1
@@ -53,7 +59,7 @@ export function calculatePipelineMetrics(deals: Deal[]): PipelineMetrics {
   }
 
   const conversionRate = wonCount + lostCount > 0 ? (wonCount / (wonCount + lostCount)) * 100 : 0
-  const avgDealValue = wonCount > 0 ? wonValue / wonCount : 0
+  const avgDealValue = wonInCurrency > 0 ? wonValue / wonInCurrency : 0
 
   return {
     total_deals: deals.length,
@@ -67,7 +73,14 @@ export function calculatePipelineMetrics(deals: Deal[]): PipelineMetrics {
   }
 }
 
-export function formatCurrency(value: number | null): string {
+// Valor na moeda pedida; sem moeda, usa a moeda escolhida para os totais.
+export function formatCurrency(value: number | null, currency?: string | null): string {
   if (value === null) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return formatMoney(value, currency ?? undefined)
+}
+
+// Soma dos valores só dos negócios na moeda escolhida para os totais.
+export function sumInViewCurrency(deals: Pick<Deal, 'value' | 'currency'>[]): number {
+  const currency = getViewCurrency()
+  return deals.reduce((sum, deal) => ((deal.currency ?? 'BRL') === currency ? sum + (deal.value ?? 0) : sum), 0)
 }

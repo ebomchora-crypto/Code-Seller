@@ -21,6 +21,7 @@ export interface FocusDeal {
   id: string
   title: string
   value: number | null
+  currency?: string
   contact_name: string | null
   days_stalled: number
 }
@@ -29,6 +30,7 @@ export interface FocusReceivable {
   id: string
   description: string
   amount: number
+  currency?: string
   due_date: string
   overdue: boolean
   deal: { id: string; title: string } | null
@@ -76,7 +78,7 @@ async function getFocusTasks(now: Date): Promise<FocusTask[]> {
 async function getStalledDeals(now: Date): Promise<FocusDeal[]> {
   const { data: deals, error } = await supabase
     .from('deals')
-    .select('id, title, value, updated_at, status, contact:contacts(name)')
+    .select('id, title, value, currency, updated_at, status, contact:contacts(name)')
     .eq('status', 'open')
 
   if (error) throw new Error(error.message)
@@ -84,6 +86,7 @@ async function getStalledDeals(now: Date): Promise<FocusDeal[]> {
     id: string
     title: string
     value: number | null
+  currency?: string
     updated_at: string
     status: string
     contact: { name: string } | null
@@ -112,6 +115,7 @@ async function getStalledDeals(now: Date): Promise<FocusDeal[]> {
         id: deal.id,
         title: deal.title,
         value: deal.value,
+        currency: deal.currency,
         contact_name: deal.contact?.name ?? null,
         days_stalled: Math.floor((now.getTime() - last.getTime()) / DAY_MS),
       }
@@ -125,7 +129,7 @@ async function getDueReceivables(now: Date): Promise<FocusReceivable[]> {
   const limit = new Date(todayStart.getTime() + RECEIVABLE_WINDOW_DAYS * DAY_MS).toISOString().slice(0, 10)
   const { data, error } = await supabase
     .from('receivables')
-    .select('id, description, amount, due_date, status, deal:deals(id, title)')
+    .select('id, description, amount, currency, due_date, status, deal:deals(id, title)')
     .in('status', ['pending', 'overdue'])
     .lte('due_date', limit)
     .order('due_date', { ascending: true })
@@ -137,6 +141,7 @@ async function getDueReceivables(now: Date): Promise<FocusReceivable[]> {
       id: row.id,
       description: row.description,
       amount: Number(row.amount),
+      currency: row.currency,
       due_date: row.due_date,
       deal: row.deal,
       overdue: new Date(`${row.due_date}T23:59:59`) < todayStart,

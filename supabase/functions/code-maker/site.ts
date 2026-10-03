@@ -50,6 +50,8 @@ export interface SitePlan {
   description: string
   direction: string
   theme: 'dark' | 'light'
+  /** Idioma do site (pt-BR por padrão). */
+  lang?: string
   palette: {
     brand: string
     brandDark: string
@@ -253,7 +255,8 @@ DESIGN
 - Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24). Nunca emoji como ícone.
 - 100% responsivo (mobile-first, bonito de 360px a 1440px), contraste AA, HTML semântico.
 
-CONTEÚDO (português do Brasil, específico, sem enrolação)
+CONTEÚDO (específico, sem enrolação)
+- Idioma: português do Brasil por padrão. Só escreva em outro idioma se o pedido do usuário pedir explicitamente (ex.: "site em inglês"); nesse caso TODO o texto do site sai nesse idioma, inclusive menu, botões e rodapé.
 - Nada de lorem ipsum, "[Nome]", "Seu texto aqui", "Bem-vindo ao nosso site" ou frases vazias de empresa.
 - Escreva como o dono falaria com o cliente: serviços reais do nicho com preço "a partir de" plausível (ou os preços informados), diferenciais concretos, dúvidas reais do nicho.
 - NUNCA invente fatos sobre o negócio: nada de nota, número de avaliações, depoimentos de clientes, ano de fundação, anos de experiência, quantidade de clientes/atendimentos, prêmios ou endereço que não estejam no pedido. Use só o que foi informado; se a reputação real foi informada, use exatamente esses números. Sem dados, valorize o que é verdade para qualquer negócio do nicho (serviços, como funciona, horário, facilidade de agendar, localização na cidade).
@@ -280,6 +283,7 @@ Formato do JSON:
   "description": "meta description (até 155 caracteres)",
   "direction": "direção de arte em 2 frases, concreta (clima, contraste, tipo de composição)",
   "theme": "dark" ou "light",
+  "lang": "idioma do site em código curto: pt-BR (padrão), pt-PT, en, es, fr, it, de… — outro só se o pedido pedir",
   "palette": { "brand": "#hex cor principal", "brandDark": "#hex mais escura da principal", "accent": "#hex acento", "ink": "#hex texto principal (no dark é claro, no light é quase preto)", "paper": "#hex fundo principal", "surface": "#hex fundo alternativo/cartões", "muted": "#hex texto secundário" },
   "fonts": { "display": "nome exato de uma fonte do Google Fonts para títulos", "body": "nome exato de uma fonte do Google Fonts para texto" },
   "globalRequirementIds": ["IDs dos requisitos transversais da especificação"],
@@ -390,7 +394,7 @@ export function contrastGuide(plan: SitePlan): string {
 
 function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): string {
   const phone = phoneDigits(brief.phone)
-  const whatsapp = phone ? `https://wa.me/55${phone}` : '#contato'
+  const whatsapp = phone ? `https://wa.me/${phone}` : '#contato'
   const nav = plan.sections
     .filter((section) => section.id !== 'hero')
     .slice(0, 6)
@@ -579,6 +583,11 @@ export function stripInventedClaims(text: string, brief: SiteBrief): string {
 }
 
 // Confere e completa o plano: nunca deixa o site sem cores/fontes válidas.
+// Idioma do site: pt-BR por padrão; outro só quando o pedido pede.
+function cleanLang(value: unknown): string {
+  return typeof value === 'string' && /^[a-z]{2}(?:-[A-Z]{2})?$/.test(value.trim()) ? value.trim() : 'pt-BR'
+}
+
 export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   if (!raw || typeof raw !== 'object') return null
   const input = raw as Record<string, any>
@@ -617,6 +626,7 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
     description: stripInventedClaims(String(input.description ?? ''), brief).slice(0, 200),
     direction: stripInventedClaims(String(input.direction ?? ''), brief).slice(0, 400),
     theme: input.theme === 'dark' ? 'dark' : 'light',
+    lang: cleanLang(input.lang),
     palette,
     fonts: {
       display: cleanFont(input.fonts?.display, 'Inter'),
@@ -785,7 +795,7 @@ export function normalizePart(partId: string, html: string): string {
 // aproveitável — o site nunca fica travado por causa dele.
 export function simpleFooter(plan: SitePlan, brief: SiteBrief): string {
   const phone = phoneDigits(brief.phone)
-  const whatsappUrl = brief.mode === 'lead_prototype' ? brief.contactRoutes?.confirmedWhatsapp : phone ? `https://wa.me/55${phone}` : null
+  const whatsappUrl = brief.mode === 'lead_prototype' ? brief.contactRoutes?.confirmedWhatsapp : phone ? `https://wa.me/${phone}` : null
   const name = escapeHtml(brief.businessName || plan.title)
   const text = textOn(plan, 'ink')
   const links = plan.sections
@@ -990,7 +1000,7 @@ export function assembleSite(plan: SitePlan, parts: SiteParts, options: { pendin
     .filter(Boolean)
     .join('\n\n')
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${plan.lang ?? 'pt-BR'}">
 <head>
 ${buildHead(plan)}
 </head>
@@ -1014,10 +1024,18 @@ export function isReservedSlug(slug: string): boolean {
   return (RESERVED_SLUGS as readonly string[]).includes(slug)
 }
 
+// Número do WhatsApp só com dígitos e já com o código do país (ex.: 5511…,
+// 351…). Número com "+" ou "00" na frente é internacional e fica como veio;
+// número só com DDD (10–11 dígitos) é do Brasil.
 export function phoneDigits(phone: string | null | undefined): string | null {
-  let digits = phone?.replace(/\D/g, '') ?? ''
-  if (digits.length === 13 && digits.startsWith('55')) digits = digits.slice(2)
-  return digits.length === 10 || digits.length === 11 ? digits : null
+  const raw = phone?.trim() ?? ''
+  let digits = raw.replace(/\D/g, '')
+  const international = raw.startsWith('+') || raw.startsWith('00')
+  if (raw.startsWith('00')) digits = digits.slice(2)
+  if (international) return digits.length >= 8 && digits.length <= 15 ? digits : null
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`
+  if (digits.length >= 12 && digits.length <= 13 && digits.startsWith('55')) return digits
+  return null
 }
 
 // ---------------------------------------------------------------------------

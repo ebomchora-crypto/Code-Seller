@@ -15,6 +15,7 @@ import { useFinancial } from '@/hooks/useFinancial'
 import { useReceivables } from '@/hooks/useReceivables'
 import { useFinancialCategories } from '@/hooks/useFinancialCategories'
 import type { Transaction } from '@/types'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 
 export default function FinancialPage() {
   const {
@@ -82,6 +83,7 @@ export default function FinancialPage() {
           subtitle="O dinheiro de verdade: o que entrou, o que saiu e o que as vendas ainda vão pagar."
           actions={
             <>
+              <CurrencySelect className="[&_select]:h-11" />
               <ExportButton onExport={exportCSV} />
               <Button variant="secondary" className="h-11 rounded-full px-4" onClick={() => setCategoryManagerOpen(true)}>
                 <Tags className="size-4" />

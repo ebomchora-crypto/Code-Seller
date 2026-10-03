@@ -21,6 +21,8 @@ export interface Transaction {
   status: TransactionStatus
   description: string
   amount: number
+  /** Moeda do valor (BRL, USD, EUR, GBP). */
+  currency?: string
   date: string
   due_date: string | null
   paid_at: string | null
@@ -47,6 +49,8 @@ export interface Receivable {
   contact_id: string | null
   description: string
   amount: number
+  /** Moeda do valor (BRL, USD, EUR, GBP). */
+  currency?: string
   due_date: string | null
   status: ReceivableStatus
   paid_at: string | null

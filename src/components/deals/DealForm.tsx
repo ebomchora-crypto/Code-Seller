@@ -12,6 +12,8 @@ import { DEAL_STAGES, getStageConfig } from '@/utils/deals'
 import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage, type PaymentMethod } from '@/types'
 import { startFollowUp } from '@/services/supabase/followup'
 import { dayToTimestamp, localDay } from '@/utils/saleDate'
+import { CurrencyField } from '@/components/ui/CurrencyField'
+import { currencyOf, getViewCurrency, type CurrencyCode } from '@/utils/currency'
 
 interface DealFormProps {
   deal?: Deal
@@ -26,6 +28,7 @@ interface FormState {
   contactId: string | null
   contactName: string
   value: string
+  currency: CurrencyCode
   stage: DealStage
   probability: number
   service: string
@@ -51,6 +54,7 @@ function buildInitialState(deal?: Deal, defaultContactId?: string, defaultContac
     contactId: deal?.contact_id ?? defaultContactId ?? null,
     contactName: deal?.contact?.name ?? defaultContactName ?? '',
     value: deal?.value != null ? String(deal.value) : '',
+    currency: currencyOf(deal?.currency ?? getViewCurrency()),
     stage: deal?.stage ?? 'contact',
     probability: deal?.probability ?? getStageConfig('contact').default_probability,
     service: deal?.service ?? '',
@@ -185,6 +189,7 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
         title: form.title.trim() || autoTitle,
         contact_id: form.contactId,
         value: form.value ? Number(form.value) : null,
+        currency: form.currency,
         stage: form.stage,
         status: (form.stage === 'won' ? 'won' : form.stage === 'lost' ? 'lost' : 'open') as Deal['status'],
         probability: form.probability,
@@ -300,16 +305,21 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
       />
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input
-          label="Valor (R$)"
-          type="number"
-          min="0"
-          step="0.01"
-          inputMode="decimal"
-          value={form.value}
-          onChange={(event) => updateField('value', event.target.value)}
-          error={errors.value}
-        />
+        <div className="flex gap-2 sm:col-span-2">
+          <CurrencyField value={form.currency} onChange={(code) => updateField('currency', code)} />
+          <div className="min-w-0 flex-1">
+            <Input
+              label="Valor"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={form.value}
+              onChange={(event) => updateField('value', event.target.value)}
+              error={errors.value}
+            />
+          </div>
+        </div>
         <Select label="Etapa" required value={form.stage} onChange={(event) => handleStageChange(event.target.value as DealStage)}>
           {DEAL_STAGES.map((stage) => (
             <option key={stage.key} value={stage.key}>

@@ -1,10 +1,9 @@
 import { formatCurrency as formatDealCurrency } from '@/utils/deals'
 import type { PaymentMethod, Recurrence, Transaction, TransactionStatus } from '@/types'
 
-// Reexporta o formatador já existente em utils/deals.ts — mesma formatação
-// BRL usada em todo o app, sem duplicar a lógica.
-export function formatCurrency(value: number): string {
-  return formatDealCurrency(value)
+// Reexporta o formatador de utils/deals.ts. Sem moeda, usa a moeda dos totais.
+export function formatCurrency(value: number, currency?: string | null): string {
+  return formatDealCurrency(value, currency)
 }
 
 export type OverdueStatus = 'overdue' | 'due_today' | 'upcoming' | 'paid' | 'cancelled'

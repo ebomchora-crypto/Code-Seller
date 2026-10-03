@@ -4,6 +4,7 @@ import { SalesSources } from '@/components/reports/SalesSources'
 import { ChevronLeft, ChevronRight, FileDown, Hourglass } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader, PageWrapper } from '@/components/ui/PageWrapper'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 import { Card } from '@/components/ui/Card'
 import { PanelHeader } from '@/components/ui/PanelHeader'
 import { Button } from '@/components/ui/Button'
@@ -17,9 +18,10 @@ import { openPrintWindow } from '@/utils/printDocument'
 import { buildReportHtml } from '@/utils/reportPrint'
 import type { DealStage } from '@/types'
 import type { ReportBucket } from '@/utils/report'
+import { formatMoney } from '@/utils/currency'
 
 function brl(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  return formatMoney(value, undefined, { decimals: false })
 }
 
 function monthLabel(year: number, month: number): string {
@@ -133,8 +135,9 @@ export default function ReportsPage() {
             : 'Quais origens e nichos mais vendem e mais fecham — para saber onde colocar esforço.'
         }
         actions={
-          tab === 'sources' ? undefined : (
+          tab === 'sources' ? <CurrencySelect className="[&_select]:h-11" /> : (
           <>
+            <CurrencySelect className="[&_select]:h-11" />
             <div className="flex h-11 items-center gap-1 rounded-full border border-[var(--border-default)] bg-[var(--bg-card)] p-1">
               <button
                 type="button"

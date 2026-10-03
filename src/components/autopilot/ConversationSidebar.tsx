@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { MessageSquare, PanelLeftClose, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, MessageSquare, PanelLeftClose, Plus, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -42,7 +43,16 @@ export function ConversationSidebar({
         {!collapsed && <button type="button" onClick={onToggleCollapsed} aria-label="Recolher conversas" title="Recolher conversas" className="hidden size-8 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] lg:flex"><PanelLeftClose className="size-4" /></button>}
       </div>
 
-      <div className="p-3">
+      <div className="flex flex-col gap-1 p-3">
+        <Link
+          to="/"
+          title={collapsed ? 'Voltar ao Code Sellers' : undefined}
+          aria-label="Voltar ao Code Sellers"
+          className={`flex h-9 items-center rounded-full text-[13px] font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] ${collapsed ? 'mx-auto w-10 justify-center' : 'gap-2 px-3'}`}
+        >
+          <ArrowLeft className="size-4" />
+          {!collapsed && 'Voltar ao Code Sellers'}
+        </Link>
         <button
           type="button"
           onClick={onCreate}

@@ -152,7 +152,7 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
                       <StageBadge stage={deal.stage} />
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right font-display font-semibold tabular-nums text-[var(--text-primary)]">
-                      {formatCurrency(deal.value)}
+                      {formatCurrency(deal.value, deal.currency)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export function DealList({ deals, loading, onEdit, onDeleteRequest }: DealListPr
                       {deal.title}
                     </Link>
                     <span className="shrink-0 font-display font-semibold tabular-nums text-[var(--text-primary)]">
-                      {formatCurrency(deal.value)}
+                      {formatCurrency(deal.value, deal.currency)}
                     </span>
                   </div>
                   <p className="mt-0.5 truncate text-[12.5px] text-[var(--text-muted)]">{deal.contact?.name ?? 'Sem contato vinculado'}</p>

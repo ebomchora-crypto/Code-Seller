@@ -30,6 +30,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteContact } from '@/services/supabase/contacts'
 import { getUnlinkedDeals, linkDealToContact } from '@/services/supabase/deals'
 import { CONTACT_STATUS_LABELS, CONTACT_STATUSES, type Contact, type ContactStatus, type Deal, type Tag } from '@/types'
+import { formatMoney } from '@/utils/currency'
 
 interface ContactDetailProps {
   contact: Contact
@@ -42,7 +43,7 @@ interface ContactDetailProps {
   onDealLinked: (deal: Deal) => void
   /** Coluna da direita (histórico de interações). */
   history: ReactNode
-  /** Botões extras no topo (ex.: mensagem pronta, contrato). Recebem a classe dos botões do topo. */
+  /** Botões extras no topo (ex.: mensagem pronta, proposta). Recebem a classe dos botões do topo. */
   actions?: (buttonClass: string) => ReactNode
   /** Cards extras abaixo dos negócios (ex: tarefas vinculadas). */
   extra?: ReactNode
@@ -55,9 +56,9 @@ const dealStatusLabels: Record<Deal['status'], string> = {
   paused: 'Pausado',
 }
 
-function formatCurrency(value: number | null): string {
+function formatCurrency(value: number | null, currency?: string): string {
   if (value === null) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return formatMoney(value, currency)
 }
 
 function formatDate(value: string): string {
@@ -310,7 +311,7 @@ export function ContactDetail({
                       <span className="min-w-0">
                         <span className="block truncate text-[14px] font-medium text-[var(--text-primary)]">{deal.title}</span>
                         <span className="mt-0.5 block text-[12.5px] tabular-nums text-[var(--text-muted)]">
-                          {formatCurrency(deal.value)} · {dealStatusLabels[deal.status]}
+                          {formatCurrency(deal.value, deal.currency)} · {dealStatusLabels[deal.status]}
                         </span>
                       </span>
                       {deal.stage && <StageBadge stage={deal.stage} />}
@@ -361,7 +362,7 @@ export function ContactDetail({
                   className="flex w-full items-center justify-between rounded-xl border border-[var(--border-default)] px-3.5 py-2.5 text-left text-sm transition hover:border-[var(--accent-ring)] hover:bg-[var(--accent-tint)]"
                 >
                   <span className="font-medium text-[var(--text-primary)]">{deal.title}</span>
-                  <span className="text-xs text-[var(--text-muted)]">{formatCurrency(deal.value)}</span>
+                  <span className="text-xs text-[var(--text-muted)]">{formatCurrency(deal.value, deal.currency)}</span>
                 </button>
               </li>
             ))}

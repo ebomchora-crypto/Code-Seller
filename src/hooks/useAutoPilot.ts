@@ -41,7 +41,7 @@ export function useAutoPilot(contactId?: string) {
       const conversation = contactId && list[0] ? await getConversationById(list[0].id) : null
       if (scope !== epoch.current) return
       setConversations(list); setContext(snapshot); setActiveConversation(conversation); setMessages(conversation?.messages ?? [])
-      setPreferences(conversation?.preferences ?? DEFAULT_COPILOT_PREFERENCES)
+      setPreferences(DEFAULT_COPILOT_PREFERENCES)
       setHasOlder((conversation?.messages?.length ?? 0) === 100)
     } catch (err) { if (scope === epoch.current) setError(err instanceof Error ? err.message : 'Não foi possível abrir o CS Copilot.') }
     finally { if (scope === epoch.current) setLoading(false) }
@@ -56,7 +56,7 @@ export function useAutoPilot(contactId?: string) {
       if (scope !== epoch.current) return
       if (!conversation || (conversation.contact_id ?? undefined) !== contactId) throw new Error('Conversa indisponível neste contexto.')
       setActiveConversation(conversation); setMessages(conversation.messages ?? [])
-      setPreferences(conversation.preferences ?? DEFAULT_COPILOT_PREFERENCES)
+      setPreferences(DEFAULT_COPILOT_PREFERENCES)
       setHasOlder((conversation.messages?.length ?? 0) === 100)
     } catch (err) { if (scope === epoch.current) setError(err instanceof Error ? err.message : 'Falha ao abrir conversa.') }
     finally { if (scope === epoch.current) setLoading(false) }
