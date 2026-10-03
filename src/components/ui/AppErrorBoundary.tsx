@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { RefreshCw } from 'lucide-react'
-import { isChunkLoadError } from '@/utils/reloadOnce'
+import { isChunkLoadError, repairAndReload } from '@/utils/reloadOnce'
 
 interface State {
   error: Error | null
@@ -32,14 +32,14 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
           <p className="mt-2 text-[14.5px] text-[var(--text-muted)]">
             {outdated ? 'Recarregue para abrir a versão mais recente do Code Sellers.' : 'Recarregue a página para continuar. Seus dados estão salvos.'}
           </p>
-          {!outdated && error.message && (
+          {error.message && (
             <p className="mt-4 break-words rounded-xl bg-black/[0.04] px-3 py-2 font-mono text-[11px] text-[var(--text-muted)] dark:bg-white/[0.04]">
               Detalhe para o suporte: {error.message.slice(0, 200)}
             </p>
           )}
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={repairAndReload}
             className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] px-6 text-sm font-semibold text-white"
           >
             <RefreshCw className="size-4" />
