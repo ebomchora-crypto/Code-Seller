@@ -34,6 +34,7 @@ import {
   type WebsiteSearch,
 } from './prospect.ts'
 import { findCountry, internationalPhone, type Country } from '../_shared/countries.ts'
+import { NO_ACCESS_MESSAGE, planUsage } from '../_shared/plan.ts'
 
 const APIFY_RUN_URL = 'https://api.apify.com/v2/acts/compass~crawler-google-places/run-sync-get-dataset-items?memory=1024'
 const DEFAULT_RESULTS = 20
@@ -156,6 +157,8 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.action !== 'search') return fail('invalid_input', 'Ação inválida.', 400)
+    // Sem teste grátis válido nem assinatura em dia, não busca.
+    if (!(await planUsage(userId, userData.user.email)).access) return fail('no_access', NO_ACCESS_MESSAGE, 402)
     if (!apifyToken) return fail('not_configured', 'A busca ainda não está disponível.', 503)
 
     const niche = body.niche?.trim().slice(0, 80) ?? ''

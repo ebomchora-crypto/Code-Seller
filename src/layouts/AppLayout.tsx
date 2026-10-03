@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils'
 import { getAppSurface } from '@/layouts/appSurface'
 import { scrollAppToTop } from '@/utils/appScroll'
 import { useViewCurrency } from '@/hooks/useViewCurrency'
+import { isDesktopApp } from '@/utils/desktop'
+import { startDownload, takeDownloadIntent } from '@/utils/downloadIntent'
 
 interface AppLayoutProps {
   children?: ReactNode
@@ -39,6 +41,22 @@ function FrozenRoute({ children }: { children?: ReactNode }) {
 
 function formatReminderTime(value: string): string {
   return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+}
+
+// Veio do "Baixar app" da landing: depois de criar a conta e entrar, o
+// download começa sozinho (com botão de reserva se o navegador segurar).
+function useDownloadAfterSignup() {
+  useEffect(() => {
+    if (isDesktopApp()) return
+    const intent = takeDownloadIntent()
+    if (!intent) return
+    startDownload(intent)
+    toast.success('Conta pronta! O download do app para Windows começou.', {
+      description: 'Se não começar, clique em Baixar.',
+      action: { label: 'Baixar', onClick: () => startDownload(intent) },
+      duration: 20000,
+    })
+  }, [])
 }
 
 // Aviso na tela dos lembretes que chegaram (ou chegam na próxima hora) ao
@@ -84,6 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [viewCurrency] = useViewCurrency()
 
   useReminderCheck()
+  useDownloadAfterSignup()
 
   // Cada página nova começa do topo (o scroll fica no <main>, não na window).
   useEffect(() => {

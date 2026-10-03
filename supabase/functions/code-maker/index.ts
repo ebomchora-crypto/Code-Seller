@@ -15,6 +15,7 @@
 // code_maker_model). Deploy: supabase functions deploy code-maker --no-verify-jwt
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { NO_ACCESS_MESSAGE, planUsage, sitesLimitMessage } from '../_shared/plan.ts'
 import {
   applyEdit,
   assembleSite,
@@ -49,7 +50,6 @@ const corsHeaders = {
 }
 
 const AI_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
-const SITES_PER_DAY = 10
 const EDITS_PER_DAY = 60
 const CALLS_PER_DAY = 600
 // O servidor corta cada chamada em 150 s; paramos antes e continuamos depois.
@@ -336,10 +336,15 @@ Deno.serve(async (req: Request) => {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>
     const action = String(body.action ?? '')
 
+    // Plano da conta: sem acesso não gera; sites por dia conforme o plano (null = sem limite).
+    const usage = await planUsage(user.id, user.email)
+
     if (action === 'usage') {
       const [sites, edits] = await Promise.all([countToday(admin, user.id, 'create'), countToday(admin, user.id, 'edit')])
-      return json({ sites_today: sites, sites_limit: SITES_PER_DAY, edits_today: edits, edits_limit: EDITS_PER_DAY })
+      return json({ sites_today: sites, sites_limit: usage.sites_limit, edits_today: edits, edits_limit: EDITS_PER_DAY })
     }
+
+    if (!usage.access) return json({ error: NO_ACCESS_MESSAGE }, 402)
 
     if (action === 'create') {
       let prototype: Awaited<ReturnType<typeof prepareLeadPrototype>> | null = null
@@ -352,8 +357,8 @@ Deno.serve(async (req: Request) => {
       if (prototype?.existing) return json({site:prototype.existing})
       const brief = prototype?.brief ?? cleanBrief((body.brief ?? {}) as Record<string, unknown>, user.id)
       if (!brief) return json({ error: 'Escreva o que você quer no site.' }, 400)
-      if ((await countToday(admin, user.id, 'create')) >= SITES_PER_DAY) {
-        return json({ error: `Você já criou ${SITES_PER_DAY} sites hoje. Amanhã libera de novo — e dá para alterar os que já existem.` }, 429)
+      if (usage.sites_limit !== null && (await countToday(admin, user.id, 'create')) >= usage.sites_limit) {
+        return json({ error: sitesLimitMessage(usage) }, 429)
       }
       let contactId: string | null = prototype?.contactId ?? null
       if (!prototype && typeof body.contact_id === 'string') {

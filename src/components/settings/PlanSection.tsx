@@ -1,8 +1,9 @@
+import { useEffect, useState } from 'react'
 import { CreditCard } from 'lucide-react'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { useAuthContext } from '@/stores/AuthContext'
 import { useBilling } from '@/stores/BillingContext'
-import { PLAN_PRICE_LABEL, checkoutUrl, daysLeft, type BillingState } from '@/services/supabase/billing'
+import { PLAN_PRICE_LABEL, checkoutUrl, daysLeft, getUsageToday, type BillingState, type UsageToday } from '@/services/supabase/billing'
 import { openExternal } from '@/utils/openExternal'
 
 function formatDate(iso: string | null): string {
@@ -19,10 +20,33 @@ const LABELS: Record<BillingState, { label: string; tone: string }> = {
   signed_out: { label: '—', tone: 'bg-[var(--bg-muted)] text-[var(--text-muted)]' },
 }
 
+function UsageMeter({ label, used, limit }: { label: string; used: number; limit: number }) {
+  const ratio = limit > 0 ? Math.min(1, used / limit) : 1
+  return (
+    <div className="rounded-2xl border border-[var(--border-subtle)] p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[13px] text-[var(--text-secondary)]">{label}</span>
+        <span className="text-[13px] font-semibold text-[var(--text-primary)]">
+          {Math.min(used, limit)} de {limit}
+        </span>
+      </div>
+      <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
+        <div className={`h-full rounded-full ${ratio >= 1 ? 'bg-amber-500' : 'bg-[var(--accent-solid)]'}`} style={{ width: `${ratio * 100}%` }} />
+      </div>
+    </div>
+  )
+}
+
 // Situação da assinatura e onde pagar ou gerenciar.
 export function PlanSection() {
   const { user } = useAuthContext()
   const { status } = useBilling()
+  const [usage, setUsage] = useState<UsageToday | null>(null)
+
+  useEffect(() => {
+    getUsageToday().then(setUsage).catch(() => setUsage(null))
+  }, [status?.state])
+
   if (!status) return null
 
   const { label, tone } = LABELS[status.state]
@@ -59,6 +83,12 @@ export function PlanSection() {
           </button>
         )}
       </div>
+      {usage && usage.copilot_limit !== null && usage.sites_limit !== null && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <UsageMeter label="Mensagens do CS Copilot hoje" used={usage.copilot_used} limit={usage.copilot_limit} />
+          <UsageMeter label="Sites criados hoje" used={usage.sites_used} limit={usage.sites_limit} />
+        </div>
+      )}
       {status.state !== 'exempt' && (
         <div className="mt-4">
         <SettingsNote>

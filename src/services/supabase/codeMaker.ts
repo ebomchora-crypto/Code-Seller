@@ -37,7 +37,8 @@ export interface SiteVersion {
 
 export interface CodeMakerUsage {
   sites_today: number
-  sites_limit: number
+  /** null = sem limite. */
+  sites_limit: number | null
   edits_today: number
   edits_limit: number
 }

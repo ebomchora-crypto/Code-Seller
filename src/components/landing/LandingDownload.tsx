@@ -1,5 +1,7 @@
 import { Download, Laptop, RefreshCw, Wifi } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { LandingFadeIn } from '@/components/landing/LandingFadeIn'
+import { rememberDownloadIntent, type DownloadKind } from '@/utils/downloadIntent'
 
 const FEATURES = [
   { icon: RefreshCw, label: 'Sempre atualizado' },
@@ -12,6 +14,13 @@ const FEATURES = [
 // mesmo estilo do card do Buyers Hunter (radial + blur), pra não parecer um
 // elemento novo/desconectado do resto da página.
 export function LandingDownload() {
+  const navigate = useNavigate()
+  // Baixar só depois de criar a conta: o download começa ao entrar no sistema.
+  const signUpToDownload = (kind: DownloadKind) => {
+    rememberDownloadIntent(kind)
+    navigate('/register')
+  }
+
   return (
     <section className="relative overflow-hidden bg-landing-bg px-5 py-20 text-white lg:px-8 lg:py-28">
       <LandingFadeIn className="relative mx-auto w-full max-w-[1100px]">
@@ -53,23 +62,23 @@ export function LandingDownload() {
               </ul>
 
               <div className="mt-9 flex flex-wrap items-center gap-3">
-                <a
-                  href="/downloads/CodeSellers-Setup.exe"
-                  download
+                <button
+                  type="button"
+                  onClick={() => signUpToDownload('setup')}
                   className="inline-flex h-[52px] items-center justify-center gap-2.5 rounded-full bg-[linear-gradient(135deg,#a78bfa,#7c3aed)] px-7 text-[15px] font-semibold text-white shadow-[0_16px_40px_-14px_rgba(167,139,250,0.9),inset_0_1px_0_rgba(255,255,255,0.25)] transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
                 >
                   <Download className="size-[18px]" strokeWidth={2.4} />
                   Baixar para Windows
-                </a>
-                <a
-                  href="/downloads/CodeSellers-Portable.exe"
-                  download
+                </button>
+                <button
+                  type="button"
+                  onClick={() => signUpToDownload('portable')}
                   className="inline-flex h-[52px] items-center justify-center rounded-full border border-white/15 px-6 text-[14px] font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white"
                 >
                   Versão portátil (sem instalar)
-                </a>
+                </button>
               </div>
-              <p className="mt-4 text-[12.5px] text-white/40">Windows 10 ou 11 · 64 bits</p>
+              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta grátis para baixar · Windows 10 ou 11 · 64 bits</p>
             </div>
 
             <div className="relative hidden lg:block" aria-hidden>

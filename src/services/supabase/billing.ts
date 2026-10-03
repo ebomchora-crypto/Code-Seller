@@ -25,6 +25,20 @@ export async function getBillingStatus(): Promise<BillingStatus> {
   return data as BillingStatus
 }
 
+export interface UsageToday {
+  copilot_used: number
+  copilot_limit: number | null
+  sites_used: number
+  sites_limit: number | null
+}
+
+/** Uso de hoje e limites do plano (null = sem limite). */
+export async function getUsageToday(): Promise<UsageToday | null> {
+  const { data, error } = await supabase.rpc('usage_today')
+  if (error) throw new Error(error.message)
+  return data as UsageToday | null
+}
+
 /** Dias inteiros que faltam até a data (0 no último dia). */
 export function daysLeft(iso: string | null): number {
   if (!iso) return 0

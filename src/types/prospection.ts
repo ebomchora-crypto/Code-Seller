@@ -86,5 +86,6 @@ export type ProspectErrorCode =
   | 'limit_reached'
   | 'invalid_input'
   | 'unauthorized'
+  | 'no_access'
   | 'upstream_error'
   | 'internal'

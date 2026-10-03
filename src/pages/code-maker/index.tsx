@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useBilling } from '@/stores/BillingContext'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, Globe, Loader2, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
@@ -123,7 +124,8 @@ export default function CodeMakerPage() {
     setSearchParams(new URLSearchParams(), { replace: true })
   }, [searchParams, setSearchParams])
 
-  const limitReached = usage ? usage.sites_today >= usage.sites_limit : false
+  const billing = useBilling().status
+  const limitReached = usage?.sites_limit != null ? usage.sites_today >= usage.sites_limit : false
 
   async function create(style: SiteStyle) {
     const text = prompt.trim()
@@ -166,13 +168,15 @@ export default function CodeMakerPage() {
             onSubmit={(style) => void create(style)}
             busy={creating}
             disabled={limitReached}
-            footnote={usage ? `${usage.sites_today} de ${usage.sites_limit} sites hoje` : null}
+            footnote={usage?.sites_limit != null ? `${usage.sites_today} de ${usage.sites_limit} ${usage.sites_limit === 1 ? 'site' : 'sites'} hoje` : null}
             attachments={attachments}
           />
         </div>
         {limitReached ? (
           <p className="relative mt-4 text-[13.5px] text-amber-600 dark:text-amber-300">
-            Você já criou os {usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.
+            {billing?.state === 'trial'
+              ? 'No teste grátis dá para criar 1 site por dia. Assine para criar até 10 por dia — e dá para continuar alterando o que já existe.'
+              : `Você já criou os ${usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.`}
           </p>
         ) : (
           <div className="relative mt-4 flex flex-wrap justify-center gap-2">

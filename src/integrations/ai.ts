@@ -1,4 +1,5 @@
 import type { AutoPilotContext, CopilotPreferences, ProposalGenerationPayload } from '@/types'
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { formatCurrency } from '@/utils/deals'
 import { leadContextForAI } from '@/utils/aiLeadContext'
@@ -54,15 +55,24 @@ interface ChatCompletionResponse {
 }
 interface MemoryResponse { memory?: string; error?: string }
 
+// Erro da função de IA. Limite do plano e falta de assinatura chegam com a
+// mensagem pronta para mostrar como está.
+async function aiError(error: Error): Promise<Error> {
+  if (error instanceof FunctionsHttpError) {
+    const body = (await error.context.json().catch(() => null)) as { error?: string; code?: string } | null
+    if (body?.error && (body.code === 'daily_limit' || body.code === 'no_access')) return new Error(body.error)
+    if (body?.error) return new Error(`Falha ao consultar a IA: ${body.error}`)
+  }
+  return new Error(`Falha ao consultar a IA: ${error.message}`)
+}
+
 async function chatCompletion(messages: ChatCompletionMessage[], mode?: 'copilot', signal?: AbortSignal, images?: string[]): Promise<string> {
   const { data, error } = await supabase.functions.invoke<ChatCompletionResponse>('ai-chat', {
     body: { messages, mode, ...(images?.length ? { images } : {}) },
     signal,
   })
 
-  if (error) {
-    throw new Error(`Falha ao consultar a IA: ${error.message}`)
-  }
+  if (error) throw await aiError(error)
 
   if (data?.error) {
     throw new Error(`Falha ao consultar a IA: ${data.error}`)
@@ -85,7 +95,7 @@ export async function summarizeCommercialMemory(previous: string | null, userMes
     }) }] },
     signal,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw await aiError(error)
   if (!data?.memory) throw new Error(data?.error || 'A memória comercial não foi gerada.')
   return data.memory
 }

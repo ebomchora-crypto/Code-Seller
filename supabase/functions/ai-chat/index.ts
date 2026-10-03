@@ -1,5 +1,6 @@
 import { attributedHistory, CONTEXT_PROVENANCE_GUARD, copilotParts, splitText, type ChatMessage } from './context.ts'
 import { load } from 'npm:cheerio@1.1.2'
+import { copilotLimitMessage, NO_ACCESS_MESSAGE, planUsage, recordCopilotMessage } from '../_shared/plan.ts'
 
 const AI_API_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
 const MODEL = 'gpt-6-luna'
@@ -224,16 +225,17 @@ function validMessages(value: unknown): value is ChatMessage[] {
     message && ['system', 'user', 'assistant'].includes(message.role) && typeof message.content === 'string')
 }
 
-async function authenticatedUser(req: Request,budget: RequestBudget): Promise<boolean> {
+async function authenticatedUser(req: Request,budget: RequestBudget): Promise<{id: string;email: string|null}|null> {
   const authorization = req.headers.get('authorization')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!authorization?.startsWith('Bearer ') || !supabaseUrl || !anonKey) return false
+  if (!authorization?.startsWith('Bearer ') || !supabaseUrl || !anonKey) return null
   return await timed(async signal=>{
     const response = await fetch(`${supabaseUrl}/auth/v1/user`, {headers: { authorization, apikey: anonKey },signal})
-    await response.body?.cancel()
-    if(response.status>=500) throw new ApiError('Servico de autenticacao indisponivel.',503,'auth_unavailable')
-    return response.ok
+    if(response.status>=500) {await response.body?.cancel();throw new ApiError('Servico de autenticacao indisponivel.',503,'auth_unavailable')}
+    if(!response.ok) {await response.body?.cancel();return null}
+    const user=await response.json() as {id?: string;email?: string}
+    return user.id ? {id:user.id,email:user.email ?? null} : null
   },budget,8000)
 }
 
@@ -242,7 +244,8 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Método não permitido.' }), { status: 405, headers: jsonHeaders })
   const budget: RequestBudget={deadline:Date.now()+REQUEST_BUDGET_MS,signal:req.signal}
   try {
-    if (!(await authenticatedUser(req,budget))) return new Response(JSON.stringify({ error: 'Sessão não autenticada.' }), {
+    const user = await authenticatedUser(req,budget)
+    if (!user) return new Response(JSON.stringify({ error: 'Sessão não autenticada.' }), {
       status: 401, headers: jsonHeaders,
     })
     const apiKey = Deno.env.get('EXPERIENTIAL_API_KEY')
@@ -252,6 +255,12 @@ Deno.serve(async (req: Request) => {
     if(!body || ![undefined,'copilot','commercial_memory'].includes(body.mode)) throw new ApiError('Modo de solicitacao invalido.',400,'invalid_request')
     if (!validMessages(body.messages)) return new Response(JSON.stringify({ error: 'Mensagens inválidas.' }), { status: 400, headers: jsonHeaders })
     if(body.mode==='copilot') {try{copilotParts(body.messages)}catch{throw new ApiError('Historico ou papeis da conversa invalidos.',400,'invalid_request')}}
+    // Plano da conta: sem acesso não usa a IA; o CS Copilot tem limite de mensagens por dia.
+    const usage = await planUsage(user.id,user.email)
+    if (!usage.access) throw new ApiError(NO_ACCESS_MESSAGE,402,'no_access')
+    if (body.mode==='copilot' && usage.copilot_limit!==null && usage.copilot_used>=usage.copilot_limit) {
+      throw new ApiError(copilotLimitMessage(usage),429,'daily_limit')
+    }
     if (body.mode === 'commercial_memory') {
       const memory = await condense(apiKey, body.messages.map((item: ChatMessage) => item.content).join('\n\n'),
         'memória comercial cumulativa do lead para próximas conversas',budget)
@@ -260,6 +269,7 @@ Deno.serve(async (req: Request) => {
     const answer = body.mode === 'copilot'
       ? await copilotCompletion(apiKey, body.messages,budget,validImages(body.images))
       : await complete(apiKey, body.messages, 4000,budget)
+    if (body.mode === 'copilot') await recordCopilotMessage(user.id)
     return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: answer } }] }), { headers: jsonHeaders })
   } catch (error) {
     return new Response(JSON.stringify({ error: error instanceof ApiError ? error.message : 'Servico de IA indisponivel. Tente novamente.',code:error instanceof ApiError?error.code:'service_error' }), {
