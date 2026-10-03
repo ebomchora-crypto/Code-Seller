@@ -9,6 +9,7 @@ import { LandingTimeline } from '@/components/landing/LandingTimeline'
 import { LandingBenefits } from '@/components/landing/LandingBenefits'
 import { LandingDownload } from '@/components/landing/LandingDownload'
 import { LandingFAQ } from '@/components/landing/LandingFAQ'
+import { LandingPricing } from '@/components/landing/LandingPricing'
 import { LandingCtaBanner } from '@/components/landing/LandingCtaBanner'
 import { LandingCta } from '@/components/landing/LandingCta'
 import { LandingFooter } from '@/components/landing/LandingFooter'
@@ -66,6 +67,7 @@ export default function LandingPage() {
         <LandingBenefits />
         <LandingCtaBanner />
         <LandingFAQ />
+        <LandingPricing />
         <LandingDownload />
         <LandingCta />
       </main>

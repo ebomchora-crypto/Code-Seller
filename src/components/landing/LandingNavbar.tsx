@@ -11,6 +11,7 @@ const navLinks = [
   { href: '#metodo', label: 'Método' },
   { href: '#buyershunter', label: 'Buyers Hunter' },
   { href: '#modulos', label: 'Módulos' },
+  { href: '#precos', label: 'Preço' },
   { href: '#faq', label: 'FAQ' },
 ]
 

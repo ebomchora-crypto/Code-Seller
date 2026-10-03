@@ -39,8 +39,12 @@ const faqItems = [
     answer: 'O método usa ferramentas de IA amplamente disponíveis, muitas com planos gratuitos suficientes pra começar.',
   },
   {
+    question: 'Quanto custa?',
+    answer: 'R$ 99,90 por mês, com 7 dias de teste grátis sem cartão. Você cancela quando quiser.',
+  },
+  {
     question: 'Como participo?',
-    answer: 'Clique em "Acessar a plataforma" ou em "Login", no topo da página — é por ali que você entra no ecossistema Code Sellers.',
+    answer: 'Crie sua conta grátis e use por 7 dias. Para continuar depois do teste, assine o plano mensal com o mesmo e-mail da conta.',
   },
 ]
 
