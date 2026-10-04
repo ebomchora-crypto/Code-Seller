@@ -9,6 +9,7 @@ import { PreferencesSection } from '@/components/settings/PreferencesSection'
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection'
 import { CalendarFeedSection } from '@/components/settings/CalendarFeedSection'
 import { NotificationsSection } from '@/components/settings/NotificationsSection'
+import { CommercialProfileSection } from '@/components/settings/CommercialProfileSection'
 import { TemplatesSection } from '@/components/settings/TemplatesSection'
 import { FollowUpSection } from '@/components/settings/FollowUpSection'
 import { DesktopAppSection } from '@/components/settings/DesktopAppSection'
@@ -86,6 +87,8 @@ export default function SettingsPage() {
             {isDesktopApp() && <DesktopAppSection />}
 
             <GroupTitle>Como você vende</GroupTitle>
+
+            <CommercialProfileSection />
 
             <TemplatesSection />
 

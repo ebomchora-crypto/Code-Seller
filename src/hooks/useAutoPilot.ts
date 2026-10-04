@@ -4,6 +4,9 @@ import { createConversation, deleteConversation as removeConversation, getConver
   saveMessage, updateActionStatus, updateConversationTitle, claimAction, getOlderConversationMessages,
   updateCommercialMemory, updateConversationPreferences } from '@/services/supabase/autopilot'
 import { buildAutoPilotContext } from '@/services/supabase/autopilotContext'
+import { getCommercialProfile } from '@/services/supabase/commercialProfile'
+import type { CommercialProfile } from '@/types/commercialProfile'
+import { isCommercialProfileEmpty } from '@/utils/commercialProfile'
 import { executeAction } from '@/services/autopilot/actionExecutor'
 import { sendAutoPilotMessage, summarizeCommercialMemory } from '@/integrations/ai'
 import { generateConversationTitle, parseAutoPilotResponse } from '@/utils/autopilot'
@@ -22,6 +25,7 @@ export function useAutoPilot(contactId?: string) {
   const [sending, setSending] = useState(false)
   const [hasOlder, setHasOlder] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [commercialProfile, setCommercialProfile] = useState<CommercialProfile | null>(null)
   const epoch = useRef(0)
   const sendLock = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -35,6 +39,15 @@ export function useAutoPilot(contactId?: string) {
       if (scope === epoch.current) setContext(result)
     } catch (err) { if (scope === epoch.current) toast.error(err instanceof Error ? err.message : 'Falha ao atualizar contexto.') }
   }, [contactId])
+  // Perfil comercial: lido a cada envio, para valer o que acabou de ser salvo nas Configurações.
+  const loadCommercialProfile = useCallback(async () => {
+    try {
+      const profile = await getCommercialProfile()
+      setCommercialProfile(profile)
+      return profile
+    } catch { return null }
+  }, [])
+  useEffect(() => { if (user) void loadCommercialProfile() }, [user, loadCommercialProfile])
   const loadConversations = useCallback(async () => {
     const scope = ++epoch.current
     setLoading(true); setError(null); setContext(null); setMessages([]); setActiveConversation(null); setHasOlder(false); setPreferences(DEFAULT_COPILOT_PREFERENCES)
@@ -108,7 +121,7 @@ export function useAutoPilot(contactId?: string) {
     const scope = epoch.current
     const trimmed = content.trim()
     try {
-      const snapshot = await buildAutoPilotContext(contactId)
+      const [snapshot, profile] = await Promise.all([buildAutoPilotContext(contactId), loadCommercialProfile()])
       let conversation = activeConversation
       let history = messages
       if (!conversation) {
@@ -157,7 +170,7 @@ export function useAutoPilot(contactId?: string) {
         content: message.content + attachmentsPromptBlock(message.attachments, 'history')
           + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
       })), snapshot, trimmed, selectedPreferences, controller.signal,
-      attachments.length ? { text: attachmentsPromptBlock(attachments, 'current'), images } : undefined)
+      attachments.length ? { text: attachmentsPromptBlock(attachments, 'current'), images } : undefined, profile)
       const parsed = parseAutoPilotResponse(response)
       const answer = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'assistant',
         content: parsed.text, analysis: parsed.analysis, actions: parsed.actions.map((action) => ({ ...action, status: 'pending' })) })
@@ -179,7 +192,7 @@ export function useAutoPilot(contactId?: string) {
       if (!contactId && conversation.title === 'Nova conversa') await renameConversation(conversation.id, generateConversationTitle(trimmed))
     } catch (err) { if (scope === epoch.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Falha ao consultar o CS Copilot.') }
     finally { if (abortRef.current === controller) abortRef.current = null; sendLock.current = false; setSending(false) }
-  }, [user, loading, contactId, activeConversation, messages, hasOlder, preferences, renameConversation])
+  }, [user, loading, contactId, activeConversation, messages, hasOlder, preferences, renameConversation, loadCommercialProfile])
   const cancelGeneration = () => abortRef.current?.abort()
   const retryAvailable = messages.at(-1)?.role === 'user' && Boolean(activeConversation)
   const retryLast = () => {
@@ -224,7 +237,10 @@ export function useAutoPilot(contactId?: string) {
     try { await updateActionStatus(messageId, actionIndex, 'rejected'); setActionState(messageId, actionIndex, 'rejected') }
     catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao recusar ação.') }
   }
+  // null enquanto carrega: o aviso de perfil vazio só aparece depois de conferir.
+  const commercialProfileMissing = commercialProfile !== null && isCommercialProfileEmpty(commercialProfile)
   return { conversations, activeConversation, messages, context, preferences, loading, sending, error, hasOlder, retryAvailable,
+    commercialProfileMissing,
     loadConversations, loadOlder, selectConversation, createNewConversation, deleteConversation, renameConversation,
     changePreferences, sendMessage, retryLast, cancelGeneration, confirmAction, rejectAction, refreshContext }
 }

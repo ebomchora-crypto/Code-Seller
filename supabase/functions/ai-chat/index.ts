@@ -1,5 +1,6 @@
 import { attributedHistory, CONTEXT_PROVENANCE_GUARD, copilotParts, splitText, type ChatMessage } from './context.ts'
 import { load } from 'npm:cheerio@1.1.2'
+import { isFirstContactRequest, pickBetter, reviewRewritePrompt, reviewSuggestedMessage } from './review.ts'
 import { copilotLimitMessage, NO_ACCESS_MESSAGE, planUsage, recordCopilotMessage } from '../_shared/plan.ts'
 
 const AI_API_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
@@ -205,7 +206,42 @@ async function copilotCompletion(apiKey: string, messages: ChatMessage[],budget:
       : currentText },
   ]
   const answer=await complete(apiKey,conversation,6000,budget)
-  return repairCommercialFormat(apiKey,conversation,answer,budget)
+  const repaired=await repairCommercialFormat(apiKey,conversation,answer,budget)
+  return reviewCommercial(apiKey,instructions,current.content,repaired,budget)
+}
+
+// Revisor: confere a mensagem sugerida contra a metodologia e, se falhar, pede
+// uma única reescrita. Qualquer falha aqui devolve a resposta original.
+const REVIEW_MIN_BUDGET_MS = 25_000
+async function reviewCommercial(apiKey: string,instructions: ChatMessage,request: string,answer: string,budget: RequestBudget): Promise<string> {
+  try {
+    const blocks=commercialBlocks(answer)
+    if(blocks.length!==1 || !blocks[0].value) return answer
+    const block=blocks[0]
+    const value=block.value!
+    const message=typeof value.suggested_message==='string' ? value.suggested_message : ''
+    const options={firstContact:isFirstContactRequest(request),mode:typeof value.mode==='string' ? value.mode : undefined}
+    const problems=reviewSuggestedMessage(message,options)
+    if(problems.length===0) return answer
+    if(budget.deadline-Date.now()<REVIEW_MIN_BUDGET_MS) {
+      console.log(JSON.stringify({event:'copilot_review',problems:problems.map(item=>item.code),rewritten:false,reason:'budget'}))
+      return answer
+    }
+    const rewrite=await complete(apiKey,[
+      instructions,
+      {role:'system',content:reviewRewritePrompt(problems,options)},
+      {role:'user',content:JSON.stringify({pedido_do_usuario:request.slice(0,4000),mensagem_original:message})},
+    ],800,budget)
+    const best=pickBetter(message,rewrite,options)
+    console.log(JSON.stringify({event:'copilot_review',problems:problems.map(item=>item.code),rewritten:best.message!==message,remaining:best.problems.map(item=>item.code)}))
+    if(best.message===message) return answer
+    const fixed=`<commercial_response>${JSON.stringify({...value,suggested_message:best.message})}</commercial_response>`
+    const start=block.index ?? 0
+    const result=answer.slice(0,start)+fixed+answer.slice(start+block.text.length)
+    return validCommercial(result) ? result : answer
+  } catch {
+    return answer
+  }
 }
 
 const MAX_IMAGES = 4

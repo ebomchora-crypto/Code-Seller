@@ -7,6 +7,8 @@ import { serializeContext } from '@/utils/autopilot'
 import { commercialRequestGuidance } from '@/utils/copilotGuidance'
 import type { CommercialMaterial } from '@/data/commercial-library'
 import { KIT_SCRIPTS } from '@/data/academy/kit'
+import type { CommercialProfile } from '@/types/commercialProfile'
+import { commercialProfilePrompt } from '@/utils/commercialProfile'
 
 // ============================================================================
 // ARQUITETURA
@@ -163,6 +165,8 @@ PREFERÊNCIAS DESTA CONVERSA:
 {preferences}
 - Se playbook for "none", use a metodologia comercial principal sem impor uma tática específica. Consultas ao CRM, organização de tarefas e perguntas gerais não precisam virar análise de negociação.
 
+{profile}
+
 METODOLOGIA COMERCIAL PRINCIPAL (tem prioridade sobre qualquer outra técnica, principalmente na venda de sites por prospecção direta):
 - Não misture esta metodologia automaticamente com frameworks genéricos de marketing. Não transforme cada resposta em copy. Não use FOMO, storytelling, mecanismo único, gatilhos, prova social ou frameworks adicionais, a menos que o contexto realmente peça. Nenhuma dessas técnicas é obrigatória; elas são conhecimento secundário e nunca substituem nem dominam este processo.
 - Siga o processo comercial abaixo de forma natural e não pule etapas sem necessidade.
@@ -266,6 +270,23 @@ const KIT_REFERENCES = KIT_SCRIPTS
   .map((script) => `- ${script.title} (${script.whenToUse}): “${script.text}”`)
   .join('\n')
 
+// Perfil comercial do usuário: vai nas instruções (nunca é resumido junto do CRM).
+function profileInstructions(profile: CommercialProfile | null | undefined): string {
+  const block = commercialProfilePrompt(profile)
+  if (!block) {
+    return 'PERFIL COMERCIAL DO USUÁRIO: ainda não preenchido. Não invente preços, pacotes, prazos, garantias nem resultados de clientes. Quando precisar de preço, use só os valores registrados no negócio ou deixe [valor] para o usuário completar.\n'
+  }
+  return `${block}
+
+REGRAS DO PERFIL COMERCIAL:
+- Ofertas, diferenciais e nichos vêm do perfil acima; adapte ao lead sem prometer o que não está lá.
+- Preços: cite apenas os do perfil ou os registrados no negócio. Nunca invente valor, desconto ou condição de pagamento.
+- Resultados de clientes: use apenas os listados, sem aumentar números.
+- Mensagens sugeridas seguem o jeito de escrever e as mensagens que funcionaram do usuário, sem perder as regras da metodologia (curta, sem apresentação institucional na primeira abordagem, terminando com pergunta simples).
+- Assinatura: só use se estiver definida, e apenas quando fizer sentido no canal.
+`
+}
+
 interface AutoPilotHistoryMessage {
   role: 'user' | 'assistant'
   content: string
@@ -280,11 +301,13 @@ export async function sendAutoPilotMessage(
   preferences: CopilotPreferences,
   signal?: AbortSignal,
   attachments?: { text: string; images: string[] },
+  commercialProfile?: CommercialProfile | null,
 ): Promise<string> {
   const systemPrompt = AUTOPILOT_SYSTEM_PROMPT
     .replace('{context}', 'O contexto atualizado vem na próxima mensagem de sistema.')
     .replace('{kit}', () => KIT_REFERENCES)
     .replace('{preferences}', () => JSON.stringify(preferences))
+    .replace('{profile}', () => profileInstructions(commercialProfile))
     + `\n\nORIENTAÇÃO DA SOLICITAÇÃO ATUAL:\n${commercialRequestGuidance(userMessage)}`
 
   return chatCompletion([

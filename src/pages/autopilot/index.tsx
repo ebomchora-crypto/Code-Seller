@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, PanelRight, X } from 'lucide-react'
+import { ArrowLeft, Briefcase, PanelRight, X } from 'lucide-react'
 import { ConversationSidebar } from '@/components/autopilot/ConversationSidebar'
 import { ChatInterface } from '@/components/autopilot/ChatInterface'
 import { LeadPanel, leadPrompts } from '@/components/autopilot/LeadPanel'
@@ -15,6 +15,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && readCopilotSidebarCollapsed(window.localStorage))
   const [leadOpen, setLeadOpen] = useState(false)
+  const [profileNoticeHidden, setProfileNoticeHidden] = useState(false)
   const intentStarted = useRef(false)
   const materialStarted = useRef(false)
   const lead = copilot.context?.selected_lead
@@ -49,6 +50,12 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
   return <div className="relative flex min-h-0 flex-1 flex-col">
     {copilot.error && <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-red-500/20 px-4 py-3 text-sm text-red-500">
       <span>{copilot.error}</span><button className="underline" onClick={() => void (copilot.activeConversation ? copilot.selectConversation(copilot.activeConversation.id) : copilot.loadConversations())}>Tentar novamente</button>
+    </div>}
+    {copilot.commercialProfileMissing && !profileNoticeHidden && <div className="flex shrink-0 items-center gap-3 border-b border-[var(--accent-ring)] bg-[var(--accent-tint)] px-4 py-2.5 text-[13px] text-[var(--text-secondary)]">
+      <Briefcase className="size-4 shrink-0 text-[var(--accent-text)]" />
+      <span className="min-w-0 flex-1">Preencha seu <b className="font-medium text-[var(--text-primary)]">Perfil comercial</b> para o CS Copilot usar sua oferta, seus preços e o seu jeito de escrever.</span>
+      <Link to="/settings#perfil-comercial" className="shrink-0 font-medium text-[var(--accent-text)] hover:underline">Preencher</Link>
+      <button onClick={() => setProfileNoticeHidden(true)} aria-label="Fechar aviso" className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"><X className="size-3.5" /></button>
     </div>}
     {contactId && <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border-subtle)] px-4 py-2">
       <span className="flex min-w-0 items-center gap-3">

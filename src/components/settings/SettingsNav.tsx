@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Bell,
+  Briefcase,
   CalendarDays,
   CreditCard,
   MessageSquareText,
@@ -39,6 +40,7 @@ const SETTINGS_GROUPS: { label: string; items: SettingsNavItem[] }[] = [
   {
     label: 'Como você vende',
     items: [
+      { id: 'perfil-comercial', label: 'Perfil comercial', icon: Briefcase },
       { id: 'modelos', label: 'Mensagens prontas', icon: MessageSquareText },
       { id: 'follow-up', label: 'Follow-up automático', icon: Repeat },
     ],
