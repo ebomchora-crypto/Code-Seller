@@ -26,6 +26,9 @@ export function useAutoPilot(contactId?: string) {
   const [hasOlder, setHasOlder] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [commercialProfile, setCommercialProfile] = useState<CommercialProfile | null>(null)
+  // Texto da resposta chegando ao vivo (vazio enquanto a IA ainda não começou a escrever).
+  const [liveText, setLiveText] = useState('')
+  const [liveStatus, setLiveStatus] = useState<string | null>(null)
   const epoch = useRef(0)
   const sendLock = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
@@ -115,7 +118,7 @@ export function useAutoPilot(contactId?: string) {
   const sendMessage = useCallback(async (content: string, selectedPreferences: CopilotPreferences = preferences, retry = false,
     files: PreparedAttachment[] = []) => {
     if (!user || !content.trim() || loading || sendLock.current) return
-    sendLock.current = true; setSending(true); setError(null)
+    sendLock.current = true; setSending(true); setError(null); setLiveText(''); setLiveStatus(null)
     const controller = new AbortController()
     abortRef.current = controller
     const scope = epoch.current
@@ -170,11 +173,15 @@ export function useAutoPilot(contactId?: string) {
         content: message.content + attachmentsPromptBlock(message.attachments, 'history')
           + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
       })), snapshot, trimmed, selectedPreferences, controller.signal,
-      attachments.length ? { text: attachmentsPromptBlock(attachments, 'current'), images } : undefined, profile)
+      attachments.length ? { text: attachmentsPromptBlock(attachments, 'current'), images } : undefined, profile,
+      {
+        onText: (text) => { if (scope === epoch.current) { setLiveText(text); setLiveStatus(null) } },
+        onStatus: (status) => { if (scope === epoch.current) setLiveStatus(status) },
+      })
       const parsed = parseAutoPilotResponse(response)
       const answer = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'assistant',
         content: parsed.text, analysis: parsed.analysis, actions: parsed.actions.map((action) => ({ ...action, status: 'pending' })) })
-      if (scope === epoch.current) setMessages((current) => [...current, answer])
+      if (scope === epoch.current) { setMessages((current) => [...current, answer]); setLiveText(''); setLiveStatus(null) }
       if (contactId && !controller.signal.aborted) {
         try {
           const memory = await summarizeCommercialMemory(snapshot.selected_lead?.commercial_memory ?? null,
@@ -191,7 +198,7 @@ export function useAutoPilot(contactId?: string) {
       }
       if (!contactId && conversation.title === 'Nova conversa') await renameConversation(conversation.id, generateConversationTitle(trimmed))
     } catch (err) { if (scope === epoch.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Falha ao consultar o CS Copilot.') }
-    finally { if (abortRef.current === controller) abortRef.current = null; sendLock.current = false; setSending(false) }
+    finally { if (abortRef.current === controller) abortRef.current = null; sendLock.current = false; setSending(false); setLiveText(''); setLiveStatus(null) }
   }, [user, loading, contactId, activeConversation, messages, hasOlder, preferences, renameConversation, loadCommercialProfile])
   const cancelGeneration = () => abortRef.current?.abort()
   const retryAvailable = messages.at(-1)?.role === 'user' && Boolean(activeConversation)
@@ -240,7 +247,7 @@ export function useAutoPilot(contactId?: string) {
   // null enquanto carrega: o aviso de perfil vazio só aparece depois de conferir.
   const commercialProfileMissing = commercialProfile !== null && isCommercialProfileEmpty(commercialProfile)
   return { conversations, activeConversation, messages, context, preferences, loading, sending, error, hasOlder, retryAvailable,
-    commercialProfileMissing,
+    commercialProfileMissing, liveText, liveStatus,
     loadConversations, loadOlder, selectConversation, createNewConversation, deleteConversation, renameConversation,
     changePreferences, sendMessage, retryLast, cancelGeneration, confirmAction, rejectAction, refreshContext }
 }

@@ -1,11 +1,11 @@
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 
-export function TypingIndicator({ onCancel }: { onCancel?: () => void }) {
+export function TypingIndicator({ onCancel, label = 'Pensando' }: { onCancel?: () => void; label?: string }) {
   return (
     <div className="flex animate-fade-in items-center gap-3" role="status">
       <CopilotOrb size="sm" thinking />
       <span className="flex items-center gap-2 text-[13px] text-[var(--text-muted)]">
-        Analisando conversa...
+        {label}...
         <span className="flex gap-1" aria-hidden>
           {[0, 1, 2].map((dot) => (
             <span

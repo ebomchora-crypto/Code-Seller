@@ -75,7 +75,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
       {sidebarOpen && !contactId && <button aria-label="Fechar conversas" onClick={() => setSidebarOpen(false)} className="absolute inset-0 z-20 bg-black/40 lg:hidden" />}
       <ChatInterface conversation={copilot.activeConversation} messages={copilot.messages} context={copilot.context}
         sending={copilot.sending || copilot.loading || !copilot.context}
-        generating={copilot.sending} hasOlder={copilot.hasOlder} retryAvailable={copilot.retryAvailable}
+        generating={copilot.sending} liveText={copilot.liveText} liveStatus={copilot.liveStatus} hasOlder={copilot.hasOlder} retryAvailable={copilot.retryAvailable}
         onLoadOlder={() => void copilot.loadOlder()} onRetry={copilot.retryLast} onCancel={copilot.cancelGeneration}
         onSendMessage={(content, attachments) => void copilot.sendMessage(content, copilot.preferences, false, attachments)}
         onConfirmAction={(messageId, actionIndex) => void copilot.confirmAction(messageId, actionIndex)}

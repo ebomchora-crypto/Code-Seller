@@ -50,9 +50,11 @@ test('long pasted history still obeys an explicit detailed-analysis request', ()
   assert.equal(inferCommercialResponseMode(message), 'analysis')
 })
 
-test('simple reply requests are message-first', () => {
+test('simple reply requests bring the message right after one opening line and explain why', () => {
   assert.equal(inferCommercialResponseMode('O que eu respondo?'), 'quick_reply')
-  assert.match(commercialRequestGuidance('O que eu respondo?'), /mensagem pronta primeiro/i)
+  const guidance = commercialRequestGuidance('O que eu respondo?')
+  assert.match(guidance, /mensagem pronta logo em seguida/i)
+  assert.match(guidance, /por que ela funciona/i)
 })
 
 test('conversation analysis requests the complete commercial reading', () => {

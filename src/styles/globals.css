@@ -353,6 +353,39 @@
     @apply bg-transparent p-0;
     color: var(--text-secondary);
   }
+
+  .autopilot-markdown blockquote {
+    @apply mb-3 rounded-r-lg border-l-2 py-2 pl-4 pr-3 last:mb-0;
+    border-color: var(--accent-ring);
+    background-color: var(--accent-tint);
+  }
+
+  .autopilot-markdown blockquote p {
+    @apply mb-1 whitespace-pre-line last:mb-0;
+  }
+
+  .autopilot-markdown h3 {
+    @apply text-[15px] font-semibold;
+  }
+
+  /* Cursor piscando no fim do texto enquanto a IA escreve. */
+  .autopilot-streaming > :last-child:not(ul):not(ol):not(blockquote)::after,
+  .autopilot-streaming > :is(ul, ol):last-child > li:last-child::after,
+  .autopilot-streaming > blockquote:last-child > :last-child::after {
+    content: '';
+    display: inline-block;
+    width: 0.5em;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: -0.15em;
+    border-radius: 2px;
+    background-color: var(--accent-solid);
+    animation: autopilot-caret 1s steps(2, start) infinite;
+  }
+}
+
+@keyframes autopilot-caret {
+  to { visibility: hidden; }
 }
 
 /* Buyers Hunter — radar do painel de busca (mesma linguagem da landing). */

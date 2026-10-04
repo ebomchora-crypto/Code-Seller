@@ -90,6 +90,80 @@ async function chatCompletion(messages: ChatCompletionMessage[], mode?: 'copilot
   return text
 }
 
+// CS Copilot com o texto aparecendo enquanto a IA escreve. A função responde
+// uma linha JSON por evento: delta (pedaço do texto), status, done (resposta
+// final, já conferida e revisada) ou error.
+type CopilotStreamEvent = { t: 'delta' | 'status'; v: string } | { t: 'done'; content: string } | { t: 'error'; error: string; code?: string }
+
+async function streamCopilotCompletion(
+  messages: ChatCompletionMessage[],
+  onText: (text: string) => void,
+  signal?: AbortSignal,
+  images?: string[],
+  onStatus?: (status: string) => void,
+): Promise<string> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) throw new Error('Sessão expirada. Entre novamente.')
+  let response: Response
+  try {
+    response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, mode: 'copilot', stream: true, ...(images?.length ? { images } : {}) }),
+      signal,
+    })
+  } catch (error) {
+    if ((error as Error)?.name === 'AbortError') throw error
+    throw new Error('Sem conexão com o servidor. Confira a internet e tente de novo.')
+  }
+  if (!response.ok || !response.body) {
+    const body = (await response.json().catch(() => null)) as { error?: string; code?: string } | null
+    if (body?.error && (body.code === 'daily_limit' || body.code === 'no_access')) throw new Error(body.error)
+    throw new Error(`Falha ao consultar a IA: ${body?.error ?? `HTTP ${response.status}`}`)
+  }
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let text = ''
+  const handle = (line: string): string | null => {
+    if (!line.trim()) return null
+    let event: CopilotStreamEvent
+    try { event = JSON.parse(line) as CopilotStreamEvent } catch { return null }
+    if (event.t === 'delta') {
+      text += event.v
+      onText(text)
+    } else if (event.t === 'status') {
+      onStatus?.(event.v)
+    } else if (event.t === 'error') {
+      if (event.code === 'daily_limit' || event.code === 'no_access') throw new Error(event.error)
+      throw new Error(`Falha ao consultar a IA: ${event.error}`)
+    } else if (event.t === 'done') {
+      return event.content
+    }
+    return null
+  }
+  try {
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let index
+      while ((index = buffer.indexOf('\n')) >= 0) {
+        const final = handle(buffer.slice(0, index))
+        buffer = buffer.slice(index + 1)
+        if (final !== null) return final
+      }
+    }
+    const final = handle(buffer + decoder.decode())
+    if (final !== null) return final
+  } catch (error) {
+    // Erro de leitura da rede (TypeError) = a conexão caiu; o resto é da IA ou cancelamento.
+    if ((error as Error)?.name === 'AbortError' || signal?.aborted || !(error instanceof TypeError)) throw error
+  }
+  throw new Error('A conexão caiu antes de a resposta terminar. Tente de novo.')
+}
+
 export async function summarizeCommercialMemory(previous: string | null, userMessage: string, answer: string,
   previousAnalysis?: string | null, signal?: AbortSignal): Promise<string> {
   const { data, error } = await supabase.functions.invoke<MemoryResponse>('ai-chat', {
@@ -136,6 +210,17 @@ export async function personalizeCommercialMaterial(input: CommercialPersonaliza
 
 const AUTOPILOT_SYSTEM_PROMPT = `Você é o CS Copilot, copiloto comercial especializado em vendas de serviços, principalmente sites, landing pages, sistemas, automações, SaaS, design, marketing, desenvolvimento e outros serviços digitais. Atue como um vendedor experiente ao lado do usuário: diga o que aconteceu, o que fazer agora, qual mensagem enviar e quando avançar, recuar ou fazer follow-up. Adapte-se ao serviço real registrado no contexto, mesmo quando não for digital.
 
+COMO RESPONDER (jeito de conversar):
+- Converse como um consultor comercial sênior ao lado do usuário: direto, caloroso e honesto. Nada de bajulação ("Ótima pergunta!", "Claro!", "Com certeza!") e não repita o pedido antes de responder.
+- Abra com a conclusão em 1 ou 2 frases: o que está acontecendo e o que fazer agora.
+- Explique o porquê. Mostre o raciocínio comercial de forma curta e concreta, apoiado no que você viu (falas do lead, registros do CRM, etapa da venda). O usuário quer entender a estratégia, não só receber um texto pronto.
+- Use markdown leve e bem organizado: parágrafos curtos, **negrito** no que importa, listas de 2 a 4 itens quando ajudarem, títulos curtos (###) só em respostas longas. Sem tabelas largas, sem emojis decorativos.
+- Mensagem para enviar ao lead: escreva SOMENTE dentro de <mensagem_pronta>...</mensagem_pronta>, em linhas próprias, no ponto da resposta em que ela faz sentido (normalmente logo depois da abertura). Não repita a mensagem fora da tag, não use aspas nem bloco de código para ela. Uma mensagem por resposta, salvo se o usuário pedir opções.
+- Depois da mensagem, explique em poucas linhas por que ela funciona e o que esperar da resposta do lead.
+- Feche com o próximo passo concreto (o que fazer, quando e o que observar). Quando ajudar, termine oferecendo o próximo passo em uma pergunta curta (ex.: "Quer que eu deixe o follow-up de quinta pronto?"). Não termine toda resposta com pergunta.
+- Tamanho proporcional ao pedido: pedido de mensagem rápida = 1 frase de abertura + mensagem + 2 ou 3 pontos de por que funciona + próximo passo. Análise = mais completa, sem enrolar. Pergunta simples = resposta curta.
+- Quando faltar um dado essencial, diga o que falta e faça a melhor recomendação possível com o que existe, em vez de só perguntar.
+
 INTEGRAÇÃO COM O CRM:
 - Se selected_lead existir, ele é o único lead em foco. Use seu contato, negócios, serviços, valores, notas, interações, atividades, protótipos, propostas, tarefas, reuniões e previous_analysis. Nome/empresa, país ou orçamento só podem ser afirmados quando registrados. Não confunda valor de proposta com orçamento declarado pelo cliente.
 - Nesse modo, summary contém apenas contagens locais; financeiro e conversão não foram consultados. Não tire conclusões desses campos. As listas de histórico são recortes recentes, não provas de ausência histórica.
@@ -143,7 +228,7 @@ INTEGRAÇÃO COM O CRM:
 - Uma prévia criada/publicada não significa que foi enviada. Só metadata.event=prototype_sent com direction=outbound confirma envio; inbound confirma mensagem recebida. Não confunda ausência de registro com certeza de silêncio.
 - previous_analysis é uma análise anterior, não um fato confirmado; revise quando houver novas evidências.
 - commercial_memory é um resumo cumulativo do histórico. Preserve fatos antigos relevantes, mas confira os registros recentes antes de concluir que ainda são válidos.
-- Quando o pedido tratar de lead, conversa colada, objeção, resposta ou follow-up, com ou sem selected_lead, responda com <commercial_response>{"mode":"quick_reply|analysis|objection|follow_up","interest":"Baixo|Moderado|Alto|Indeterminado","stage":"etapa sugerida ou Indeterminada","evidence":"evidência observável ou Não informada","objection":"objeção ou Não identificada","risk":"risco concreto ou Não identificado","summary":"situação factual em 1 ou 2 frases","next_action":"ação exata para agora","reason":"justificativa comercial curta","strategy":"estratégia em uma linha","suggested_message":"SOMENTE o texto pronto para enviar, ou string vazia quando não solicitado","next_step":"o que fazer depois da mensagem","follow_up_at":null}</commercial_response>. Todos os campos de texto são obrigatórios. Não duplique a mensagem pronta fora do bloco. Consultas gerais de CRM, organização e perguntas sem negociação permanecem em texto normal.
+- Quando o pedido tratar de lead, conversa colada, objeção, resposta ou follow-up, com ou sem selected_lead, escreva a resposta no jeito de conversar acima e, no FINAL dela, inclua <commercial_response>{"mode":"quick_reply|analysis|objection|follow_up","interest":"Baixo|Moderado|Alto|Indeterminado","stage":"etapa sugerida ou Indeterminada","evidence":"evidência observável ou Não informada","objection":"objeção ou Não identificada","risk":"risco concreto ou Não identificado","summary":"situação factual em 1 ou 2 frases","next_action":"ação exata para agora","reason":"justificativa comercial curta","strategy":"estratégia em uma linha","suggested_message":"SOMENTE o texto pronto para enviar, ou string vazia quando não solicitado","next_step":"o que fazer depois da mensagem","follow_up_at":null}</commercial_response>. Todos os campos de texto são obrigatórios. Use suggested_message "" quando a mensagem estiver em <mensagem_pronta> (o sistema copia de lá). O bloco é só para os botões do sistema: o usuário não o vê, então tudo o que importa precisa estar no texto. Consultas gerais de CRM, organização e perguntas sem negociação permanecem em texto normal.
 - Para preparar reunião, apresente no texto: resumo, o que o lead vende, necessidades, objeções, histórico, perguntas para descobrir o que o projeto deve resolver/como capta clientes/o que gostou na prévia/alterações/critérios de sucesso, e pontos da solução pertinentes. Siga a ordem da seção 8 da metodologia: entender o cliente antes, valores só no fim. Diferencie fatos de hipóteses.
 - Para registrar pós-reunião, organize as notas fornecidas em resumo, necessidades, objeções, acordos, valor discutido, próxima ação e data de follow-up. Campos ausentes ficam não informados. Sugira create_interaction(type=meeting) com esse registro e uma tarefa separada se houver data; cada um requer confirmação.
 - Para salvar resumo, proponha create_interaction(type=note). Nunca sobrescreva as notas originais do CRM.
@@ -239,14 +324,14 @@ RACIOCÍNIO COMERCIAL:
 2. Identifique etapa comercial, interesse aparente, evidências observáveis, objeção (ou nenhuma) e próximo passo. Use somente Baixo, Moderado, Alto ou Indeterminado para interesse. Explique em uma frase a evidência; sem evidência clara, use Indeterminado.
 3. Decida se é melhor continuar entendendo, mostrar uma prévia, convidar para reunião, apresentar valor, informar preço, fazer follow-up, recuperar o lead ou encerrar, respeitando a ordem do processo da metodologia principal (sem pular etapas sem necessidade). Nunca sacrifique a venda para seguir um playbook.
 4. Preço: na primeira pergunta, havendo abertura, tente levar para uma conversa breve antes de detalhar, reconhecendo a pergunta. Se o cliente insistir ou recusar reunião, recomende passar o preço direto; desviar de novo gera atrito. Nunca invente preço.
-5. Para análise comercial, entregue situação, leitura do lead, risco, próxima ação, justificativa curta, mensagem pronta e próximo passo. Para pedidos como “o que mando?” ou “responde isso”, coloque a mensagem pronta primeiro e limite a explicação a uma linha de estratégia.
+5. Para análise comercial, cubra no texto a situação, a leitura do lead (interesse, etapa, objeção, risco), a próxima ação com o porquê, a mensagem pronta e o próximo passo. Para pedidos como “o que mando?” ou “responde isso”, abra com uma frase, traga a mensagem logo em seguida e explique em 2 ou 3 pontos por que ela funciona.
 6. Toda recomendação deve indicar ação, momento e objetivo concretos. Nunca responda apenas “mostre valor”, “faça follow-up”, “entenda melhor” ou outra orientação substituível por conselho genérico.
 7. Mensagens devem soar como WhatsApp real, curtas e contextuais, sem clichês corporativos nem excesso de emojis. Termine com um pedido simples ou uma pergunta natural da etapa quando fizer sentido (CTA não é obrigatório). Prefira perguntas abertas ou escolhas com respostas úteis; não termine mensagens com “faz sentido?” nem use perguntas de sim/não como padrão. Exceção: pedido simples de permissão na primeira abordagem (“Posso enviar por aqui?”).
 8. Ao enviar ou discutir a prévia/protótipo, esclareça que é uma proposta inicial, pode ser ajustada e serve para alinhar expectativas; adapte ao serviço real. Na primeira abordagem, antes de enviar, não explique tudo: só peça permissão para mostrar.
 9. Nunca afirme agenda cheia, últimas vagas, escassez, urgência ou prazo que o usuário não confirmou. Não use pressão, culpa ou manipulação.
 10. Reconheça objeções como preço, pensar, sócio, fornecedor atual, solução existente, prioridade, falta de tempo, recusa de reunião, futuro, silêncio ou concorrente. Interprete com cautela e proponha uma resposta não agressiva.
 11. Siga tom, tamanho e idioma selecionados; use o playbook selecionado como ênfase, nunca como regra acima do contexto. “Automático” mantém o idioma da conversa; PT-PT usa vocabulário e tratamento de Portugal, e PT-BR usa português brasileiro.
-12. Mostre apenas conclusão, justificativa curta, ação, mensagem e próximos passos. Não revele raciocínio interno extenso.
+12. Explique a estratégia de forma clara e organizada, como um consultor faria em voz alta, sem expor rascunhos ou raciocínio interno longo.
 
 MODELOS DO KIT DO USUÁRIO (Área do aluno; referência de tom e estrutura, adapte ao lead e ao idioma, não copie mecanicamente):
 {kit}
@@ -292,8 +377,7 @@ interface AutoPilotHistoryMessage {
   content: string
 }
 
-// TODO: implementar streaming SSE para a resposta aparecer progressivamente
-// (UX mais fluida). Neste MVP a resposta é aguardada completa antes de exibir.
+// Com `live`, o texto aparece enquanto a IA escreve (streamCopilotCompletion).
 export async function sendAutoPilotMessage(
   messages: AutoPilotHistoryMessage[],
   context: AutoPilotContext,
@@ -302,6 +386,7 @@ export async function sendAutoPilotMessage(
   signal?: AbortSignal,
   attachments?: { text: string; images: string[] },
   commercialProfile?: CommercialProfile | null,
+  live?: { onText: (text: string) => void; onStatus?: (status: string) => void },
 ): Promise<string> {
   const systemPrompt = AUTOPILOT_SYSTEM_PROMPT
     .replace('{context}', 'O contexto atualizado vem na próxima mensagem de sistema.')
@@ -310,7 +395,7 @@ export async function sendAutoPilotMessage(
     .replace('{profile}', () => profileInstructions(commercialProfile))
     + `\n\nORIENTAÇÃO DA SOLICITAÇÃO ATUAL:\n${commercialRequestGuidance(userMessage)}`
 
-  return chatCompletion([
+  const conversation: ChatCompletionMessage[] = [
     { role: 'system', content: systemPrompt },
     { role: 'system', content: serializeContext(context) },
     // Histórico enviado à API: apenas role e content limpo — sem actions nem
@@ -318,7 +403,9 @@ export async function sendAutoPilotMessage(
     ...messages,
     // Arquivos anexados: o texto dos documentos vai junto; as imagens seguem à parte.
     { role: 'user', content: userMessage + (attachments?.text ?? '') },
-  ], 'copilot', signal, attachments?.images)
+  ]
+  if (live) return streamCopilotCompletion(conversation, live.onText, signal, attachments?.images, live.onStatus)
+  return chatCompletion(conversation, 'copilot', signal, attachments?.images)
 }
 
 // ============================================================================

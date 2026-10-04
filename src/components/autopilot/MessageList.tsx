@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { MessageBubble } from '@/components/autopilot/MessageBubble'
 import { TypingIndicator } from '@/components/autopilot/TypingIndicator'
+import { StreamingBubble } from '@/components/autopilot/StreamingBubble'
 import { Button } from '@/components/ui/Button'
 import type { AutoPilotMessage, Contact } from '@/types'
 
@@ -9,6 +10,9 @@ interface MessageListProps {
   onContextChanged?: () => void
   messages: AutoPilotMessage[]
   sending: boolean
+  /** Resposta chegando ao vivo e o que a IA está fazendo antes de escrever. */
+  liveText?: string
+  liveStatus?: string | null
   hasOlder: boolean
   retryAvailable: boolean
   onLoadOlder: () => void
@@ -33,13 +37,22 @@ function dateSeparatorLabel(value: string): string {
   return date.toLocaleDateString('pt-BR')
 }
 
-export function MessageList({ messages, sending, hasOlder, retryAvailable, onLoadOlder, onRetry, onCancel,
+export function MessageList({ messages, sending, liveText = '', liveStatus = null, hasOlder, retryAvailable, onLoadOlder, onRetry, onCancel,
   onConfirmAction, onRejectAction, onRequestVariation, contact, onContextChanged }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, sending])
+
+  // Acompanha o texto enquanto ele chega, sem puxar quem rolou para cima para ler.
+  useEffect(() => {
+    if (!liveText) return
+    const scroller = bottomRef.current?.closest('[data-lenis-prevent]')
+    if (!scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 160) {
+      bottomRef.current?.scrollIntoView({ block: 'end' })
+    }
+  }, [liveText])
 
   const itemsWithSeparators = messages.reduce<{ message: AutoPilotMessage; label: string; showSeparator: boolean }[]>(
     (acc, message) => {
@@ -81,7 +94,9 @@ export function MessageList({ messages, sending, hasOlder, retryAvailable, onLoa
           )
         })}
 
-        {sending && <TypingIndicator onCancel={onCancel} />}
+        {sending && (liveText
+          ? <StreamingBubble text={liveText} status={liveStatus} onCancel={onCancel} />
+          : <TypingIndicator onCancel={onCancel} label={liveStatus ?? 'Pensando'} />)}
         {retryAvailable && !sending && <Button variant="secondary" className="self-start" onClick={onRetry}>Tentar resposta novamente</Button>}
         <div ref={bottomRef} />
       </div>

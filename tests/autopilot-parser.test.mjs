@@ -39,3 +39,19 @@ test('preserves full lead context without exposing proposal access tokens', () =
   assert.equal(result.selected_lead.interactions[0].content.length,2000)
   assert.equal(result.selected_lead.proposals[0].token,undefined)
 })
+
+test('conversational answer keeps the prose and places the ready message where the AI put it', () => {
+  const raw = 'Ele gostou da prévia, então é hora de puxar a conversa.\n<mensagem_pronta>\nQue bom que gostou! O que mais chamou sua atenção?\n</mensagem_pronta>\n**Por que funciona:** faz ele falar.\n<commercial_response>'+JSON.stringify({...commercial,suggested_message:''})+'</commercial_response>'
+  const result = parseAutoPilotResponse(raw)
+  assert.equal(result.analysis.suggested_message, 'Que bom que gostou! O que mais chamou sua atenção?')
+  assert.match(result.text, /^Ele gostou da prévia/)
+  assert.match(result.text, /\{\{MESSAGE\}\}/)
+  assert.match(result.text, /Por que funciona/)
+  assert.ok(!result.text.includes('mensagem_pronta'))
+})
+
+test('a ready message without analysis becomes a quote and the block keeps its own message', () => {
+  assert.equal(parseAutoPilotResponse('Oi\n<mensagem_pronta>Teste</mensagem_pronta>').text, 'Oi\n\n> Teste')
+  const withMessage = parseAutoPilotResponse('<mensagem_pronta>Da tag</mensagem_pronta><commercial_response>'+JSON.stringify(commercial)+'</commercial_response>')
+  assert.equal(withMessage.analysis.suggested_message, 'O investimento é R$ 500.')
+})

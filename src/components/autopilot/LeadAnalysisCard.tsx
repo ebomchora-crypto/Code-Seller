@@ -14,6 +14,8 @@ interface LeadAnalysisCardProps {
   sending: boolean
   onPrompt: (instruction: string, response: string) => void
   onSaved?: () => void
+  /** full: cartão completo (respostas antigas). message: só a mensagem pronta. footer: leitura do lead + botões do CRM. */
+  variant?: 'full' | 'message' | 'footer'
 }
 
 const sectionTitle: Record<Exclude<CommercialResponseSection, 'message' | 'strategy'>, string> = {
@@ -37,7 +39,7 @@ function Reading({ analysis }: { analysis: LeadAnalysis }) {
   </section>
 }
 
-export function LeadAnalysisCard({ message, contact, sending, onPrompt, onSaved }: LeadAnalysisCardProps) {
+export function LeadAnalysisCard({ message, contact, sending, onPrompt, onSaved, variant = 'full' }: LeadAnalysisCardProps) {
   const [replyOpen, setReplyOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -109,14 +111,36 @@ export function LeadAnalysisCard({ message, contact, sending, onPrompt, onSaved 
     </section>
   }
 
+  const crmButtons = contact && <div className="flex flex-wrap gap-2 border-t border-[var(--border-subtle)] pt-3">
+    <Button size="sm" variant="secondary" disabled={saved || !analysis.summary} loading={saving} onClick={() => void saveSummary()}><Save className="size-4" />{saved ? 'Resumo salvo' : 'Salvar resumo no CRM'}</Button>
+    <Button size="sm" variant="secondary" onClick={() => setScheduleOpen(true)}><CalendarPlus className="size-4" />Agendar próxima ação</Button>
+  </div>
+  const scheduleDialog = contact && scheduleOpen && <CommercialTaskDialog input={{ contactId: contact.id, contactName: contact.name, title: analysis.next_action,
+    kind: 'follow_up', date: analysis.follow_up_at, description: analysis.evidence }} onClose={() => setScheduleOpen(false)} onSaved={() => onSaved?.()} />
+  const replyModal = contact && replyOpen && <SendMessageModal open onClose={() => setReplyOpen(false)} target={{ contact }} initialMessage={analysis.suggested_message} onSent={() => onSaved?.()} />
+
+  if (variant === 'message') {
+    if (!analysis.suggested_message.trim()) return null
+    return <div className="my-4 break-words">{renderSection('message')}{replyModal}</div>
+  }
+
+  if (variant === 'footer') {
+    const showReading = analysis.mode !== 'quick_reply'
+    if (!showReading && !contact) return null
+    return <section aria-label="Leitura do lead" className="mt-4 space-y-3 break-words">
+      {showReading && <details className="group rounded-lg border border-[var(--border-subtle)] px-4 py-3">
+        <summary className="cursor-pointer select-none text-[13px] font-medium text-[var(--text-secondary)] marker:text-[var(--text-muted)]">Leitura do lead</summary>
+        <div className="mt-3"><Reading analysis={analysis} /></div>
+      </details>}
+      {crmButtons}
+      {scheduleDialog}
+    </section>
+  }
+
   return <section aria-label="Análise comercial" className="my-3 space-y-5 break-words">
     {sections.map(renderSection)}
-    {contact && <div className="flex flex-wrap gap-2 border-t border-[var(--border-subtle)] pt-3">
-      <Button size="sm" variant="secondary" disabled={saved || !analysis.summary} loading={saving} onClick={() => void saveSummary()}><Save className="size-4" />{saved ? 'Resumo salvo' : 'Salvar resumo no CRM'}</Button>
-      <Button size="sm" variant="secondary" onClick={() => setScheduleOpen(true)}><CalendarPlus className="size-4" />Agendar próxima ação</Button>
-    </div>}
-    {contact && scheduleOpen && <CommercialTaskDialog input={{ contactId: contact.id, contactName: contact.name, title: analysis.next_action,
-      kind: 'follow_up', date: analysis.follow_up_at, description: analysis.evidence }} onClose={() => setScheduleOpen(false)} onSaved={() => onSaved?.()} />}
-    {contact && replyOpen && <SendMessageModal open onClose={() => setReplyOpen(false)} target={{ contact }} initialMessage={analysis.suggested_message} onSent={() => onSaved?.()} />}
+    {crmButtons}
+    {scheduleDialog}
+    {replyModal}
   </section>
 }

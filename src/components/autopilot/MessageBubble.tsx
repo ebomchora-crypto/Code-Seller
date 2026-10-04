@@ -6,6 +6,7 @@ import { ActionBlock } from '@/components/autopilot/ActionBlock'
 import { CopilotOrb } from '@/components/autopilot/CopilotOrb'
 import type { AutoPilotMessage, Contact, CopilotAttachment } from '@/types'
 import { DEFAULT_ATTACHMENT_PROMPT, formatFileSize } from '@/utils/copilotAttachments'
+import { MESSAGE_MARKER } from '@/utils/autopilot'
 import { LeadAnalysisCard } from './LeadAnalysisCard'
 
 interface MessageBubbleProps {
@@ -89,7 +90,37 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
 
   // Divide o conteúdo nos marcadores {{ACTION:N}} para renderizar cada
   // ActionBlock exatamente onde a IA posicionou a ação no texto.
-  const segments = message.content.split(ACTION_MARKER_REGEX)
+  function renderText(content: string, keyPrefix: string) {
+    return content.split(ACTION_MARKER_REGEX).map((segment, index) => {
+      if (index % 2 === 1) {
+        const actionIndex = Number(segment)
+        const action = message.actions[actionIndex]
+        if (!action) return null
+        return (
+          <div key={`${keyPrefix}-action-${actionIndex}`} className="my-3">
+            <ActionBlock
+              action={action}
+              onConfirm={() => onConfirmAction(actionIndex)}
+              onReject={() => onRejectAction(actionIndex)}
+            />
+          </div>
+        )
+      }
+      if (!segment.trim()) return null
+      return (
+        <div key={`${keyPrefix}-text-${index}`} className="autopilot-markdown text-[14.5px] leading-relaxed">
+          <ReactMarkdown>{segment}</ReactMarkdown>
+        </div>
+      )
+    })
+  }
+
+  // Resposta em conversa (texto + mensagem pronta no meio) ou, nas respostas
+  // antigas, só o cartão de análise.
+  const [beforeMessage, ...afterParts] = message.content.split(MESSAGE_MARKER)
+  const afterMessage = afterParts.join('')
+  const hasProse = message.content.replace(ACTION_MARKER_REGEX, '').split(MESSAGE_MARKER).join('').trim().length > 0
+  const cardProps = { message, contact, sending, onPrompt: onRequestVariation, onSaved: () => onContextChanged?.() }
 
   return (
     <div className="group flex animate-float-up justify-start gap-3">
@@ -101,31 +132,19 @@ export function MessageBubble({ message, onConfirmAction, onRejectAction, onRequ
           <span className="text-[var(--text-muted)]">{formatTime(message.created_at)}</span>
         </p>
         <div className="text-[var(--text-primary)]">
-          {message.analysis && <LeadAnalysisCard message={message} contact={contact} sending={sending} onPrompt={onRequestVariation} onSaved={() => onContextChanged?.()} />}
-          {segments.map((segment, index) => {
-            if (index % 2 === 1) {
-              const actionIndex = Number(segment)
-              const action = message.actions[actionIndex]
-              if (!action) return null
-              return (
-                <div key={`action-${actionIndex}`} className="my-3">
-                  <ActionBlock
-                    action={action}
-                    onConfirm={() => onConfirmAction(actionIndex)}
-                    onReject={() => onRejectAction(actionIndex)}
-                  />
-                </div>
-              )
-            }
-
-            if (!segment.trim()) return null
-
-            return (
-              <div key={`text-${index}`} className="autopilot-markdown text-[14.5px] leading-relaxed">
-                <ReactMarkdown>{segment}</ReactMarkdown>
-              </div>
-            )
-          })}
+          {message.analysis && !hasProse ? (
+            <>
+              <LeadAnalysisCard {...cardProps} />
+              {renderText(message.content, 'legacy')}
+            </>
+          ) : (
+            <>
+              {renderText(beforeMessage, 'before')}
+              {message.analysis && <LeadAnalysisCard {...cardProps} variant="message" />}
+              {renderText(afterMessage, 'after')}
+              {message.analysis && <LeadAnalysisCard {...cardProps} variant="footer" />}
+            </>
+          )}
         </div>
 
         {!message.analysis && <div className="mt-2 flex flex-wrap items-center gap-3">

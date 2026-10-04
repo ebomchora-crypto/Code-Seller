@@ -62,10 +62,10 @@ export const FIRST_CONTACT_RULES = [
 export function commercialRequestGuidance(message: string): string {
   const signals = readCommercialSignals(message)
   const rules = [`Formato desta resposta comercial: ${signals.mode}.`]
-  if (signals.mode === 'quick_reply') rules.push('Mostre a mensagem pronta primeiro e depois apenas uma linha de estratégia.')
-  if (signals.mode === 'analysis') rules.push('Entregue a análise comercial completa, com leitura, risco, ação, justificativa, mensagem e próximo passo.')
+  if (signals.mode === 'quick_reply') rules.push('Abra com uma frase, traga a mensagem pronta logo em seguida (em <mensagem_pronta>) e explique em 2 ou 3 pontos por que ela funciona; feche com o próximo passo.')
+  if (signals.mode === 'analysis') rules.push('Entregue a análise comercial completa, em texto organizado: leitura do lead, risco, ação com o porquê, mensagem pronta e próximo passo.')
   if (signals.mode === 'objection') rules.push('Identifique a objeção com cautela, explique o objetivo da resposta e dê uma mensagem pronta com próximo passo.')
-  if (signals.mode === 'follow_up') rules.push('Indique quando agir, gere um follow-up curto e defina o que fazer se não houver resposta.')
+  if (signals.mode === 'follow_up') rules.push('Indique quando agir e por quê, gere um follow-up curto e defina o que fazer se não houver resposta.')
   if (signals.meetingRefused) rules.push('O lead recusou reunião: não insista em reunião e continue pelo canal escolhido.')
   if (signals.priceRequested || signals.priceInsisted) {
     if (signals.priceInsisted || signals.meetingRefused) {

@@ -13,6 +13,8 @@ interface ChatInterfaceProps {
   context: AutoPilotContext | null
   sending: boolean
   generating: boolean
+  liveText?: string
+  liveStatus?: string | null
   hasOlder: boolean
   retryAvailable: boolean
   onLoadOlder: () => void
@@ -32,6 +34,8 @@ export function ChatInterface({
   context,
   sending,
   generating,
+  liveText,
+  liveStatus,
   hasOlder,
   retryAvailable,
   onLoadOlder,
@@ -128,6 +132,8 @@ export function ChatInterface({
               onContextChanged={onRefreshContext}
               messages={messages}
               sending={generating}
+              liveText={liveText}
+              liveStatus={liveStatus}
               hasOlder={hasOlder}
               retryAvailable={retryAvailable}
               onLoadOlder={onLoadOlder}

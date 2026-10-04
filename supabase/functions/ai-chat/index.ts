@@ -96,6 +96,75 @@ async function complete(apiKey: string, messages: ApiMessage[], maxTokens: numbe
   throw new ApiError('Resposta incompleta.',502,'incomplete_response')
 }
 
+// Igual a complete(), mas repassa cada pedaço do texto assim que chega (onDelta).
+async function completeStreaming(apiKey: string, messages: ApiMessage[], maxTokens: number, budget: RequestBudget, onDelta: (text: string) => void): Promise<string> {
+  const conversation = [...messages]
+  let answer = ''
+  for (let call=0;call<MAX_COMPLETION_CALLS;call++) {
+    if(budget.signal.aborted) throw new ApiError('Solicitacao cancelada.',499,'cancelled')
+    const remaining=budget.deadline-Date.now()
+    if(remaining<=0) throw new ApiError('Tempo total de processamento excedido; nenhum resultado incompleto foi entregue.',504,'timeout')
+    const controller=new AbortController()
+    const abort=()=>controller.abort()
+    budget.signal.addEventListener('abort',abort,{once:true})
+    const timer=setTimeout(abort,Math.min(PROVIDER_TIMEOUT_MS*2,remaining))
+    let part=''
+    let finish: string|undefined
+    try {
+      const upstream = await fetch(AI_API_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model: MODEL, max_tokens: maxTokens, stream: true, messages: conversation }),
+        signal: controller.signal,
+      })
+      if (!upstream.ok || !upstream.body) {
+        await upstream.body?.cancel()
+        throw new ApiError(`Provedor de IA indisponivel (HTTP ${upstream.status}). Tente novamente.`,upstream.status===429?429:503,'upstream_http')
+      }
+      const reader=upstream.body.getReader()
+      const decoder=new TextDecoder()
+      let buffer=''
+      let bytes=0
+      for(;;) {
+        const {done,value}=await reader.read()
+        if(done) break
+        bytes+=value.byteLength
+        if(bytes>4_000_000) {await reader.cancel();throw new ApiError('Resposta do provedor excede o limite seguro de bytes.',502,'response_limit')}
+        buffer+=decoder.decode(value,{stream:true})
+        let index
+        while((index=buffer.indexOf('\n'))>=0) {
+          const line=buffer.slice(0,index).trim()
+          buffer=buffer.slice(index+1)
+          if(!line.startsWith('data:')) continue
+          const data=line.slice(5).trim()
+          if(!data || data==='[DONE]') continue
+          let choice: {delta?: {content?: string}; finish_reason?: string|null}|undefined
+          try {choice=JSON.parse(data).choices?.[0]} catch {continue}
+          const delta=choice?.delta?.content
+          if(delta) {part+=delta;onDelta(delta)}
+          if(choice?.finish_reason) finish=choice.finish_reason
+        }
+      }
+    } catch (error) {
+      if(error instanceof ApiError) throw error
+      if(budget.signal.aborted) throw new ApiError('Solicitacao cancelada.',499,'cancelled')
+      if(controller.signal.aborted) throw new ApiError('Tempo de resposta do provedor excedido. Tente novamente.',504,'timeout')
+      throw new ApiError('A conexao com a IA caiu. Tente novamente.',502,'stream_error')
+    } finally {
+      clearTimeout(timer)
+      budget.signal.removeEventListener('abort',abort)
+    }
+    if(!part.trim() && !answer) throw new ApiError('A IA retornou uma resposta vazia.',502,'empty_response')
+    if(finish && !['length','stop','end_turn'].includes(finish)) throw new ApiError('O provedor interrompeu ou recusou a resposta; nenhum resultado incompleto foi entregue.',502,'incomplete_response')
+    answer+=part
+    if(finish!=='length') return answer
+    if(call===MAX_COMPLETION_CALLS-1) throw new ApiError('A resposta permaneceu incompleta apos o limite de continuacoes; tente novamente. Nenhum conteudo foi cortado e entregue como completo.',502,'continuation_limit')
+    conversation.push({ role: 'assistant', content: part },
+      { role: 'user', content: 'Continue exatamente de onde parou, sem repetir. Complete blocos estruturados abertos.' })
+  }
+  throw new ApiError('Resposta incompleta.',502,'incomplete_response')
+}
+
 async function condense(apiKey: string, text: string, purpose: string,budget: RequestBudget): Promise<string> {
   const chunks = splitText(text, 12000)
   let memory = ''
@@ -179,8 +248,26 @@ async function repairCommercialFormat(apiKey: string,messages: ApiMessage[],answ
   return result
 }
 
-async function copilotCompletion(apiKey: string, messages: ChatMessage[],budget: RequestBudget,images: string[] = []): Promise<string> {
+type StreamEvents = { onDelta: (text: string) => void; onStatus: (text: string) => void }
+
+// A mensagem pronta vem no texto, em <mensagem_pronta>, onde faz sentido na
+// conversa; o bloco comercial pode trazer suggested_message vazio. Copia a
+// mensagem para o bloco (botões de copiar/enviar e revisor usam o bloco).
+const MESSAGE_TAG = /<mensagem_pronta>([\s\S]*?)<\/mensagem_pronta>/i
+function fillSuggestedMessage(answer: string): string {
+  const tagged = answer.match(MESSAGE_TAG)?.[1]?.trim()
+  if(!tagged) return answer
+  const blocks=commercialBlocks(answer)
+  if(blocks.length!==1 || !blocks[0].value) return answer
+  const value=blocks[0].value
+  if(typeof value.suggested_message==='string' && value.suggested_message.trim()) return answer
+  const start=blocks[0].index ?? 0
+  return answer.slice(0,start)+`<commercial_response>${JSON.stringify({...value,suggested_message:tagged})}</commercial_response>`+answer.slice(start+blocks[0].text.length)
+}
+
+async function copilotCompletion(apiKey: string, messages: ChatMessage[],budget: RequestBudget,images: string[] = [],events?: StreamEvents): Promise<string> {
   const { instructions, context, history, current } = copilotParts(messages)
+  if (context.content.length > 15000 || JSON.stringify(history).length > 12000) events?.onStatus('Lendo o histórico')
   const contextText = context.content.length > 15000
     ? await condense(apiKey, context.content, 'contexto do CRM, com prioridade aos registros recentes',budget)
     : context.content
@@ -205,15 +292,15 @@ async function copilotCompletion(apiKey: string, messages: ChatMessage[],budget:
       ? [{ type: 'text', text: currentText }, ...images.map((url): ContentPart => ({ type: 'image_url', image_url: { url } }))]
       : currentText },
   ]
-  const answer=await complete(apiKey,conversation,6000,budget)
-  const repaired=await repairCommercialFormat(apiKey,conversation,answer,budget)
-  return reviewCommercial(apiKey,instructions,current.content,repaired,budget)
+  const answer=events ? await completeStreaming(apiKey,conversation,6000,budget,events.onDelta) : await complete(apiKey,conversation,6000,budget)
+  const repaired=fillSuggestedMessage(await repairCommercialFormat(apiKey,conversation,answer,budget))
+  return reviewCommercial(apiKey,instructions,current.content,repaired,budget,events)
 }
 
 // Revisor: confere a mensagem sugerida contra a metodologia e, se falhar, pede
 // uma única reescrita. Qualquer falha aqui devolve a resposta original.
 const REVIEW_MIN_BUDGET_MS = 25_000
-async function reviewCommercial(apiKey: string,instructions: ChatMessage,request: string,answer: string,budget: RequestBudget): Promise<string> {
+async function reviewCommercial(apiKey: string,instructions: ChatMessage,request: string,answer: string,budget: RequestBudget,events?: StreamEvents): Promise<string> {
   try {
     const blocks=commercialBlocks(answer)
     if(blocks.length!==1 || !blocks[0].value) return answer
@@ -227,6 +314,7 @@ async function reviewCommercial(apiKey: string,instructions: ChatMessage,request
       console.log(JSON.stringify({event:'copilot_review',problems:problems.map(item=>item.code),rewritten:false,reason:'budget'}))
       return answer
     }
+    events?.onStatus('Revisando a mensagem')
     const rewrite=await complete(apiKey,[
       instructions,
       {role:'system',content:reviewRewritePrompt(problems,options)},
@@ -237,7 +325,8 @@ async function reviewCommercial(apiKey: string,instructions: ChatMessage,request
     if(best.message===message) return answer
     const fixed=`<commercial_response>${JSON.stringify({...value,suggested_message:best.message})}</commercial_response>`
     const start=block.index ?? 0
-    const result=answer.slice(0,start)+fixed+answer.slice(start+block.text.length)
+    const result=(answer.slice(0,start)+fixed+answer.slice(start+block.text.length))
+      .replace(MESSAGE_TAG,()=>`<mensagem_pronta>\n${best.message}\n</mensagem_pronta>`)
     return validCommercial(result) ? result : answer
   } catch {
     return answer
@@ -286,7 +375,7 @@ Deno.serve(async (req: Request) => {
     })
     const apiKey = Deno.env.get('EXPERIENTIAL_API_KEY')
     if (!apiKey) throw new ApiError('Chave do provedor de IA nao configurada.',503,'missing_configuration')
-    let body: {mode?: string;messages?: unknown;images?: unknown}
+    let body: {mode?: string;messages?: unknown;images?: unknown;stream?: unknown}
     try {body=await req.json()} catch {throw new ApiError('JSON de solicitacao invalido.',400,'invalid_request')}
     if(!body || ![undefined,'copilot','commercial_memory'].includes(body.mode)) throw new ApiError('Modo de solicitacao invalido.',400,'invalid_request')
     if (!validMessages(body.messages)) return new Response(JSON.stringify({ error: 'Mensagens inválidas.' }), { status: 400, headers: jsonHeaders })
@@ -301,6 +390,32 @@ Deno.serve(async (req: Request) => {
       const memory = await condense(apiKey, body.messages.map((item: ChatMessage) => item.content).join('\n\n'),
         'memória comercial cumulativa do lead para próximas conversas',budget)
       return new Response(JSON.stringify({ memory }), { headers: jsonHeaders })
+    }
+    // Texto ao vivo: uma linha JSON por evento (delta, status, done ou error).
+    if (body.mode === 'copilot' && body.stream === true) {
+      const messages = body.messages
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          let open = true
+          const send = (event: Record<string, unknown>) => {
+            if (!open) return
+            try { controller.enqueue(encoder.encode(JSON.stringify(event) + '\n')) } catch { open = false }
+          }
+          try {
+            const answer = await copilotCompletion(apiKey, messages, budget, validImages(body.images), {
+              onDelta: (text) => send({ t: 'delta', v: text }),
+              onStatus: (text) => send({ t: 'status', v: text }),
+            })
+            await recordCopilotMessage(user.id)
+            send({ t: 'done', content: answer })
+          } catch (error) {
+            send({ t: 'error', error: error instanceof ApiError ? error.message : 'Servico de IA indisponivel. Tente novamente.', code: error instanceof ApiError ? error.code : 'service_error' })
+          }
+          if (open) { open = false; try { controller.close() } catch { /* cliente saiu */ } }
+        },
+      })
+      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' } })
     }
     const answer = body.mode === 'copilot'
       ? await copilotCompletion(apiKey, body.messages,budget,validImages(body.images))
