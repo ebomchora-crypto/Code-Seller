@@ -93,6 +93,11 @@ export async function createSite(brief: SiteBrief, contactId?: string | null): P
   return data.site
 }
 
+// Todas as partes prontas mas o site não ficou "pronto" (a conexão caiu no fim): termina.
+export async function finishSite(siteId: string): Promise<void> {
+  await postJson<{ site: Site }>({ action: 'finish', site_id: siteId })
+}
+
 // Chama uma ação ao vivo (plan, part, edit) até a IA terminar. Se a chamada
 // passar do tempo, continua de onde parou. `onText` recebe o texto inteiro
 // até o momento, a cada pedaço que chega.
@@ -108,14 +113,20 @@ export async function streamCodeMaker(
     if (!reader) throw new Error('Resposta vazia do servidor.')
     const decoder = new TextDecoder()
     let raw = ''
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      raw += decoder.decode(value, { stream: true })
-      const visible = visibleStreamText(raw)
-      onText(partial ? joinContinuation(partial, visible) : visible)
+    try {
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        raw += decoder.decode(value, { stream: true })
+        const visible = visibleStreamText(raw)
+        onText(partial ? joinContinuation(partial, visible) : visible)
+      }
+      raw += decoder.decode()
+    } catch (error) {
+      if ((error as Error)?.name === 'AbortError' || signal?.aborted) throw error
+      // A conexão caiu no meio: continua do que já chegou (abaixo).
+      raw = visibleStreamText(raw)
     }
-    raw += decoder.decode()
     const { text, end } = splitStreamEnd(raw)
     const full = partial ? joinContinuation(partial, text) : text
     if (end?.kind === 'ok') return full

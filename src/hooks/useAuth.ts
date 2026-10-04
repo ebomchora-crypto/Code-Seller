@@ -17,6 +17,15 @@ export interface UseAuthResult {
   refreshProfile: () => Promise<void>
 }
 
+// Mesmo usuário com os mesmos dados: mantém o objeto antigo. Cada aviso do
+// login (trocar de aba, renovar a sessão a cada hora) traz um objeto novo, e
+// trocar a referência fazia telas inteiras recarregarem — inclusive cancelando
+// a criação de sites no meio.
+function sameUser(a: AuthUser | null, b: AuthUser | null): boolean {
+  if (!a || !b) return a === b
+  return a.id === b.id && a.email === b.email && a.name === b.name && a.avatar_url === b.avatar_url && a.created_at === b.created_at
+}
+
 export function useAuth(): UseAuthResult {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -34,7 +43,8 @@ export function useAuth(): UseAuthResult {
 
     getCurrentUser().then((response) => {
       if (!isMounted) return
-      setUser(response.data)
+      const next = response.data
+      setUser((current) => (sameUser(current, next) ? current : next))
       setLoading(false)
       if (response.data) loadProfile()
     })
@@ -45,8 +55,15 @@ export function useAuth(): UseAuthResult {
       if (nextSession?.user) {
         getCurrentUser().then((response) => {
           if (!isMounted) return
-          setUser(response.data)
-          if (response.data) loadProfile()
+          // Falha de rede ao conferir o usuário não desloga quem tem sessão.
+          if (!response.data) {
+            if (response.error) return
+            setUser(null)
+            return
+          }
+          const next = response.data
+          setUser((current) => (sameUser(current, next) ? current : next))
+          loadProfile()
         })
       } else {
         setUser(null)

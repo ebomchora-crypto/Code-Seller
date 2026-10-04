@@ -6,6 +6,7 @@
 //   { action: 'plan', site_id, partial? }       → IA planeja cores/fontes/seções (texto ao vivo)
 //   { action: 'part', site_id, part_id, partial? } → IA escreve uma parte (texto ao vivo)
 //   { action: 'edit', site_id, instruction, partial? } → IA altera o site (texto ao vivo)
+//   { action: 'finish', site_id }               → marca pronto quando todas as partes já existem
 //
 // As respostas "ao vivo" são texto puro, terminando com uma linha:
 //   <<<OK>>>  |  <<<CONTINUA>>> (tempo da chamada acabou: chame de novo com
@@ -158,7 +159,12 @@ async function completeJson(apiKey: string, model: string, system: string, conte
   if (data.choices?.[0]?.finish_reason === 'length') throw new Error('A leitura dos requisitos não terminou. Tente novamente.')
   const text = data.choices?.[0]?.message?.content
   if (typeof text !== 'string') throw new Error('A IA não retornou uma especificação válida.')
-  return JSON.parse(text.trim().replace(/^\x60\x60\x60(?:json)?\s*|\s*\x60\x60\x60$/g,''))
+  try {
+    return JSON.parse(text.trim().replace(/^\x60\x60\x60(?:json)?\s*|\s*\x60\x60\x60$/g,''))
+  } catch {
+    // A mensagem do JSON.parse é técnica (e em inglês): a tela recebe esta.
+    throw new Error('A IA respondeu fora do formato esperado. Tente de novo.')
+  }
 }
 
 async function compactContext(
@@ -396,7 +402,7 @@ Deno.serve(async (req: Request) => {
       return json({ site })
     }
 
-    if (!['plan', 'part', 'edit', 'restore'].includes(action)) return json({ error: 'Ação inválida.' }, 400)
+    if (!['plan', 'part', 'edit', 'restore', 'finish'].includes(action)) return json({ error: 'Ação inválida.' }, 400)
 
     const { data: siteData } = await admin
       .from('sites')
@@ -439,6 +445,36 @@ Deno.serve(async (req: Request) => {
       })
       if (historyError) return json({ error: 'A versão foi restaurada, mas o histórico não pôde ser atualizado. Atualize o site antes de continuar.' }, 500)
       return json({ site: restored })
+    }
+
+    // Todas as partes salvas, mas a conexão caiu antes de marcar pronto: o
+    // site ficava em "construindo" para sempre. Termina sem chamar a IA.
+    if (action === 'finish') {
+      if (site.status === 'ready') {
+        const { data: current, error } = await admin.from('sites').select('*').eq('id', site.id).eq('user_id', user.id).maybeSingle()
+        if (error) throw error
+        return json({ site: current })
+      }
+      const plan = site.plan
+      if (!plan || !partOrder(plan).every((id) => typeof site.parts[id] === 'string' && site.parts[id].trim())) {
+        return json({ error: 'Ainda faltam partes do site. Clique em "Continuar criação".' }, 409)
+      }
+      // code_maker_mark_ready só termina sites em "building".
+      if (site.status !== 'building') {
+        const { error: statusError } = await admin.from('sites').update({ status: 'building' }).eq('id', site.id).eq('updated_at', site.updated_at)
+        if (statusError) throw statusError
+      }
+      const { data: first, error: readyError } = await admin.rpc('code_maker_mark_ready', { p_site: site.id, p_html: assembleSite(plan, site.parts) })
+      if (readyError) throw readyError
+      if (first === true) {
+        const { error: versionError } = await admin.from('site_versions').insert({
+          site_id: site.id, user_id: user.id, kind: 'create', actions: plan.actions ?? [], plan, parts: site.parts,
+        })
+        if (versionError) throw versionError
+      }
+      const { data: current, error } = await admin.from('sites').select('*').eq('id', site.id).eq('user_id', user.id).maybeSingle()
+      if (error) throw error
+      return json({ site: current })
     }
 
     const partial = typeof body.partial === 'string' ? body.partial : ''
@@ -492,15 +528,18 @@ Deno.serve(async (req: Request) => {
           { role: 'user', content: buildPlanMessage(site.brief) },
         ],
         finish: async (full, signal) => {
-          const { actions, plan, business } = parsePlan(full, planningBrief)
-          if (!plan) {
+          const { actions, plan: parsedPlan, business } = parsePlan(full, planningBrief)
+          if (!parsedPlan) {
             await admin.from('sites').update({ status: 'error' }).eq('id', site.id)
             return 'A IA não conseguiu planejar o site. Tente gerar de novo.'
           }
-          const coverage = validateRequirementCoverage(planningBrief.specification!,plan)
-          if (!coverage.valid) {
-            await admin.from('sites').update({status:'error'}).eq('id',site.id)
-            return `O plano deixou requisitos sem tratar: ${coverage.missing.join(', ')}. Tente novamente.`
+          // Requisito que a IA não encaixou em nenhuma seção vale para o site
+          // todo (entra em todas as partes e na conferência final) em vez de
+          // reprovar o plano inteiro.
+          const coverage = validateRequirementCoverage(planningBrief.specification!,parsedPlan)
+          const plan = coverage.valid ? parsedPlan : {
+            ...parsedPlan,
+            globalRequirementIds: [...new Set([...(parsedPlan.globalRequirementIds ?? []), ...coverage.missing])],
           }
           const brief = fillBrief(planningBrief, business)
           const renamed = !site.brief.businessName && brief.businessName
@@ -567,23 +606,11 @@ Deno.serve(async (req: Request) => {
           if (error) throw error
           const parts = (merged ?? {}) as SiteParts
           if (partOrder(plan).every((id) => parts[id])) {
+            // Sem conferência do site inteiro aqui: cada parte já foi conferida
+            // com os requisitos dela. A conferência final apagava a última parte
+            // escrita quando achava algo faltando em outra — refazê-la não
+            // corrigia nada e o site nunca ficava pronto.
             const document = assembleSite(plan,parts)
-            if (specification) {
-              let problem: string | null
-              try {
-                problem = await checkRequirements(specification,document,apiKey,model,signal)
-              } catch (error) {
-                const {error:removeError} = await admin.rpc('code_maker_merge_part',{p_site:site.id,p_part:partId,p_html:''})
-                if (removeError) throw removeError
-                throw error
-              }
-              if (problem) {
-                // Keep the final part retryable until the whole document passes.
-                const {error:removeError} = await admin.rpc('code_maker_merge_part',{p_site:site.id,p_part:partId,p_html:''})
-                if (removeError) throw removeError
-                return problem
-              }
-            }
             signal.throwIfAborted()
             const { data: first, error: readyError } = await admin.rpc('code_maker_mark_ready', { p_site: site.id, p_html: document })
             if (readyError) throw readyError

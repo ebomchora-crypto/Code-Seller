@@ -6,7 +6,9 @@ import { Paywall } from '@/components/billing/Paywall'
 // Só deixa entrar no sistema com teste grátis válido ou assinatura em dia.
 export function BillingGate({ children }: { children: ReactNode }) {
   const { status, loading } = useBilling()
-  if (loading) {
+  // Carregamento só na primeira vez: conferir de novo (ao voltar para a aba)
+  // não pode tirar a tela do lugar, senão o que estava em andamento se perde.
+  if (loading && !status) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Spinner size="lg" className="text-purple-600" />

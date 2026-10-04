@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { normalizePart, parseActions, parsePart, simpleFooter, partOrder, type SiteAsset, type SiteParts } from '../../supabase/functions/code-maker/site'
 import {
+  finishSite,
   getSite,
   listSiteVersions,
   streamCodeMaker,
@@ -102,7 +103,10 @@ export function useSiteBuilder(siteId: string) {
     async (current: Site, signal: AbortSignal): Promise<boolean> => {
       if (!current.plan) return false
       const missing = partOrder(current.plan).filter((id) => !current.parts[id])
-      if (missing.length === 0) return true
+      if (missing.length === 0) {
+        if (current.status !== 'ready') await finishSite(current.id)
+        return true
+      }
       setPhase('building')
       resetProgress(Object.fromEntries(missing.map((id) => [id, { status: 'queued', text: '' } as PartProgress])))
       let failed = 0

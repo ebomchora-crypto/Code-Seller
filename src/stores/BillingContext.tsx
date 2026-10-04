@@ -14,11 +14,12 @@ const BillingContext = createContext<BillingContextValue | undefined>(undefined)
 // para a aba (ex.: depois de pagar na Kiwify).
 export function BillingProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthContext()
+  const userId = user?.id ?? null
   const [status, setStatus] = useState<BillingStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setStatus(null)
       setLoading(false)
       return null
@@ -34,9 +35,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [userId])
 
+  // Só troca de conta mostra o carregamento de novo (ver BillingGate).
   useEffect(() => {
+    setStatus(null)
     setLoading(true)
     void refresh()
   }, [refresh])
