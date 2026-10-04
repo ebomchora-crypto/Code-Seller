@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { lazyPage } from '@/utils/lazyPage'
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
+import { AppUpdater } from '@/components/layout/AppUpdater'
 import { PrivateRoute } from '@/router/PrivateRoute'
 import { PublicRoute } from '@/router/PublicRoute'
 import { RootRoute } from '@/router/RootRoute'
@@ -50,6 +51,7 @@ function RouteFallback() {
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <AppUpdater />
       <DesktopIntegration />
       <Suspense fallback={<RouteFallback />}>
         <Routes>

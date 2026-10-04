@@ -417,8 +417,10 @@ Deno.serve(async (req: Request) => {
       })
       return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' } })
     }
+    // Sem texto ao vivo = versão antiga do site ainda aberta: ela mostra a
+    // mensagem só pelo bloco comercial, então a marcação sai do texto.
     const answer = body.mode === 'copilot'
-      ? await copilotCompletion(apiKey, body.messages,budget,validImages(body.images))
+      ? (await copilotCompletion(apiKey, body.messages,budget,validImages(body.images))).replace(new RegExp(MESSAGE_TAG.source,'gi'),'')
       : await complete(apiKey, body.messages, 4000,budget)
     if (body.mode === 'copilot') await recordCopilotMessage(user.id)
     return new Response(JSON.stringify({ choices: [{ message: { role: 'assistant', content: answer } }] }), { headers: jsonHeaders })
