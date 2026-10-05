@@ -23,6 +23,10 @@ export interface AcademyLesson {
   checklist: string[]
   /** Opcional: link do YouTube para quando houver vídeo. */
   videoUrl?: string
+  /** Exercício escrito: a resposta fica salva para o aluno. */
+  exercise?: { prompt: string; placeholder: string }
+  /** Erros que mais derrubam a venda nesta etapa. */
+  mistakes?: string[]
 }
 
 export type KitPromptCategory = 'site' | 'landing' | 'sistema' | 'revisao' | 'vendas'

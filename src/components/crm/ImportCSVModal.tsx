@@ -5,8 +5,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { importContacts, type ImportContactsResult } from '@/services/supabase/contacts'
-import type { Contact, ContactStatus } from '@/types'
-import { GOOGLE_HEADER_ALIASES, addFullNameColumn, firstCsvValue, normalizeCsvHeader } from '@/utils/contactCsv'
+import type { Contact } from '@/types'
+import { GOOGLE_HEADER_ALIASES, addFullNameColumn, contactStatusFromText, firstCsvValue, normalizeCsvHeader } from '@/utils/contactCsv'
 
 interface ImportCSVModalProps {
   open: boolean
@@ -138,7 +138,7 @@ export function ImportCSVModal({ open, onClose, onImported }: ImportCSVModalProp
           const value = firstCsvValue(field, row[header]?.trim() ?? '')
           if (!value) continue
           if (field === 'status') {
-            contact.status = value.toLowerCase() as ContactStatus
+            contact.status = contactStatusFromText(value)
           } else {
             contact[field] = value
           }

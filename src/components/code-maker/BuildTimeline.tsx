@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { Check, CircleAlert, Loader2, RotateCcw, Sparkles } from 'lucide-react'
+import { Check, CircleAlert, FileSearch, LayoutTemplate, Loader2, Palette as PaletteIcon, RotateCcw, Sparkles } from 'lucide-react'
 import { parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
 import type { Site, SiteVersion, StoredPlan } from '@/services/supabase/codeMaker'
 import type { BuildPhase, PartProgress } from '@/hooks/useSiteBuilder'
@@ -97,6 +97,36 @@ function Palette({ plan }: { plan: StoredPlan }) {
   )
 }
 
+// Linhas de etapa no estilo dos construtores de site com IA: o que a IA já
+// fez, uma por linha, com ícone.
+function StepRow({ icon: Icon, label, working = false }: { icon: typeof Check; label: string; working?: boolean }) {
+  return (
+    <li className="flex items-center gap-2 text-[12.5px] text-[var(--text-muted)]">
+      {working ? <Loader2 className="size-3.5 shrink-0 animate-spin text-[var(--accent-text)]" /> : <Icon className="size-3.5 shrink-0" />}
+      <span className={working ? 'text-[var(--text-secondary)]' : undefined}>{label}</span>
+    </li>
+  )
+}
+
+function PlanSteps({ planning, plan, actions }: { planning: boolean; plan: StoredPlan | null; actions: string[] }) {
+  if (planning) {
+    return (
+      <ul className="mb-3 flex flex-col gap-1.5">
+        <StepRow icon={FileSearch} label="Pedido lido" />
+        <StepRow icon={PaletteIcon} label={actions.length ? 'Direção de arte em andamento' : 'Pensando na direção de arte…'} working />
+      </ul>
+    )
+  }
+  if (!plan) return null
+  return (
+    <ul className="mb-3 flex flex-col gap-1.5">
+      <StepRow icon={FileSearch} label="Pedido lido" />
+      <StepRow icon={PaletteIcon} label="Cores e fontes escolhidas" />
+      <StepRow icon={LayoutTemplate} label={`${plan.sections.length} seções planejadas`} />
+    </ul>
+  )
+}
+
 interface BuildTimelineProps {
   site: Site
   versions: SiteVersion[]
@@ -177,6 +207,7 @@ export function BuildTimeline(props: BuildTimelineProps) {
       </UserBubble>
 
       <AiBlock title={planning || !plan ? 'Planejando o site' : 'Direção de arte'} status={planStatus}>
+        <PlanSteps planning={planning} plan={plan} actions={planActions} />
         <ActionList actions={planning ? planActions : plan?.actions ?? []} live={planning} />
         {plan && !planning && <Palette plan={plan} />}
       </AiBlock>

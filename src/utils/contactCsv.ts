@@ -63,3 +63,19 @@ export function firstCsvValue(field: string, value: string): string {
   if (field === 'notes') return value.split(MULTI_VALUE_SEPARATOR).join(' · ')
   return value.split(MULTI_VALUE_SEPARATOR).find((part) => part.trim())?.trim() ?? ''
 }
+
+// Status escrito do jeito da planilha ("Cliente", "Em negociação", "Perdido",
+// "client"…) vira o código que o CRM guarda. O banco só aceita os 5 códigos:
+// antes, "cliente" ia como veio e a importação inteira falhava.
+const STATUS_WORDS: [RegExp, 'lead' | 'negotiating' | 'client' | 'inactive' | 'lost'][] = [
+  [/^(lead|novo|prospect|prospec|contato|frio|morno|quente)/, 'lead'],
+  [/(negoci|proposta|andamento|em conversa|interessad)/, 'negotiating'],
+  [/^(client|cliente|fechad|ganh|won|ativo)/, 'client'],
+  [/^(inativ|inactive|parad|pausad)/, 'inactive'],
+  [/^(perdid|lost|desist|recus|cancel)/, 'lost'],
+]
+
+export function contactStatusFromText(value: string): 'lead' | 'negotiating' | 'client' | 'inactive' | 'lost' {
+  const text = normalizeCsvHeader(value).replace(/_/g, ' ')
+  return STATUS_WORDS.find(([pattern]) => pattern.test(text))?.[1] ?? 'lead'
+}

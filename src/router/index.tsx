@@ -110,6 +110,17 @@ export function AppRouter() {
             }
           />
 
+          {/* Editor do Code Maker em tela cheia, como o CS Copilot: chat e passos
+              da IA à esquerda, prévia à direita. */}
+          <Route
+            path="/code-maker/:id"
+            element={
+              <PrivateRoute>
+                <CodeMakerEditorPage />
+              </PrivateRoute>
+            }
+          />
+
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
             <Route path="/aluno" element={<AcademyPage />} />
             <Route path="/aluno/licao/:id" element={<AcademyLessonPage />} />
@@ -126,7 +137,6 @@ export function AppRouter() {
             <Route path="/relatorios" element={<ReportsPage />} />
             <Route path="/autopilot" element={<Navigate to="/copilot" replace />} />
             <Route path="/code-maker" element={<CodeMakerPage />} />
-            <Route path="/code-maker/:id" element={<CodeMakerEditorPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
           </Route>

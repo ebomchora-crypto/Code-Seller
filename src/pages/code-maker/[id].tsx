@@ -171,7 +171,7 @@ export default function CodeMakerEditorPage() {
 
   if (builder.loading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-dvh items-center justify-center bg-[var(--panel-bg)]">
         <Spinner size="lg" className="text-purple-600" />
       </div>
     )
@@ -179,7 +179,7 @@ export default function CodeMakerEditorPage() {
 
   if (!site) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+      <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-[var(--panel-bg)] p-6 text-center">
         <p className="font-display text-lg font-semibold text-[var(--text-primary)]">
           {builder.notFound ? 'Site não encontrado' : 'Não foi possível abrir o site'}
         </p>
@@ -315,7 +315,7 @@ export default function CodeMakerEditorPage() {
   const activeLeft: LeftTab = mobileView === 'codigo' ? 'codigo' : mobileView === 'acoes' ? leftTab : leftTab
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
       {/* Barra do editor */}
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 sm:px-4">
         <Link to="/code-maker" className={iconButton} aria-label="Voltar para os sites">

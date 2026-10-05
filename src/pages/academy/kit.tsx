@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { toast } from 'sonner'
@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { FilterChips } from '@/components/ui/FilterChips'
-import { createTemplate } from '@/services/supabase/templates'
+import { createTemplate, getTemplates } from '@/services/supabase/templates'
 import { markdownToHtml, openPrintWindow } from '@/utils/printDocument'
 import { KIT_PROMPTS, KIT_PROPOSALS, KIT_SCRIPTS, type KitPromptCategory, type KitProposal, type KitScript } from '@/data/academy'
 
@@ -87,6 +87,21 @@ export default function AcademyKitPage() {
   const tab: KitTab = isTab(params.get('aba')) ? (params.get('aba') as KitTab) : 'prompts'
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<Set<string>>(new Set())
+  // Lembra quais mensagens já viraram modelo (antes o aviso sumia ao recarregar
+  // e dava para criar o mesmo modelo várias vezes).
+  useEffect(() => {
+    let alive = true
+    getTemplates()
+      .then((templates) => {
+        if (!alive) return
+        const bodies = new Set(templates.map((template) => template.body.trim()))
+        setSaved(new Set(KIT_SCRIPTS.filter((script) => bodies.has(script.text.trim())).map((script) => script.id)))
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
   const [preview, setPreview] = useState<KitProposal | null>(null)
   const [promptFilter, setPromptFilter] = useState<KitPromptCategory | 'todos'>('todos')
   const [scriptFilter, setScriptFilter] = useState<KitScript['category'] | 'todos'>('todos')
@@ -98,6 +113,7 @@ export default function AcademyKitPage() {
   }
 
   async function saveAsTemplate(script: KitScript) {
+    if (saved.has(script.id)) return
     setSaving(script.id)
     try {
       await createTemplate({ name: script.title, category: script.category, body: script.text, position: 999 })

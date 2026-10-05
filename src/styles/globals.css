@@ -515,6 +515,42 @@
   font-weight: 600;
   color: var(--text-primary);
 }
+.academy-markdown h3 {
+  margin: 1.4em 0 0.4em;
+  font-family: Sora, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+/* Roteiros de mensagem: caixa com cara de conversa. */
+.academy-markdown blockquote {
+  margin: 1em 0;
+  border-left: 3px solid var(--accent-text);
+  border-radius: 0 14px 14px 0;
+  background: var(--bg-muted);
+  padding: 0.7em 1.1em;
+  color: var(--text-primary);
+}
+.academy-markdown blockquote p {
+  margin: 0.35em 0;
+}
+.academy-markdown table {
+  width: 100%;
+  margin: 1em 0;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.academy-markdown th,
+.academy-markdown td {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.5em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.academy-markdown th {
+  color: var(--text-primary);
+  font-weight: 600;
+}
 
 /* Proposta online (página pública, sempre clara). */
 .public-proposal-markdown {

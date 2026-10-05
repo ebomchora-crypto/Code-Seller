@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import type { Contact, ContactFilters, ContactStatus, Tag } from '@/types'
+import { CONTACT_STATUSES } from '@/types'
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
@@ -205,7 +206,7 @@ export async function importContacts(contacts: Partial<Contact>[]): Promise<Impo
       niche: row.niche ?? null,
       city: row.city ?? null,
       state: row.state ?? null,
-      status: row.status ?? 'lead',
+      status: row.status && CONTACT_STATUSES.includes(row.status) ? row.status : 'lead',
       origin: row.origin ?? null,
       notes: row.notes ?? null,
       current_site: row.current_site ?? null,

@@ -5,8 +5,8 @@ export interface AppSurface {
 }
 
 export function getAppSurface(pathname: string): AppSurface {
-  // Chat do Copilot e editor do Code Maker (/code-maker/:id).
-  const immersive = pathname === '/copilot' || pathname.startsWith('/copilot/') || /^\/code-maker\/[^/]+/.test(pathname)
+  // Chat do Copilot (o editor do Code Maker já abre em tela cheia, fora do painel).
+  const immersive = pathname === '/copilot' || pathname.startsWith('/copilot/')
   return {
     immersive,
     animateOpacity: !immersive,

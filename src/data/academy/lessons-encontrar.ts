@@ -1,140 +1,250 @@
 import type { AcademyLesson } from './types'
 
+// Módulo 2 — Encontrar: das empresas certas à primeira resposta.
 export const LESSONS_ENCONTRAR: AcademyLesson[] = [
   {
     id: 'onde-estao-os-clientes',
     module: 'encontrar',
-    title: 'Onde estão seus clientes',
-    summary: 'As fontes que funcionam para quem vende para negócios locais.',
-    minutes: 4,
-    body: `Seu cliente não está procurando por você. Ele está ocupado atendendo. Por isso a prospecção é **ativa**: você vai até ele.
+    title: 'Quem tem mais chance de comprar',
+    summary: 'Nem todo lead vale o mesmo tempo. Aprenda a separar os quentes dos frios.',
+    minutes: 5,
+    body: `Seu tempo é o recurso mais caro da operação. Abordar 50 empresas aleatórias rende menos que abordar 20 escolhidas a dedo. Antes de mandar qualquer mensagem, separe os leads em três grupos.
 
-## As melhores fontes
+## Lead A: aborde primeiro (e faça protótipo)
 
-- **Buyers Hunter:** busca por nicho e cidade, mostra quem não tem site e dá uma nota de potencial. É a fonte principal.
-- **Google Maps:** para conferir detalhes, fotos e avaliações de uma empresa.
-- **Instagram local:** perfis ativos, com seguidores e sem link de site na bio.
-- **Indicação:** cada cliente satisfeito conhece outros donos de negócio. Peça sempre.
-- **Seu círculo:** amigos, família e ex-colegas que têm ou conhecem um negócio.
+- **Muitas avaliações** (sinal de movimento e de dinheiro entrando).
+- **Sem site**, ou com site quebrado, lento ou antigo.
+- **Instagram ativo**: o dono se importa com imagem e já entende divulgação.
+- Nicho que você domina.
 
-## Quem priorizar
+## Lead B: aborde sem protótipo, só com a mensagem
 
-1. **Sem site e com muitas avaliações:** tem movimento e ainda não resolveu o problema.
-2. **Só Instagram:** já entende a importância do digital.
-3. **Site antigo ou fora do ar:** sabe que precisa, mas ficou para depois.
+- Movimento médio, com site fraco ou só Instagram.
+- Se responder com interesse, aí sim você faz o protótipo.
 
-Evite gastar tempo com quem tem poucas avaliações e nenhum sinal de atividade — geralmente não tem orçamento.`,
+## Lead C: deixe para depois
+
+- Poucas avaliações, sem sinal de movimento, nicho fora do seu foco.
+- Ou já tem um site bom e recente. Ali a conversa é outra (manutenção, anúncios), não comece por eles.
+
+## O sinal mais forte de todos
+
+Empresa **com muitas avaliações e sem site** é a combinação de ouro: tem clientes, tem dinheiro e está perdendo quem pesquisa no Google e não encontra nada. É exatamente o problema que você resolve.`,
+    example: {
+      title: 'Separando uma lista',
+      text: 'De 30 oficinas encontradas: 6 viraram lead A (mais de 80 avaliações e sem site), 11 viraram B (site antigo ou só Instagram) e 13 ficaram como C. A semana começou pelos 6 do grupo A, cada um com protótipo.',
+    },
+    mistakes: [
+      'Tratar todo lead igual e gastar protótipo com quem não tem dinheiro.',
+      'Começar pelas empresas grandes, que já têm agência.',
+      'Ignorar o Instagram do lead: ele diz muito sobre o dono.',
+    ],
+    exercise: {
+      prompt: 'Pegue uma lista do seu nicho e escreva quantos leads A, B e C você encontrou, com o nome dos 3 melhores do grupo A.',
+      placeholder: 'A: 5 (Clínica X, Clínica Y, Clínica Z…)\nB: 9\nC: 12',
+    },
     checklist: [
-      'Anotei as fontes que vou usar esta semana',
-      'Pedi indicação para 3 pessoas do meu círculo',
+      'Separei uma lista em A, B e C',
+      'Escolhi os leads A da semana',
+      'Salvei os leads A no CRM',
     ],
   },
   {
     id: 'buyers-hunter-na-pratica',
     module: 'encontrar',
-    title: 'Use o Buyers Hunter do jeito certo',
-    summary: 'Da busca aos 10 melhores leads no CRM, com follow-up agendado.',
-    minutes: 4,
-    body: `O Buyers Hunter não é para importar tudo. É para **filtrar os melhores** e começar por eles.
+    title: 'Buyers Hunter: sua lista em 20 minutos',
+    summary: 'Uma busca bem feita por dia mantém o funil cheio.',
+    minutes: 5,
+    body: `O Buyers Hunter encontra empresas do seu nicho na sua cidade e já mostra o que importa: se tem site, quantas avaliações, telefone e WhatsApp. Use assim:
 
-## Passo a passo
+## A sessão diária de 20 minutos
 
-1. Informe o **nicho** e a **cidade**, e marque o que você vende (site, landing, sistema, automação).
-2. Ordene por **maior potencial** e leia o "Por quê" de cada empresa.
-3. Use os filtros: **Sem site**, **50+ avaliações**, **só com telefone**.
-4. Selecione as **10 melhores** e clique em **Adicionar ao CRM**.
-5. O **follow-up automático** agenda as tarefas de retorno — você recebe o lembrete no dia certo.
-6. Use **Ignorar** para empresas que não fazem sentido; elas somem das próximas buscas.
+1. **Busque** o nicho + cidade (ou um bairro, se a cidade for grande).
+2. **Filtre** pelas que estão sem site ou com site fraco.
+3. **Ordene** pelas que têm mais avaliações.
+4. **Importe** para o CRM só as que valem a pena (lead A e B). Quando importar, o sistema já sugere a primeira mensagem e agenda o follow-up.
+5. **Abra o perfil** de cada uma por 1 minuto para a pesquisa rápida (próxima lição).
 
-## Ritmo que funciona
+## Metas que funcionam
 
-Melhor **10 leads bem escolhidos por semana** do que 100 importados e esquecidos. Cada lead importado precisa de uma primeira mensagem nas próximas 24 horas.`,
+- **20 empresas novas por dia** no CRM, 5 dias por semana = 100 por semana.
+- Disso, aborde pelo menos **10 por dia**.
+- Com uma taxa normal de resposta, isso vira de 3 a 6 conversas por semana. É daí que saem as vendas.
+
+## Varie a busca
+
+Acabaram as empresas do bairro? Mude de bairro, vá para a cidade vizinha ou busque um termo próximo ("dentista", "clínica odontológica", "ortodontia"). Cada termo traz empresas diferentes.`,
     example: {
       title: 'Uma sessão de 20 minutos',
-      text: 'Busca por "estética" na sua cidade → filtro Sem site + 50+ avaliações → 12 resultados → 10 importados → 10 primeiras mensagens enviadas com "Mensagem pronta" → follow-ups agendados sozinhos.',
+      text: 'Busca "centro automotivo" na zona sul: 28 resultados, 12 sem site. Ordenou por avaliações, importou 8 para o CRM (os primeiros com mais de 50 avaliações) e deixou a primeira mensagem de cada um pronta para enviar.',
+    },
+    mistakes: [
+      'Importar tudo para o CRM e virar um cemitério de leads.',
+      'Buscar só uma vez e achar que "acabaram os clientes".',
+      'Pular a pesquisa de 1 minuto e mandar mensagem genérica.',
+    ],
+    exercise: {
+      prompt: 'Faça uma busca agora e anote: termo usado, quantas empresas apareceram, quantas sem site e quantas você importou.',
+      placeholder: 'Termo: "dentista" em ... — 34 empresas, 15 sem site, importei 9.',
     },
     checklist: [
-      'Fiz uma busca no Buyers Hunter com filtros',
-      'Importei os 10 melhores para o CRM',
-      'Enviei a primeira mensagem para todos em até 24 horas',
+      'Fiz uma busca no Buyers Hunter',
+      'Importei para o CRM só os leads que valem a pena',
+      'Defini minha meta diária de empresas novas',
     ],
   },
   {
     id: 'pesquise-antes',
     module: 'encontrar',
-    title: 'Pesquise antes de abordar',
-    summary: 'Dois minutos de pesquisa transformam uma mensagem genérica em conversa.',
-    minutes: 3,
-    body: `Mensagem genérica parece spam. Dois minutos de pesquisa mostram que você olhou para aquele negócio de verdade.
+    title: '1 minuto de pesquisa muda a resposta',
+    summary: 'Uma mensagem com algo real do negócio parece conversa, não disparo.',
+    minutes: 5,
+    body: `A diferença entre ser ignorado e receber resposta muitas vezes é **uma frase** que mostra que você olhou para aquele negócio de verdade. Isso leva 1 minuto por lead.
 
-## O que olhar (2 minutos)
+## O que olhar
 
-- **Avaliações:** o que os clientes elogiam? Do que reclamam? ("demoram a responder", "difícil marcar horário")
-- **Instagram:** posta com frequência? Tem link na bio? Usa o direct para agendar?
-- **Site atual (se houver):** abre no celular? Tem WhatsApp? Está desatualizado?
-- **Concorrentes:** algum concorrente próximo tem um site bom? É um ótimo argumento.
+- **Avaliações:** a nota, quantas são, e o que os clientes elogiam ("atendimento", "pontualidade", "preço justo"). Elogio vira argumento.
+- **Reclamações:** "difícil de falar com eles", "nunca atendem o telefone". Isso é dor que o site resolve.
+- **Instagram:** posta com frequência? Tem fotos boas? O link da bio leva para onde?
+- **Site atual:** existe? Abre no celular? Tem WhatsApp? Está desatualizado?
 
-## Registre no CRM
+## Transforme em uma frase
 
-Anote o que achou em **Observações** do contato. Isso alimenta a primeira mensagem, a conversa e a proposta.`,
+Pegue o mais forte que você achou e coloque no começo da mensagem:
+
+> "Vi que vocês têm 4,9 com mais de 200 avaliações, e quase todas elogiam o atendimento."
+
+> "Vi que o Instagram de vocês é bem ativo, mas o link da bio não leva para nenhum site."
+
+> "Procurei vocês no Google e o site não abriu no celular."
+
+## Anote no CRM
+
+Coloque o que você achou nas observações do contato. O CS Copilot lê essas notas e usa nas mensagens que sugere. E quando o lead responder daqui a uma semana, você lembra na hora.`,
     example: {
       title: 'O que vira argumento',
-      text: 'Três avaliações recentes dizem "difícil conseguir horário por telefone". Isso vira a abertura: "Vi que alguns clientes comentam que é difícil marcar pelo telefone — um agendamento online resolveria isso."',
+      text: 'Pesquisa de 1 minuto numa clínica de estética: nota 4,8 com 156 avaliações, várias dizendo "demorei para conseguir agendar pelo WhatsApp". A mensagem começou com: "Vi que as clientes amam o atendimento de vocês, mas algumas comentam que é difícil conseguir horário pelo WhatsApp."',
+    },
+    mistakes: [
+      'Elogio genérico ("adorei o trabalho de vocês") que serve para qualquer empresa.',
+      'Apontar defeitos de forma agressiva ("seu site é horrível").',
+      'Não anotar nada no CRM e esquecer o contexto depois.',
+    ],
+    exercise: {
+      prompt: 'Pesquise 3 leads e escreva, para cada um, a frase de abertura com algo real do negócio.',
+      placeholder: 'Clínica X: "Vi que vocês têm 4,9 com mais de 200 avaliações…"\nClínica Y: …',
     },
     checklist: [
-      'Pesquisei 5 leads antes de abordar',
-      'Anotei um argumento para cada um nas Observações do CRM',
+      'Pesquisei 3 leads por 1 minuto cada',
+      'Escrevi uma frase real para cada um',
+      'Anotei o que achei no CRM',
     ],
   },
   {
     id: 'demo-antes-da-conversa',
     module: 'encontrar',
-    title: 'Mostre antes de pedir',
-    summary: 'Uma prévia pronta vale mais que qualquer explicação.',
-    minutes: 4,
-    body: `O dono do negócio tem dificuldade de imaginar um site. Quando ele **vê** algo pronto, a conversa muda de "preciso pensar" para "quanto custa?".
+    title: 'A primeira mensagem: peça para mostrar',
+    summary: 'O objetivo da primeira mensagem não é vender. É conseguir um "pode mandar".',
+    minutes: 7,
+    body: `A primeira mensagem tem **um único objetivo**: conseguir permissão para mostrar algo. Não é explicar o serviço, não é falar de preço, não é se apresentar. É despertar curiosidade e pedir uma ação simples.
 
-## Duas formas de mostrar
+## A estrutura
 
-- **Portfólio:** mande o link do seu **Sellers Portfolio** com trabalhos parecidos com o que ele precisa.
-- **Prévia personalizada:** para leads com alto potencial, crie em 30 a 60 minutos uma prévia da página inicial com o nome e os serviços da empresa. Mande um print ou um link privado.
+1. **Comece pelo negócio do lead**, com a frase da pesquisa.
+2. **Diga o que você fez** em uma frase: montou uma prévia, ou tem uma ideia para eles.
+3. **Peça permissão** para mostrar: "Posso te enviar por aqui?"
 
-## Cuidados
+Até 4 ou 5 linhas. Tom de WhatsApp real.
 
-- Deixe claro que é **uma prévia**, não um site publicado.
-- Não publique nada com a marca do cliente sem autorização.
-- Use a prévia só com os leads mais promissores — ela custa tempo.`,
+## Com protótipo pronto
+
+> Olá, tudo bem? Vi que a Clínica Sorriso Pleno tem 4,9 com mais de 200 avaliações no Google, mas não encontrei um site de vocês. Montei uma prévia de como ele poderia ficar. Posso te enviar por aqui?
+
+## Sem protótipo ainda
+
+> Oi, tudo bem? Vi que a oficina de vocês tem ótimas avaliações, mas quem procura no Google não encontra um site. Tenho uma ideia simples de como isso poderia trazer mais pedidos de orçamento. Posso te mostrar um exemplo?
+
+## Quem atende é funcionário
+
+O WhatsApp da empresa quase sempre é atendido pela recepção, não pelo dono. Tudo bem: peça para mostrar ao responsável, sem vender.
+
+> Oi! Montei uma prévia de site com o nome de vocês e queria mostrar para o responsável. É só uma ideia, sem compromisso. Consegue me dizer com quem eu falo?
+
+Silêncio ou "vou passar para ele" não é recusa do dono. Faz parte.
+
+## O que nunca fazer na primeira mensagem
+
+- **Se apresentar primeiro:** "Sou o Arthur, trabalho com criação de sites…". Ninguém liga para quem você é antes de ver algo útil.
+- **Despejar benefícios:** "site responsivo, SEO, mais clientes, presença digital…".
+- **Falar de preço.**
+- **Mandar o link sem pedir:** parece spam e muita gente nem abre.
+
+O CS Copilot escreve essas mensagens para você seguindo exatamente essas regras. Peça: "faz a primeira mensagem para este lead".`,
+    example: {
+      title: 'Por que pedir permissão funciona',
+      text: 'Quem responde "pode mandar" já disse um pequeno sim. Ele vai abrir o link esperando por ele, em vez de ignorar uma mensagem com link de um desconhecido. E você ganha o direito de continuar a conversa.',
+    },
+    mistakes: [
+      'Começar com "Sou fulano, trabalho com…".',
+      'Mandar texto longo explicando tudo de uma vez.',
+      'Enviar o link do protótipo sem pedir antes.',
+      'Desistir porque a recepção não passou para o dono na primeira vez.',
+    ],
+    exercise: {
+      prompt: 'Escreva sua primeira mensagem para um lead real usando a estrutura: negócio dele → o que você fez → pedido de permissão.',
+      placeholder: 'Olá, tudo bem? Vi que … Montei uma prévia de … Posso te enviar por aqui?',
+    },
     checklist: [
-      'Publiquei meu Sellers Portfolio com pelo menos 1 projeto',
-      'Criei uma prévia personalizada para o meu lead mais promissor',
+      'Escrevi minha primeira mensagem seguindo a estrutura',
+      'Enviei para pelo menos 5 leads',
+      'Registrei os envios no CRM',
     ],
   },
   {
     id: 'organize-o-pipeline',
     module: 'encontrar',
-    title: 'Organize o pipeline',
-    summary: 'Uma rotina curta, todos os dias, vence a empolgação de um dia só.',
-    minutes: 4,
-    body: `Venda é constância. Uma rotina de 30 a 45 minutos por dia, todos os dias, gera mais resultado que uma maratona no fim de semana.
+    title: 'Ritmo diário e pipeline',
+    summary: 'Venda é rotina. Uma hora por dia, todo dia, ganha de um dia inteiro por semana.',
+    minutes: 5,
+    body: `Quem vende de forma consistente não depende de inspiração: tem uma rotina pequena que repete todo dia. O Code Sellers foi feito para essa rotina caber em uma hora.
 
-## Rotina diária
+## A hora de vendas
 
-1. **Foco de hoje (5 min):** abra o Início e resolva as tarefas do dia e os follow-ups.
-2. **Novos leads (15 min):** Buyers Hunter → importar → primeira mensagem.
-3. **Conversas (15 min):** responder quem respondeu, marcar diagnósticos, enviar propostas.
-4. **Atualizar o CRM (5 min):** mover negócios de etapa e registrar o que aconteceu.
+- **15 min, follow-ups:** abra Tarefas e responda/retome quem está esperando. Conversa em andamento vale mais que lead novo.
+- **20 min, lista nova:** busca no Buyers Hunter e importação dos melhores.
+- **20 min, abordagens:** primeira mensagem para 10 leads, com a frase da pesquisa.
+- **5 min, atualizar o CRM:** mova os negócios de etapa e anote o que aconteceu.
 
-## Metas simples por semana
+## As etapas do pipeline
 
-- **Abordagens:** comece com 30 novas por semana.
-- **Conversas:** acompanhe quantas viraram conversa de verdade.
-- **Propostas:** o número que mais importa. Sem proposta, não há venda.
+Cada lead está em uma etapa. Saber onde cada um está mostra o que fazer hoje:
 
-Use o **Relatório do mês** para ver onde os negócios emperram e ajustar.`,
+1. **Contato:** abordado, esperando resposta.
+2. **Qualificado:** respondeu com interesse, recebeu (ou vai receber) o protótipo.
+3. **Proposta:** reunião feita, proposta enviada.
+4. **Negociação:** conversando sobre valor, prazo ou ajustes.
+5. **Fechamento:** aceitou, falta pagamento ou contrato.
+
+## Os números que importam
+
+Toda semana, olhe: quantos abordou, quantos responderam, quantas reuniões, quantas vendas. Se muita gente não responde, melhore a primeira mensagem. Se respondem mas não marcam reunião, melhore o pós-protótipo. O problema sempre aparece em uma etapa.`,
+    example: {
+      title: 'A conta da semana',
+      text: '50 abordagens → 12 respostas → 7 protótipos enviados → 3 reuniões → 1 venda. Com 1 venda de R$ 1.800 por semana, são mais de R$ 7.000 por mês com uma hora por dia. Melhorar só a etapa de reunião (de 3 para 5) já muda o mês.',
+    },
+    mistakes: [
+      'Prospectar um dia inteiro e passar o resto da semana sem fazer nada.',
+      'Esquecer os follow-ups e só correr atrás de lead novo.',
+      'Não mover os negócios de etapa e perder a noção de quem está quente.',
+    ],
+    exercise: {
+      prompt: 'Escreva sua rotina: em que horário você vai fazer sua hora de vendas e suas metas diárias (empresas novas, abordagens, follow-ups).',
+      placeholder: 'Horário: 9h às 10h, de segunda a sexta.\nMetas: 20 empresas novas, 10 abordagens, todos os follow-ups do dia.',
+    },
     checklist: [
-      'Separei um horário fixo para a rotina diária',
-      'Defini minha meta de abordagens da semana',
-      'Defini minha meta do mês no Início',
+      'Defini o horário da minha hora de vendas',
+      'Coloquei meus leads nas etapas certas do pipeline',
+      'Defini a meta do mês no Início',
     ],
   },
 ]

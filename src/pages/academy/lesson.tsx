@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronLeft, Clock, Lightbulb, PartyPopper } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronLeft, Clock, Lightbulb, PartyPopper, TriangleAlert } from 'lucide-react'
+import { LessonExercise } from '@/components/academy/LessonExercise'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -123,6 +124,24 @@ export default function AcademyLessonPage() {
             </div>
           </div>
         )}
+
+        {lesson.mistakes && lesson.mistakes.length > 0 && (
+          <div className="mt-8 rounded-2xl border border-red-500/20 bg-red-500/[0.05] p-5">
+            <p className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-red-600 dark:text-red-300">
+              <TriangleAlert className="size-4" /> Erros que derrubam a venda
+            </p>
+            <ul className="mt-3 flex flex-col gap-2">
+              {lesson.mistakes.map((mistake) => (
+                <li key={mistake} className="flex gap-2 text-[14.5px] leading-7 text-[var(--text-secondary)]">
+                  <span className="mt-[11px] size-1.5 shrink-0 rounded-full bg-red-500/70" />
+                  <span>{mistake}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {lesson.exercise && <LessonExercise key={lesson.id} lessonId={lesson.id} prompt={lesson.exercise.prompt} placeholder={lesson.exercise.placeholder} />}
 
         <Card className="mt-8">
           <div className="flex items-baseline justify-between gap-3">

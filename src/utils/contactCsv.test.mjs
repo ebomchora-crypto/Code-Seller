@@ -48,3 +48,14 @@ test('campos com vários valores do Google ficam só com o primeiro', () => {
   assert.equal(firstCsvValue('phone', '(16) 99999-0000'), '(16) 99999-0000')
   assert.equal(firstCsvValue('notes', 'cliente antigo ::: pediu orçamento'), 'cliente antigo · pediu orçamento')
 })
+
+test('status da planilha vira o código do CRM', async () => {
+  const { contactStatusFromText } = await import('./contactCsv.ts')
+  assert.equal(contactStatusFromText('Cliente'), 'client')
+  assert.equal(contactStatusFromText('Em negociação'), 'negotiating')
+  assert.equal(contactStatusFromText('Negociando'), 'negotiating')
+  assert.equal(contactStatusFromText('Inativo'), 'inactive')
+  assert.equal(contactStatusFromText('Perdido'), 'lost')
+  assert.equal(contactStatusFromText('LEAD'), 'lead')
+  assert.equal(contactStatusFromText('qualquer coisa'), 'lead')
+})
