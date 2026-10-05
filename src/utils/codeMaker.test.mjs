@@ -271,3 +271,22 @@ test('alteração tolerante: espaços/aspas diferentes, texto repetido, parte er
   assert.equal(next.skipped, 1)
   assert.equal(next.plan.lang, 'pt-PT')
 })
+
+test('plano com marca registrada e cantos: guardados e entregues à seção certa', () => {
+  const plan = normalizePlan(
+    { ...rawPlan, radius: 'sharp', signature: 'Título gigante em caixa alta cortado pela foto da navalha.', signatureSection: 'Serviços' },
+    brief,
+  )
+  assert.equal(plan.radius, 'sharp')
+  assert.equal(plan.signature, 'Título gigante em caixa alta cortado pela foto da navalha.')
+  const owner = plan.sections.some((section) => section.id === 'servicos') ? 'servicos' : 'hero'
+  assert.equal(plan.signatureSection, owner)
+  assert.match(buildPartMessage(owner, plan, brief), /MARCA REGISTRADA DO SITE[^\n]*navalha/)
+  const other = plan.sections.find((section) => section.id !== owner).id
+  assert.match(buildPartMessage(other, plan, brief), /fica em outra seção/)
+
+  const loose = normalizePlan({ ...rawPlan, radius: 'oval', signature: 'Faixa com a lousa de giz', signatureSection: 'nao-existe' }, brief)
+  assert.equal(loose.radius, undefined)
+  assert.equal(loose.signatureSection, 'hero')
+  assert.equal(normalizePlan(rawPlan, brief).signature, undefined)
+})

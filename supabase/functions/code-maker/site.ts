@@ -68,6 +68,12 @@ export interface SitePlan {
     muted: string
   }
   fonts: { display: string; body: string }
+  /** Cantos do site inteiro: arredondado, suave ou reto. */
+  radius?: 'round' | 'soft' | 'sharp'
+  /** A marca registrada do site: o único elemento ousado, de que o visitante vai lembrar. */
+  signature?: string
+  /** Seção onde a marca registrada aparece. */
+  signatureSection?: string
   sections: PlanSection[]
   globalRequirementIds?: string[]
   specification?: CodeMakerSpecification
@@ -84,10 +90,10 @@ export const STYLE_LABELS: Record<SiteStyle, string> = {
 }
 
 const STYLE_DIRECTIONS: Record<SiteStyle, string> = {
-  auto: 'Escolha a direção de arte que mais combina com o nicho e o público (evite roxo/violeta, a não ser que faça muito sentido para o negócio).',
-  dark: 'Moderno escuro: fundo quase preto, superfícies um pouco mais claras, UM acento vibrante que combine com o nicho, títulos em fonte geométrica marcante.',
-  minimal: 'Minimalista claro: fundo branco/off-white, muito respiro, texto quase preto, UM acento discreto, fotos grandes, linhas finas.',
-  elegant: 'Elegante/premium: títulos em serifada sofisticada, texto em sans limpa, paleta refinada (creme, carvão, dourado ou verde-escuro), ritmo editorial.',
+  auto: 'Escolha a direção de arte que nasce do mundo deste negócio (os materiais, ferramentas, cores e o jeito de falar do ramo) e do público dele (evite roxo/violeta, a não ser que faça muito sentido para o negócio).',
+  dark: 'Moderno escuro: fundo escuro com profundidade e cor própria (grafite, azul-noite, verde-garrafa, vinho, marrom-café — o que combinar com o nicho, não preto chapado), superfícies um pouco mais claras, um acento que venha do próprio negócio, títulos em fonte marcante.',
+  minimal: 'Minimalista claro: fundo claro, muito respiro, texto quase preto, UM acento discreto, fotos grandes, precisão no espaçamento e na tipografia.',
+  elegant: 'Elegante/premium: títulos em serifada sofisticada, texto em sans limpa, paleta refinada tirada do próprio negócio (ex.: pedra e bronze, verde-escuro e marfim, azul-tinta e areia), ritmo editorial.',
   vibrant: 'Vibrante: cores fortes e alegres com contraste bem resolvido, formas arredondadas, energia sem virar bagunça.',
 }
 
@@ -371,24 +377,29 @@ function partImages(partId: string, plan: SitePlan, brief: SiteBrief): string | 
 // Regras de design e conteúdo (valem para todas as partes)
 // ---------------------------------------------------------------------------
 
-const DESIGN_RULES = `PADRÃO DE QUALIDADE: o mesmo de ferramentas como v0 e Lovable — o site precisa parecer feito sob medida por uma agência premium, nunca um template genérico.
+const DESIGN_RULES = `PADRÃO DE QUALIDADE: o de um estúdio de design premiado que dá a cada cliente uma identidade impossível de confundir com a de outro — feito sob medida para ESTE negócio, nunca um template genérico.
+
+DIREÇÃO
+- O visual nasce do mundo do negócio: os materiais, ferramentas, texturas, cores e o jeito de falar do ramo (a navalha e o couro da barbearia, a planta e o concreto da construtora, a farinha e a madeira da padaria). Use isso em formas, ícones, fotos e textos.
+- Uma ousadia só: o plano define a "signature" (a marca registrada do site). Ela aparece com força na seção indicada; todo o resto fica calmo e disciplinado, a serviço dela. Antes de terminar, tire um enfeite que não serve ao negócio.
+- Estrutura é informação: rótulos pequenos acima de títulos, numeração (01, 02…), divisórias e selos só quando dizem algo verdadeiro (numeração só em sequência real, como etapas). Nada de rótulo decorativo em toda seção.
 
 DESIGN
 - Use SOMENTE estas cores do tema (Tailwind): brand, brand-dark, accent, ink, paper, surface, muted — com variações de opacidade (ex.: bg-brand/10, text-ink/70, border-ink/10) e também white/black. Nunca invente outros nomes de cor nem use cores fixas (#hex) nas classes.
-- Fontes: font-display (títulos) e font-body (texto). Títulos grandes com tracking-tight e leading-[1.05]; rótulos pequenos em caixa alta com tracking-[0.2em] acima dos títulos de seção.
-- Raio de borda consistente (rounded-2xl/rounded-3xl), sombras suaves, bordas finas (border-ink/10 no claro, border-white/10 no escuro).
-- Espaçamento generoso: seções com py-20 md:py-28, container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose.
+- Tipografia é a personalidade do site: font-display (títulos) usada com intenção — escala clara (título do topo bem maior que os de seção), peso e espaçamento escolhidos (ex.: caixa alta com tracking largo numa fonte condensada, ou serifada grande com leading-[1.05] e tracking-tight). font-body no texto: corpo em text-base ou maior com leading-relaxed; nada abaixo de text-xs.
+- Cantos: siga o "radius" do plano em todo o site (sem radius: round) — round: rounded-2xl/rounded-3xl e botões rounded-full; soft: rounded-lg/rounded-xl e botões rounded-xl; sharp: rounded-none/rounded-sm e botões rounded-sm. Sombras suaves, bordas finas (border-ink/10 no claro, border-white/10 no escuro).
+- Espaçamento generoso e em ritmo: seções com py-20 md:py-28, container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose.
 - Siga o "layout" que o plano deu para a seção (veja FORMATOS abaixo). Seções vizinhas nunca têm o mesmo formato; nunca 3 cards iguais em seções seguidas.
 - Composição: cards lado a lado têm a mesma quantidade de conteúdo (nada de card alto e quase vazio — use items-start ou dê ao card maior uma foto). Cartão flutuante sobre foto: no máximo 1 por foto, só com texto curto, dentro da área da foto no celular (nada de posição negativa que vaze da tela) e nunca por cima de outro texto. Nada de texto escrito por cima de foto que já tenha cartão.
-- Microinterações: hover em botões e cards (transition, -translate-y-1, sombra, borda na cor da marca), foco visível.
-- Coloque a classe "reveal" nos blocos que devem aparecer ao rolar (títulos, cards, imagens) — a animação já existe.
-- Botões: rounded-full px-6 py-3.5 font-semibold; principal com bg-brand e texto em contraste; secundário contornado.
-- Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24), coerentes com o que representam. Nunca emoji como ícone.
-- 100% responsivo (mobile-first, bonito de 360px a 1440px, sem rolagem lateral), contraste AA, HTML semântico.
+- Movimento com moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Hover em botões e cards com transition (cor, sombra, -translate-y-0.5); nunca anime largura/altura. Animação demais deixa o site com cara de feito por IA.
+- Botões: principal com bg-brand e texto em contraste, px-6 py-3.5 font-semibold; secundário contornado. Toda área clicável com pelo menos 44px de altura (min-h-11) e 8px de distância da vizinha.
+- Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24), coerentes com o que representam e todos do mesmo estilo; ícone decorativo com aria-hidden="true"; botão só de ícone com aria-label. Nunca emoji como ícone.
+- Acessibilidade e qualidade: contraste AA (4.5:1 no texto), foco visível em links e botões (focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2), HTML semântico (um h1 no topo, h2 nas seções), imagens com espaço reservado (aspect-[…] ou width/height) para a página não pular ao carregar.
+- 100% responsivo (mobile-first, bonito de 360px a 1440px, sem rolagem lateral).
 
 FORMATOS (o plano escolhe um por seção)
-- split: texto de um lado e foto grande do outro (rounded-3xl, aspect-[4/5] ou [5/4]); lista curta de 3 itens com ícone abaixo do texto.
-- bento: grade de 4 a 5 blocos de tamanhos diferentes (um grande com foto + menores com ícone, número de etapa ou preço).
+- split: texto de um lado e foto grande do outro (aspect-[4/5] ou [5/4]); lista curta de 3 itens com ícone abaixo do texto.
+- bento: grade de 4 a 5 blocos de tamanhos diferentes (um grande com foto + menores com ícone, preço ou um dado útil).
 - cards-foto: 3 ou 4 cards com foto no topo, título, 1 linha e um dado útil (preço "a partir de", duração, metragem).
 - lista-precos: lista estilo cardápio/tabela, nome à esquerda e preço à direita com linha pontilhada, agrupada por categoria.
 - planos: 2 ou 3 pacotes lado a lado, o do meio destacado (bg-ink ou borda brand) com selo "Mais escolhido".
@@ -402,10 +413,10 @@ FORMATOS (o plano escolhe um por seção)
 
 TEXTO (o que mais vende — escreva como um bom redator publicitário brasileiro)
 - Idioma: português do Brasil por padrão. Só escreva em outro idioma se o pedido do usuário pedir explicitamente (ex.: "site em inglês"); nesse caso TODO o texto do site sai nesse idioma, inclusive menu, botões e rodapé.
-- Use o título ("headline") que o plano definiu para a seção. Os outros textos você escreve: curtos, concretos, com o benefício para o cliente (o que ele ganha, quanto tempo leva, o que está incluso). Frase com mais de 20 palavras: corte.
+- Use o título ("headline") que o plano definiu para a seção. Os outros textos você escreve: curtos, concretos, com o benefício para o cliente (o que ele ganha, quanto tempo leva, o que está incluso). Frase com mais de 20 palavras: corte. Específico vence criativo; voz ativa; escreva do lado de quem visita (o que ele consegue fazer), nunca de como o negócio funciona por dentro. Cada elemento faz um trabalho só.
 - Conteúdo de verdade do nicho: nomes reais de serviços/produtos com descrição útil e preço "a partir de" plausível (ou os preços informados), etapas reais do atendimento, dúvidas que clientes desse nicho realmente têm, com respostas completas. Num catálogo (imóveis, pratos, produtos, planos), mostre itens típicos do nicho bem descritos (tipo, tamanho, o que inclui, faixa de preço) — o dono troca depois pelo chat.
 - Proibido: lorem ipsum, "[Nome]", "Seu texto aqui", "Bem-vindo ao nosso site", "Encontre seu próximo…", "Soluções completas", "Qualidade e confiança", "conversar sobre os próximos passos" e frases que serviriam para qualquer empresa.
-- Botões com verbo + objeto do contexto ("Agendar meu horário", "Ver apartamentos à venda", "Pedir orçamento no WhatsApp"); não repita o mesmo texto de botão em todas as seções.
+- Botões com verbo + objeto do contexto, dizendo exatamente o que acontece ao clicar ("Agendar meu horário", "Ver apartamentos à venda", "Pedir orçamento no WhatsApp"); não repita o mesmo texto de botão em todas as seções, mas a mesma ação mantém o mesmo nome no site todo.
 - NUNCA escreva sobre informação que falta: nada de "não informado", "a definir", "em breve", "sob consulta" como valor, "imagem ilustrativa", "quando essas informações forem fornecidas", "a história da empresa poderá ser apresentada aqui". Se um dado não existe (telefone, endereço, horário, história, equipe), simplesmente NÃO crie aquele campo nem aquele bloco — o layout fica completo sem ele. (Exceção: quando as regras específicas de um protótipo pedirem para indicar uma pendência, siga essas regras.)
 - NUNCA invente fatos verificáveis sobre o negócio: nada de nota, número de avaliações, depoimentos de clientes, ano de fundação, anos de experiência, quantidade de clientes/atendimentos/vendas, prêmios, registros profissionais (CRECI, CRM, OAB…) ou endereço que não estejam no pedido. Se a reputação real foi informada, use exatamente esses números e destaque bem.
 - Botões de contato abrem o WhatsApp com mensagem pronta coerente com o botão (target="_blank" rel="noopener"). Sem WhatsApp informado, leve para #contato.
@@ -419,7 +430,7 @@ export const PLAN_SYSTEM = `Você é o diretor de arte do Code Maker. Você plan
 
 Responda exatamente neste formato, sem nada antes ou depois:
 <acoes>
-- (3 a 5 itens curtos, 1ª pessoa, em linguagem simples para o dono do negócio, contando as decisões: clima do visual, cores, fontes, o que o site vai mostrar. Sem termos técnicos nem nomes internos como paper, ink, surface, brand, hero ou bg)
+- (3 a 5 itens curtos, 1ª pessoa, em linguagem simples para o dono do negócio, contando as decisões: clima do visual e de onde ele veio, cores, fontes, a marca registrada do site, o que o site vai mostrar. Sem termos técnicos nem nomes internos como paper, ink, surface, brand, hero, bg ou signature)
 </acoes>
 <plano>
 { JSON válido, sem comentários }
@@ -434,6 +445,9 @@ Formato do JSON:
   "lang": "idioma do site em código curto: pt-BR (padrão), pt-PT, en, es, fr, it, de… — outro só se o pedido pedir",
   "palette": { "brand": "#hex cor principal", "brandDark": "#hex mais escura da principal", "accent": "#hex acento", "ink": "#hex texto principal (no dark é claro, no light é quase preto)", "paper": "#hex fundo principal", "surface": "#hex fundo alternativo/cartões", "muted": "#hex texto secundário" },
   "fonts": { "display": "fonte dos títulos (veja PARES DE FONTES)", "body": "fonte do texto" },
+  "radius": "round" | "soft" | "sharp" (cantos do site inteiro, escolhidos pela direção de arte),
+  "signature": "a marca registrada do site em 1 ou 2 frases concretas: o único elemento ousado de que o visitante vai lembrar, tirado do mundo do negócio (ex.: título do topo enorme em caixa alta condensada cortado pela foto da navalha; tabela de preços desenhada como a lousa de giz da padaria; faixa com a planta baixa do apartamento em linhas finas)",
+  "signatureSection": "id da seção onde a marca registrada aparece (normalmente hero)",
   "globalRequirementIds": ["IDs dos requisitos transversais da especificação"],
   "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "layout": "um dos FORMATOS", "headline": "título exato da seção (até 8 palavras, específico do negócio)", "brief": "o conteúdo REAL da seção: itens com nome, descrição curta e preço/duração/tamanho quando fizer sentido; etapas; perguntas; o que a foto mostra", "photos": 0 a 3, "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
   "business": { "name": "nome do negócio", "niche": "nicho em poucas palavras", "city": "cidade ou null", "phone": "WhatsApp só com dígitos ou null" }
@@ -449,14 +463,23 @@ Regras do plano:
 - "brief": escreva o conteúdo que vai na tela, não instruções sobre o que evitar. Ex. ruim: "explica o apoio na compra, sem prometer condições". Ex. bom: "3 cards: Comprar (busca por bairro e orçamento, visitas na mesma semana), Vender (avaliação do preço, fotos profissionais, anúncio nos portais), Alugar (análise de fiador ou seguro-fiança)". Nunca escreva no brief que um dado falta ou que "será informado depois": sem o dado, a seção simplesmente não tem aquele campo.
 - "photos": quantas fotos a seção usa — hero 1 ou 2; split/editorial 1; cards-foto 3 ou 4; galeria 3 a 5; bento 1 ou 2; os outros 0. O sistema entrega fotos diferentes para cada seção.
 - Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Respeite a cor pedida pelo usuário (vira "brand", ou o fundo se ele pedir site "preto"/"escuro").
+- O pedido do usuário sempre vence: estilo, cores, fontes ou referências que ele pediu são seguidos à risca, mesmo que contrariem as dicas abaixo.
+
+DIREÇÃO DE ARTE (pense nisto antes de escrever o JSON)
+- Parta do mundo do negócio: os materiais, ferramentas, objetos, texturas e o vocabulário do ramo. É daí que vêm a paleta (4 a 6 cores com nome e motivo), as fontes, a forma dos cantos e a marca registrada.
+- O topo (hero) é a tese do site: abre com o que há de mais característico deste negócio — uma foto forte, um título marcante, um detalhe do ofício. "Número grande + rótulo pequeno + estatísticas + degradê" é a resposta de template: só use se for mesmo a melhor.
+- Uma ousadia só ("signature"), bem executada; o resto do site fica calmo e disciplinado.
+- Quando o pedido deixar o visual livre, NÃO caia nos 3 visuais que toda IA repete: (1) fundo creme com serifada de alto contraste e acento terracota; (2) fundo quase preto com um único acento neon (verde-ácido, vermelhão); (3) layout de jornal com linhas finas, cantos retos e colunas densas. Eles só valem se o pedido pedir ou se o negócio realmente for assim.
+- Autocrítica antes de responder: se este plano serviria igual para outro negócio do mesmo nicho em outra cidade, troque a parte genérica (paleta, fontes, formato do topo ou marca registrada) por uma escolha feita para ESTE negócio.
 
 FORMATOS: hero, split, bento, cards-foto, lista-precos, planos, passos, faixa-destaque, galeria, editorial, lista-icones, faq, contato.
 
-PARES DE FONTES (escolha um que combine com o nicho; varie, não use sempre o mesmo):
-- moderno: "Manrope"+"Inter", "Plus Jakarta Sans"+"Inter", "Sora"+"Inter", "Space Grotesk"+"Inter", "Outfit"+"DM Sans", "Bricolage Grotesque"+"Inter"
-- elegante: "Fraunces"+"Inter", "Cormorant Garamond"+"Manrope", "Playfair Display"+"Source Sans 3", "DM Serif Display"+"DM Sans", "Instrument Serif"+"Inter"
-- forte/masculino: "Oswald"+"Source Sans 3", "Bebas Neue"+"Inter", "Archivo Black"+"Archivo", "Anton"+"Inter"
-- amigável: "Poppins"+"Poppins", "Nunito"+"Nunito Sans", "Quicksand"+"Nunito"`
+PARES DE FONTES (todas do Google Fonts; escolha o que tem a cara do negócio e varie — não use sempre os mesmos):
+- moderno/tecnologia: "Space Grotesk"+"IBM Plex Sans", "Sora"+"Figtree", "Unbounded"+"Onest", "Bricolage Grotesque"+"Hanken Grotesk", "Syne"+"Work Sans", "Manrope"+"Public Sans", "Plus Jakarta Sans"+"Inter"
+- elegante/premium: "Fraunces"+"Figtree", "Cormorant Garamond"+"Manrope", "Playfair Display"+"Source Sans 3", "DM Serif Display"+"DM Sans", "Instrument Serif"+"Hanken Grotesk", "Gloock"+"Karla", "Young Serif"+"Libre Franklin"
+- forte/masculino: "Oswald"+"Source Sans 3", "Bebas Neue"+"Work Sans", "Archivo Black"+"Archivo", "Anton"+"Karla", "Big Shoulders Display"+"Public Sans"
+- amigável/família: "Nunito"+"Nunito Sans", "Quicksand"+"Nunito", "Baloo 2"+"Nunito Sans", "Fredoka"+"Figtree", "Poppins"+"Poppins"
+- artesanal/comida: "Caprasimo"+"Karla", "Abril Fatface"+"Lato", "Young Serif"+"Figtree"`
 
 export function buildPlanMessage(brief: SiteBrief, includeLiteral = true): string {
   const phone = phoneDigits(brief.phone)
@@ -583,13 +606,18 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
     partId === 'hero'
       ? prototype
         ? ` Esta e a primeira secao: min-h-[88vh], pt-28 para o cabecalho fixo, titulo curto e especifico em text-5xl md:text-7xl, subtitulo e ${leadAction}. Usar destaques somente de fatos fornecidos e visual coerente com o negocio; nao criar numeros, horarios ou precos para preencher o layout.`
-        : ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de 3 destaques logo abaixo (a reputação real, se informada; senão, vantagens concretas do serviço como \"Orçamento em 1 dia\", \"Atendimento pelo WhatsApp\" ou o serviço principal) e um visual marcante (foto grande em cartão arredondado com no máximo 1 cartão flutuante com informação útil como "preço a partir de" ou um serviço-chave, ou foto de fundo inteira com gradiente escuro e texto branco). O título do topo é o "headline" do plano: grande, com no máximo 2 palavras destacadas na cor brand ou em itálico da fonte de títulos.'
+        : ' Esta é a primeira seção e a tese do site (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho. Abra com o que há de mais característico deste negócio, na composição que a direção de arte pedir (foto grande sangrando na lateral, foto de fundo inteira com gradiente escuro e texto branco, título gigante com a foto recortada ao lado, etc. — evite o formato de template "texto à esquerda, foto em cartão à direita, 3 números embaixo" se não for o melhor). O título é o "headline" do plano, grande (text-5xl md:text-7xl ou mais) e com tratamento tipográfico marcante; subtítulo de até 2 linhas; botão principal para o WhatsApp + um secundário. Destaques curtos (a reputação real, se informada, ou vantagens concretas como "Orçamento em 1 dia") só se ajudarem: no máximo 3 e sem números inventados.'
       : ''
+  const signature = !plan.signature
+    ? ''
+    : (plan.signatureSection ?? 'hero') === partId
+      ? ` MARCA REGISTRADA DO SITE (esta seção é dona dela — execute com força e capricho): ${plan.signature}`
+      : ' A marca registrada do site fica em outra seção: aqui seja calmo e disciplinado, sem competir com ela.'
   const layout = section?.layout && section.layout !== 'hero' ? ` Formato: ${section.layout} (veja FORMATOS).` : ''
   const headline = section?.headline ? ` Título da seção (use exatamente): "${section.headline}".` : ''
   const others = plan.sections.filter((item) => item.id !== partId && item.headline).map((item) => `"${item.headline}"`)
   const avoid = others.length ? ` Títulos das outras seções (não repita nem parafraseie): ${others.join(', ')}.` : ''
-  return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}".${headline}${layout} Conteúdo: ${section?.brief ?? ''}${hero}${avoid}${
+  return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}".${headline}${layout} Conteúdo: ${section?.brief ?? ''}${hero}${signature}${avoid}${
     ` Fundo desta seção: ${bgClass} — texto principal text-${sectionText}, secundário text-${sectionText}/70.`
   } ${prototype ? `Acao de contato: ${leadAction}.${leadRules}` : `Link do WhatsApp: ${whatsapp}.`}`
 }
@@ -654,7 +682,7 @@ Depois, só o que muda:
 - Remover uma seção: <remover id="id"/>
 - Mudar cores, fontes ou idioma do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}, "lang": "pt-PT"}</tema> (só os campos que mudam).
 - Pedido que muda os textos do site todo (idioma, tom, tratamento): troque cada texto com <substituir>, usando como "antes" só o texto visível (sem tags nem atributos), copiado exatamente como está no código; o mesmo texto repetido muda em todos os lugares. Não esqueça menu, botões, rodapé, alt das imagens e a mensagem dos links de WhatsApp. Em idioma novo, mande também o <tema> com o "lang".
-Mantenha tudo o que não foi pedido exatamente igual. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
+Ajuste preserva, redesenho substitui: num ajuste, mantenha a identidade do site (cores, fontes, cantos, marca registrada), os textos com fatos e tudo o que não foi pedido exatamente igual. Quando o pedido for redesenhar uma parte, troque o visual dela por completo — sem meio-termo —, mantendo o conteúdo, os fatos e a função. Nunca troque preços, contatos, endereço ou outros fatos, nem acrescente afirmações novas sobre o negócio, sem o usuário pedir. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
 
 export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = [], recent: RecentEditContext[] = []): string {
   const current = partOrder(plan)
@@ -806,6 +834,13 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
       display: cleanFont(input.fonts?.display, 'Inter'),
       body: cleanFont(input.fonts?.body, 'Inter'),
     },
+    ...(['round', 'soft', 'sharp'].includes(input.radius) ? { radius: input.radius } : {}),
+    ...(typeof input.signature === 'string' && input.signature.trim()
+      ? {
+          signature: stripInventedClaims(input.signature.trim(), brief).slice(0, 400),
+          signatureSection: sections.some((section) => section.id === cleanId(input.signatureSection)) ? cleanId(input.signatureSection) : 'hero',
+        }
+      : {}),
     sections,
     ...(specification ? {specification, globalRequirementIds:requirementIds(input.globalRequirementIds)} : {}),
   }
