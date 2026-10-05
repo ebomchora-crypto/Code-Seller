@@ -1256,7 +1256,6 @@ export function buildHead(plan: SitePlan): string {
   ].join('\n')
 }
 
-// `pending` = partes ainda sendo escritas: aparecem como um bloco "carregando".
 const SKIP_LINK: Record<string, string> = {
   pt: 'Pular para o conteúdo',
   en: 'Skip to content',
@@ -1266,6 +1265,7 @@ const SKIP_LINK: Record<string, string> = {
   de: 'Zum Inhalt springen',
 }
 
+// `pending` = partes ainda sendo escritas: aparecem como um bloco "carregando".
 export function assembleSite(plan: SitePlan, parts: SiteParts, options: { pending?: boolean } = {}): string {
   const render = (ids: string[]) =>
     ids
