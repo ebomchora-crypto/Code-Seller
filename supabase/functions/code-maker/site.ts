@@ -691,7 +691,7 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
     .join('\n')
   return [
     `Negócio: ${brief.businessName}${brief.niche ? ` · ${brief.niche}` : ''}${brief.city ? ` · ${brief.city}` : ''}`,
-    `Tema atual: ${JSON.stringify({ palette: plan.palette, fonts: plan.fonts, theme: plan.theme })}`,
+    `Tema atual: ${JSON.stringify({ palette: plan.palette, fonts: plan.fonts, theme: plan.theme, radius: plan.radius, signature: plan.signature })}`,
     `Estrutura existente: ${JSON.stringify(plan.sections.map(({id,label})=>({id,label})))}`,
     brief.specification ? `Requisitos e restrições existentes:\n${JSON.stringify(brief.specification)}` : brief.details ? `Pedido original:\n${brief.details}` : null,
     recent.length ? `Alterações anteriores, da mais recente para a mais antiga:\n${JSON.stringify(recent)}` : null,
