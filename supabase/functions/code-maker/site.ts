@@ -4,6 +4,7 @@
 // sempre funcionando.
 
 import { normalizeSpecification, type CodeMakerSpecification, type RecentEditContext } from './spec.ts'
+import { cleanEffects, effectsGuide, effectsMenu, effectsRuntime, MAX_EFFECTS, usedEffects } from './effects.ts'
 
 export type SiteStyle = 'auto' | 'dark' | 'minimal' | 'elegant' | 'vibrant'
 
@@ -74,6 +75,8 @@ export interface SitePlan {
   signature?: string
   /** Seção onde a marca registrada aparece. */
   signatureSection?: string
+  /** Efeitos especiais escolhidos para este site (data-fx), no máximo 4. */
+  effects?: string[]
   sections: PlanSection[]
   globalRequirementIds?: string[]
   specification?: CodeMakerSpecification
@@ -392,7 +395,7 @@ DESIGN
 - Espaçamento em escala (múltiplos de 4px: 2, 3, 4, 6, 8, 12, 16…) e com hierarquia: coisas relacionadas ficam perto (rótulo e campo, título e texto), grupos diferentes ficam longe. Seções com py-20 md:py-28 (a de destaque pode ter mais), container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose (65 a 75 caracteres por linha).
 - Siga o "layout" que o plano deu para a seção (veja FORMATOS abaixo). Seções vizinhas nunca têm o mesmo formato; nunca 3 cards iguais em seções seguidas.
 - Composição: cards lado a lado têm a mesma quantidade de conteúdo (nada de card alto e quase vazio — use items-start ou dê ao card maior uma foto). Cartão flutuante sobre foto: no máximo 1 por foto, só com texto curto, dentro da área da foto no celular (nada de posição negativa que vaze da tela) e nunca por cima de outro texto. Nada de texto escrito por cima de foto que já tenha cartão.
-- Movimento com propósito e moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Interações rápidas (duration-200, ease-out): hover com mudança de cor/sombra ou -translate-y-0.5, clique com active:scale-[0.98]. Anime só cor, opacidade e transform — nunca largura/altura. Nada de animação infinita chamativa (animate-bounce, animate-pulse, girar) em conteúdo. Quem prefere menos movimento: use motion-safe: nos efeitos de deslocamento ou motion-reduce:transition-none. Animação demais deixa o site com cara de feito por IA.
+- Movimento com propósito e moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Interações rápidas (duration-200, ease-out): hover com mudança de cor/sombra ou -translate-y-0.5, clique com active:scale-[0.98]. Anime só cor, opacidade e transform — nunca largura/altura. Nada de animação infinita chamativa (animate-bounce, animate-pulse, girar) em conteúdo. Quem prefere menos movimento: use motion-safe: nos efeitos de deslocamento ou motion-reduce:transition-none. Animação demais deixa o site com cara de feito por IA. Efeitos especiais (data-fx): só os que o plano escolheu para o site, onde servirem ao conteúdo — nunca invente outros nomes de data-fx.
 - Botões: principal com bg-brand e texto em contraste, px-6 py-3.5 font-semibold; secundário contornado. Toda área clicável com pelo menos 44px de altura (min-h-11) e 8px de distância da vizinha.
 - Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24), coerentes com o que representam e todos do mesmo estilo; ícone decorativo com aria-hidden="true"; botão só de ícone com aria-label. Nunca emoji como ícone.
 - Acessibilidade e qualidade: contraste AA (4.5:1 no texto, 3:1 em título grande e em ícone), foco visível em links e botões (focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2; nunca outline-none sem substituto), HTML semântico (nav, section, footer, ul/li em listas, button para ação e a para navegação — nunca div clicável). Cor nunca é o único sinal: destaque também com texto ou ícone (ex.: selo "Mais escolhido" escrito). Link diz para onde leva ou o que faz ("Pedir orçamento no WhatsApp", não "Clique aqui"). Informação importante nunca só no hover. No menu do celular, o botão data-menu-toggle tem aria-label e aria-controls apontando para o painel.
@@ -450,6 +453,7 @@ Formato do JSON:
   "radius": "round" | "soft" | "sharp" (cantos do site inteiro, escolhidos pela direção de arte),
   "signature": "a marca registrada do site em 1 ou 2 frases concretas: o único elemento ousado de que o visitante vai lembrar, tirado do mundo do negócio (ex.: título do topo enorme em caixa alta condensada cortado pela foto da navalha; tabela de preços desenhada como a lousa de giz da padaria; faixa com a planta baixa do apartamento em linhas finas)",
   "signatureSection": "id da seção onde a marca registrada aparece (normalmente hero)",
+  "effects": ["de 0 a ${MAX_EFFECTS} ids da lista EFEITOS que este site realmente pede"],
   "globalRequirementIds": ["IDs dos requisitos transversais da especificação"],
   "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "layout": "um dos FORMATOS", "headline": "título exato da seção (até 8 palavras, específico do negócio)", "brief": "o conteúdo REAL da seção: itens com nome, descrição curta e preço/duração/tamanho quando fizer sentido; etapas; perguntas; o que a foto mostra", "photos": 0 a 3, "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
   "business": { "name": "nome do negócio", "niche": "nicho em poucas palavras", "city": "cidade ou null", "phone": "WhatsApp só com dígitos ou null" }
@@ -475,6 +479,10 @@ DIREÇÃO DE ARTE (pense nisto antes de escrever o JSON)
 - Autocrítica antes de responder: se este plano serviria igual para outro negócio do mesmo nicho em outra cidade, troque a parte genérica (paleta, fontes, formato do topo ou marca registrada) por uma escolha feita para ESTE negócio.
 
 FORMATOS: hero, split, bento, cards-foto, lista-precos, planos, passos, faixa-destaque, galeria, editorial, lista-icones, faq, contato.
+
+EFEITOS (biblioteca do Code Maker — escolha com critério, nunca todos)
+Escolha de 0 a ${MAX_EFFECTS} efeitos para "effects", pensando no negócio, no público e na marca registrada: um efeito bem escolhido vale mais que vários. Zero é uma boa resposta para sites sóbrios (advocacia, saúde, contabilidade). Prefira o efeito que realiza a marca registrada; combine no máximo um efeito "forte" (horizontal, stack, scrub-text, aurora) com detalhes discretos. "smooth-scroll" só junto de efeitos de rolagem. Efeitos que dependem de dado real (count, countdown, before-after, price-toggle) só se o dado existir no pedido.
+${effectsMenu()}
 
 PARES DE FONTES (todas do Google Fonts; escolha o que tem a cara do negócio e varie — não use sempre os mesmos):
 - moderno/tecnologia: "Space Grotesk"+"IBM Plex Sans", "Sora"+"Figtree", "Unbounded"+"Onest", "Bricolage Grotesque"+"Hanken Grotesk", "Syne"+"Work Sans", "Manrope"+"Public Sans", "Plus Jakarta Sans"+"Inter"
@@ -640,6 +648,9 @@ export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrie
     realFacts(brief),
     `Plano do site (siga à risca):\n${JSON.stringify(visualPlan)}`,
     partImages(partId, plan, brief),
+    plan.effects?.length
+      ? `EFEITOS ESCOLHIDOS PARA ESTE SITE (use só estes e só se servirem a esta parte — não é obrigatório usar aqui; cada efeito em poucos lugares do site):\n${effectsGuide(plan.effects)}`
+      : null,
     contrastGuide(plan),
     partInstructions(partId, plan, brief),
   ]
@@ -686,6 +697,19 @@ Depois, só o que muda:
 - Pedido que muda os textos do site todo (idioma, tom, tratamento): troque cada texto com <substituir>, usando como "antes" só o texto visível (sem tags nem atributos), copiado exatamente como está no código; o mesmo texto repetido muda em todos os lugares. Não esqueça menu, botões, rodapé, alt das imagens e a mensagem dos links de WhatsApp. Em idioma novo, mande também o <tema> com o "lang".
 Ajuste preserva, redesenho substitui: num ajuste, mantenha a identidade do site (cores, fontes, cantos, marca registrada), os textos com fatos e tudo o que não foi pedido exatamente igual. Quando o pedido for redesenhar uma parte, troque o visual dela por completo — sem meio-termo —, mantendo o conteúdo, os fatos e a função. Nunca troque preços, contatos, endereço ou outros fatos, nem acrescente afirmações novas sobre o negócio, sem o usuário pedir. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
 
+// Pedido que fala de movimento/visual recebe a biblioteca inteira; os outros
+// recebem só os efeitos que o site já usa (para mantê-los funcionando).
+const EFFECT_WORDS =
+  /anima|efeito|movimento|mexer|parallax|carross|carousel|faixa|letreiro|contagem|contador|regressiva|antes e depois|brilho|3d|inclin|rolagem|scroll|desliz|textura|granul|aurora|padr[aã]o de fundo|polaroid|recibo|comanda|ingresso|cupom|moldura|celular|navegador|chamativ|din[aâ]mic|interativ|sofisticad|premium|impacto|vida|wow|mensal|anual|sublinh|marca-texto|desenh/i
+
+function editEffects(parts: SiteParts, instruction: string): string | null {
+  const inUse = usedEffects(Object.values(parts).join('\n'))
+  if (EFFECT_WORDS.test(instruction)) {
+    return `EFEITOS ESPECIAIS DISPONÍVEIS (use só se o pedido pedir algo assim; no máximo ${MAX_EFFECTS} diferentes no site${inUse.length ? `; o site já usa: ${inUse.join(', ')}` : ''}):\n${effectsGuide()}`
+  }
+  return inUse.length ? `Efeitos especiais que o site já usa (mantenha os atributos data-fx ao mexer nessas partes):\n${effectsGuide(inUse)}` : null
+}
+
 export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = [], recent: RecentEditContext[] = []): string {
   const current = partOrder(plan)
     .filter((id) => parts[id])
@@ -699,6 +723,7 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
     recent.length ? `Alterações anteriores, da mais recente para a mais antiga:\n${JSON.stringify(recent)}` : null,
     contrastGuide(plan),
     `Partes atuais do site:\n${current}`,
+    editEffects(parts, instruction),
     imagesMessage(brief, fresh, usedPhotos(parts)),
     fresh.length > 0
       ? `O usuário anexou ${fresh.length} imagem(ns) junto com este pedido (marcadas como "anexada agora" acima): use-as onde ele pedir; se ele não disser onde, a logo vai no cabeçalho/rodapé e as fotos no topo ou na galeria.`
@@ -837,6 +862,7 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
       body: cleanFont(input.fonts?.body, 'Inter'),
     },
     ...(['round', 'soft', 'sharp'].includes(input.radius) ? { radius: input.radius } : {}),
+    ...(cleanEffects(input.effects).length ? { effects: cleanEffects(input.effects) } : {}),
     ...(typeof input.signature === 'string' && input.signature.trim()
       ? {
           signature: stripInventedClaims(input.signature.trim(), brief).slice(0, 400),
@@ -1252,7 +1278,7 @@ export function buildHead(plan: SitePlan): string {
     `<link href="https://fonts.googleapis.com/css2?${fonts}&display=swap" rel="stylesheet">`,
     '<script src="https://cdn.tailwindcss.com"></script>',
     `<script>tailwind.config=${JSON.stringify(config)}</script>`,
-    `<style>html{scroll-behavior:smooth}body{font-family:'${plan.fonts.body}',ui-sans-serif,system-ui,sans-serif}.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}.reveal.is-visible{opacity:1;transform:none}:where(a,button,summary,input,select,textarea):focus-visible{outline:2px solid currentColor;outline-offset:3px}.skip-link{position:fixed;left:1rem;top:1rem;z-index:100;transform:translateY(-200%);padding:.75rem 1rem;border-radius:.5rem;background:#fff;color:#111;font-weight:600}.skip-link:focus{transform:none}@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}</style>`,
+    `<style>:root{--fx-brand:${plan.palette.brand};--fx-accent:${plan.palette.accent}}html{scroll-behavior:smooth}body{font-family:'${plan.fonts.body}',ui-sans-serif,system-ui,sans-serif}.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}.reveal.is-visible{opacity:1;transform:none}:where(a,button,summary,input,select,textarea):focus-visible{outline:2px solid currentColor;outline-offset:3px}.skip-link{position:fixed;left:1rem;top:1rem;z-index:100;transform:translateY(-200%);padding:.75rem 1rem;border-radius:.5rem;background:#fff;color:#111;font-weight:600}.skip-link:focus{transform:none}@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}</style>`,
   ].join('\n')
 }
 
@@ -1290,14 +1316,16 @@ export function assembleSite(plan: SitePlan, parts: SiteParts, options: { pendin
   ]
     .filter(Boolean)
     .join('\n\n')
+  // Só o código dos efeitos que aparecem no HTML entra na página.
+  const fx = effectsRuntime(body)
   return `<!doctype html>
 <html lang="${lang}">
 <head>
-${buildHead(plan)}
+${buildHead(plan)}${fx.css ? `\n<style>${fx.css}</style>` : ''}
 </head>
 <body class="bg-paper text-ink font-body antialiased">
 ${body}
-${BASE_SCRIPT}
+${BASE_SCRIPT}${fx.js ? `\n<script>${fx.js}</script>` : ''}
 </body>
 </html>`
 }

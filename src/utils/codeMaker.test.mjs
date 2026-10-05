@@ -303,3 +303,34 @@ test('base do site: conteúdo em <main>, atalho para pular o menu e menu do celu
   assert.match(html, /prefers-reduced-motion:reduce\)\{html\{scroll-behavior:auto\}/)
   assert.match(assembleSite({ ...plan, lang: 'en' }, {}), /Skip to content/)
 })
+
+test('efeitos: o plano escolhe poucos, as partes recebem só esses e a página leva só o código usado', async () => {
+  const { cleanEffects, usedEffects, effectsRuntime, EFFECT_IDS } = await import('../../supabase/functions/code-maker/effects.ts')
+  const { buildEditMessage } = await import('../../supabase/functions/code-maker/site.ts')
+  assert.ok(EFFECT_IDS.length >= 25)
+  assert.deepEqual(cleanEffects(['marquee', 'marquee', 'inventado', 'tilt', 'parallax', 'stagger', 'count']), ['marquee', 'tilt', 'parallax', 'stagger'])
+  const plan = normalizePlan({ ...rawPlan, effects: ['marquee', 'nao-existe'] }, brief)
+  assert.deepEqual(plan.effects, ['marquee'])
+  const message = buildPartMessage('hero', plan, brief)
+  assert.match(message, /EFEITOS ESCOLHIDOS[\s\S]*marquee/)
+  assert.doesNotMatch(message, /- parallax \(/)
+  assert.doesNotMatch(buildPartMessage('hero', normalizePlan(rawPlan, brief), brief), /EFEITOS ESCOLHIDOS/)
+
+  assert.deepEqual(usedEffects('<div data-fx="tilt spotlight"></div><span data-fx=\'count\'></span><i data-fx="nada"></i>'), ['count', 'tilt', 'spotlight'])
+  assert.deepEqual(effectsRuntime('<p>sem efeitos</p>'), { css: '', js: '' })
+  const runtime = effectsRuntime('<div data-fx="marquee"><ul></ul></div>')
+  assert.match(runtime.js, /fx-mq/)
+  assert.doesNotMatch(runtime.js, /fx-glare|lenis/)
+
+  const html = assembleSite(plan, { hero: '<section id="hero"><div data-fx="marquee"><ul><li>Corte</li></ul></div></section>' })
+  assert.match(html, /@keyframes fx-mq/)
+  assert.match(html, /--fx-brand:#d4a017/)
+  assert.doesNotMatch(assembleSite(plan, { hero: '<section id="hero">x</section>' }), /fx-mq/)
+
+  // Alteração: biblioteca inteira só quando o pedido fala de efeito/movimento.
+  const parts = { hero: '<section id="hero"><div data-fx="marquee"><ul></ul></div></section>' }
+  assert.match(buildEditMessage(plan, parts, 'coloca um carrossel na galeria', brief), /EFEITOS ESPECIAIS DISPONÍVEIS[\s\S]*before-after/)
+  const plain = buildEditMessage(plan, parts, 'troca o telefone', brief)
+  assert.match(plain, /já usa[\s\S]*marquee/)
+  assert.doesNotMatch(plain, /before-after/)
+})
