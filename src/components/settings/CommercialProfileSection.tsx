@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Briefcase, Plus, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Briefcase, Check, CloudOff, Loader2, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { Button } from '@/components/ui/Button'
@@ -43,6 +43,37 @@ export function CommercialProfileSection() {
 
   const dirty = JSON.stringify(profile) !== saved
   const progress = commercialProfileProgress(profile)
+  // Salva sozinho enquanto a pessoa preenche: antes só gravava no botão do
+  // fim da página, e quem preenchia e saía perdia tudo.
+  const [autoState, setAutoState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const profileRef = useRef(profile)
+  profileRef.current = profile
+
+  useEffect(() => {
+    if (loading || !dirty || saving) return
+    const timer = window.setTimeout(async () => {
+      const snapshot = profileRef.current
+      setAutoState('saving')
+      try {
+        await saveCommercialProfile(snapshot)
+        // Não troca o formulário (o servidor tira espaços do fim e isso comeria
+        // o espaço que a pessoa acabou de digitar).
+        setSaved(JSON.stringify(snapshot))
+        setAutoState('saved')
+      } catch {
+        setAutoState('error')
+      }
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [profile, dirty, loading, saving])
+
+  // Avisa antes de fechar a aba com algo ainda não salvo.
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
 
   function setField(field: TextField, value: string) {
     setProfile((current) => ({ ...current, [field]: value.slice(0, COMMERCIAL_LIMITS[field]) }))
@@ -77,6 +108,7 @@ export function CommercialProfileSection() {
       const next = await saveCommercialProfile(profile)
       setProfile(next)
       setSaved(JSON.stringify(next))
+      setAutoState('saved')
       toast.success('Perfil comercial salvo. O CS Copilot já usa nas próximas respostas.')
     } catch {
       toast.error('Não foi possível salvar o perfil comercial.')
@@ -234,7 +266,21 @@ export function CommercialProfileSection() {
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] pt-5">
-          {dirty && <span className="text-[12.5px] text-[var(--text-muted)]">Alterações não salvas</span>}
+          <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--text-muted)]" aria-live="polite">
+            {autoState === 'saving' || (dirty && autoState !== 'error') ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" /> Salvando…
+              </>
+            ) : autoState === 'error' ? (
+              <span className="flex items-center gap-1.5 text-red-500">
+                <CloudOff className="size-3.5" /> Não foi possível salvar. Clique em Salvar perfil.
+              </span>
+            ) : autoState === 'saved' ? (
+              <>
+                <Check className="size-3.5 text-emerald-500" /> Salvo automaticamente
+              </>
+            ) : null}
+          </span>
           <Button type="button" onClick={() => void save()} loading={saving} disabled={!dirty || saving}>
             Salvar perfil
           </Button>

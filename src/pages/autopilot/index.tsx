@@ -9,13 +9,23 @@ import { commercialMaterialPrompt, getCommercialMaterial } from '@/data/commerci
 import { readCopilotSidebarCollapsed, writeCopilotSidebarCollapsed } from '@/utils/copilotLayout'
 import { toast } from 'sonner'
 
+const PROFILE_NOTICE_KEY = 'cs-copilot-profile-notice-hidden'
+
 function CopilotWorkspace({ contactId }: { contactId?: string }) {
   const copilot = useAutoPilot(contactId)
   const [params, setParams] = useSearchParams()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && readCopilotSidebarCollapsed(window.localStorage))
   const [leadOpen, setLeadOpen] = useState(false)
-  const [profileNoticeHidden, setProfileNoticeHidden] = useState(false)
+  // Fechou o aviso do Perfil comercial uma vez: não mostra mais (some sozinho
+  // também quando o perfil é preenchido).
+  const [profileNoticeHidden, setProfileNoticeHidden] = useState(() => {
+    try { return window.localStorage.getItem(PROFILE_NOTICE_KEY) === '1' } catch { return false }
+  })
+  function hideProfileNotice() {
+    setProfileNoticeHidden(true)
+    try { window.localStorage.setItem(PROFILE_NOTICE_KEY, '1') } catch { /* sem armazenamento: só nesta visita */ }
+  }
   const intentStarted = useRef(false)
   const materialStarted = useRef(false)
   const lead = copilot.context?.selected_lead
@@ -55,7 +65,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
       <Briefcase className="size-4 shrink-0 text-[var(--accent-text)]" />
       <span className="min-w-0 flex-1">Preencha seu <b className="font-medium text-[var(--text-primary)]">Perfil comercial</b> para o CS Copilot usar sua oferta, seus preços e o seu jeito de escrever.</span>
       <Link to="/settings#perfil-comercial" className="shrink-0 font-medium text-[var(--accent-text)] hover:underline">Preencher</Link>
-      <button onClick={() => setProfileNoticeHidden(true)} aria-label="Fechar aviso" className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"><X className="size-3.5" /></button>
+      <button onClick={hideProfileNotice} aria-label="Fechar aviso" className="flex size-7 shrink-0 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"><X className="size-3.5" /></button>
     </div>}
     {contactId && <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border-subtle)] px-4 py-2">
       <span className="flex min-w-0 items-center gap-3">

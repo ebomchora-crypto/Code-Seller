@@ -4,7 +4,6 @@ import {
   ArrowUp,
   Check,
   CheckCircle2,
-  ChevronLeft,
   Copy,
   Download,
   Eraser,
@@ -12,6 +11,7 @@ import {
   Globe,
   Link2,
   Monitor,
+  PanelLeft,
   RotateCw,
   Smartphone,
   Square,
@@ -33,6 +33,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteSite, restoreSiteVersion, updateSite, type SiteVersion } from '@/services/supabase/codeMaker'
 import { downloadName, publicSiteUrl, SLUG_PATTERN, slugify } from '@/utils/codeMakerStream'
 import { isReservedSlug } from '../../../supabase/functions/code-maker/site'
+import { useCodeMakerShell } from './layout'
 
 type LeftTab = 'acoes' | 'codigo'
 type MobileView = 'acoes' | 'codigo' | 'previa'
@@ -54,6 +55,7 @@ export default function CodeMakerEditorPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const builder = useSiteBuilder(id)
+  const shell = useCodeMakerShell()
   const billing = useBilling()
   const { site, phase } = builder
   const busy = phase !== 'idle'
@@ -96,6 +98,11 @@ export default function CodeMakerEditorPage() {
   const [readyPill, setReadyPill] = useState(false)
   const finishedAt = builder.finishedAt
   const siteName = site?.name ?? ''
+  // Nome, situação e "no ar" aparecem na lista de sites à esquerda.
+  const { refreshSites } = shell
+  useEffect(() => {
+    if (siteName) refreshSites()
+  }, [refreshSites, siteName, site?.status, site?.published])
   useEffect(() => {
     if (!finishedAt) return
     toast.success('Seu site está pronto!', { description: 'Confira a prévia e coloque no ar quando quiser.', duration: 6000 })
@@ -171,7 +178,7 @@ export default function CodeMakerEditorPage() {
 
   if (builder.loading) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-[var(--panel-bg)]">
+      <div className="flex flex-1 items-center justify-center">
         <Spinner size="lg" className="text-purple-600" />
       </div>
     )
@@ -179,7 +186,7 @@ export default function CodeMakerEditorPage() {
 
   if (!site) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-[var(--panel-bg)] p-6 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <p className="font-display text-lg font-semibold text-[var(--text-primary)]">
           {builder.notFound ? 'Site não encontrado' : 'Não foi possível abrir o site'}
         </p>
@@ -315,12 +322,12 @@ export default function CodeMakerEditorPage() {
   const activeLeft: LeftTab = mobileView === 'codigo' ? 'codigo' : mobileView === 'acoes' ? leftTab : leftTab
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Barra do editor */}
       <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 sm:px-4">
-        <Link to="/code-maker" className={iconButton} aria-label="Voltar para os sites">
-          <ChevronLeft className="size-4.5" />
-        </Link>
+        <button type="button" onClick={shell.openSites} className={`${iconButton} lg:hidden`} aria-label="Ver seus sites" title="Seus sites">
+          <PanelLeft className="size-4.5" />
+        </button>
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
           <button

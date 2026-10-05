@@ -3,6 +3,9 @@ import type { CommercialProfile } from '@/types/commercialProfile'
 import { EMPTY_COMMERCIAL_PROFILE, normalizeCommercialProfile } from '@/utils/commercialProfile'
 
 async function currentUserId(): Promise<string> {
+  // Sessão já aberta primeiro (sem ir ao servidor); se não houver, confere lá.
+  const { data: session } = await supabase.auth.getSession()
+  if (session.session?.user.id) return session.session.user.id
   const { data, error } = await supabase.auth.getUser()
   if (error) throw new Error(error.message)
   if (!data.user) throw new Error('Usuário não autenticado.')

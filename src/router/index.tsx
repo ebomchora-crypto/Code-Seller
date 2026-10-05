@@ -23,6 +23,7 @@ const TasksPage = lazyPage(() => import('@/pages/tasks'))
 const CopilotPage = lazyPage(() => import('@/pages/autopilot'))
 const CodeMakerPage = lazyPage(() => import('@/pages/code-maker'))
 const CodeMakerEditorPage = lazyPage(() => import('@/pages/code-maker/[id]'))
+const CodeMakerShell = lazyPage(() => import('@/pages/code-maker/layout'))
 const SettingsPage = lazyPage(() => import('@/pages/settings'))
 const SupportPage = lazyPage(() => import('@/pages/support'))
 const ReportsPage = lazyPage(() => import('@/pages/reports'))
@@ -110,16 +111,19 @@ export function AppRouter() {
             }
           />
 
-          {/* Editor do Code Maker em tela cheia, como o CS Copilot: chat e passos
-              da IA à esquerda, prévia à direita. */}
+          {/* Code Maker em tela cheia, como o CS Copilot: sites à esquerda; à
+              direita, o pedido de um site novo ou o editor (chat + prévia). */}
           <Route
-            path="/code-maker/:id"
+            path="/code-maker"
             element={
               <PrivateRoute>
-                <CodeMakerEditorPage />
+                <CodeMakerShell />
               </PrivateRoute>
             }
-          />
+          >
+            <Route index element={<CodeMakerPage />} />
+            <Route path=":id" element={<CodeMakerEditorPage />} />
+          </Route>
 
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
             <Route path="/aluno" element={<AcademyPage />} />
@@ -136,7 +140,6 @@ export function AppRouter() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/relatorios" element={<ReportsPage />} />
             <Route path="/autopilot" element={<Navigate to="/copilot" replace />} />
-            <Route path="/code-maker" element={<CodeMakerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
           </Route>

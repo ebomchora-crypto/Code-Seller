@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useBilling } from '@/stores/BillingContext'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, Globe, Loader2, TriangleAlert } from 'lucide-react'
+import { Eye, Globe, Loader2, PanelLeft, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -11,6 +11,7 @@ import { useAttachments } from '@/components/code-maker/Attachments'
 import { SiteThumbnail } from '@/components/code-maker/SiteThumbnail'
 import { createSite, getCodeMakerUsage, listSites, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
 import type { SiteBrief, SiteStyle } from '../../../supabase/functions/code-maker/site'
+import { useCodeMakerShell } from './layout'
 
 function relativeDate(value: string): string {
   const date = new Date(value)
@@ -96,6 +97,7 @@ export default function CodeMakerPage() {
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [creating, setCreating] = useState(false)
   const attachments = useAttachments()
+  const shell = useCodeMakerShell()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -152,6 +154,18 @@ export default function CodeMakerPage() {
   }
 
   return (
+    <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto">
+    <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 lg:hidden">
+      <button
+        type="button"
+        onClick={shell.openSites}
+        className="flex size-9 items-center justify-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+        aria-label="Ver seus sites"
+      >
+        <PanelLeft className="size-4.5" />
+      </button>
+      <span className="font-display text-[15px] font-semibold tracking-tight">Code Maker</span>
+    </div>
     <PageWrapper>
       <section className="relative mx-auto max-w-3xl pb-4 pt-6 text-center sm:pt-12">
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-64 w-[640px] max-w-full -translate-x-1/2 rounded-full bg-[#7c3aed]/20 blur-[100px]" />
@@ -246,5 +260,6 @@ export default function CodeMakerPage() {
         )}
       </section>
     </PageWrapper>
+    </div>
   )
 }

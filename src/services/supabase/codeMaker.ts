@@ -145,6 +145,21 @@ export async function listSites(): Promise<SiteSummary[]> {
   return (data ?? []) as SiteSummary[]
 }
 
+export interface SiteListItem {
+  id: string
+  name: string
+  status: string
+  published: boolean
+  updated_at: string
+}
+
+// Lista leve (sem o HTML) para a barra lateral do Code Maker.
+export async function listSiteItems(): Promise<SiteListItem[]> {
+  const { data, error } = await supabase.from('sites').select('id, name, status, published, updated_at').order('updated_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data ?? []) as SiteListItem[]
+}
+
 export async function getSite(id: string): Promise<Site | null> {
   const { data, error } = await supabase.from('sites').select('*').eq('id', id).maybeSingle()
   if (error) throw new Error(error.message)
