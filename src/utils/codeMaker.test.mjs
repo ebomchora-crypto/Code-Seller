@@ -127,24 +127,24 @@ test('cada seção recebe fotos diferentes (as partes são escritas em paralelo)
     { businessName: 'D House', niche: 'Imobiliária' },
   )
   assert.equal(plan.sections[0].headline, 'Apartamentos perto do metrô')
-  assert.equal(plan.sections[4].layout, undefined) // formato desconhecido some
+  assert.equal(plan.sections[4].layout, 'contato') // bloco desconhecido → o padrão da seção
   assert.equal(plan.sections[4].photos, 4) // no máximo 4
   const photos = photoPlan(plan, { businessName: 'D House', niche: 'Imobiliária' })
   assert.equal(photos.hero.length, 2)
-  assert.equal(photos.imoveis.length, 3)
-  assert.equal(photos.sobre.length, 1) // padrão
+  assert.equal(photos.imoveis.length, 4) // o que o bloco cards-foto mostra
+  assert.equal(photos.sobre.length, 1)
   assert.equal(photos.faq.length, 0)
   const all = Object.values(photos).flat().map((photo) => photo.url)
   assert.equal(new Set(all).size, all.length)
   // Fotos do próprio negócio vêm antes das de banco.
   const own = photoPlan(plan, { businessName: 'D', niche: 'Imobiliária', assets: [{ url: 'https://x/site-assets/u/a.jpg', kind: 'photo' }] })
   assert.equal(own.hero[0].url, 'https://x/site-assets/u/a.jpg')
-  // A mensagem de cada parte só traz as fotos dela, com o título a usar.
+  // A IA recebe só a descrição das fotos (para os alts), nunca as URLs.
   const message = buildPartMessage('imoveis', plan, { businessName: 'D House', niche: 'Imobiliária' })
-  assert.match(message, /FOTOS DESTA SEÇÃO/)
-  assert.equal(new Set(message.match(/https:\/\/images\.unsplash\.com\/[^"\s]+/g)).size, 3)
+  assert.match(message, /Fotos que o bloco mostra, na ordem/)
+  assert.doesNotMatch(message, /https:\/\/images\.unsplash\.com/)
   assert.match(message, /não repita nem parafraseie\): "Apartamentos perto do metrô"/)
-  assert.match(buildPartMessage('faq', plan, { businessName: 'D House', niche: 'Imobiliária' }), /NÃO usa foto/)
+  assert.match(buildPartMessage('faq', plan, { businessName: 'D House', niche: 'Imobiliária' }), /Este bloco não usa foto/)
   assert.ok(usedPhotos({ a: '<img src="https://images.unsplash.com/photo-1?w=800">' }).has('https://images.unsplash.com/photo-1'))
 })
 
@@ -309,12 +309,10 @@ test('efeitos: o plano escolhe poucos, as partes recebem só esses e a página l
   const { buildEditMessage } = await import('../../supabase/functions/code-maker/site.ts')
   assert.ok(EFFECT_IDS.length >= 25)
   assert.deepEqual(cleanEffects(['marquee', 'marquee', 'inventado', 'tilt', 'parallax', 'stagger', 'count']), ['marquee', 'tilt', 'parallax', 'stagger'])
-  const plan = normalizePlan({ ...rawPlan, effects: ['marquee', 'nao-existe'] }, brief)
-  assert.deepEqual(plan.effects, ['marquee'])
-  const message = buildPartMessage('hero', plan, brief)
-  assert.match(message, /EFEITOS ESCOLHIDOS[\s\S]*marquee/)
-  assert.doesNotMatch(message, /- parallax \(/)
-  assert.doesNotMatch(buildPartMessage('hero', normalizePlan(rawPlan, brief), brief), /EFEITOS ESCOLHIDOS/)
+  // O plano só escolhe efeitos que os blocos aplicam sozinhos (marquee já vem no letreiro).
+  const plan = normalizePlan({ ...rawPlan, effects: ['tilt', 'marquee', 'nao-existe'] }, brief)
+  assert.deepEqual(plan.effects, ['tilt'])
+  assert.equal(normalizePlan(rawPlan, brief).effects, undefined)
 
   assert.deepEqual(usedEffects('<div data-fx="tilt spotlight"></div><span data-fx=\'count\'></span><i data-fx="nada"></i>'), ['count', 'tilt', 'spotlight'])
   assert.deepEqual(effectsRuntime('<p>sem efeitos</p>'), { css: '', js: '' })
@@ -335,39 +333,95 @@ test('efeitos: o plano escolhe poucos, as partes recebem só esses e a página l
   assert.doesNotMatch(plain, /before-after/)
 })
 
-test('blocos: o plano escolhe um por seção e cada parte recebe o modelo pronto com as cores do site', async () => {
+test('blocos: a IA escreve o conteúdo e o código monta o bloco com as cores do site', async () => {
   const { BLOCKS, blockFor } = await import('../../supabase/functions/code-maker/blocks.ts')
-  const { blockModel, partBlock, PLAN_SYSTEM } = await import('../../supabase/functions/code-maker/site.ts')
+  const { partBlock, renderPart, headerHtml, footerHtml, fixedPart, parseContent, blockTokens, PLAN_SYSTEM, PART_SYSTEM } = await import(
+    '../../supabase/functions/code-maker/site.ts'
+  )
   assert.equal(blockFor('hero', ['hero']), 'hero-dividido') // nome antigo
   assert.equal(blockFor('bento', ['hero']), null) // bloco de seção não serve de topo
-  assert.match(PLAN_SYSTEM, /- hero-cinema:[\s\S]*- lista-precos:/)
+  assert.match(PLAN_SYSTEM, /- hero-vitrine:[\s\S]*- lista-precos:/)
+  assert.match(PART_SYSTEM, /```json/)
   const plan = normalizePlan(
     {
       ...rawPlan,
       header: 'menu-barra',
       radius: 'soft',
+      cta: 'Agendar meu horário',
+      tagline: 'Corte e barba com hora marcada. Há 15 anos de estrada.',
       sections: [
-        { id: 'hero', layout: 'hero-cinema', bg: 'ink' },
-        { id: 'servicos', layout: 'cards-foto', bg: 'paper' },
-        { id: 'precos', layout: 'hero-brilho', bg: 'surface' },
-        { id: 'contato', layout: 'contato', bg: 'brand' },
+        { id: 'hero', label: 'Início', layout: 'hero-cinema', bg: 'ink' },
+        { id: 'servicos', label: 'Serviços', layout: 'cards-foto', bg: 'paper' },
+        { id: 'precos', label: 'Preços', layout: 'hero-brilho', bg: 'surface' },
+        { id: 'contato', label: 'Contato', layout: 'contato', bg: 'brand' },
       ],
     },
     brief,
   )
   assert.equal(plan.header, 'menu-barra')
-  assert.equal(plan.sections[2].layout, undefined) // topo não serve para seção do meio
-  assert.equal(partBlock('footer', plan), 'rodape-assinatura')
-  assert.equal(partBlock('precos', plan), null)
-  const servicos = blockModel('servicos', plan, brief)
-  assert.match(servicos, /<section id="servicos" class="bg-paper/)
+  assert.equal(plan.cta, 'Agendar meu horário')
+  assert.equal(plan.tagline, 'Corte e barba com hora marcada.') // número inventado sai
+  assert.equal(plan.sections[2].layout, 'lista-precos') // topo não serve para seção do meio
+  assert.equal(partBlock('header', plan), 'menu-barra')
+  assert.equal(partBlock('precos', plan), 'lista-precos')
+
+  // Conteúdo da IA: bloco ```json (ou o primeiro {…}); HTML não é conteúdo.
+  const content = parseContent(
+    '```json\n{"kicker":"Serviços","title":"Cortes do jeito que você pede","highlight":"você pede","items":[{"title":"Corte","price":"R$ 45","meta":"40 min","icon":"scissors"},{"title":"Barba","price":"R$ 35"},{"title":"Combo","price":"R$ 70","icon":"inventado"},{"title":"Pezinho","price":"R$ 15"}],"alts":["Corte"]}\n```',
+  )
+  assert.equal(content.items.length, 4)
+  assert.equal(content.items[2].icon, undefined)
+  assert.equal(parseContent('```html\n<section>x</section>\n```'), null)
+  assert.equal(parseContent('{quebrado'), null)
+
+  const servicos = renderPart('servicos', plan, brief, content)
+  assert.match(servicos, /^<section id="servicos" class="relative isolate bg-paper/)
   assert.match(servicos, /rounded-2xl/) // cantos "soft"
+  assert.match(servicos, /Cortes do jeito que <span[^>]*>você pede<\/span>/)
   assert.equal(new Set(servicos.match(/https:\/\/images\.unsplash\.com\/[^"]+/g)).size, BLOCKS['cards-foto'].photos)
-  assert.match(blockModel('hero', plan, brief), /https:\/\/wa\.me\/5519998887777/)
-  assert.match(blockModel('header', plan, brief), /text-white/) // topo de foto: menu branco
-  for (const id of ['header', 'hero', 'servicos', 'contato', 'footer']) {
-    assert.doesNotMatch(blockModel(id, plan, brief), /\{(?:id|bg|tx|ptx|btx|dk|dtx|htx|rc|ri|rb|wa|FOTO\d)\}/, id)
+  const hero = renderPart('hero', plan, brief, { title: 'Corte de respeito', primary: 'Agendar meu horário', facts: [{ label: 'Clientes', value: '3 mil clientes' }] })
+  assert.match(hero, /https:\/\/wa\.me\/5519998887777/)
+  assert.doesNotMatch(hero, /3 mil/) // fato inventado sai
+  assert.equal(blockTokens('hero', plan, brief, []).next, '#servicos')
+  assert.equal(blockTokens('contato', plan, brief, []).next, '#contato')
+
+  // Cabeçalho e rodapé saem do plano, sem IA.
+  const header = headerHtml(plan, brief)
+  assert.match(header, /^<header data-header/)
+  assert.match(header, /text-white/) // topo de foto: menu branco
+  assert.match(header, /href="#servicos"[^>]*>Serviços</)
+  assert.match(header, />Agendar meu horário</)
+  const footer = footerHtml(plan, brief)
+  assert.match(footer, /^<footer/)
+  assert.match(footer, /WhatsApp \(19\) 99888-7777/)
+  assert.match(footer, /aria-label="Conversar pelo WhatsApp"/)
+  assert.equal(fixedPart('servicos', plan, brief), null)
+  const prototypeFooter = footerHtml(plan, { ...brief, mode: 'lead_prototype', contactRoutes: { goal: 'quote', actionLabel: 'Pedir orçamento', primary: null, confirmedWhatsapp: null, contacts: [], openingHours: [] } })
+  assert.doesNotMatch(prototypeFooter, /wa\.me|Conversar pelo WhatsApp/)
+
+  // Todos os blocos montam com o exemplo, nos dois temas, sem sobra de código.
+  for (const theme of ['light', 'dark']) {
+    const themed = { ...plan, theme, effects: ['split-text', 'grain', 'tilt', 'count'] }
+    for (const [id, block] of Object.entries(BLOCKS)) {
+      const section = { id: block.kind === 'hero' ? 'hero' : 'teste', label: 'Teste', brief: '', bg: 'surface', layout: id }
+      const sitePlan = { ...themed, sections: block.kind === 'hero' ? [section, ...themed.sections.slice(1)] : [...themed.sections, section] }
+      const html = renderPart(section.id, sitePlan, brief, block.sample)
+      assert.match(html, new RegExp(`^<section id="${section.id}"`), id)
+      assert.doesNotMatch(html, /undefined|NaN|\$\{|\[object/, id)
+    }
   }
-  assert.match(buildPartMessage('servicos', plan, brief), /MODELO DO BLOCO "cards-foto"/)
-  assert.doesNotMatch(buildPartMessage('precos', plan, brief), /MODELO DO BLOCO/)
+
+  // Alteração com bloco pronto: seção nova montada pelo código.
+  const parts = { header: headerHtml(plan, brief), hero, servicos, contato: '<section id="contato">C</section>', footer }
+  const edit = parseEdit(`<acoes>\n- Criei os planos\n</acoes>
+<bloco id="planos" modelo="planos" depois="servicos" rotulo="Planos" fundo="ink">{"title":"Planos mensais","items":[{"title":"Básico","price":"R$ 90","meta":"/mês","list":["2 cortes"]}]}</bloco>`)
+  assert.equal(edit.blocks.length, 1)
+  assert.throws(() => parseEdit('<bloco id="x" modelo="faq">sem json</bloco>'), /incompleta/)
+  const next = applyEdit(plan, parts, edit, { brief })
+  assert.deepEqual(next.plan.sections.map((section) => section.id), ['hero', 'servicos', 'planos', 'precos', 'contato'])
+  assert.equal(next.plan.sections[2].layout, 'planos')
+  assert.equal(next.plan.sections[2].bg, 'ink')
+  assert.match(next.parts.planos, /^<section id="planos"/)
+  assert.match(next.parts.planos, /Planos mensais/)
+  assert.equal(applyEdit(plan, parts, edit).parts.planos, undefined) // sem contexto não monta
 })

@@ -301,8 +301,11 @@ export function cleanEffects(value: unknown): string[] {
 }
 
 /** Lista curta (nome + quando usar) para o diretor de arte escolher. */
-export function effectsMenu(): string {
-  return EFFECT_IDS.map((id) => `- ${id}: ${EFFECTS[id].name}. ${EFFECTS[id].when}`).join('\n')
+export function effectsMenu(ids: string[] = EFFECT_IDS): string {
+  return ids
+    .filter((id) => id in EFFECTS)
+    .map((id) => `- ${id}: ${EFFECTS[id].name}. ${EFFECTS[id].when}`)
+    .join('\n')
 }
 
 /** Como usar os efeitos (para quem escreve o HTML). */
