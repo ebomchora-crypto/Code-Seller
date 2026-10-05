@@ -792,7 +792,7 @@ export function footerHtml(plan: SitePlan, brief: SiteBrief): string {
   const phone = phoneDigits(brief.phone)
   const city = brief.city ? [{ label: brief.city }] : []
   const contacts = prototype
-    ? [...(brief.contactRoutes?.contacts ?? []).map((label) => ({ label })), ...city]
+    ? [...(brief.contactRoutes?.contacts ?? []).map((href) => ({ label: href.replace(/^(?:tel:|mailto:|https?:\/\/)/, ''), href })), ...city]
     : [...(phone ? [{ label: `WhatsApp ${formatPhone(phone)}`, href: `https://wa.me/${phone}` }] : []), ...city]
   const dk = darkPanel(plan)
   return normalizePart(
