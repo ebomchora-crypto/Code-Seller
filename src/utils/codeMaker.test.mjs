@@ -247,3 +247,27 @@ test('normalizePart deixa cada parte só com o seu bloco', () => {
   const once = normalizePart('footer', footer)
   assert.equal(normalizePart('footer', once), once)
 })
+
+test('alteração tolerante: espaços/aspas diferentes, texto repetido, parte errada e trecho ausente', async () => {
+  const { applyEdit: apply, replaceInPart } = await import('../../supabase/functions/code-maker/site.ts')
+  const plan = normalizePlan(rawPlan, brief)
+  const parts = {
+    header: '<header data-header><a href="#servicos">Serviços</a><a>Fale conosco</a></header>',
+    hero: '<section id="hero"><h1 class="text-5xl">Cortes   de\n respeito</h1><a>Fale conosco</a></section>',
+    servicos: '<section id="servicos"><p>Barba completa</p></section>',
+  }
+  assert.equal(replaceInPart(parts.hero, "<h1 class='text-5xl'>Cortes de respeito</h1>", '<h1>Cortes com estilo</h1>'), '<section id="hero"><h1>Cortes com estilo</h1><a>Fale conosco</a></section>')
+  const next = apply(plan, parts, {
+    actions: [], parts: [], removals: [], theme: { lang: 'pt-PT' },
+    replacements: [
+      { id: 'hero', before: 'Fale conosco', after: 'Fale connosco' },
+      { id: 'hero', before: 'Barba completa', after: 'Barba feita' }, // parte errada
+      { id: 'hero', before: 'texto que não existe', after: 'x' },
+    ],
+  })
+  assert.match(next.parts.hero, /Fale connosco/)
+  assert.match(next.parts.header, /Fale conosco/) // a parte indicada tinha o texto: só ela muda
+  assert.equal(next.parts.servicos, '<section id="servicos"><p>Barba feita</p></section>')
+  assert.equal(next.skipped, 1)
+  assert.equal(next.plan.lang, 'pt-PT')
+})

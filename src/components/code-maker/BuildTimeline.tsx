@@ -1,5 +1,5 @@
-import { useEffect, useRef, type ReactNode } from 'react'
-import { Check, CircleAlert, FileSearch, LayoutTemplate, Loader2, Palette as PaletteIcon, RotateCcw, Sparkles } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Check, ChevronDown, CircleAlert, FileSearch, LayoutTemplate, Loader2, Palette as PaletteIcon, RotateCcw, Sparkles } from 'lucide-react'
 import { parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
 import type { Site, SiteVersion, StoredPlan } from '@/services/supabase/codeMaker'
 import type { BuildPhase, PartProgress } from '@/hooks/useSiteBuilder'
@@ -16,11 +16,14 @@ export function partLabel(plan: StoredPlan | null, id: string): string {
   if (id === 'header') return 'Cabeçalho'
   if (id === 'footer') return 'Rodapé'
   const label = plan?.sections.find((section) => section.id === id)?.label
-  return id === 'hero' ? `Topo${label && label.toLowerCase() !== 'início' ? ` · ${label}` : ''}` : label ?? id
+  return id === 'hero' ? `Topo${label && label.toLowerCase() !== 'início' ? ` · ${label}` : ''}` : (label ?? id)
 }
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return new Date(value).toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function UserBubble({ children, time }: { children: ReactNode; time?: string }) {
@@ -83,7 +86,7 @@ function CodeTail({ code }: { code: string }) {
 function Palette({ plan }: { plan: StoredPlan }) {
   const colors = [plan.palette.brand, plan.palette.accent, plan.palette.ink, plan.palette.paper, plan.palette.surface]
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)]/50 px-3 py-2.5">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)]/50 px-3 py-2.5">
       <span className="flex -space-x-1">
         {colors.map((color, index) => (
           <span key={index} className="size-5 rounded-full ring-2 ring-[var(--panel-bg)]" style={{ background: color }} title={color} />
@@ -155,8 +158,7 @@ export function BuildTimeline(props: BuildTimelineProps) {
   const busy = phase !== 'idle'
 
   const parts = plan ? partOrder(plan) : []
-  const partStatus = (id: string): PartProgress['status'] =>
-    progress[id]?.status ?? (site.parts[id] ? 'done' : 'queued')
+  const partStatus = (id: string): PartProgress['status'] => progress[id]?.status ?? (site.parts[id] ? 'done' : 'queued')
   const doneCount = parts.filter((id) => partStatus(id) === 'done').length
   const writing = parts.filter((id) => progress[id]?.status === 'writing')
   const latestWriting = writing[writing.length - 1]
@@ -172,6 +174,33 @@ export function BuildTimeline(props: BuildTimelineProps) {
   const briefChips = [brief.niche, brief.city, brief.style && brief.style !== 'auto' ? STYLE_NAMES[brief.style] : null].filter(Boolean) as string[]
   const planStatus = planning ? 'working' : plan ? 'done' : error ? 'error' : 'idle'
   const needsContinue = !busy && site.status !== 'ready'
+  const partList = plan ? (
+    <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+      {parts.map((id) => {
+        const status = partStatus(id)
+        return (
+          <li key={id}>
+            <button
+              type="button"
+              onClick={() => props.onOpenPart(id)}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            >
+              {status === 'done' ? (
+                <Check className="size-3.5 shrink-0 text-emerald-500" />
+              ) : status === 'writing' ? (
+                <Loader2 className="size-3.5 shrink-0 animate-spin text-[var(--accent-text)]" />
+              ) : status === 'error' ? (
+                <CircleAlert className="size-3.5 shrink-0 text-red-500" />
+              ) : (
+                <span className="size-3.5 shrink-0 rounded-full border border-[var(--border-strong)]" />
+              )}
+              <span className="truncate">{partLabel(plan, id)}</span>
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  ) : null
 
   return (
     <div className="flex flex-col gap-5 p-4 sm:p-5">
@@ -207,41 +236,30 @@ export function BuildTimeline(props: BuildTimelineProps) {
       </UserBubble>
 
       <AiBlock title={planning || !plan ? 'Planejando o site' : 'Direção de arte'} status={planStatus}>
-        <PlanSteps planning={planning} plan={plan} actions={planActions} />
-        <ActionList actions={planning ? planActions : plan?.actions ?? []} live={planning} />
-        {plan && !planning && <Palette plan={plan} />}
+        {planning || !plan ? (
+          <>
+            <PlanSteps planning={planning} plan={plan} actions={planActions} />
+            <ActionList actions={planActions} live={planning} />
+          </>
+        ) : (
+          <>
+            <Palette plan={plan} />
+            <div className="mt-2.5">
+              <Expandable label="Ver o plano">
+                <PlanSteps planning={false} plan={plan} actions={[]} />
+                <ActionList actions={plan.actions ?? []} />
+              </Expandable>
+            </div>
+          </>
+        )}
       </AiBlock>
 
       {plan && (
         <AiBlock
-          title={site.status === 'ready' && !building ? `Site pronto · ${parts.length} partes` : `Escrevendo o site · ${doneCount} de ${parts.length}`}
+          title={site.status === 'ready' && !building ? `${parts.length} partes escritas` : `Escrevendo o site · ${doneCount} de ${parts.length}`}
           status={building ? 'working' : site.status === 'ready' ? 'done' : 'idle'}
         >
-          <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-            {parts.map((id) => {
-              const status = partStatus(id)
-              return (
-                <li key={id}>
-                  <button
-                    type="button"
-                    onClick={() => props.onOpenPart(id)}
-                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-[12.5px] text-[var(--text-secondary)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
-                  >
-                    {status === 'done' ? (
-                      <Check className="size-3.5 shrink-0 text-emerald-500" />
-                    ) : status === 'writing' ? (
-                      <Loader2 className="size-3.5 shrink-0 animate-spin text-[var(--accent-text)]" />
-                    ) : status === 'error' ? (
-                      <CircleAlert className="size-3.5 shrink-0 text-red-500" />
-                    ) : (
-                      <span className="size-3.5 shrink-0 rounded-full border border-[var(--border-strong)]" />
-                    )}
-                    <span className="truncate">{partLabel(plan, id)}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          {site.status === 'ready' && !building ? <Expandable label="Ver as partes">{partList}</Expandable> : partList}
           {latestWriting && <CodeTail code={parsePart(progress[latestWriting]?.text ?? '').html} />}
           {createVersion && versions.length > 1 && lastVersionId !== createVersion.id && !busy && (
             <RestoreButton onClick={() => props.onRestore(createVersion)} />
@@ -277,11 +295,7 @@ export function BuildTimeline(props: BuildTimelineProps) {
         </div>
       )}
 
-      {error && !busy && (
-        <div className="rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-[13px] text-red-600 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {error && !busy && <div className="rounded-2xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-[13px] text-red-600 dark:text-red-300">{error}</div>}
 
       {needsContinue && (
         <button
@@ -293,6 +307,26 @@ export function BuildTimeline(props: BuildTimelineProps) {
         </button>
       )}
       <div ref={bottom} />
+    </div>
+  )
+}
+
+// Detalhe que só aparece se a pessoa pedir: deixa a conversa limpa depois
+// que o site fica pronto.
+function Expandable({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--text-muted)] transition hover:text-[var(--text-primary)]"
+      >
+        {label}
+        <ChevronDown className={`size-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="mt-2">{children}</div>}
     </div>
   )
 }

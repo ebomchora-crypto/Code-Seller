@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowUp,
   Check,
   CheckCircle2,
+  CloudOff,
+  Code2,
   Copy,
   Download,
-  Eraser,
+  Ellipsis,
   ExternalLink,
+  Eye,
   Globe,
   Link2,
   Monitor,
@@ -27,7 +31,6 @@ import { CodeView } from '@/components/code-maker/CodeView'
 import { SitePreview } from '@/components/code-maker/SitePreview'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Switch } from '@/components/ui/Switch'
 import { Spinner } from '@/components/ui/Spinner'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteSite, restoreSiteVersion, updateSite, type SiteVersion } from '@/services/supabase/codeMaker'
@@ -35,17 +38,11 @@ import { downloadName, publicSiteUrl, SLUG_PATTERN, slugify } from '@/utils/code
 import { isReservedSlug } from '../../../supabase/functions/code-maker/site'
 import { useCodeMakerShell } from './layout'
 
-type LeftTab = 'acoes' | 'codigo'
-type MobileView = 'acoes' | 'codigo' | 'previa'
+type View = 'previa' | 'codigo'
+type MobileTab = 'chat' | 'site'
 type Device = 'desktop' | 'mobile'
 
-const SUGGESTIONS = [
-  'Deixe o topo mais impactante',
-  'Adicione uma seção de preços',
-  'Troque a cor principal por azul-marinho',
-  'Adicione mais depoimentos',
-  'Deixe os textos mais curtos e diretos',
-]
+const SUGGESTIONS = ['Deixe o topo mais impactante', 'Adicione uma seção de preços', 'Deixe os textos mais curtos']
 
 const iconButton =
   'flex size-9 items-center justify-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:pointer-events-none disabled:opacity-40'
@@ -60,8 +57,8 @@ export default function CodeMakerEditorPage() {
   const { site, phase } = builder
   const busy = phase !== 'idle'
 
-  const [leftTab, setLeftTab] = useState<LeftTab>('acoes')
-  const [mobileView, setMobileView] = useState<MobileView>('acoes')
+  const [view, setView] = useState<View>('previa')
+  const [mobileTab, setMobileTab] = useState<MobileTab>('chat')
   const [device, setDevice] = useState<Device>('desktop')
   const [pickedFile, setPickedFile] = useState<string | null>(null)
   const [instruction, setInstruction] = useState('')
@@ -105,14 +102,20 @@ export default function CodeMakerEditorPage() {
   }, [refreshSites, siteName, site?.status, site?.published])
   useEffect(() => {
     if (!finishedAt) return
-    toast.success('Seu site está pronto!', { description: 'Confira a prévia e coloque no ar quando quiser.', duration: 6000 })
+    toast.success('Seu site está pronto!', {
+      description: 'Confira a prévia e coloque no ar quando quiser.',
+      duration: 6000,
+    })
     setReadyPill(true)
     const timer = window.setTimeout(() => setReadyPill(false), 7000)
     if (document.hidden) {
       setUnseenReady(true)
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Seu site está pronto', { body: siteName, icon: '/favicon.svg' })
+          new Notification('Seu site está pronto', {
+            body: siteName,
+            icon: '/favicon.svg',
+          })
         }
       } catch {
         // Sem notificação: o título da aba já avisa.
@@ -207,8 +210,7 @@ export default function CodeMakerEditorPage() {
     const text = instruction.trim() || (assets.length > 0 ? 'Use as imagens anexadas no site.' : '')
     if (!text || busy || !ready || attachments.uploading) return
     setInstruction('')
-    setLeftTab('acoes')
-    setMobileView('acoes')
+    setMobileTab('chat')
     const ok = await builder.edit(text, assets)
     if (ok) attachments.clear()
     else setInstruction(text)
@@ -248,7 +250,7 @@ export default function CodeMakerEditorPage() {
       await navigator.clipboard.writeText(url)
       toast.success('Link copiado.')
     } catch {
-      toast.error('Não foi possível copiar. Copie da barra da prévia.')
+      toast.error(`Não foi possível copiar. O link é ${url}`)
     }
   }
 
@@ -310,101 +312,135 @@ export default function CodeMakerEditorPage() {
 
   function openPart(partId: string) {
     setPickedFile(partId)
-    setLeftTab('codigo')
-    setMobileView('codigo')
+    setView('codigo')
+    setMobileTab('site')
   }
 
   const fileLabel = (file: string) =>
     file === 'index.html' ? 'index.html' : file === 'plano' ? 'plano.json' : file === 'alteracao' ? 'alteração' : partLabel(site.plan, file)
   const fileTabs = [...(autoFile === 'plano' || autoFile === 'alteracao' ? [autoFile] : []), ...files]
+  const live = ready && site.published
+  const mobileSelected: MobileTab | View = mobileTab === 'chat' ? 'chat' : view
 
-  const showLeft = mobileView !== 'previa'
-  const activeLeft: LeftTab = mobileView === 'codigo' ? 'codigo' : mobileView === 'acoes' ? leftTab : leftTab
+  const menuItems: MenuItem[] = [
+    ...(live ? [{ icon: ExternalLink, label: 'Abrir site', href: url }] : []),
+    {
+      icon: Link2,
+      label: 'Mudar o link',
+      onClick: () => {
+        setSlugDraft(site.slug)
+        setSlugOpen(true)
+      },
+    },
+    {
+      icon: Download,
+      label: 'Baixar HTML',
+      onClick: download,
+      disabled: !site.html || busy,
+    },
+    {
+      icon: RotateCw,
+      label: 'Recarregar prévia',
+      onClick: () => setReloadKey((key) => key + 1),
+    },
+    ...(live
+      ? [
+          {
+            icon: CloudOff,
+            label: 'Tirar do ar',
+            onClick: () => void togglePublished(false),
+          },
+        ]
+      : []),
+    {
+      icon: Trash2,
+      label: 'Apagar site',
+      onClick: () => setConfirmDelete(true),
+      disabled: busy,
+      danger: true,
+    },
+  ]
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Barra do editor */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 sm:px-4">
+      {/* Barra do editor: nome, Prévia/Código, menu e publicar */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border-subtle)] px-3 sm:px-4">
         <button type="button" onClick={shell.openSites} className={`${iconButton} lg:hidden`} aria-label="Ver seus sites" title="Seus sites">
           <PanelLeft className="size-4.5" />
         </button>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
+        <div className="min-w-0 flex-1 lg:w-[402px] lg:flex-none xl:w-[442px]">
+          <p className="truncate font-display text-[14.5px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
+          <p className="flex items-center gap-1.5 truncate text-[11.5px] text-[var(--text-muted)]">
+            <span className={`size-1.5 shrink-0 rounded-full ${live ? 'bg-emerald-500' : 'bg-[var(--border-strong)]'}`} />
+            <span className="truncate">
+              /{site.slug} · {busy ? 'a IA está trabalhando' : !ready ? 'em criação' : live ? 'no ar' : 'fora do ar'}
+            </span>
+          </p>
+        </div>
+
+        <div className="hidden flex-1 items-center gap-2 lg:flex">
+          <Segmented
+            value={view}
+            onChange={(value) => setView(value as View)}
+            options={[
+              { value: 'previa', label: 'Prévia', icon: Eye },
+              { value: 'codigo', label: 'Código', icon: Code2, dot: busy },
+            ]}
+          />
+          {view === 'previa' && (
+            <Segmented
+              value={device}
+              onChange={(value) => setDevice(value as Device)}
+              iconOnly
+              options={[
+                { value: 'desktop', label: 'Computador', icon: Monitor },
+                { value: 'mobile', label: 'Celular', icon: Smartphone },
+              ]}
+            />
+          )}
+        </div>
+
+        <MoreMenu items={menuItems} />
+        {live ? (
           <button
             type="button"
-            onClick={() => {
-              setSlugDraft(site.slug)
-              setSlugOpen(true)
-            }}
-            className="flex max-w-full items-center gap-1 truncate text-[12px] text-[var(--text-muted)] transition hover:text-[var(--accent-text)]"
-            title="Mudar o link"
+            onClick={() => void copyLink()}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 text-[12.5px] font-semibold text-emerald-700 transition hover:bg-emerald-500/15 dark:text-emerald-300"
+            title="Copiar o link do site"
           >
-            <Link2 className="size-3 shrink-0" />
-            <span className="truncate">/{site.slug}</span>
+            <Copy className="size-3.5" /> <span className="hidden sm:inline">Copiar link</span>
           </button>
-        </div>
-
-        <div className="hidden items-center rounded-xl border border-[var(--border-default)] p-0.5 lg:flex" role="group" aria-label="Tamanho da prévia">
-          {(
-            [
-              ['desktop', Monitor, 'Computador'],
-              ['mobile', Smartphone, 'Celular'],
-            ] as const
-          ).map(([value, Icon, label]) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={device === value}
-              aria-label={label}
-              title={label}
-              onClick={() => setDevice(value)}
-              className={`flex size-8 items-center justify-center rounded-[10px] transition ${
-                device === value ? 'bg-[var(--bg-muted)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <Icon className="size-4" />
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button type="button" className={iconButton} onClick={download} disabled={!site.html || busy} aria-label="Baixar HTML" title="Baixar HTML">
-            <Download className="size-4" />
-          </button>
-          <button type="button" className={iconButton} onClick={() => setConfirmDelete(true)} disabled={busy} aria-label="Apagar site" title="Apagar site">
-            <Trash2 className="size-4" />
-          </button>
-        </div>
-
-        <label className="flex items-center gap-2 rounded-xl border border-[var(--border-default)] px-2.5 py-1.5 text-[12.5px] font-medium text-[var(--text-secondary)]">
-          <Switch checked={site.published} onChange={(value) => void togglePublished(value)} disabled={!ready} ariaLabel="Site no ar" />
-          <span className="hidden sm:inline">{!ready ? 'Publicar' : site.published ? 'No ar' : 'Fora do ar'}</span>
-        </label>
-        <Button size="sm" onClick={() => void copyLink()} disabled={!ready || !site.published}>
-          <Copy className="size-3.5" /> <span className="hidden sm:inline">Copiar link</span>
-        </Button>
-      </div>
+        ) : (
+          <Button size="sm" onClick={() => void togglePublished(true)} disabled={!ready || busy}>
+            <Globe className="size-3.5" /> Publicar
+          </Button>
+        )}
+      </header>
 
       {/* Abas no celular */}
-      <div className="flex gap-1 border-b border-[var(--border-subtle)] px-3 py-2 lg:hidden" role="tablist">
+      <div className="flex shrink-0 gap-1 border-b border-[var(--border-subtle)] px-3 py-1.5 lg:hidden" role="tablist">
         {(
           [
-            ['acoes', 'Ações'],
-            ['codigo', 'Código'],
+            ['chat', 'Chat'],
             ['previa', 'Prévia'],
+            ['codigo', 'Código'],
           ] as const
         ).map(([value, label]) => (
           <button
             key={value}
             type="button"
             role="tab"
-            aria-selected={mobileView === value}
+            aria-selected={mobileSelected === value}
             onClick={() => {
-              setMobileView(value)
-              if (value !== 'previa') setLeftTab(value)
+              if (value === 'chat') {
+                setMobileTab('chat')
+              } else {
+                setMobileTab('site')
+                setView(value)
+              }
             }}
-            className={`flex-1 rounded-xl py-2 text-[13px] font-semibold transition ${
-              mobileView === value ? 'bg-[var(--bg-muted)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
+            className={`flex-1 rounded-lg py-1.5 text-[13px] font-semibold transition ${
+              mobileSelected === value ? 'bg-[var(--bg-muted)] text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
             }`}
           >
             {label}
@@ -413,60 +449,129 @@ export default function CodeMakerEditorPage() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        {/* Esquerda: ações da IA, código e chat */}
+        {/* Esquerda: conversa com a IA */}
         <section
-          className={`${showLeft ? 'flex' : 'hidden'} min-h-0 w-full flex-col border-[var(--border-subtle)] lg:flex lg:w-[420px] lg:shrink-0 lg:border-r xl:w-[460px]`}
+          className={`${mobileTab === 'chat' ? 'flex' : 'hidden'} min-h-0 w-full flex-col border-[var(--border-subtle)] lg:flex lg:w-[420px] lg:shrink-0 lg:border-r xl:w-[460px]`}
         >
-          <div className="hidden gap-1 border-b border-[var(--border-subtle)] px-3 py-2 lg:flex" role="tablist">
-            {(
-              [
-                ['acoes', 'Ações da IA'],
-                ['codigo', 'Código'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={leftTab === value}
-                onClick={() => setLeftTab(value)}
-                className={`rounded-xl px-3 py-1.5 text-[13px] font-semibold transition ${
-                  leftTab === value ? 'bg-[var(--bg-muted)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {label}
-                {value === 'codigo' && busy && <span className="ml-1.5 inline-block size-1.5 animate-pulse rounded-full bg-[#a78bfa] align-middle" />}
-              </button>
-            ))}
+          <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
+            <BuildTimeline
+              site={site}
+              versions={builder.versions}
+              phase={phase}
+              planText={builder.planText}
+              planActions={builder.planActions}
+              progress={builder.progress}
+              editText={builder.editText}
+              editActions={builder.editActions}
+              pendingInstruction={builder.pendingInstruction}
+              error={builder.error}
+              onContinue={() => void builder.generate()}
+              onOpenPart={openPart}
+              onRestore={(version) => void restore(version)}
+              readyCard={
+                <ReadyCard
+                  fresh={Boolean(finishedAt)}
+                  published={site.published}
+                  onPublish={() => void togglePublished(true)}
+                  onCopy={() => void copyLink()}
+                  url={url}
+                />
+              }
+            />
           </div>
 
-          {activeLeft === 'acoes' ? (
-            <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
-              <BuildTimeline
-                site={site}
-                versions={builder.versions}
-                phase={phase}
-                planText={builder.planText}
-                planActions={builder.planActions}
-                progress={builder.progress}
-                editText={builder.editText}
-                editActions={builder.editActions}
-                pendingInstruction={builder.pendingInstruction}
-                error={builder.error}
-                onContinue={() => void builder.generate()}
-                onOpenPart={openPart}
-                onRestore={(version) => void restore(version)}
-                readyCard={
-                  <ReadyCard
-                    parts={site.plan ? partOrder(site.plan).length : 0}
-                    fresh={Boolean(finishedAt)}
-                    published={site.published}
-                    onPublish={() => void togglePublished(true)}
-                    onCopy={() => void copyLink()}
-                    url={url}
-                  />
-                }
+          {/* Chat de alterações */}
+          <form onSubmit={submitEdit} className="px-3 pb-3 pt-2">
+            {ready && !busy && !instruction && builder.versions.length <= 1 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {SUGGESTIONS.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => setInstruction(suggestion)}
+                    className="rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[11.5px] text-[var(--text-muted)] transition hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div
+              onDragOver={(event) => {
+                if (event.dataTransfer.types.includes('Files')) event.preventDefault()
+              }}
+              onDrop={(event) => {
+                if (!event.dataTransfer.files.length || !ready || busy) return
+                event.preventDefault()
+                attachments.add(event.dataTransfer.files)
+              }}
+              className="rounded-2xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1.5 transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]"
+            >
+              <AttachmentTray state={attachments} />
+              <textarea
+                value={instruction}
+                onChange={(event) => setInstruction(event.target.value)}
+                onKeyDown={handleComposerKey}
+                onPaste={(event) => {
+                  if (event.clipboardData.files.length && ready && !busy) {
+                    event.preventDefault()
+                    attachments.add(event.clipboardData.files)
+                  }
+                }}
+                rows={2}
+                disabled={!ready || busy}
+                placeholder={busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança no site…' : 'Espere o site ficar pronto'}
+                className="block max-h-80 min-h-[52px] w-full resize-none overflow-y-auto bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed"
               />
+              <div className="flex items-center justify-between gap-2">
+                <AttachButton onFiles={attachments.add} disabled={!ready || busy} compact />
+                {busy ? (
+                  <button
+                    type="button"
+                    onClick={builder.stop}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-muted)] text-[var(--text-primary)] transition hover:bg-[var(--bg-card-hover)]"
+                    aria-label="Parar"
+                    title="Parar"
+                  >
+                    <Square className="size-3 fill-current" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={(!instruction.trim() && attachments.assets.length === 0) || !ready || attachments.uploading}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white transition hover:brightness-110 disabled:opacity-40"
+                    aria-label="Enviar"
+                  >
+                    <ArrowUp className="size-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+        </section>
+
+        {/* Direita: prévia ou código do site */}
+        <section className={`${mobileTab === 'site' ? 'flex' : 'hidden'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}>
+          {view === 'previa' ? (
+            <div className="relative flex min-h-0 flex-1 justify-center overflow-hidden bg-[var(--bg-muted)]/40">
+              {previewHtml ? (
+                <div
+                  className={`relative h-full transition-[width] duration-300 ${
+                    device === 'mobile'
+                      ? 'my-4 h-[calc(100%-2rem)] w-[390px] max-w-full overflow-hidden rounded-[28px] border-[6px] border-[#1d1b24] shadow-2xl'
+                      : 'w-full'
+                  }`}
+                >
+                  <SitePreview key={reloadKey} html={previewHtml} title={`Prévia de ${site.name}`} className="h-full w-full" />
+                  {readyPill && (
+                    <div className="cm-ready-pop pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(16,185,129,0.8)]">
+                      <CheckCircle2 className="size-4" /> Site pronto
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <PlanningPlaceholder busy={phase === 'planning'} actions={builder.planActions} />
+              )}
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col bg-[#0d0c12]">
@@ -506,138 +611,6 @@ export default function CodeMakerEditorPage() {
               </div>
             </div>
           )}
-
-          {/* Chat de alterações */}
-          <form onSubmit={submitEdit} className="border-t border-[var(--border-subtle)] p-3">
-            {ready && !busy && builder.versions.length <= 1 && (
-              <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-                {SUGGESTIONS.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => setInstruction(suggestion)}
-                    className="shrink-0 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11.5px] text-[var(--text-secondary)] transition hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div
-              onDragOver={(event) => {
-                if (event.dataTransfer.types.includes('Files')) event.preventDefault()
-              }}
-              onDrop={(event) => {
-                if (!event.dataTransfer.files.length || !ready || busy) return
-                event.preventDefault()
-                attachments.add(event.dataTransfer.files)
-              }}
-              className="rounded-2xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1.5 transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]"
-            >
-              <div className="pt-1.5">
-                <AttachmentTray state={attachments} />
-              </div>
-              <div className="flex items-end gap-2">
-                <AttachButton onFiles={attachments.add} disabled={!ready || busy} compact />
-                <textarea
-                  value={instruction}
-                  onChange={(event) => setInstruction(event.target.value)}
-                  onKeyDown={handleComposerKey}
-                  onPaste={(event) => {
-                    if (event.clipboardData.files.length && ready && !busy) {
-                      event.preventDefault()
-                      attachments.add(event.clipboardData.files)
-                    }
-                  }}
-                  rows={2}
-                  disabled={!ready || busy}
-                  placeholder={
-                    busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança… ex.: troque o título do topo' : 'Espere o site ficar pronto'
-                  }
-                  className="max-h-80 min-h-[44px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed overflow-y-auto"
-                />
-                {instruction.trim().length > 0 && !busy && (
-                  <button
-                    type="button"
-                    onClick={() => setInstruction('')}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-muted)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
-                    title="Limpar (Esc)"
-                    aria-label="Limpar texto"
-                  >
-                    <Eraser className="size-3.5" />
-                  </button>
-                )}
-                {busy ? (
-                  <button
-                    type="button"
-                    onClick={builder.stop}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-muted)] text-[var(--text-primary)] transition hover:bg-[var(--bg-card-hover)]"
-                    aria-label="Parar"
-                    title="Parar"
-                  >
-                    <Square className="size-3.5 fill-current" />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={(!instruction.trim() && attachments.assets.length === 0) || !ready || attachments.uploading}
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white transition hover:brightness-110 disabled:opacity-40"
-                    aria-label="Enviar"
-                  >
-                    <ArrowUp className="size-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </form>
-        </section>
-
-        {/* Direita: prévia do site */}
-        <section className={`${mobileView === 'previa' ? 'flex' : 'hidden'} min-h-0 min-w-0 flex-1 flex-col bg-[var(--shell-bg)] p-2 sm:p-3 lg:flex`}>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] shadow-[var(--shadow-card)]">
-            <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] px-3 py-2">
-              <span className="hidden gap-1.5 sm:flex" aria-hidden>
-                <span className="size-2.5 rounded-full bg-[#ff5f57]" />
-                <span className="size-2.5 rounded-full bg-[#febc2e]" />
-                <span className="size-2.5 rounded-full bg-[#28c840]" />
-              </span>
-              <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg bg-[var(--bg-muted)] px-2.5 py-1 text-[12px] text-[var(--text-muted)]">
-                {ready && site.published ? <Check className="size-3 shrink-0 text-emerald-500" /> : <span className="size-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />}
-                <span className="truncate">{url.replace(/^https?:\/\//, '')}</span>
-              </div>
-              <button type="button" className={iconButton} onClick={() => setReloadKey((key) => key + 1)} aria-label="Recarregar prévia" title="Recarregar">
-                <RotateCw className="size-3.5" />
-              </button>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener"
-                className={`${iconButton} ${!ready || !site.published ? 'pointer-events-none opacity-40' : ''}`}
-                aria-label="Abrir site em outra aba"
-                title="Abrir site"
-              >
-                <ExternalLink className="size-3.5" />
-              </a>
-            </div>
-            <div className="relative flex min-h-0 flex-1 justify-center overflow-hidden bg-[var(--bg-muted)]/40">
-              {previewHtml ? (
-                <div
-                  className={`relative h-full transition-[width] duration-300 ${
-                    device === 'mobile' ? 'my-3 w-[390px] max-w-full overflow-hidden rounded-[28px] border-[6px] border-[#1d1b24] shadow-2xl' : 'w-full'
-                  }`}
-                >
-                  <SitePreview key={reloadKey} html={previewHtml} title={`Prévia de ${site.name}`} className="h-full w-full" />
-                  {readyPill && (
-                    <div className="cm-ready-pop pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(16,185,129,0.8)]">
-                      <CheckCircle2 className="size-4" /> Site pronto
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <PlanningPlaceholder busy={phase === 'planning'} actions={builder.planActions} />
-              )}
-            </div>
-          </div>
         </section>
       </div>
 
@@ -682,62 +655,164 @@ export default function CodeMakerEditorPage() {
   )
 }
 
-function ReadyCard(props: {
-  parts: number
-  fresh: boolean
-  published: boolean
-  url: string
-  onPublish: () => void
-  onCopy: () => void
-}) {
+function ReadyCard(props: { fresh: boolean; published: boolean; url: string; onPublish: () => void; onCopy: () => void }) {
+  const action = 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold transition'
   return (
-    <div
-      className={`${props.fresh ? 'cm-ready-pop' : ''} rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.08] p-4`}
-      role="status"
-    >
-      <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_8px_20px_-8px_rgba(16,185,129,0.9)]">
-          <Check className="size-4.5" strokeWidth={3} />
-        </span>
-        <div className="min-w-0">
-          <p className="font-display text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Seu site está pronto!</p>
-          <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-            {props.parts > 0 ? `As ${props.parts} partes foram escritas. ` : ''}
-            {props.published
-              ? 'Ele já está no ar. Quer mudar algo? É só pedir no chat aqui embaixo.'
-              : 'Confira a prévia e coloque no ar quando quiser. Quer mudar algo? É só pedir no chat aqui embaixo.'}
-          </p>
+    <div className={`${props.fresh ? 'cm-ready-pop' : ''} flex gap-2.5`} role="status">
+      <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+        <Check className="size-4" strokeWidth={3} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-semibold text-[var(--text-primary)]">Seu site está pronto!</p>
+        <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+          {props.published ? 'Ele já está no ar.' : 'Confira a prévia e publique quando quiser.'} Para mudar algo, é só pedir aqui embaixo.
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {props.published ? (
+            <>
+              <a href={props.url} target="_blank" rel="noopener" className={`${action} bg-emerald-500 text-white hover:brightness-110`}>
+                <ExternalLink className="size-3.5" /> Abrir site
+              </a>
+              <button
+                type="button"
+                onClick={props.onCopy}
+                className={`${action} border border-[var(--border-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]`}
+              >
+                <Copy className="size-3.5" /> Copiar link
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={props.onPublish} className={`${action} bg-emerald-500 text-white hover:brightness-110`}>
+              <Globe className="size-3.5" /> Publicar
+            </button>
+          )}
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 pl-12">
-        {props.published ? (
-          <>
-            <a
-              href={props.url}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition hover:brightness-110"
-            >
-              <ExternalLink className="size-3.5" /> Abrir site
-            </a>
-            <button
-              type="button"
-              onClick={props.onCopy}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-3.5 py-1.5 text-[12.5px] font-semibold text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
-            >
-              <Copy className="size-3.5" /> Copiar link
-            </button>
-          </>
-        ) : (
+    </div>
+  )
+}
+
+interface SegmentedOption {
+  value: string
+  label: string
+  icon: LucideIcon
+  dot?: boolean
+}
+
+function Segmented({
+  value,
+  options,
+  onChange,
+  iconOnly = false,
+}: {
+  value: string
+  options: SegmentedOption[]
+  onChange: (value: string) => void
+  iconOnly?: boolean
+}) {
+  return (
+    <div className="flex items-center rounded-xl bg-[var(--bg-muted)] p-0.5" role="group">
+      {options.map((option) => {
+        const Icon = option.icon
+        const active = option.value === value
+        return (
           <button
+            key={option.value}
             type="button"
-            onClick={props.onPublish}
-            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition hover:brightness-110"
+            aria-pressed={active}
+            aria-label={option.label}
+            title={option.label}
+            onClick={() => onChange(option.value)}
+            className={`relative flex h-8 items-center justify-center gap-1.5 rounded-[10px] text-[12.5px] font-semibold transition ${iconOnly ? 'w-8' : 'px-3'} ${
+              active ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            }`}
           >
-            <Globe className="size-3.5" /> Colocar no ar
+            <Icon className="size-3.5" />
+            {!iconOnly && option.label}
+            {option.dot && <span className="size-1.5 animate-pulse rounded-full bg-[#a78bfa]" />}
           </button>
-        )}
-      </div>
+        )
+      })}
+    </div>
+  )
+}
+
+interface MenuItem {
+  icon: LucideIcon
+  label: string
+  onClick?: () => void
+  href?: string
+  disabled?: boolean
+  danger?: boolean
+}
+
+// Menu "…" da barra: as ações que a pessoa usa pouco ficam guardadas aqui.
+function MoreMenu({ items }: { items: MenuItem[] }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent) => {
+      if (!box.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const escape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', escape)
+    }
+  }, [open])
+
+  const itemClass = (item: MenuItem) =>
+    `flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition disabled:pointer-events-none disabled:opacity-40 ${
+      item.danger
+        ? 'text-red-600 hover:bg-red-500/10 dark:text-red-400'
+        : 'text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]'
+    }`
+
+  return (
+    <div ref={box} className="relative">
+      <button type="button" className={iconButton} onClick={() => setOpen((value) => !value)} aria-label="Mais opções" aria-expanded={open} title="Mais opções">
+        <Ellipsis className="size-4.5" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-1.5 w-52 rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] p-1 shadow-[var(--shadow-card)]"
+        >
+          {items.map((item) => {
+            const Icon = item.icon
+            const content = (
+              <>
+                <Icon className="size-4 shrink-0" /> {item.label}
+              </>
+            )
+            return item.href ? (
+              <a key={item.label} role="menuitem" href={item.href} target="_blank" rel="noopener" onClick={() => setOpen(false)} className={itemClass(item)}>
+                {content}
+              </a>
+            ) : (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                disabled={item.disabled}
+                onClick={() => {
+                  setOpen(false)
+                  item.onClick?.()
+                }}
+                className={itemClass(item)}
+              >
+                {content}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -745,7 +820,10 @@ function ReadyCard(props: {
 function PlanningPlaceholder({ busy, actions }: { busy: boolean; actions: string[] }) {
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden p-8 text-center">
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7c3aed]/20 blur-[90px]" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7c3aed]/20 blur-[90px]"
+      />
       <div className="relative">
         <div className="mx-auto grid w-56 grid-cols-3 gap-2 opacity-80">
           {Array.from({ length: 6 }, (_, index) => (
@@ -756,13 +834,9 @@ function PlanningPlaceholder({ busy, actions }: { busy: boolean; actions: string
             />
           ))}
         </div>
-        <p className="mt-6 font-display text-[17px] font-semibold text-[var(--text-primary)]">
-          {busy ? 'Planejando o design…' : 'O site aparece aqui'}
-        </p>
+        <p className="mt-6 font-display text-[17px] font-semibold text-[var(--text-primary)]">{busy ? 'Planejando o design…' : 'O site aparece aqui'}</p>
         <p className="mx-auto mt-1.5 max-w-xs text-[13px] text-[var(--text-muted)]">
-          {busy
-            ? actions[actions.length - 1] ?? 'Escolhendo cores, fontes e as seções certas para o negócio.'
-            : 'Clique em "Gerar site" para começar.'}
+          {busy ? (actions[actions.length - 1] ?? 'Escolhendo cores, fontes e as seções certas para o negócio.') : 'Clique em "Gerar site" para começar.'}
         </p>
       </div>
     </div>

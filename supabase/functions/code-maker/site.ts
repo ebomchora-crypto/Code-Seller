@@ -652,7 +652,8 @@ Depois, só o que muda:
 - Parte redesenhada por pedido explícito: <parte id="id">HTML completo da parte</parte>
 - Nova seção: <parte id="novo-id" depois="id-da-parte-anterior" rotulo="Nome no menu">HTML da seção</parte>
 - Remover uma seção: <remover id="id"/>
-- Mudar cores ou fontes do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}}</tema>
+- Mudar cores, fontes ou idioma do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}, "lang": "pt-PT"}</tema> (só os campos que mudam).
+- Pedido que muda os textos do site todo (idioma, tom, tratamento): troque cada texto com <substituir>, usando como "antes" só o texto visível (sem tags nem atributos), copiado exatamente como está no código; o mesmo texto repetido muda em todos os lugares. Não esqueça menu, botões, rodapé, alt das imagens e a mensagem dos links de WhatsApp. Em idioma novo, mande também o <tema> com o "lang".
 Mantenha tudo o que não foi pedido exatamente igual. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
 
 export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = [], recent: RecentEditContext[] = []): string {
@@ -1015,7 +1016,7 @@ export interface EditResult {
   parts: { id: string; html: string; after?: string; label?: string }[]
   replacements?: { id: string; before: string; after: string }[]
   removals: string[]
-  theme: { palette?: Partial<SitePlan['palette']>; fonts?: Partial<SitePlan['fonts']> } | null
+  theme: { palette?: Partial<SitePlan['palette']>; fonts?: Partial<SitePlan['fonts']>; lang?: string } | null
 }
 
 export function parseEdit(text: string): EditResult {
@@ -1056,20 +1057,58 @@ export function parseEdit(text: string): EditResult {
   return { actions: parseActions(text), parts, replacements, removals, theme }
 }
 
-// Aplica uma alteração ao plano e às partes (sem mexer no original).
-export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): { plan: SitePlan; parts: SiteParts } {
+// Onde está o trecho que a IA quer trocar. A IA às vezes copia o trecho com
+// espaços, quebras de linha ou aspas um pouco diferentes do código: primeiro
+// procura exato, depois ignorando essas diferenças.
+function patchPattern(before: string): RegExp | null {
+  const trimmed = before.trim()
+  if (!trimmed) return null
+  const escaped = trimmed
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\s+/g, '\\s+')
+    .replace(/["']/g, `["']`)
+  return new RegExp(escaped, 'g')
+}
+
+// Troca o trecho (todas as vezes que ele aparece: num pedido como "mude o
+// idioma", o mesmo "Saiba mais" repetido deve mudar em todos os lugares).
+// Devolve null se o trecho não está nesta parte.
+export function replaceInPart(source: string, before: string, after: string): string | null {
+  if (before && source.includes(before)) return source.split(before).join(after)
+  const pattern = patchPattern(before)
+  if (!pattern || !pattern.test(source)) return null
+  pattern.lastIndex = 0
+  return source.replace(pattern, () => after)
+}
+
+// Aplica uma alteração ao plano e às partes (sem mexer no original). Um trecho
+// que não for encontrado é pulado (antes, um único trecho fora do lugar fazia
+// a alteração inteira ser recusada — "mude o idioma" mexe em dezenas deles).
+export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): { plan: SitePlan; parts: SiteParts; skipped: number } {
   const nextPlan: SitePlan = { ...plan, palette: { ...plan.palette }, fonts: { ...plan.fonts }, sections: [...plan.sections] }
   const nextParts: SiteParts = { ...parts }
+  let skipped = 0
 
   for (const patch of edit.replacements ?? []) {
-    const source = nextParts[patch.id]
-    if (!source || source.indexOf(patch.before) < 0 || source.indexOf(patch.before) !== source.lastIndexOf(patch.before) ||
-        edit.parts.some(part => part.id === patch.id) || edit.removals.includes(patch.id)) {
-      throw new Error('O trecho da edição não corresponde a uma única parte atual. Tente novamente.')
+    // A parte inteira reescrita ou removida na mesma alteração prevalece.
+    if (edit.parts.some((part) => part.id === patch.id) || edit.removals.includes(patch.id)) {
+      skipped += 1
+      continue
     }
-    const updated = source.replace(patch.before, () => patch.after)
-    if (!updated.trim() || /<(?:script|style)\b/i.test(updated)) throw new Error('O trecho da edição é inválido. Tente novamente.')
-    nextParts[patch.id] = updated
+    // Primeiro na parte indicada; se a IA errou a parte, procura nas outras.
+    const candidates = [patch.id, ...Object.keys(nextParts).filter((id) => id !== patch.id && !edit.parts.some((part) => part.id === id))]
+    let applied = false
+    for (const id of candidates) {
+      const source = nextParts[id]
+      if (!source) continue
+      const updated = replaceInPart(source, patch.before, patch.after)
+      if (updated === null) continue
+      if (!updated.trim() || /<(?:script|style)\b/i.test(updated)) break
+      nextParts[id] = updated
+      applied = true
+      if (id === patch.id) break
+    }
+    if (!applied) skipped += 1
   }
 
   for (const id of edit.removals) {
@@ -1102,7 +1141,8 @@ export function applyEdit(plan: SitePlan, parts: SiteParts, edit: EditResult): {
       body: cleanFont(edit.theme.fonts.body, nextPlan.fonts.body),
     }
   }
-  return { plan: nextPlan, parts: nextParts }
+  if (typeof edit.theme?.lang === 'string') nextPlan.lang = cleanLang(edit.theme.lang)
+  return { plan: nextPlan, parts: nextParts, skipped }
 }
 
 // ---------------------------------------------------------------------------
