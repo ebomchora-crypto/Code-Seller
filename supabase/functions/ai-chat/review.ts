@@ -15,7 +15,7 @@ export interface ReviewOptions {
 }
 
 function normalize(value: string): string {
-  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
 // Mesmo critério de src/utils/copilotGuidance.ts (FIRST_CONTACT): pedido de
