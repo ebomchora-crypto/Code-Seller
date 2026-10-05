@@ -425,3 +425,9 @@ test('blocos: a IA escreve o conteúdo e o código monta o bloco com as cores do
   assert.match(next.parts.planos, /Planos mensais/)
   assert.equal(applyEdit(plan, parts, edit).parts.planos, undefined) // sem contexto não monta
 })
+
+test('conteúdo continuado em duas chamadas (cerca reaberta) ainda é lido', async () => {
+  const { parseContent } = await import('../../supabase/functions/code-maker/site.ts')
+  const text = ['```json\n{"title":"Cortes do jeito', '```json\n que você pede","items":[{"title":"Corte"}]}\n```']
+  assert.equal(parseContent(text[0] + text[1]).title, 'Cortes do jeito que você pede')
+})

@@ -831,16 +831,21 @@ export function partBlock(partId: string, plan: SitePlan): string | null {
 export function parseContent(text: string): BlockContent | null {
   const fenced = text.match(/```json\s*([\s\S]*?)(?:```|$)/i)?.[1]
   if (fenced === undefined && /```html/i.test(text)) return null
-  const source = fenced ?? text
-  const start = source.indexOf('{')
-  const end = source.lastIndexOf('}')
-  if (start < 0 || end <= start) return null
-  try {
-    const content = cleanContent(JSON.parse(source.slice(start, end + 1)))
-    return content.title || content.items?.length || content.facts?.length ? content : null
-  } catch {
-    return null
+  // A resposta continuada em outra chamada pode ter reaberto a cerca: tenta
+  // também o texto inteiro, sem as cercas.
+  for (const source of [fenced, text.replace(/\n?```(?:json)?\n?/gi, '')]) {
+    if (source === undefined) continue
+    const start = source.indexOf('{')
+    const end = source.lastIndexOf('}')
+    if (start < 0 || end <= start) continue
+    try {
+      const content = cleanContent(JSON.parse(source.slice(start, end + 1)))
+      if (content.title || content.items?.length || content.facts?.length) return content
+    } catch {
+      // tenta o próximo
+    }
   }
+  return null
 }
 
 export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrief): string {

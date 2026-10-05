@@ -671,6 +671,7 @@ Deno.serve(async (req: Request) => {
             html = renderPart(partId, planForAi, site.brief, content)
             if (html) emit(`\n\`\`\`html\n${html}\n\`\`\``)
           } else {
+            if (!/```html|<(?:section|header|footer)\b/i.test(full)) return 'A IA devolveu esta parte incompleta. Tente de novo.'
             // Protótipo de lead pode ter que mostrar "contato pendente": aí não limpa.
             const raw = parsePart(full).html
             html = normalizePart(partId, site.brief.mode === 'lead_prototype' ? raw : stripMissingInfo(raw))
