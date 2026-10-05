@@ -591,7 +591,9 @@ Deno.serve(async (req: Request) => {
           { role: 'user', content: buildPartMessage(partId, planForAi, site.brief) },
         ],
         finish: async (full, signal) => {
-          let html = normalizePart(partId, stripMissingInfo(parsePart(full).html))
+          // Protótipo de lead pode ter que mostrar "contato pendente": aí não limpa.
+          const raw = parsePart(full).html
+          let html = normalizePart(partId, site.brief.mode === 'lead_prototype' ? raw : stripMissingInfo(raw))
           // Rodapé que não veio certo: usa o rodapé simples em vez de travar o site.
           if (!html && partId === 'footer') html = simpleFooter(planForAi, site.brief)
           if (!html) return 'A IA devolveu esta parte vazia. Tente de novo.'
