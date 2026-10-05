@@ -290,3 +290,16 @@ test('plano com marca registrada e cantos: guardados e entregues à seção cert
   assert.equal(loose.signatureSection, 'hero')
   assert.equal(normalizePlan(rawPlan, brief).signature, undefined)
 })
+
+test('base do site: conteúdo em <main>, atalho para pular o menu e menu do celular acessível', () => {
+  const plan = normalizePlan(rawPlan, brief)
+  const html = assembleSite(plan, { header: '<header data-header>H</header>', hero: '<section id="hero">Topo</section>', footer: '<footer>R</footer>' })
+  assert.match(html, /<a href="#conteudo" class="skip-link">Pular para o conteúdo<\/a>/)
+  assert.ok(html.indexOf('data-header') < html.indexOf('<main id="conteudo">'))
+  assert.ok(html.indexOf('id="hero"') > html.indexOf('<main id="conteudo">'))
+  assert.ok(html.indexOf('<footer>') > html.indexOf('</main>'))
+  assert.match(html, /hoverOnlyWhenSupported/)
+  assert.match(html, /aria-expanded/)
+  assert.match(html, /prefers-reduced-motion:reduce\)\{html\{scroll-behavior:auto\}/)
+  assert.match(assembleSite({ ...plan, lang: 'en' }, {}), /Skip to content/)
+})

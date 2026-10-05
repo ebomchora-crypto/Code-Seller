@@ -383,19 +383,21 @@ DIREÇÃO
 - O visual nasce do mundo do negócio: os materiais, ferramentas, texturas, cores e o jeito de falar do ramo (a navalha e o couro da barbearia, a planta e o concreto da construtora, a farinha e a madeira da padaria). Use isso em formas, ícones, fotos e textos.
 - Uma ousadia só: o plano define a "signature" (a marca registrada do site). Ela aparece com força na seção indicada; todo o resto fica calmo e disciplinado, a serviço dela. Antes de terminar, tire um enfeite que não serve ao negócio.
 - Estrutura é informação: rótulos pequenos acima de títulos, numeração (01, 02…), divisórias e selos só quando dizem algo verdadeiro (numeração só em sequência real, como etapas). Nada de rótulo decorativo em toda seção.
+- Sem "cara de IA": nada de degradê em tudo (no máximo um degradê sutil, e nunca o roxo/azul genérico), sombra pesada, card em volta de tudo, a mesma grade de cards em toda seção, bolhas de luz borradas de enfeite nem o mesmo respiro enorme em todo lugar. O layout segue a importância do conteúdo.
 
 DESIGN
 - Use SOMENTE estas cores do tema (Tailwind): brand, brand-dark, accent, ink, paper, surface, muted — com variações de opacidade (ex.: bg-brand/10, text-ink/70, border-ink/10) e também white/black. Nunca invente outros nomes de cor nem use cores fixas (#hex) nas classes.
-- Tipografia é a personalidade do site: font-display (títulos) usada com intenção — escala clara (título do topo bem maior que os de seção), peso e espaçamento escolhidos (ex.: caixa alta com tracking largo numa fonte condensada, ou serifada grande com leading-[1.05] e tracking-tight). font-body no texto: corpo em text-base ou maior com leading-relaxed; nada abaixo de text-xs.
+- Tipografia é a personalidade do site: font-display (títulos) usada com intenção — escala clara (título do topo bem maior que os de seção), peso e espaçamento escolhidos (ex.: caixa alta com tracking largo numa fonte condensada, ou serifada grande com leading-[1.05] e tracking-tight). Títulos grandes com tamanho fluido para caberem em 320px sem quebrar palavra (ex.: text-[clamp(2.5rem,8vw,5.5rem)]); tracking negativo forte só em título curto. font-body no texto: corpo em text-base ou maior com leading-relaxed; nada abaixo de text-xs. Pesos com disciplina: normal no texto, medium/semibold em rótulos e subtítulos, bold/black só nos títulos. Preços, horários e números em tabular-nums. Títulos em ordem: um h1 (no topo), h2 nas seções, h3 dentro delas — sem pular nível.
 - Cantos: siga o "radius" do plano em todo o site (sem radius: round) — round: rounded-2xl/rounded-3xl e botões rounded-full; soft: rounded-lg/rounded-xl e botões rounded-xl; sharp: rounded-none/rounded-sm e botões rounded-sm. Sombras suaves, bordas finas (border-ink/10 no claro, border-white/10 no escuro).
-- Espaçamento generoso e em ritmo: seções com py-20 md:py-28, container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose.
+- Espaçamento em escala (múltiplos de 4px: 2, 3, 4, 6, 8, 12, 16…) e com hierarquia: coisas relacionadas ficam perto (rótulo e campo, título e texto), grupos diferentes ficam longe. Seções com py-20 md:py-28 (a de destaque pode ter mais), container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose (65 a 75 caracteres por linha).
 - Siga o "layout" que o plano deu para a seção (veja FORMATOS abaixo). Seções vizinhas nunca têm o mesmo formato; nunca 3 cards iguais em seções seguidas.
 - Composição: cards lado a lado têm a mesma quantidade de conteúdo (nada de card alto e quase vazio — use items-start ou dê ao card maior uma foto). Cartão flutuante sobre foto: no máximo 1 por foto, só com texto curto, dentro da área da foto no celular (nada de posição negativa que vaze da tela) e nunca por cima de outro texto. Nada de texto escrito por cima de foto que já tenha cartão.
-- Movimento com moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Hover em botões e cards com transition (cor, sombra, -translate-y-0.5); nunca anime largura/altura. Animação demais deixa o site com cara de feito por IA.
+- Movimento com propósito e moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Interações rápidas (duration-200, ease-out): hover com mudança de cor/sombra ou -translate-y-0.5, clique com active:scale-[0.98]. Anime só cor, opacidade e transform — nunca largura/altura. Nada de animação infinita chamativa (animate-bounce, animate-pulse, girar) em conteúdo. Quem prefere menos movimento: use motion-safe: nos efeitos de deslocamento ou motion-reduce:transition-none. Animação demais deixa o site com cara de feito por IA.
 - Botões: principal com bg-brand e texto em contraste, px-6 py-3.5 font-semibold; secundário contornado. Toda área clicável com pelo menos 44px de altura (min-h-11) e 8px de distância da vizinha.
 - Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24), coerentes com o que representam e todos do mesmo estilo; ícone decorativo com aria-hidden="true"; botão só de ícone com aria-label. Nunca emoji como ícone.
-- Acessibilidade e qualidade: contraste AA (4.5:1 no texto), foco visível em links e botões (focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2), HTML semântico (um h1 no topo, h2 nas seções), imagens com espaço reservado (aspect-[…] ou width/height) para a página não pular ao carregar.
-- 100% responsivo (mobile-first, bonito de 360px a 1440px, sem rolagem lateral).
+- Acessibilidade e qualidade: contraste AA (4.5:1 no texto, 3:1 em título grande e em ícone), foco visível em links e botões (focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2; nunca outline-none sem substituto), HTML semântico (nav, section, footer, ul/li em listas, button para ação e a para navegação — nunca div clicável). Cor nunca é o único sinal: destaque também com texto ou ícone (ex.: selo "Mais escolhido" escrito). Link diz para onde leva ou o que faz ("Pedir orçamento no WhatsApp", não "Clique aqui"). Informação importante nunca só no hover. No menu do celular, o botão data-menu-toggle tem aria-label e aria-controls apontando para o painel.
+- Imagens: foto que informa tem alt descritivo; foto só decorativa tem alt="". Espaço reservado com aspect-[…] ou width/height para a página não pular ao carregar. Tamanho certo no w= da URL: w=1600 só em foto de tela cheia, w=1000 em foto de meia tela, w=600 em card. Foto do topo com fetchpriority="high"; as outras com loading="lazy" decoding="async".
+- 100% responsivo e mobile-first: pense primeiro em 320px de largura, depois 768, 1024 e 1440 — sem rolagem lateral, sem texto cortado, botões sem quebrar o texto, linhas de texto com largura confortável.
 
 FORMATOS (o plano escolhe um por seção)
 - split: texto de um lado e foto grande do outro (aspect-[4/5] ou [5/4]); lista curta de 3 itens com ícone abaixo do texto.
@@ -420,7 +422,7 @@ TEXTO (o que mais vende — escreva como um bom redator publicitário brasileiro
 - NUNCA escreva sobre informação que falta: nada de "não informado", "a definir", "em breve", "sob consulta" como valor, "imagem ilustrativa", "quando essas informações forem fornecidas", "a história da empresa poderá ser apresentada aqui". Se um dado não existe (telefone, endereço, horário, história, equipe), simplesmente NÃO crie aquele campo nem aquele bloco — o layout fica completo sem ele. (Exceção: quando as regras específicas de um protótipo pedirem para indicar uma pendência, siga essas regras.)
 - NUNCA invente fatos verificáveis sobre o negócio: nada de nota, número de avaliações, depoimentos de clientes, ano de fundação, anos de experiência, quantidade de clientes/atendimentos/vendas, prêmios, registros profissionais (CRECI, CRM, OAB…) ou endereço que não estejam no pedido. Se a reputação real foi informada, use exatamente esses números e destaque bem.
 - Botões de contato abrem o WhatsApp com mensagem pronta coerente com o botão (target="_blank" rel="noopener"). Sem WhatsApp informado, leve para #contato.
-- Imagens: use SOMENTE as URLs de foto indicadas no pedido (pode mudar só o w=), cada foto uma vez no site. Nunca invente URL de imagem. Sempre alt descritivo e object-cover; loading="lazy" fora do topo. Avatares de depoimentos: iniciais em círculo, nunca foto.`
+- Imagens: use SOMENTE as URLs de foto indicadas no pedido (pode mudar só o w=), cada foto uma vez no site. Nunca invente URL de imagem. object-cover, alt e carregamento conforme a regra de imagens acima. Avatares de depoimentos: iniciais em círculo, nunca foto.`
 
 // ---------------------------------------------------------------------------
 // 1) Plano do site
@@ -1194,8 +1196,13 @@ const BASE_SCRIPT = `<script>
   function onScroll(){ if(header){ if(window.scrollY>24){header.setAttribute('data-scrolled','')}else{header.removeAttribute('data-scrolled')} } }
   window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
   var toggle=document.querySelector('[data-menu-toggle]'), menu=document.querySelector('[data-menu]');
-  if(toggle&&menu){ toggle.addEventListener('click',function(){ menu.classList.toggle('hidden'); });
-    menu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click',function(){ menu.classList.add('hidden'); }); }); }
+  if(toggle&&menu){
+    function setMenu(open){ menu.classList.toggle('hidden',!open); toggle.setAttribute('aria-expanded',String(open)); }
+    if(!menu.id){ menu.id='menu-celular'; }
+    toggle.setAttribute('aria-controls',menu.id); toggle.setAttribute('aria-expanded','false');
+    toggle.addEventListener('click',function(){ setMenu(menu.classList.contains('hidden')); });
+    menu.querySelectorAll('a').forEach(function(a){ a.addEventListener('click',function(){ setMenu(false); }); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!menu.classList.contains('hidden')){ setMenu(false); toggle.focus(); } }); }
   var items=document.querySelectorAll('.reveal');
   if('IntersectionObserver' in window){
     var io=new IntersectionObserver(function(entries){ entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('is-visible'); io.unobserve(e.target);} }); },{rootMargin:'0px 0px -8% 0px'});
@@ -1211,6 +1218,8 @@ export function buildHead(plan: SitePlan): string {
     .map((font) => `family=${encodeURIComponent(font).replace(/%20/g, '+')}:wght@400;500;600;700;800`)
     .join('&')
   const config = {
+    // Efeito de hover só em aparelho com mouse (no celular ele "grudava" depois do toque).
+    future: { hoverOnlyWhenSupported: true },
     theme: {
       extend: {
         colors: {
@@ -1243,24 +1252,46 @@ export function buildHead(plan: SitePlan): string {
     `<link href="https://fonts.googleapis.com/css2?${fonts}&display=swap" rel="stylesheet">`,
     '<script src="https://cdn.tailwindcss.com"></script>',
     `<script>tailwind.config=${JSON.stringify(config)}</script>`,
-    `<style>html{scroll-behavior:smooth}body{font-family:'${plan.fonts.body}',ui-sans-serif,system-ui,sans-serif}.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}.reveal.is-visible{opacity:1;transform:none}@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}</style>`,
+    `<style>html{scroll-behavior:smooth}body{font-family:'${plan.fonts.body}',ui-sans-serif,system-ui,sans-serif}.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}.reveal.is-visible{opacity:1;transform:none}:where(a,button,summary,input,select,textarea):focus-visible{outline:2px solid currentColor;outline-offset:3px}.skip-link{position:fixed;left:1rem;top:1rem;z-index:100;transform:translateY(-200%);padding:.75rem 1rem;border-radius:.5rem;background:#fff;color:#111;font-weight:600}.skip-link:focus{transform:none}@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}details>summary{list-style:none;cursor:pointer}details>summary::-webkit-details-marker{display:none}</style>`,
   ].join('\n')
 }
 
 // `pending` = partes ainda sendo escritas: aparecem como um bloco "carregando".
+const SKIP_LINK: Record<string, string> = {
+  pt: 'Pular para o conteúdo',
+  en: 'Skip to content',
+  es: 'Saltar al contenido',
+  fr: 'Aller au contenu',
+  it: 'Vai al contenuto',
+  de: 'Zum Inhalt springen',
+}
+
 export function assembleSite(plan: SitePlan, parts: SiteParts, options: { pending?: boolean } = {}): string {
-  const body = partOrder(plan)
-    .map((id) => {
-      if (parts[id]) return normalizePart(id, parts[id])
-      if (!options.pending) return ''
-      return id === 'header' || id === 'footer'
-        ? ''
-        : `<section id="${id}" class="bg-surface py-24"><div class="mx-auto max-w-6xl px-5 md:px-8 animate-pulse"><div class="h-4 w-32 rounded-full bg-ink/10"></div><div class="mt-5 h-10 w-2/3 rounded-2xl bg-ink/10"></div><div class="mt-8 grid gap-4 md:grid-cols-3"><div class="h-40 rounded-3xl bg-ink/5"></div><div class="h-40 rounded-3xl bg-ink/5"></div><div class="h-40 rounded-3xl bg-ink/5"></div></div></div></section>`
-    })
+  const render = (ids: string[]) =>
+    ids
+      .map((id) => {
+        if (parts[id]) return normalizePart(id, parts[id])
+        if (!options.pending) return ''
+        return id === 'header' || id === 'footer'
+          ? ''
+          : `<section id="${id}" class="bg-surface py-24"><div class="mx-auto max-w-6xl px-5 md:px-8 animate-pulse"><div class="h-4 w-32 rounded-full bg-ink/10"></div><div class="mt-5 h-10 w-2/3 rounded-2xl bg-ink/10"></div><div class="mt-8 grid gap-4 md:grid-cols-3"><div class="h-40 rounded-3xl bg-ink/5"></div><div class="h-40 rounded-3xl bg-ink/5"></div><div class="h-40 rounded-3xl bg-ink/5"></div></div></div></section>`
+      })
+      .filter(Boolean)
+      .join('\n\n')
+  const lang = plan.lang ?? 'pt-BR'
+  const skip = SKIP_LINK[lang.slice(0, 2)] ?? SKIP_LINK.pt
+  // As seções ficam dentro de <main>: leitores de tela pulam direto para o
+  // conteúdo, e o primeiro Tab da página oferece esse atalho.
+  const body = [
+    `<a href="#conteudo" class="skip-link">${skip}</a>`,
+    render(['header']),
+    `<main id="conteudo">\n${render(plan.sections.map((section) => section.id))}\n</main>`,
+    render(['footer']),
+  ]
     .filter(Boolean)
     .join('\n\n')
   return `<!doctype html>
-<html lang="${plan.lang ?? 'pt-BR'}">
+<html lang="${lang}">
 <head>
 ${buildHead(plan)}
 </head>
