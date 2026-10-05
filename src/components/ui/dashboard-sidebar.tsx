@@ -102,12 +102,12 @@ export function DashboardSidebar({
           mobileOpen ? 'translate-x-0 shadow-[var(--shadow-modal)]' : '-translate-x-full lg:translate-x-0',
         )}
       >
-        <div className={cn('flex h-[76px] shrink-0 items-center px-4', collapsed ? 'justify-center' : 'justify-between')}>
+        <div className={cn('flex h-16 shrink-0 items-center px-4', collapsed ? 'justify-center' : 'justify-between')}>
           <Link to="/" onClick={onCloseMobile} className={cn('flex min-w-0 items-center', !collapsed && 'gap-3 px-1')}>
             <img
               src="/logo.png"
               alt="Code Sellers"
-              className="size-9 shrink-0 rounded-[11px] object-cover shadow-[0_8px_22px_-6px_rgba(124,58,237,0.7)] ring-1 ring-white/10"
+              className="size-8 shrink-0 rounded-[10px] object-cover shadow-[0_6px_18px_-6px_rgba(124,58,237,0.7)] ring-1 ring-white/10"
             />
             {!collapsed && (
               <span className="truncate font-display text-[15px] font-bold tracking-tight text-[var(--text-primary)]">
@@ -146,13 +146,13 @@ export function DashboardSidebar({
           data-lenis-prevent
           className={cn(
             'scrollbar-none flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4',
-            collapsed ? 'mt-3 gap-3' : 'mt-2 gap-5 [@media(max-height:780px)]:gap-3',
+            collapsed ? 'mt-3 gap-3' : 'mt-1 gap-4 [@media(max-height:780px)]:gap-2.5',
           )}
         >
           {groups.map((group) => (
-            <section key={group.label} className="flex flex-col gap-1" aria-label={group.label}>
+            <section key={group.label} className="flex flex-col gap-0.5" aria-label={group.label}>
               {!collapsed && !group.hideLabel && (
-                <p className="mb-1 px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)] [@media(max-height:780px)]:mb-0">
+                <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)] opacity-80 [@media(max-height:780px)]:mb-0">
                   {group.label}
                 </p>
               )}
@@ -160,8 +160,8 @@ export function DashboardSidebar({
               {group.items.map((item) => {
                 const isActive = !item.download && isSidebarRouteActive(item.path, currentPath)
                 const itemClassName = cn(
-                  'group relative flex h-10 items-center rounded-xl text-[13.5px] transition-colors duration-150 [@media(max-height:780px)]:h-9',
-                  collapsed ? 'mx-auto w-10 justify-center' : 'gap-3 px-3',
+                  'group relative flex h-9 items-center rounded-lg text-[13.5px] transition-colors duration-150 [@media(max-height:780px)]:h-8',
+                  collapsed ? 'mx-auto w-10 justify-center' : 'gap-2.5 px-3',
                   isActive
                     ? 'font-semibold text-[var(--text-primary)]'
                     : 'font-medium text-[var(--text-secondary)] hover:bg-[var(--sidebar-item-hover)] hover:text-[var(--text-primary)]',
@@ -171,14 +171,15 @@ export function DashboardSidebar({
                     {isActive && (
                       <motion.span
                         layoutId="dashboard-sidebar-active"
-                        className="absolute inset-0 rounded-xl border border-[var(--nav-active-border)] shadow-[var(--nav-active-shadow)]"
-                        style={{ background: 'var(--nav-active-bg)' }}
+                        className="absolute inset-0 rounded-lg bg-[var(--sidebar-item-active)]"
                         transition={{ duration: 0.35, ease: EASE_PREMIUM }}
-                      />
+                      >
+                        {!collapsed && <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-[var(--accent-solid)]" />}
+                      </motion.span>
                     )}
                     <item.icon
                       className={cn(
-                        'relative size-[18px] shrink-0 transition-colors',
+                        'relative size-[17px] shrink-0 transition-colors',
                         isActive ? 'text-[var(--accent-text)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]',
                       )}
                     />
@@ -231,7 +232,7 @@ export function DashboardSidebar({
           </div>
         </div>
 
-        <div className="shrink-0 px-3 pb-3">
+        <div className="shrink-0 px-3 pb-3 pt-1">
           {/* Em telas baixas (notebooks) o card some pra não esconder o menu. */}
           {!collapsed && !isSidebarRouteActive('/copilot', currentPath) && (
             <div className="[@media(max-height:860px)]:hidden">
@@ -241,14 +242,14 @@ export function DashboardSidebar({
 
           <div
             className={cn(
-              'flex items-center rounded-2xl border border-[var(--panel-border)] bg-[var(--panel-bg)] p-2',
+              'flex items-center rounded-xl p-1.5 transition-colors hover:bg-[var(--sidebar-item-hover)]',
               collapsed ? 'flex-col gap-2' : 'gap-2.5',
             )}
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="size-9 shrink-0 rounded-xl object-cover" referrerPolicy="no-referrer" />
+              <img src={avatarUrl} alt="" className="size-8 shrink-0 rounded-full object-cover" referrerPolicy="no-referrer" />
             ) : (
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#5b21b6)] text-[12px] font-semibold text-white">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#8b5cf6,#5b21b6)] text-[11.5px] font-semibold text-white">
                 {initialsFromUser(displayName, email)}
               </span>
             )}

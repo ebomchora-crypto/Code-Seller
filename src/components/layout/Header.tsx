@@ -13,29 +13,35 @@ interface HeaderProps {
 }
 
 const iconButton =
-  'flex size-10 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--bg-card)] text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]'
+  'flex size-9 items-center justify-center rounded-full text-[var(--text-muted)] transition-colors duration-200 hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]'
 
 export function Header({ onOpenMobileMenu, theme, onToggleTheme }: HeaderProps) {
   const { pathname } = useLocation()
   const title = getPageTitle(pathname)
   const section = getPageSection(pathname)
+  // No Início o caminho "Principal / Início" não diz nada: fica só o título.
+  const showSection = section && section !== 'Principal' && section !== title
 
   return (
-    <header className="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[var(--panel-border)] px-5 sm:px-6 lg:px-8">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[var(--panel-border)] px-5 sm:px-6 lg:px-8">
       <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={onOpenMobileMenu}
           aria-label="Abrir menu"
-          className="flex size-10 items-center justify-center rounded-full border border-[var(--panel-border)] text-[var(--text-secondary)] lg:hidden"
+          className="flex size-9 items-center justify-center rounded-full border border-[var(--panel-border)] text-[var(--text-secondary)] lg:hidden"
         >
           <MenuIcon className="size-5" />
         </button>
         <nav aria-label="Você está em" className="flex min-w-0 items-center gap-2 text-[14px]">
-          <span className="hidden text-[var(--text-muted)] sm:inline">{section}</span>
-          <span className="hidden text-[var(--text-muted)] sm:inline" aria-hidden>
-            /
-          </span>
+          {showSection && (
+            <>
+              <span className="hidden text-[var(--text-muted)] sm:inline">{section}</span>
+              <span className="hidden text-[var(--text-muted)] opacity-60 sm:inline" aria-hidden>
+                /
+              </span>
+            </>
+          )}
           <span className="truncate font-semibold text-[var(--text-primary)]">{title}</span>
         </nav>
       </div>
@@ -45,11 +51,11 @@ export function Header({ onOpenMobileMenu, theme, onToggleTheme }: HeaderProps) 
           type="button"
           onClick={openCommandPalette}
           aria-label="Busca rápida"
-          className="hidden h-10 items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--bg-card)] pl-3.5 pr-2 text-[13px] text-[var(--text-muted)] transition-all duration-200 hover:border-[var(--accent-ring)] hover:text-[var(--text-primary)] md:flex"
+          className="hidden h-9 items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--bg-card)] pl-3.5 pr-1.5 text-[13px] text-[var(--text-muted)] transition-all duration-200 hover:border-[var(--accent-ring)] hover:text-[var(--text-primary)] md:flex"
         >
           <Search className="size-4" />
-          <span className="pr-6">Buscar…</span>
-          <kbd className="rounded-md border border-[var(--border-default)] px-1.5 py-0.5 font-sans text-[11px]">
+          <span className="pr-8">Buscar…</span>
+          <kbd className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 font-sans text-[10.5px]">
             {typeof navigator !== 'undefined' && /mac/i.test(navigator.platform) ? '⌘K' : 'Ctrl K'}
           </kbd>
         </button>

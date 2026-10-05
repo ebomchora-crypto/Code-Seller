@@ -18,7 +18,7 @@ import { useDashboard } from '@/hooks/useDashboard'
 import { useAuthContext } from '@/stores/AuthContext'
 
 export default function DashboardPage() {
-  const { user } = useAuthContext()
+  const { user, profile } = useAuthContext()
   const { metrics, revenueChart, pipelineChart, recentDeals, recentContacts, activityFeed, lastUpdated, refetch } =
     useDashboard()
 
@@ -27,7 +27,8 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const userName = (user?.name ?? user?.email ?? 'por aqui').split(' ')[0]
+  // Mesmo nome do menu lateral (o do perfil vem primeiro).
+  const userName = (profile?.full_name?.trim() || user?.name || user?.email || 'por aqui').split(' ')[0]
   const isInitialLoading = metrics.loading && !lastUpdated
 
   async function handleRefresh() {
