@@ -43,6 +43,12 @@ export interface PlanSection {
   brief: string
   bg: SectionBackground
   requirementIds?: string[]
+  /** Formato da seção (da lista de LAYOUTS). */
+  layout?: string
+  /** Título exato da seção, decidido no plano para nenhum se repetir. */
+  headline?: string
+  /** Quantas fotos a seção usa (0 a 4). */
+  photos?: number
 }
 
 export interface SitePlan {
@@ -99,6 +105,11 @@ const PHOTOS: Record<string, Photo[]> = {
     { id: '1621605815971-fbc98d665033', about: 'máquina, tesoura e produtos sobre a bancada' },
     { id: '1599351431202-1e0f0137899a', about: 'barbeiro fazendo degradê com navalha (detalhe)' },
     { id: '1622286342621-4bd786c2447c', about: 'corte masculino sendo finalizado' },
+    { id: '1605497788044-5a32c7078486', about: 'barbeiro secando o cabelo de cliente sorrindo' },
+    { id: '1512690459411-b9245aed614b', about: 'cadeira de barbeiro clássica de couro' },
+    { id: '1517832606299-7ae9b720a186', about: 'barba sendo aparada com tesoura (preto e branco)' },
+    { id: '1596728325488-58c87691e9af', about: 'barba sendo feita com navalha e escova' },
+    { id: '1534297635766-a262cdcb8ee4', about: 'barbeiro cortando cabelo de menino' },
   ],
   salao: [
     { id: '1560066984-138dadb4c035', about: 'salão claro e moderno (hero)' },
@@ -106,6 +117,11 @@ const PHOTOS: Record<string, Photo[]> = {
     { id: '1521590832167-7bcbfaa6381f', about: 'salão com cadeiras rosadas' },
     { id: '1570172619644-dfd03ed5d881', about: 'tratamento facial / máscara' },
     { id: '1512290923902-8a9f81dc236c', about: 'procedimento estético no rosto' },
+    { id: '1562322140-8baeececf3df', about: 'cabeleireira secando o cabelo de cliente' },
+    { id: '1595476108010-b4d1f102b1b1', about: 'lavatório: cabeleireira lavando o cabelo da cliente' },
+    { id: '1604654894610-df63bc536371', about: 'unhas decoradas (manicure, detalhe)' },
+    { id: '1487412947147-5cebf100ffc2', about: 'maquiagem sendo aplicada (rosto em close)' },
+    { id: '1516975080664-ed2fc6a32937', about: 'pincéis de maquiagem na bancada' },
   ],
   comida: [
     { id: '1517248135467-4c7edcad34c4', about: 'salão de restaurante aconchegante (hero)' },
@@ -115,6 +131,13 @@ const PHOTOS: Record<string, Photo[]> = {
     { id: '1540189549336-e6e99c3679fe', about: 'salada colorida' },
     { id: '1509440159596-0249088772ff', about: 'pães artesanais' },
     { id: '1555507036-ab1f4038808a', about: 'croissant com açúcar caindo' },
+    { id: '1555396273-367ea4eb4db5', about: 'restaurante/café amplo com mesas de madeira' },
+    { id: '1552566626-52f8b828add9', about: 'salão de restaurante com luz quente' },
+    { id: '1565299624946-b28f40a0ae38', about: 'pizza artesanal vista de cima' },
+    { id: '1568901346375-23c9450c58cd', about: 'hambúrguer artesanal em close' },
+    { id: '1546069901-ba9599a7e63c', about: 'bowl saudável colorido' },
+    { id: '1495474472287-4d71bcdd2085', about: 'cafés com arte no leite, vistos de cima' },
+    { id: '1501339847302-ac426a4a7cbb', about: 'cafeteria com letreiro luminoso "CAFE"' },
   ],
   saude: [
     { id: '1629909613654-28e377c37b09', about: 'consultório odontológico claro e moderno (hero)' },
@@ -122,44 +145,86 @@ const PHOTOS: Record<string, Photo[]> = {
     { id: '1606811971618-4486d14f3f99', about: 'atendimento odontológico (detalhe)' },
     { id: '1519494026892-80bbd2d6fd0d', about: 'recepção de clínica' },
     { id: '1576091160399-112ba8d25d1d', about: 'médico de jaleco e estetoscópio' },
+    { id: '1606811841689-23dfddce3e95', about: 'dentista explicando o tratamento à paciente na cadeira' },
+    { id: '1631217868264-e5b90bb7e133', about: 'médica conversando com paciente no consultório' },
+    { id: '1559839734-2b71ea197ec2', about: 'retrato de médica sorrindo ao ar livre' },
+    { id: '1584515933487-779824d29309', about: 'mãos dadas, cuidado e acolhimento' },
   ],
   auto: [
     { id: '1487754180451-c456f719a1fc', about: 'mecânico trocando óleo do motor (hero)' },
     { id: '1619642751034-765dfdf7c58e', about: 'mãos com ferramenta no motor' },
     { id: '1486262715619-67b85e0b08d3', about: 'motor de carro em detalhe' },
     { id: '1530046339160-ce3e530c7d2f', about: 'oficina organizada com ferramentas' },
+    { id: '1625047509248-ec889cbff17f', about: 'mecânico com o capô aberto, motor à mostra' },
+    { id: '1492144534655-ae79c964c9d7', about: 'carro esportivo branco em garagem escura' },
+    { id: '1580273916550-e323be2ae537', about: 'carro esportivo cinza na estrada ao entardecer' },
+    { id: '1503376780353-7e6692767b70', about: 'carro preto em movimento na rodovia' },
   ],
   fitness: [
     { id: '1534438327276-14e5300c3a48', about: 'academia com halteres (hero)' },
     { id: '1571902943202-507ec2618e8f', about: 'academia ampla e iluminada' },
     { id: '1517836357463-d25dfeac3438', about: 'levantamento de peso (detalhe)' },
+    { id: '1540497077202-7c8a3999166f', about: 'academia clara com aparelhos e bicicletas' },
+    { id: '1581009146145-b5ef050c2e1e', about: 'homem treinando bíceps com barra' },
+    { id: '1517963879433-6ad2b056d712', about: 'levantamento terra com anilhas (detalhe)' },
+    { id: '1518611012118-696072aa579a', about: 'aula em grupo no colchonete (pilates/funcional)' },
   ],
   juridico: [
     { id: '1589829545856-d10d557cf95f', about: 'estátua da justiça (hero)' },
     { id: '1505664194779-8beaceb93744', about: 'biblioteca com livros antigos' },
     { id: '1450101499163-c8848c66ca85', about: 'assinatura de documento' },
     { id: '1554224155-6726b3ff858f', about: 'documentos e calculadora (contabilidade)' },
+    { id: '1521791055366-0d553872125f', about: 'mão assinando contrato com caneta' },
+    { id: '1497215728101-856f4ea42174', about: 'escritório claro com vista da cidade' },
+    { id: '1573497019940-1c28c88b4f3e', about: 'retrato de profissional sorridente' },
   ],
   pet: [
     { id: '1548199973-03cce0bbc87b', about: 'dois cachorros correndo felizes (hero)' },
     { id: '1587300003388-59208cc962cb', about: 'cachorro sorrindo' },
     { id: '1516734212186-a967f81ad0d7', about: 'golden retriever sendo cuidado' },
+    { id: '1583337130417-3346a1be7dee', about: 'buldogue francês de moletom amarelo' },
+    { id: '1450778869180-41d0601e046e', about: 'cachorro e gato deitados juntos na grama' },
   ],
   casa: [
     { id: '1600596542815-ffad4c1539a9', about: 'casa moderna com piscina (hero)' },
     { id: '1560448204-e02f11c3d0e2', about: 'sala de estar clara' },
     { id: '1503387762-592deb58ef4e', about: 'projeto/planta sobre a mesa' },
     { id: '1541888946425-d81bb19240f5', about: 'obra vista de cima com equipe' },
+    { id: '1600585154340-be6161a56a0c', about: 'casa moderna iluminada ao entardecer, com jardim' },
+    { id: '1600607687939-ce8a6c25118c', about: 'sala de estar ampla e moderna com sofá branco' },
+    { id: '1600566753190-17f0baa2a6c3', about: 'fachada contemporânea de madeira e concreto' },
+    { id: '1600210492486-724fe5c67fb0', about: 'sala clara com plantas e poltronas' },
+    { id: '1564013799919-ab600027ffc6', about: 'casa branca com piscina e palmeiras' },
+    { id: '1512917774080-9991f1c4c750', about: 'casa de alto padrão com piscina e vidro' },
+    { id: '1570129477492-45c003edd2be', about: 'casa clássica com varanda e gramado' },
+    { id: '1502672260266-1c1ef2d93688', about: 'apartamento aconchegante com estante e plantas' },
+    { id: '1493809842364-78817add7ffb', about: 'sala de apartamento com sofá azul' },
+    { id: '1484154218962-a197022b5858', about: 'cozinha planejada branca' },
+    { id: '1560185007-cde436f6a4d0', about: 'sala de jantar e estar integradas' },
+    { id: '1545324418-cc1a3fa10c00', about: 'prédio residencial moderno visto de baixo' },
+    { id: '1582407947304-fd86f028f716', about: 'prédios altos de vidro (bairro nobre)' },
+    { id: '1560518883-ce09059eeffa', about: 'chave com chaveiro de casinha (compra do imóvel)' },
   ],
-  escola: [{ id: '1509062522246-3755977927d7', about: 'sala de aula com alunos (hero)' }],
+  escola: [
+    { id: '1509062522246-3755977927d7', about: 'sala de aula com alunos (hero)' },
+    { id: '1503676260728-1c00da094a0b', about: 'livros, maçã e blocos de letras' },
+    { id: '1427504494785-3a9ca7044f45', about: 'estudante entre estantes de biblioteca' },
+    { id: '1524178232363-1fb2b075b655', about: 'aula para adultos com projetor' },
+  ],
   loja: [
     { id: '1441986300917-64674bd600d8', about: 'loja de roupas organizada (hero)' },
     { id: '1483985988355-763728e1935b', about: 'cliente com sacolas de compras' },
+    { id: '1567401893414-76b7b1e5a7a5', about: 'arara de roupas coloridas e prateleiras' },
+    { id: '1441984904996-e0b6ba687e04', about: 'loja de roupas minimalista com luminárias' },
+    { id: '1555529669-e69e7aa0ba9a', about: 'cliente escolhendo camisa na arara' },
   ],
   geral: [
     { id: '1497366216548-37526070297c', about: 'escritório moderno' },
     { id: '1522071820081-009f0129c71c', about: 'equipe trabalhando junta' },
     { id: '1556761175-5973dc0f32e7', about: 'apresentação para clientes' },
+    { id: '1600880292203-757bb62b4baf', about: 'dois profissionais comemorando um acordo' },
+    { id: '1556157382-97eda2d62296', about: 'profissional sorrindo em ambiente de trabalho' },
+    { id: '1521737604893-d14cc237f11d', about: 'equipe reunida em volta da mesa' },
   ],
 }
 
@@ -217,20 +282,85 @@ export function logoOf(brief: SiteBrief): string | null {
   return brief.assets?.find((asset) => asset.kind === 'logo')?.url ?? null
 }
 
-// Imagens que a IA pode usar: as do próprio negócio primeiro, depois as de banco.
-export function imagesMessage(brief: SiteBrief, fresh: SiteAsset[] = []): string {
+function logoMessage(brief: SiteBrief, mark: (url: string) => string = () => ''): string | null {
   const logo = logoOf(brief)
+  return logo
+    ? `LOGO DO NEGÓCIO (enviada pelo usuário): ${logo}${mark(logo)}\nUse SOMENTE no cabeçalho e no rodapé (não repita na seção do topo, que já fica logo abaixo do cabeçalho), no lugar do nome em texto: <img src="..." alt="Logo ${brief.businessName}" class="h-9 w-auto md:h-10 object-contain">. Não recorte, não distorça e não coloque dentro de círculo. Combine as cores do site com ela.`
+    : null
+}
+
+// Imagens que a IA pode usar nas alterações: as do próprio negócio primeiro,
+// depois as de banco. As que já aparecem no site vêm marcadas, para a IA
+// preferir outra e o site não repetir a mesma foto.
+export function imagesMessage(brief: SiteBrief, fresh: SiteAsset[] = [], used: Set<string> = new Set()): string {
   const photos = (brief.assets ?? []).filter((asset) => asset.kind === 'photo')
   const freshUrls = new Set(fresh.map((asset) => asset.url))
-  const mark = (url: string) => (freshUrls.has(url) ? ' (anexada agora)' : '')
+  const mark = (url: string) => (freshUrls.has(url) ? ' (anexada agora)' : used.has(photoKey(url)) ? ' (já está no site)' : '')
   return [
-    logo
-      ? `LOGO DO NEGÓCIO (enviada pelo usuário): ${logo}${mark(logo)}\nUse SOMENTE no cabeçalho e no rodapé (não repita na seção do topo, que já fica logo abaixo do cabeçalho), no lugar do nome em texto: <img src="..." alt="Logo ${brief.businessName}" class="h-9 w-auto md:h-10 object-contain">. Não recorte, não distorça e não coloque dentro de círculo. Combine as cores do site com ela.`
-      : null,
+    logoMessage(brief, mark),
     photos.length > 0
       ? `FOTOS DO PRÓPRIO NEGÓCIO (enviadas pelo usuário — use estas PRIMEIRO, principalmente no topo, na galeria e no "sobre"; não sabemos o que cada uma mostra, então use legendas genéricas e alt descritivo neutro):\n${photos.map((photo) => `- ${photo.url}${mark(photo.url)}`).join('\n')}`
       : null,
-    `${photos.length > 0 ? 'Fotos de banco (só como complemento, se faltar foto)' : 'Fotos disponíveis (use somente estas)'}:\n${photoCatalog(brief.niche)}`,
+    `${photos.length > 0 ? 'Fotos de banco (só como complemento, se faltar foto)' : 'Fotos disponíveis (use somente estas)'} — prefira as que ainda não estão no site:\n${photosFor(brief.niche)
+      .map((photo) => `- ${stockUrl(photo.id)} — ${photo.about}${mark(stockUrl(photo.id))}`)
+      .join('\n')}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+}
+
+const stockUrl = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1600&q=80`
+
+// Mesma foto com outro tamanho (w=) conta como a mesma.
+function photoKey(url: string): string {
+  return url.replace(/[?#].*$/, '')
+}
+
+export function usedPhotos(parts: SiteParts): Set<string> {
+  const used = new Set<string>()
+  for (const html of Object.values(parts)) {
+    for (const match of (html ?? '').matchAll(/https:\/\/[^"'\s)]+/g)) used.add(photoKey(match[0]))
+  }
+  return used
+}
+
+interface PhotoChoice {
+  url: string
+  about: string
+}
+
+// Quantas fotos cada seção usa quando o plano não diz.
+function defaultPhotos(id: string): number {
+  if (id === 'hero') return 2
+  return /^(?:faq|duvidas|perguntas|como-funciona|passos|etapas|contato|planos|precos|cardapio)$/.test(id) ? 0 : 1
+}
+
+// Distribui as fotos entre as seções. As partes são escritas ao mesmo tempo
+// e, recebendo a lista inteira, todas escolhiam a mesma "melhor" foto (a
+// mesma casa aparecia 4 vezes). Cada seção recebe as suas, sem repetir —
+// só repete se o banco de fotos acabar.
+export function photoPlan(plan: SitePlan, brief: SiteBrief): Record<string, PhotoChoice[]> {
+  const own = (brief.assets ?? [])
+    .filter((asset) => asset.kind === 'photo')
+    .map((asset) => ({ url: asset.url, about: 'foto do próprio negócio (não sabemos o que mostra: legenda genérica e alt neutro)' }))
+  const pool: PhotoChoice[] = [...own, ...photosFor(brief.niche).map((photo) => ({ url: stockUrl(photo.id), about: photo.about }))]
+  const result: Record<string, PhotoChoice[]> = {}
+  let next = 0
+  for (const section of plan.sections) {
+    const wanted = Math.max(0, Math.min(4, section.photos ?? defaultPhotos(section.id)))
+    result[section.id] = Array.from({ length: Math.min(wanted, pool.length) }, () => pool[next++ % pool.length])
+  }
+  return result
+}
+
+function partImages(partId: string, plan: SitePlan, brief: SiteBrief): string | null {
+  if (partId === 'header' || partId === 'footer') return logoMessage(brief)
+  const photos = photoPlan(plan, brief)[partId] ?? []
+  return [
+    partId === 'hero' ? null : logoMessage(brief) ? 'A logo do negócio já aparece no cabeçalho: não repita nesta seção.' : null,
+    photos.length
+      ? `FOTOS DESTA SEÇÃO (exclusivas: as outras seções recebem outras fotos, então o site não repete imagem). Use SOMENTE estas URLs (pode mudar só o w=), cada uma no máximo uma vez:\n${photos.map((photo) => `- ${photo.url} — ${photo.about}`).join('\n')}`
+      : 'Esta seção NÃO usa foto: resolva com tipografia forte, ícones, números de etapa e cartões. Nunca escreva URL de imagem aqui.',
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -248,20 +378,38 @@ DESIGN
 - Fontes: font-display (títulos) e font-body (texto). Títulos grandes com tracking-tight e leading-[1.05]; rótulos pequenos em caixa alta com tracking-[0.2em] acima dos títulos de seção.
 - Raio de borda consistente (rounded-2xl/rounded-3xl), sombras suaves, bordas finas (border-ink/10 no claro, border-white/10 no escuro).
 - Espaçamento generoso: seções com py-20 md:py-28, container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose.
-- Layouts variados (bento grid com um card maior, colunas assimétricas, faixas de números, cards com hierarquia). Nunca repita o mesmo formato de 3 cards iguais em seções seguidas.
+- Siga o "layout" que o plano deu para a seção (veja FORMATOS abaixo). Seções vizinhas nunca têm o mesmo formato; nunca 3 cards iguais em seções seguidas.
+- Composição: cards lado a lado têm a mesma quantidade de conteúdo (nada de card alto e quase vazio — use items-start ou dê ao card maior uma foto). Cartão flutuante sobre foto: no máximo 1 por foto, só com texto curto, dentro da área da foto no celular (nada de posição negativa que vaze da tela) e nunca por cima de outro texto. Nada de texto escrito por cima de foto que já tenha cartão.
 - Microinterações: hover em botões e cards (transition, -translate-y-1, sombra, borda na cor da marca), foco visível.
 - Coloque a classe "reveal" nos blocos que devem aparecer ao rolar (títulos, cards, imagens) — a animação já existe.
 - Botões: rounded-full px-6 py-3.5 font-semibold; principal com bg-brand e texto em contraste; secundário contornado.
-- Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24). Nunca emoji como ícone.
-- 100% responsivo (mobile-first, bonito de 360px a 1440px), contraste AA, HTML semântico.
+- Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24), coerentes com o que representam. Nunca emoji como ícone.
+- 100% responsivo (mobile-first, bonito de 360px a 1440px, sem rolagem lateral), contraste AA, HTML semântico.
 
-CONTEÚDO (específico, sem enrolação)
+FORMATOS (o plano escolhe um por seção)
+- split: texto de um lado e foto grande do outro (rounded-3xl, aspect-[4/5] ou [5/4]); lista curta de 3 itens com ícone abaixo do texto.
+- bento: grade de 4 a 5 blocos de tamanhos diferentes (um grande com foto + menores com ícone, número de etapa ou preço).
+- cards-foto: 3 ou 4 cards com foto no topo, título, 1 linha e um dado útil (preço "a partir de", duração, metragem).
+- lista-precos: lista estilo cardápio/tabela, nome à esquerda e preço à direita com linha pontilhada, agrupada por categoria.
+- planos: 2 ou 3 pacotes lado a lado, o do meio destacado (bg-ink ou borda brand) com selo "Mais escolhido".
+- passos: 3 ou 4 etapas com números grandes (01, 02…) ligadas por uma linha, em linha no desktop e em coluna no celular.
+- faixa-destaque: faixa cheia (bg-brand ou bg-ink) com uma frase forte, 1 linha de apoio e um botão. Sem cards.
+- galeria: mosaico de 3 a 5 fotos de alturas diferentes (grid com row-span), legenda curta em algumas.
+- editorial: título muito grande ocupando a largura, texto em 2 colunas e uma faixa com 3 diferenciais separados por linhas finas.
+- lista-icones: 4 a 6 diferenciais em grade 2×3 sem caixa (ícone + título + 1 linha), separados por linhas finas.
+- faq: 2 colunas — título, frase e botão à esquerda; <details> à direita (5 a 7 perguntas reais com respostas úteis).
+- contato: bloco grande com o botão principal de contato bem visível + os dados que existirem (cidade, horário) em lista limpa.
+
+TEXTO (o que mais vende — escreva como um bom redator publicitário brasileiro)
 - Idioma: português do Brasil por padrão. Só escreva em outro idioma se o pedido do usuário pedir explicitamente (ex.: "site em inglês"); nesse caso TODO o texto do site sai nesse idioma, inclusive menu, botões e rodapé.
-- Nada de lorem ipsum, "[Nome]", "Seu texto aqui", "Bem-vindo ao nosso site" ou frases vazias de empresa.
-- Escreva como o dono falaria com o cliente: serviços reais do nicho com preço "a partir de" plausível (ou os preços informados), diferenciais concretos, dúvidas reais do nicho.
-- NUNCA invente fatos sobre o negócio: nada de nota, número de avaliações, depoimentos de clientes, ano de fundação, anos de experiência, quantidade de clientes/atendimentos, prêmios ou endereço que não estejam no pedido. Use só o que foi informado; se a reputação real foi informada, use exatamente esses números. Sem dados, valorize o que é verdade para qualquer negócio do nicho (serviços, como funciona, horário, facilidade de agendar, localização na cidade).
-- Botões de contato abrem o WhatsApp com mensagem pronta coerente (target="_blank" rel="noopener"). Sem WhatsApp informado, leve para #contato.
-- Imagens: use SOMENTE as URLs da lista de fotos do pedido (pode mudar só o w=). Nunca invente URL de imagem. Sem foto adequada, resolva com design. Sempre alt descritivo e object-cover; loading="lazy" fora do topo. Avatares de depoimentos: iniciais em círculo, nunca foto.`
+- Use o título ("headline") que o plano definiu para a seção. Os outros textos você escreve: curtos, concretos, com o benefício para o cliente (o que ele ganha, quanto tempo leva, o que está incluso). Frase com mais de 20 palavras: corte.
+- Conteúdo de verdade do nicho: nomes reais de serviços/produtos com descrição útil e preço "a partir de" plausível (ou os preços informados), etapas reais do atendimento, dúvidas que clientes desse nicho realmente têm, com respostas completas. Num catálogo (imóveis, pratos, produtos, planos), mostre itens típicos do nicho bem descritos (tipo, tamanho, o que inclui, faixa de preço) — o dono troca depois pelo chat.
+- Proibido: lorem ipsum, "[Nome]", "Seu texto aqui", "Bem-vindo ao nosso site", "Encontre seu próximo…", "Soluções completas", "Qualidade e confiança", "conversar sobre os próximos passos" e frases que serviriam para qualquer empresa.
+- Botões com verbo + objeto do contexto ("Agendar meu horário", "Ver apartamentos à venda", "Pedir orçamento no WhatsApp"); não repita o mesmo texto de botão em todas as seções.
+- NUNCA escreva sobre informação que falta: nada de "não informado", "a definir", "em breve", "sob consulta" como valor, "imagem ilustrativa", "quando essas informações forem fornecidas", "a história da empresa poderá ser apresentada aqui". Se um dado não existe (telefone, endereço, horário, história, equipe), simplesmente NÃO crie aquele campo nem aquele bloco — o layout fica completo sem ele.
+- NUNCA invente fatos verificáveis sobre o negócio: nada de nota, número de avaliações, depoimentos de clientes, ano de fundação, anos de experiência, quantidade de clientes/atendimentos/vendas, prêmios, registros profissionais (CRECI, CRM, OAB…) ou endereço que não estejam no pedido. Se a reputação real foi informada, use exatamente esses números e destaque bem.
+- Botões de contato abrem o WhatsApp com mensagem pronta coerente com o botão (target="_blank" rel="noopener"). Sem WhatsApp informado, leve para #contato.
+- Imagens: use SOMENTE as URLs de foto indicadas no pedido (pode mudar só o w=), cada foto uma vez no site. Nunca invente URL de imagem. Sempre alt descritivo e object-cover; loading="lazy" fora do topo. Avatares de depoimentos: iniciais em círculo, nunca foto.`
 
 // ---------------------------------------------------------------------------
 // 1) Plano do site
@@ -285,19 +433,30 @@ Formato do JSON:
   "theme": "dark" ou "light",
   "lang": "idioma do site em código curto: pt-BR (padrão), pt-PT, en, es, fr, it, de… — outro só se o pedido pedir",
   "palette": { "brand": "#hex cor principal", "brandDark": "#hex mais escura da principal", "accent": "#hex acento", "ink": "#hex texto principal (no dark é claro, no light é quase preto)", "paper": "#hex fundo principal", "surface": "#hex fundo alternativo/cartões", "muted": "#hex texto secundário" },
-  "fonts": { "display": "nome exato de uma fonte do Google Fonts para títulos", "body": "nome exato de uma fonte do Google Fonts para texto" },
+  "fonts": { "display": "fonte dos títulos (veja PARES DE FONTES)", "body": "fonte do texto" },
   "globalRequirementIds": ["IDs dos requisitos transversais da especificação"],
-  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "brief": "o que a seção mostra, com conteúdo específico e a ideia de layout", "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
+  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "layout": "um dos FORMATOS", "headline": "título exato da seção (até 8 palavras, específico do negócio)", "brief": "o conteúdo REAL da seção: itens com nome, descrição curta e preço/duração/tamanho quando fizer sentido; etapas; perguntas; o que a foto mostra", "photos": 0 a 3, "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
   "business": { "name": "nome do negócio", "niche": "nicho em poucas palavras", "city": "cidade ou null", "phone": "WhatsApp só com dígitos ou null" }
 }
 "business": copie do pedido. Se o pedido não disser o nome, crie um nome curto e plausível; cidade e WhatsApp só se estiverem escritos no pedido (senão null).
 
 Regras do plano:
 - A especificação é obrigatória quando fornecida. Copie seus IDs: globalRequirementIds para requisitos transversais e requirementIds em cada seção. Todo requisito aplicável deve ser atribuído. Requisitos backend limitados permanecem limitações explícitas. Não declare que estão implementados. Respeite constraints, forbiddenChanges, relevantFiles, dependencies e validation.
-- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" (localização, horário e WhatsApp) perto do fim.
+- sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" perto do fim. Bons sites têm pelo menos uma seção com conteúdo concreto e escaneável (catálogo, preços ou planos), além de serviços.
 - Alterne "bg" entre as seções para dar ritmo (nunca 3 seguidas iguais); use "ink" ou "brand" em 1 ou 2 seções de destaque.
-- Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Fontes que combinem e existam no Google Fonts.
-- Cada "brief" deve ser específico do negócio (serviços, preços "a partir de", diferenciais, dúvidas reais), não genérico.`
+- "layout": escolha dos FORMATOS abaixo; seções vizinhas sempre com formatos diferentes e no máximo 1 "faixa-destaque". O topo (hero) usa "hero".
+- "headline": cada seção tem um título diferente, que diz um benefício concreto ou o que a seção entrega ("Cortes a partir de R$ 45", "Apartamentos perto do metrô", "Seu carro pronto no mesmo dia"). Proibidos: "Encontre seu próximo…", "Bem-vindo", "Nossos serviços", "Sobre nós", "Soluções completas", e repetir no meio do site o título do topo.
+- "brief": escreva o conteúdo que vai na tela, não instruções sobre o que evitar. Ex. ruim: "explica o apoio na compra, sem prometer condições". Ex. bom: "3 cards: Comprar (busca por bairro e orçamento, visitas na mesma semana), Vender (avaliação do preço, fotos profissionais, anúncio nos portais), Alugar (análise de fiador ou seguro-fiança)". Nunca escreva no brief que um dado falta ou que "será informado depois": sem o dado, a seção simplesmente não tem aquele campo.
+- "photos": quantas fotos a seção usa — hero 1 ou 2; split/editorial 1; cards-foto 3 ou 4; galeria 3 a 5; bento 1 ou 2; os outros 0. O sistema entrega fotos diferentes para cada seção.
+- Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Respeite a cor pedida pelo usuário (vira "brand", ou o fundo se ele pedir site "preto"/"escuro").
+
+FORMATOS: hero, split, bento, cards-foto, lista-precos, planos, passos, faixa-destaque, galeria, editorial, lista-icones, faq, contato.
+
+PARES DE FONTES (escolha um que combine com o nicho; varie, não use sempre o mesmo):
+- moderno: "Manrope"+"Inter", "Plus Jakarta Sans"+"Inter", "Sora"+"Inter", "Space Grotesk"+"Inter", "Outfit"+"DM Sans", "Bricolage Grotesque"+"Inter"
+- elegante: "Fraunces"+"Inter", "Cormorant Garamond"+"Manrope", "Playfair Display"+"Source Sans 3", "DM Serif Display"+"DM Sans", "Instrument Serif"+"Inter"
+- forte/masculino: "Oswald"+"Source Sans 3", "Bebas Neue"+"Inter", "Archivo Black"+"Archivo", "Anton"+"Inter"
+- amigável: "Poppins"+"Poppins", "Nunito"+"Nunito Sans", "Quicksand"+"Nunito"`
 
 export function buildPlanMessage(brief: SiteBrief, includeLiteral = true): string {
   const phone = phoneDigits(brief.phone)
@@ -414,7 +573,8 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
   }
   if (partId === 'footer') {
     if (prototype) return `Escreva o RODAPE: <footer> com nome do negocio, frase curta, links do menu (${nav}), cidade ${brief.city ?? 'nao informada'} e "© <span data-year></span> ${brief.businessName}". ${routes?.contacts.length ? `Exibir somente estes canais reais: ${JSON.stringify(routes.contacts)}.` : 'Contato pendente: nao criar canal ficticio.'} ${routes?.confirmedWhatsapp ? `Pode adicionar botao flutuante de WhatsApp somente para o destino confirmado ${routes.confirmedWhatsapp}, com aria-label.` : 'Nao adicionar botao flutuante de WhatsApp nem usar #contato como se fosse WhatsApp.'}${leadRules}`
-    return `Escreva o RODAPÉ: <footer> com o nome do negócio, frase curta, links do menu (${nav}), contato (WhatsApp ${phone ?? 'não informado'}, cidade ${brief.city ?? ''}), horário de funcionamento plausível e "© <span data-year></span> ${brief.businessName}". Depois do </footer>, um botão flutuante de WhatsApp: <a href="${whatsapp}" ... class="fixed bottom-5 right-5 z-50 ... bg-[#25D366] ..."> com o ícone do WhatsApp em SVG e aria-label.`
+    const contacts = [phone ? `WhatsApp ${phone}` : null, brief.city ? `cidade ${brief.city}` : null].filter(Boolean).join(', ')
+    return `Escreva o RODAPÉ: <footer> com o nome do negócio, uma frase curta que diga o que ele faz de melhor, links do menu (${nav})${contacts ? `, contato (${contacts})` : ''} e "© <span data-year></span> ${brief.businessName}". Não crie campos de contato, endereço ou horário que não estejam aqui. Depois do </footer>, um botão flutuante de WhatsApp: <a href="${whatsapp}" ... class="fixed bottom-5 right-5 z-50 ... bg-[#25D366] ..."> com o ícone do WhatsApp em SVG e aria-label.`
   }
   const section = plan.sections.find((item) => item.id === partId)
   const bgClass = { paper: 'bg-paper', surface: 'bg-surface', ink: 'bg-ink', brand: 'bg-brand' }[section?.bg ?? 'paper']
@@ -423,9 +583,13 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
     partId === 'hero'
       ? prototype
         ? ` Esta e a primeira secao: min-h-[88vh], pt-28 para o cabecalho fixo, titulo curto e especifico em text-5xl md:text-7xl, subtitulo e ${leadAction}. Usar destaques somente de fatos fornecidos e visual coerente com o negocio; nao criar numeros, horarios ou precos para preencher o layout.`
-        : ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de destaques verdadeiros logo abaixo (a reputação real, se informada; senão, facilidades como agendamento, horário ou localização) e um visual marcante (foto grande em cartão arredondado com 1–2 cartões flutuantes com informações verdadeiras como horário, preço a partir de ou bairro, ou foto de fundo com gradiente por cima).'
+        : ' Esta é a primeira seção (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho, título curto e específico em text-5xl md:text-7xl, subtítulo de até 2 linhas, botão principal para o WhatsApp + secundário, uma faixa curta de 3 destaques logo abaixo (a reputação real, se informada; senão, vantagens concretas do serviço como \"Orçamento em 1 dia\", \"Atendimento pelo WhatsApp\" ou o serviço principal) e um visual marcante (foto grande em cartão arredondado com no máximo 1 cartão flutuante com informação útil como "preço a partir de" ou um serviço-chave, ou foto de fundo inteira com gradiente escuro e texto branco). O título do topo é o "headline" do plano: grande, com no máximo 2 palavras destacadas na cor brand ou em itálico da fonte de títulos.'
       : ''
-  return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}". Briefing: ${section?.brief ?? ''}${hero}${
+  const layout = section?.layout && section.layout !== 'hero' ? ` Formato: ${section.layout} (veja FORMATOS).` : ''
+  const headline = section?.headline ? ` Título da seção (use exatamente): "${section.headline}".` : ''
+  const others = plan.sections.filter((item) => item.id !== partId && item.headline).map((item) => `"${item.headline}"`)
+  const avoid = others.length ? ` Títulos das outras seções (não repita nem parafraseie): ${others.join(', ')}.` : ''
+  return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}".${headline}${layout} Conteúdo: ${section?.brief ?? ''}${hero}${avoid}${
     ` Fundo desta seção: ${bgClass} — texto principal text-${sectionText}, secundário text-${sectionText}/70.`
   } ${prototype ? `Acao de contato: ${leadAction}.${leadRules}` : `Link do WhatsApp: ${whatsapp}.`}`
 }
@@ -445,7 +609,7 @@ export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrie
     scoped ? `Requisitos desta parte:\n${JSON.stringify(scoped)}` : brief.details?.trim() ? `Pedido do cliente: ${brief.details.trim()}` : null,
     realFacts(brief),
     `Plano do site (siga à risca):\n${JSON.stringify(visualPlan)}`,
-    imagesMessage(brief),
+    partImages(partId, plan, brief),
     contrastGuide(plan),
     partInstructions(partId, plan, brief),
   ]
@@ -460,7 +624,7 @@ function realFacts(brief: SiteBrief): string {
       ? `nota ${brief.rating.toLocaleString('pt-BR')} com ${brief.reviews} avaliações (reais, pode usar)`
       : 'nenhuma nota nem avaliação informada — NÃO mostre nota, estrelas, avaliações nem depoimentos'
   if (brief.mode === 'lead_prototype') return `FATOS REAIS DO NEGOCIO: ${reputation}. Use somente fatos fornecidos e confirmados; inferencias continuam hipoteses. Nao invente ano de fundacao, experiencia, quantidade de clientes, precos, descontos ou horarios. Precos e horarios reais informados podem ser usados; sem eles, omitir ou indicar que estao pendentes, nunca criar valores plausiveis nem "a partir de" ficticio.`
-  return `FATOS REAIS DO NEGÓCIO: ${reputation}. Não existe nenhum outro número sobre o negócio: não escreva ano de fundação, anos de experiência nem quantidade de clientes/atendimentos que não estejam no pedido do cliente. Preços e horários informados podem ser usados; sem eles, use "a partir de" plausível.`
+  return `FATOS REAIS DO NEGÓCIO: ${reputation}. Não existe nenhum outro número sobre o negócio: não escreva ano de fundação, anos de experiência nem quantidade de clientes/atendimentos que não estejam no pedido do cliente. Preços e horários informados podem ser usados; sem preços, use "a partir de" plausível para serviços e itens típicos do nicho; sem horário, não mostre horário. Nunca escreva que um dado não foi informado.`
 }
 
 // Ordem das partes na página.
@@ -504,7 +668,7 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
     recent.length ? `Alterações anteriores, da mais recente para a mais antiga:\n${JSON.stringify(recent)}` : null,
     contrastGuide(plan),
     `Partes atuais do site:\n${current}`,
-    imagesMessage(brief, fresh),
+    imagesMessage(brief, fresh, usedPhotos(parts)),
     fresh.length > 0
       ? `O usuário anexou ${fresh.length} imagem(ns) junto com este pedido (marcadas como "anexada agora" acima): use-as onde ele pedir; se ele não disser onde, a logo vai no cabeçalho/rodapé e as fotos no topo ou na galeria.`
       : null,
@@ -563,6 +727,8 @@ const CLAIM_PATTERNS = [
   /\d[\d.]*\+?\s*(?:mil\s+)?(?:clientes|carros|ve[ií]culos|atendimentos|cortes|pacientes|alunos|pets|projetos|obras|im[oó]veis|casamentos|pedidos)\b/i,
 ]
 
+const LAYOUTS = ['hero', 'split', 'bento', 'cards-foto', 'lista-precos', 'planos', 'passos', 'faixa-destaque', 'galeria', 'editorial', 'lista-icones', 'faq', 'contato']
+
 // Sem reputação informada, estas seções só teriam números inventados.
 const INVENTED_SECTIONS = /^(?:numeros|depoimentos|avaliacoes|resultados|estatisticas|prova-social)$/
 
@@ -610,9 +776,16 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
     sections.push({
       id,
       label: String(item?.label ?? id).slice(0, 30),
-      brief: stripInventedClaims(String(item?.brief ?? ''), brief).slice(0, 800),
+      brief: stripInventedClaims(String(item?.brief ?? ''), brief).slice(0, 1400),
       bg,
       requirementIds: requirementIds(item.requirementIds),
+      ...(LAYOUTS.includes(item?.layout) ? { layout: item.layout } : {}),
+      ...(typeof item?.headline === 'string' && item.headline.trim()
+        ? { headline: stripInventedClaims(item.headline.trim(), brief).slice(0, 120) }
+        : {}),
+      ...(Number.isFinite(Number(item?.photos)) && item?.photos !== null && item?.photos !== ''
+        ? { photos: Math.max(0, Math.min(4, Math.round(Number(item.photos)))) }
+        : {}),
     })
   }
   if (sections.length === 0) return null
@@ -789,6 +962,18 @@ export function normalizePart(partId: string, html: string): string {
   const section = balanceHtml(html.slice(found.start, found.end))
   // Os links do menu usam o id da seção: mantém o que veio, só completa se faltar.
   return /^<section\b[^>]*\sid\s*=/i.test(section) ? section : section.replace(/^<section\b/i, `<section id="${partId}"`)
+}
+
+// Frases sobre dado que falta ("Número não informado", "Imagem ilustrativa",
+// "…quando essas informações forem fornecidas") deixam o site com cara de
+// rascunho. A regra está no prompt; isto tira as que escaparem.
+const MISSING_INFO =
+  /n[ãa]o\s+informad[oa]s?|imagem\s+ilustrativa|quando\s+(?:essas|estas|as|esses|estes|os)?\s*(?:informa[çc][õo]es|dados)\s+(?:forem|estiverem)|ainda\s+n[ãa]o\s+(?:foi|foram)\s+(?:informad|fornecid)|poder[ãa]o?\s+ser\s+(?:apresentad|inclu[íi]d|adicionad)[oa]s?\s+aqui|ser[ãa]o?\s+(?:informad|divulgad)[oa]s?\s+em\s+breve/i
+
+export function stripMissingInfo(html: string): string {
+  return html.replace(/<(p|span|li|dd|dt|small|figcaption|div)\b[^>]*>([^<]*)<\/\1>/gi, (element, _tag, text) =>
+    MISSING_INFO.test(text) ? '' : element,
+  )
 }
 
 // Rodapé de reserva, montado aqui: usado quando a IA não entrega um rodapé

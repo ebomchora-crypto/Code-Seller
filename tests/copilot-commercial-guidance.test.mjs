@@ -61,3 +61,13 @@ test('conversation analysis requests the complete commercial reading', () => {
   assert.equal(inferCommercialResponseMode('Analisa essa conversa.'), 'analysis')
   assert.match(commercialRequestGuidance('Analisa essa conversa.'), /análise comercial completa/i)
 })
+
+test('pergunta sobre o que mandar depois do protótipo puxa a reunião, curta', () => {
+  const message = 'Oque mando depois de enviar um prototipo'
+  assert.equal(inferCommercialResponseMode(message), 'quick_reply')
+  const guidance = commercialRequestGuidance(message)
+  assert.match(guidance, /DEPOIS DA PRÉVIA/)
+  assert.match(guidance, /horário com duas opções/)
+  assert.match(guidance, /Pedido curto/)
+  assert.doesNotMatch(commercialRequestGuidance('Não quero reunião, já mandei a prévia, o que respondo?'), /DEPOIS DA PRÉVIA/)
+})

@@ -69,6 +69,8 @@ export function useSiteBuilder(siteId: string) {
   const [progress, queueProgress, resetProgress] = useFrameBatch<Record<string, PartProgress>>({})
   // Partes que já terminaram nesta geração (a prévia mostra antes de recarregar o site).
   const [builtParts, setBuiltParts] = useState<SiteParts>({})
+  // Hora em que a criação terminou nesta tela (para avisar com destaque).
+  const [finishedAt, setFinishedAt] = useState<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const busyRef = useRef(false)
 
@@ -152,6 +154,7 @@ export function useSiteBuilder(siteId: string) {
     abortRef.current = controller
     setError(null)
     setBuiltParts({})
+    setFinishedAt(null)
     try {
       let current: Site | null = site
       if (!current.plan || current.status === 'planning' || (current.status === 'error' && !current.plan)) {
@@ -163,6 +166,7 @@ export function useSiteBuilder(siteId: string) {
       if (current?.plan) {
         const ok = await buildParts(current, controller.signal)
         current = await refresh()
+        if (current?.status === 'ready' && !controller.signal.aborted) setFinishedAt(Date.now())
         if (!ok && !controller.signal.aborted) {
           setError((message) => message ?? 'Algumas partes não ficaram prontas. Clique em "Continuar" para terminar.')
         }
@@ -228,6 +232,8 @@ export function useSiteBuilder(siteId: string) {
     pendingInstruction,
     progress,
     builtParts,
+    finishedAt,
+    dismissFinished: () => setFinishedAt(null),
     generate,
     edit,
     stop,

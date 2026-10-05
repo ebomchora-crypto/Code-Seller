@@ -111,6 +111,8 @@ interface BuildTimelineProps {
   onContinue: () => void
   onOpenPart: (id: string) => void
   onRestore: (version: SiteVersion) => void
+  /** Aviso de "site pronto", mostrado logo depois da criação. */
+  readyCard?: ReactNode
 }
 
 export function BuildTimeline(props: BuildTimelineProps) {
@@ -215,6 +217,8 @@ export function BuildTimeline(props: BuildTimelineProps) {
           )}
         </AiBlock>
       )}
+
+      {props.readyCard && site.status === 'ready' && !building && history.length === 0 && props.readyCard}
 
       {history.map((version) =>
         version.kind === 'restore' ? (

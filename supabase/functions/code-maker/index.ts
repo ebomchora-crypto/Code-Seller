@@ -33,6 +33,7 @@ import {
   normalizePart,
   parsePart,
   simpleFooter,
+  stripMissingInfo,
   parsePlan,
   partOrder,
   PART_SYSTEM,
@@ -590,7 +591,7 @@ Deno.serve(async (req: Request) => {
           { role: 'user', content: buildPartMessage(partId, planForAi, site.brief) },
         ],
         finish: async (full, signal) => {
-          let html = normalizePart(partId, parsePart(full).html)
+          let html = normalizePart(partId, stripMissingInfo(parsePart(full).html))
           // Rodapé que não veio certo: usa o rodapé simples em vez de travar o site.
           if (!html && partId === 'footer') html = simpleFooter(planForAi, site.brief)
           if (!html) return 'A IA devolveu esta parte vazia. Tente de novo.'

@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowUp,
   Check,
+  CheckCircle2,
   ChevronLeft,
   Copy,
   Download,
   Eraser,
   ExternalLink,
+  Globe,
   Link2,
   Monitor,
   RotateCw,
@@ -88,12 +90,50 @@ export default function CodeMakerEditorPage() {
     return () => window.removeEventListener('beforeunload', warn)
   }, [busy])
 
+  // Site terminou: avisa com destaque (aviso na tela, selo na prévia e,
+  // se a aba estiver escondida, no título da aba e numa notificação).
+  const [unseenReady, setUnseenReady] = useState(false)
+  const [readyPill, setReadyPill] = useState(false)
+  const finishedAt = builder.finishedAt
+  const siteName = site?.name ?? ''
   useEffect(() => {
-    if (site) document.title = `${site.name} · Code Maker`
+    if (!finishedAt) return
+    toast.success('Seu site está pronto!', { description: 'Confira a prévia e coloque no ar quando quiser.', duration: 6000 })
+    setReadyPill(true)
+    const timer = window.setTimeout(() => setReadyPill(false), 7000)
+    if (document.hidden) {
+      setUnseenReady(true)
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Seu site está pronto', { body: siteName, icon: '/favicon.svg' })
+        }
+      } catch {
+        // Sem notificação: o título da aba já avisa.
+      }
+    }
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finishedAt])
+
+  useEffect(() => {
+    if (!unseenReady) return
+    const seen = () => {
+      if (!document.hidden) setUnseenReady(false)
+    }
+    document.addEventListener('visibilitychange', seen)
+    window.addEventListener('focus', seen)
+    return () => {
+      document.removeEventListener('visibilitychange', seen)
+      window.removeEventListener('focus', seen)
+    }
+  }, [unseenReady])
+
+  useEffect(() => {
+    if (siteName) document.title = unseenReady ? `✅ Site pronto · ${siteName}` : `${siteName} · Code Maker`
     return () => {
       document.title = 'Code Sellers'
     }
-  }, [site])
+  }, [siteName, unseenReady])
 
   const previewHtml = useMemo(() => {
     if (!site) return null
@@ -409,6 +449,16 @@ export default function CodeMakerEditorPage() {
                 onContinue={() => void builder.generate()}
                 onOpenPart={openPart}
                 onRestore={(version) => void restore(version)}
+                readyCard={
+                  <ReadyCard
+                    parts={site.plan ? partOrder(site.plan).length : 0}
+                    fresh={Boolean(finishedAt)}
+                    published={site.published}
+                    onPublish={() => void togglePublished(true)}
+                    onCopy={() => void copyLink()}
+                    url={url}
+                  />
+                }
               />
             </div>
           ) : (
@@ -570,6 +620,11 @@ export default function CodeMakerEditorPage() {
                   }`}
                 >
                   <SitePreview key={reloadKey} html={previewHtml} title={`Prévia de ${site.name}`} className="h-full w-full" />
+                  {readyPill && (
+                    <div className="cm-ready-pop pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(16,185,129,0.8)]">
+                      <CheckCircle2 className="size-4" /> Site pronto
+                    </div>
+                  )}
                 </div>
               ) : (
                 <PlanningPlaceholder busy={phase === 'planning'} actions={builder.planActions} />
@@ -616,6 +671,66 @@ export default function CodeMakerEditorPage() {
         onConfirm={() => void remove()}
         onCancel={() => setConfirmDelete(false)}
       />
+    </div>
+  )
+}
+
+function ReadyCard(props: {
+  parts: number
+  fresh: boolean
+  published: boolean
+  url: string
+  onPublish: () => void
+  onCopy: () => void
+}) {
+  return (
+    <div
+      className={`${props.fresh ? 'cm-ready-pop' : ''} rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.08] p-4`}
+      role="status"
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_8px_20px_-8px_rgba(16,185,129,0.9)]">
+          <Check className="size-4.5" strokeWidth={3} />
+        </span>
+        <div className="min-w-0">
+          <p className="font-display text-[16px] font-semibold tracking-tight text-[var(--text-primary)]">Seu site está pronto!</p>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            {props.parts > 0 ? `As ${props.parts} partes foram escritas. ` : ''}
+            {props.published
+              ? 'Ele já está no ar. Quer mudar algo? É só pedir no chat aqui embaixo.'
+              : 'Confira a prévia e coloque no ar quando quiser. Quer mudar algo? É só pedir no chat aqui embaixo.'}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 pl-12">
+        {props.published ? (
+          <>
+            <a
+              href={props.url}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition hover:brightness-110"
+            >
+              <ExternalLink className="size-3.5" /> Abrir site
+            </a>
+            <button
+              type="button"
+              onClick={props.onCopy}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-3.5 py-1.5 text-[12.5px] font-semibold text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
+            >
+              <Copy className="size-3.5" /> Copiar link
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={props.onPublish}
+            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3.5 py-1.5 text-[12.5px] font-semibold text-white transition hover:brightness-110"
+          >
+            <Globe className="size-3.5" /> Colocar no ar
+          </button>
+        )}
+      </div>
     </div>
   )
 }

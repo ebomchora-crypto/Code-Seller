@@ -14,7 +14,11 @@ import {
   parsePlan,
   partOrder,
   photoCatalog,
+  photoPlan,
   photosFor,
+  stripMissingInfo,
+  usedPhotos,
+  buildPartMessage,
 } from '../../supabase/functions/code-maker/site.ts'
 
 const brief = { businessName: 'Barbearia do João', niche: 'Barbearia', city: 'Campinas', phone: '19998887777' }
@@ -105,8 +109,48 @@ test('continuação junta sem repetir o trecho reescrito', () => {
 test('fotos por nicho, sempre com as gerais no fim', () => {
   assert.equal(photosFor('Barbearia')[0].id, '1503951914875-452162b0f3f1')
   assert.equal(photosFor('Clínica Odontológica')[0].id, '1629909613654-28e377c37b09')
-  assert.equal(photosFor('Algo desconhecido').length, 3)
+  assert.equal(photosFor('Algo desconhecido').length, 6)
   assert.match(photoCatalog('Pet shop'), /^- https:\/\/images\.unsplash\.com\/photo-1548199973-03cce0bbc87b\?auto=format&fit=crop&w=1600&q=80 — /)
+})
+
+test('cada seção recebe fotos diferentes (as partes são escritas em paralelo)', () => {
+  const plan = normalizePlan(
+    {
+      sections: [
+        { id: 'hero', photos: 2, layout: 'hero', headline: 'Apartamentos perto do metrô' },
+        { id: 'imoveis', photos: 3, layout: 'cards-foto' },
+        { id: 'sobre', layout: 'split' },
+        { id: 'faq', layout: 'faq' },
+        { id: 'contato', photos: 9, layout: 'nada' },
+      ],
+    },
+    { businessName: 'D House', niche: 'Imobiliária' },
+  )
+  assert.equal(plan.sections[0].headline, 'Apartamentos perto do metrô')
+  assert.equal(plan.sections[4].layout, undefined) // formato desconhecido some
+  assert.equal(plan.sections[4].photos, 4) // no máximo 4
+  const photos = photoPlan(plan, { businessName: 'D House', niche: 'Imobiliária' })
+  assert.equal(photos.hero.length, 2)
+  assert.equal(photos.imoveis.length, 3)
+  assert.equal(photos.sobre.length, 1) // padrão
+  assert.equal(photos.faq.length, 0)
+  const all = Object.values(photos).flat().map((photo) => photo.url)
+  assert.equal(new Set(all).size, all.length)
+  // Fotos do próprio negócio vêm antes das de banco.
+  const own = photoPlan(plan, { businessName: 'D', niche: 'Imobiliária', assets: [{ url: 'https://x/site-assets/u/a.jpg', kind: 'photo' }] })
+  assert.equal(own.hero[0].url, 'https://x/site-assets/u/a.jpg')
+  // A mensagem de cada parte só traz as fotos dela, com o título a usar.
+  const message = buildPartMessage('imoveis', plan, { businessName: 'D House', niche: 'Imobiliária' })
+  assert.match(message, /FOTOS DESTA SEÇÃO/)
+  assert.equal((message.match(/images\.unsplash\.com/g) ?? []).length, 3)
+  assert.match(message, /não repita nem parafraseie\): "Apartamentos perto do metrô"/)
+  assert.match(buildPartMessage('faq', plan, { businessName: 'D House', niche: 'Imobiliária' }), /NÃO usa foto/)
+  assert.ok(usedPhotos({ a: '<img src="https://images.unsplash.com/photo-1?w=800">' }).has('https://images.unsplash.com/photo-1'))
+})
+
+test('tira frases sobre dado que falta', () => {
+  const html = '<div><p class="a">Número não informado</p><p>Fale com a gente</p><span>Imagem ilustrativa</span><p>A história da empresa poderá ser apresentada aqui quando essas informações forem fornecidas.</p></div>'
+  assert.equal(stripMissingInfo(html), '<div><p>Fale com a gente</p></div>')
 })
 
 test('tira do plano os números que ninguém informou', async () => {

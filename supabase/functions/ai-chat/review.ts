@@ -10,6 +10,8 @@ export interface ReviewProblem {
 export interface ReviewOptions {
   firstContact: boolean
   mode?: string
+  /** A prévia já foi (ou está sendo) enviada: a mensagem tem que puxar a reunião. */
+  afterPrototype?: boolean
 }
 
 function normalize(value: string): string {
@@ -23,6 +25,19 @@ const FIRST_CONTACT = /primeir[oa]s? (?:contato|mensage(?:m|ns)|abordage(?:m|ns)
 export function isFirstContactRequest(request: string): boolean {
   return FIRST_CONTACT.test(normalize(request))
 }
+
+// Mesmo critério de src/utils/copilotGuidance.ts (AFTER_PROTOTYPE / MEETING_REFUSED).
+const AFTER_PROTOTYPE = /(?:depois|apos|agora que|ja) (?:de |que |da |do )?(?:eu )?(?:enviar|mandar|mandei|enviei|mostrar|mostrei|entregar|entreguei)?\s?(?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:enviei|mandei|mostrei|vou enviar|vou mandar|como envio|como mando|segue) (?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:prototipo|previa) (?:ja )?(?:enviad|mandad|pront)/
+const MEETING_REFUSED = /nao (?:quero|vou|posso|consigo|quer|pode) (?:fazer )?(?:reuniao|call|ligacao)|sem (?:reuniao|call)|so por (?:aqui|mensagem|whatsapp)|(?:pode|prefiro) (?:explicar|falar) por aqui/
+
+export function isAfterPrototypeRequest(request: string): boolean {
+  const text = normalize(request)
+  return AFTER_PROTOTYPE.test(text) && !FIRST_CONTACT.test(text) && !MEETING_REFUSED.test(text)
+}
+
+// Convite para conversa/reunião e pergunta de horário no fim.
+const MEETING_INVITE = /reuni|conversa|call|ligac|chamada|videochamada|bate-papo|papo|minutinhos|\b1[05] ?min/
+const TIME_QUESTION = /horario|que horas|hoje|amanha|semana|segunda|terca|quarta|quinta|sexta|manha|tarde|noite|quando/
 
 // Abertura institucional ("Sou o Arthur, da...", "trabalho com sites").
 const SELF_INTRO = /\b(?:sou (?:o|a)\s+\S+|me chamo|meu nome e|aqui e (?:o|a)\s+\S+|trabalho com|somos (?:uma|a|o)\b|sou (?:desenvolvedor|desenvolvedora|designer|programador|programadora|web ?designer|especialista|freelancer)|faco parte d[aeo])/
@@ -85,6 +100,17 @@ export function reviewSuggestedMessage(message: string, options: ReviewOptions):
     }
   } else if (options.mode === 'follow_up' && text.length > FOLLOW_UP_MAX_CHARS) {
     problems.push({ code: 'too_long', message: `Follow-up longo demais (máximo cerca de ${FOLLOW_UP_MAX_CHARS} caracteres).` })
+  } else if (options.afterPrototype && options.mode !== 'follow_up') {
+    const ending = plain.slice(-180)
+    if (!MEETING_INVITE.test(plain) || !ending.includes('?') || !TIME_QUESTION.test(ending)) {
+      problems.push({
+        code: 'no_meeting',
+        message: 'Depois da prévia, a mensagem precisa convidar para uma conversa rápida sem compromisso e terminar perguntando o melhor horário (ex.: "Fica melhor hoje à tarde ou amanhã de manhã?").',
+      })
+    }
+    if (text.length > FOLLOW_UP_MAX_CHARS) {
+      problems.push({ code: 'too_long', message: `Longa demais para WhatsApp (máximo cerca de ${FOLLOW_UP_MAX_CHARS} caracteres).` })
+    }
   }
 
   if (MASS_OUTREACH.test(plain)) {
@@ -110,7 +136,9 @@ export function reviewRewritePrompt(problems: ReviewProblem[], options: ReviewOp
     'Reescreva a mensagem corrigindo esses problemas e seguindo a metodologia, o perfil comercial e o jeito de escrever do usuário.',
     options.firstContact
       ? `Primeira abordagem: comece pelo negócio do lead, sem se apresentar; no máximo ${FIRST_CONTACT_MAX_LINES} linhas curtas; termine com uma pergunta simples (ex.: pedir permissão para mostrar).`
-      : 'Mantenha curta e natural, como WhatsApp real.',
+      : options.afterPrototype
+        ? 'Depois da prévia: em 3 ou 4 linhas curtas, diga que é um ponto de partida que dá para ajustar, que quer ouvir a opinião do cliente, convide para uma conversa rápida sem compromisso e termine perguntando o melhor horário com duas opções concretas.'
+        : 'Mantenha curta e natural, como WhatsApp real.',
     'Mantenha o idioma, os fatos, os nomes, os preços e os marcadores entre colchetes da mensagem original. Não acrescente fatos, preços, prazos ou promessas.',
     'Responda SOMENTE com o texto final da mensagem, sem aspas, sem título e sem explicação.',
   ].join('\n')

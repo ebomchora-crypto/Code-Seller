@@ -1,6 +1,6 @@
 import { attributedHistory, CONTEXT_PROVENANCE_GUARD, copilotParts, splitText, type ChatMessage } from './context.ts'
 import { load } from 'npm:cheerio@1.1.2'
-import { isFirstContactRequest, pickBetter, reviewRewritePrompt, reviewSuggestedMessage } from './review.ts'
+import { isAfterPrototypeRequest, isFirstContactRequest, pickBetter, reviewRewritePrompt, reviewSuggestedMessage } from './review.ts'
 import { copilotLimitMessage, NO_ACCESS_MESSAGE, planUsage, recordCopilotMessage } from '../_shared/plan.ts'
 
 const AI_API_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
@@ -307,7 +307,7 @@ async function reviewCommercial(apiKey: string,instructions: ChatMessage,request
     const block=blocks[0]
     const value=block.value!
     const message=typeof value.suggested_message==='string' ? value.suggested_message : ''
-    const options={firstContact:isFirstContactRequest(request),mode:typeof value.mode==='string' ? value.mode : undefined}
+    const options={firstContact:isFirstContactRequest(request),mode:typeof value.mode==='string' ? value.mode : undefined,afterPrototype:isAfterPrototypeRequest(request)}
     const problems=reviewSuggestedMessage(message,options)
     if(problems.length===0) return answer
     if(budget.deadline-Date.now()<REVIEW_MIN_BUDGET_MS) {

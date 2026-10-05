@@ -9,6 +9,10 @@ export interface CommercialRequestSignals {
   positiveInterest: boolean
   prototypeFollowUp: boolean
   firstContact: boolean
+  /** A prévia já foi (ou vai ser) enviada: a próxima etapa é a reunião. */
+  afterPrototype: boolean
+  /** Pergunta curta e direta: resposta curta, sem análise completa. */
+  shortQuestion: boolean
 }
 
 function normalize(value: string): string {
@@ -17,6 +21,9 @@ function normalize(value: string): string {
 
 // Pedido de primeira mensagem/abordagem para um lead ou um nicho (prospecção).
 const FIRST_CONTACT = /primeir[oa]s? (?:contato|mensage(?:m|ns)|abordage(?:m|ns))|\babordage(?:m|ns)\b|\babordar\b|prospecta|mensage(?:m|ns) (?:de|pra|para) (?:prospec|abordar|chamar|contato)|chamar (?:no|pelo) (?:whats|zap)/
+// Mesmo critério de supabase/functions/ai-chat/review.ts.
+const AFTER_PROTOTYPE = /(?:depois|apos|agora que|ja) (?:de |que |da |do )?(?:eu )?(?:enviar|mandar|mandei|enviei|mostrar|mostrei|entregar|entreguei)?\s?(?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:enviei|mandei|mostrei|vou enviar|vou mandar|como envio|como mando|segue) (?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:prototipo|previa) (?:ja )?(?:enviad|mandad|pront)/
+const MEETING_REFUSED = /nao (?:quero|vou|posso|consigo|quer|pode) (?:fazer )?(?:reuniao|call|ligacao)|sem (?:reuniao|call)|so por (?:aqui|mensagem|whatsapp)|(?:pode|prefiro) (?:explicar|falar) por aqui/
 // Pedido explícito para escrever uma mensagem.
 const WRITE_MESSAGE = /\b(?:faz|faca|fazer|cria|crie|criar|escreve|escreva|escrever|gera|gere|gerar|monta|monte|montar|me da|me de|manda|preciso de) (?:uma |a |umas |as )?(?:mensage(?:m|ns)|msg|texto|copy)/
 
@@ -26,7 +33,8 @@ export function inferCommercialResponseMode(message: string): CommercialResponse
   if (/analis[ae]|analise detalhada|leitura completa/.test(text)) return 'analysis'
   if (/follow[ -]?up|sumiu|sem resposta|nao respondeu|retomar|recuperar lead/.test(text)) return 'follow_up'
   if (/quebr(?:ar|e) (?:a )?objecao|esta caro|ficou caro|vou pensar|falar com (?:meu )?socio|proposta mais barata|quero desconto/.test(text)) return 'objection'
-  if (/o que (?:eu )?respondo|responde (?:isso|pra mim)|o que (?:eu )?mando|mensagem sugerida|manda o valor|quanto custa|qual (?:e )?o valor/.test(text)) return 'quick_reply'
+  if (/o ?que (?:eu )?(?:respondo|mando|envio|falo|digo|escrevo)|responde (?:isso|pra mim)|mensagem sugerida|manda o valor|quanto custa|qual (?:e )?o valor|como (?:eu )?(?:respondo|mando|envio|falo)/.test(text)) return 'quick_reply'
+  if (AFTER_PROTOTYPE.test(text)) return 'quick_reply'
   if (WRITE_MESSAGE.test(text)) return 'quick_reply'
   return 'analysis'
 }
@@ -35,7 +43,7 @@ export function readCommercialSignals(message: string): CommercialRequestSignals
   const text = normalize(message)
   return {
     mode: inferCommercialResponseMode(message),
-    meetingRefused: /nao (?:quero|vou|posso) (?:reuniao|call)|sem (?:reuniao|call)|so por (?:aqui|mensagem|whatsapp)/.test(text),
+    meetingRefused: MEETING_REFUSED.test(text),
     priceRequested: /quanto custa|qual (?:e )?o valor|manda (?:o )?valor|passa (?:o )?preco|so (?:quero|manda) (?:o )?(?:preco|valor)/.test(text),
     // Cliente cobrando o valor de novo ou antes de qualquer conversa.
     priceInsisted: /mas (?:quanto|qual (?:e )?o (?:valor|preco))|quero saber (?:o )?(?:preco|valor)|me passa (?:o )?(?:valor|preco)|ja (?:perguntei|pedi)|fala (?:o )?(?:valor|preco)|so (?:quero|manda) (?:o )?(?:preco|valor)/.test(text),
@@ -43,8 +51,20 @@ export function readCommercialSignals(message: string): CommercialRequestSignals
     positiveInterest: /gostei|curti|interessante|ficou (?:bom|otimo)|quero avancar/.test(text),
     prototypeFollowUp: /(?:enviei|mandei).{0,80}(?:prototipo|previa).{0,80}(?:sumiu|sem resposta|nao respondeu|[2-9]\s*dias)/s.test(text),
     firstContact: FIRST_CONTACT.test(text),
+    afterPrototype: AFTER_PROTOTYPE.test(text) && !FIRST_CONTACT.test(text),
+    shortQuestion: message.trim().length <= 180 && !/analis|detalh|completa/.test(text),
   }
 }
+
+// Depois da prévia (seção 3 da metodologia): a próxima etapa é a reunião.
+export const AFTER_PROTOTYPE_RULES = [
+  'DEPOIS DA PRÉVIA — a próxima etapa da metodologia é a REUNIÃO. A mensagem pronta tem que puxar a reunião, não só "deixar aberto":',
+  '1) Uma frase entregando a prévia ("Segue a prévia que montei pro [negócio]").',
+  '2) Uma frase dizendo que é um ponto de partida: cores, textos e fotos mudam do jeito que o cliente quiser.',
+  '3) Convite direto para uma conversa rápida (10 a 15 minutos), sem compromisso, para ouvir o que ele gostou e o que mudaria.',
+  '4) Termine perguntando o melhor horário com duas opções concretas ("Fica melhor hoje à tarde ou amanhã de manhã?"). Nada de "se preferir, podemos conversar" nem "fico à disposição".',
+  '5) No máximo 4 linhas curtas de WhatsApp, sem "como te falei", sem explicar como o projeto funciona e sem preço.',
+].join(' ')
 
 // Primeira abordagem pela metodologia (Área do aluno: "A primeira mensagem" e
 // "Mostre antes de pedir"; seção 2 do prompt do CS Copilot).
@@ -77,6 +97,12 @@ export function commercialRequestGuidance(message: string): string {
   if (signals.priceObjection) rules.push('Não ofereça desconto imediatamente; descubra se a causa é orçamento ou percepção de valor antes de alterar a proposta.')
   if (signals.positiveInterest) rules.push('Reconheça o interesse observado sem chamar o lead de quente ou assumir intenção de compra.')
   if (signals.prototypeFollowUp) rules.push('A prévia foi enviada e houve espera: recomende um follow-up curto, sem repetir a apresentação nem pressionar.')
+  else if (signals.afterPrototype && !signals.meetingRefused) rules.push(AFTER_PROTOTYPE_RULES)
   if (signals.firstContact) rules.push(FIRST_CONTACT_RULES)
+  if (signals.shortQuestion && signals.mode !== 'analysis') {
+    rules.push('Pedido curto: resposta curta. No máximo umas 120 palavras fora da mensagem pronta. Não explique a metodologia nem liste etapas; vá direto ao que fazer.')
+  } else if (signals.shortQuestion) {
+    rules.push('Pergunta curta: responda direto, como numa conversa, em poucos parágrafos. Só faça análise completa de lead se houver um lead ou conversa para analisar.')
+  }
   return rules.join(' ')
 }

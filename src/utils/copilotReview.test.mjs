@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   cleanRewrite,
+  isAfterPrototypeRequest,
   isFirstContactRequest,
   pickBetter,
   reviewRewritePrompt,
@@ -75,4 +76,19 @@ test('rewrite prompt lists the problems and asks for the message only', () => {
   const prompt = reviewRewritePrompt(reviewSuggestedMessage('Sou o Arthur. Tem interesse.', FIRST), FIRST)
   assert.match(prompt, /apresentação institucional/)
   assert.match(prompt, /SOMENTE com o texto final/)
+})
+
+test('depois da prévia a mensagem tem que puxar a reunião e perguntar o horário', () => {
+  assert.equal(isAfterPrototypeRequest('Oque mando depois de enviar um prototipo'), true)
+  assert.equal(isAfterPrototypeRequest('já mandei a prévia, e agora?'), true)
+  assert.equal(isAfterPrototypeRequest('Ele não quer reunião, já mandei a prévia'), false)
+  assert.equal(isAfterPrototypeRequest('faz a primeira mensagem dizendo que tenho uma prévia'), false)
+  const AFTER = { firstContact: false, mode: 'quick_reply', afterPrototype: true }
+  const weak = 'Oi! Como te falei, segue o protótipo. Qualquer dúvida estou à disposição. Se preferir, podemos conversar.'
+  assert.deepEqual(codes(weak, AFTER), ['no_meeting'])
+  const good = 'Segue a prévia que montei pra clínica! É só um ponto de partida, dá pra mudar tudo.\nQueria marcar 15 minutinhos pra ouvir o que você achou, sem compromisso. Fica melhor hoje à tarde ou amanhã de manhã?'
+  assert.deepEqual(codes(good, AFTER), [])
+  // Follow-up não precisa marcar horário.
+  assert.deepEqual(codes(weak, { ...AFTER, mode: 'follow_up' }), [])
+  assert.match(reviewRewritePrompt([{ code: 'no_meeting', message: 'x' }], AFTER), /duas opções/)
 })
