@@ -142,7 +142,7 @@ test('cada seção recebe fotos diferentes (as partes são escritas em paralelo)
   // A mensagem de cada parte só traz as fotos dela, com o título a usar.
   const message = buildPartMessage('imoveis', plan, { businessName: 'D House', niche: 'Imobiliária' })
   assert.match(message, /FOTOS DESTA SEÇÃO/)
-  assert.equal((message.match(/images\.unsplash\.com/g) ?? []).length, 3)
+  assert.equal(new Set(message.match(/https:\/\/images\.unsplash\.com\/[^"\s]+/g)).size, 3)
   assert.match(message, /não repita nem parafraseie\): "Apartamentos perto do metrô"/)
   assert.match(buildPartMessage('faq', plan, { businessName: 'D House', niche: 'Imobiliária' }), /NÃO usa foto/)
   assert.ok(usedPhotos({ a: '<img src="https://images.unsplash.com/photo-1?w=800">' }).has('https://images.unsplash.com/photo-1'))
@@ -333,4 +333,41 @@ test('efeitos: o plano escolhe poucos, as partes recebem só esses e a página l
   const plain = buildEditMessage(plan, parts, 'troca o telefone', brief)
   assert.match(plain, /já usa[\s\S]*marquee/)
   assert.doesNotMatch(plain, /before-after/)
+})
+
+test('blocos: o plano escolhe um por seção e cada parte recebe o modelo pronto com as cores do site', async () => {
+  const { BLOCKS, blockFor } = await import('../../supabase/functions/code-maker/blocks.ts')
+  const { blockModel, partBlock, PLAN_SYSTEM } = await import('../../supabase/functions/code-maker/site.ts')
+  assert.equal(blockFor('hero', ['hero']), 'hero-dividido') // nome antigo
+  assert.equal(blockFor('bento', ['hero']), null) // bloco de seção não serve de topo
+  assert.match(PLAN_SYSTEM, /- hero-cinema:[\s\S]*- lista-precos:/)
+  const plan = normalizePlan(
+    {
+      ...rawPlan,
+      header: 'menu-barra',
+      radius: 'soft',
+      sections: [
+        { id: 'hero', layout: 'hero-cinema', bg: 'ink' },
+        { id: 'servicos', layout: 'cards-foto', bg: 'paper' },
+        { id: 'precos', layout: 'hero-brilho', bg: 'surface' },
+        { id: 'contato', layout: 'contato', bg: 'brand' },
+      ],
+    },
+    brief,
+  )
+  assert.equal(plan.header, 'menu-barra')
+  assert.equal(plan.sections[2].layout, undefined) // topo não serve para seção do meio
+  assert.equal(partBlock('footer', plan), 'rodape-assinatura')
+  assert.equal(partBlock('precos', plan), null)
+  const servicos = blockModel('servicos', plan, brief)
+  assert.match(servicos, /<section id="servicos" class="bg-paper/)
+  assert.match(servicos, /rounded-2xl/) // cantos "soft"
+  assert.equal(new Set(servicos.match(/https:\/\/images\.unsplash\.com\/[^"]+/g)).size, BLOCKS['cards-foto'].photos)
+  assert.match(blockModel('hero', plan, brief), /https:\/\/wa\.me\/5519998887777/)
+  assert.match(blockModel('header', plan, brief), /text-white/) // topo de foto: menu branco
+  for (const id of ['header', 'hero', 'servicos', 'contato', 'footer']) {
+    assert.doesNotMatch(blockModel(id, plan, brief), /\{(?:id|bg|tx|ptx|btx|dk|dtx|htx|rc|ri|rb|wa|FOTO\d)\}/, id)
+  }
+  assert.match(buildPartMessage('servicos', plan, brief), /MODELO DO BLOCO "cards-foto"/)
+  assert.doesNotMatch(buildPartMessage('precos', plan, brief), /MODELO DO BLOCO/)
 })

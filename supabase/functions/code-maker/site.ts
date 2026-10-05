@@ -5,6 +5,7 @@
 
 import { normalizeSpecification, type CodeMakerSpecification, type RecentEditContext } from './spec.ts'
 import { cleanEffects, effectsGuide, effectsMenu, effectsRuntime, MAX_EFFECTS, usedEffects } from './effects.ts'
+import { BLOCKS, blockFor, blocksMenu, renderBlock } from './blocks.ts'
 
 export type SiteStyle = 'auto' | 'dark' | 'minimal' | 'elegant' | 'vibrant'
 
@@ -44,7 +45,7 @@ export interface PlanSection {
   brief: string
   bg: SectionBackground
   requirementIds?: string[]
-  /** Formato da seção (da lista de LAYOUTS). */
+  /** Bloco da seção (da biblioteca de blocos). */
   layout?: string
   /** Título exato da seção, decidido no plano para nenhum se repetir. */
   headline?: string
@@ -77,6 +78,8 @@ export interface SitePlan {
   signatureSection?: string
   /** Efeitos especiais escolhidos para este site (data-fx), no máximo 4. */
   effects?: string[]
+  /** Bloco do cabeçalho. */
+  header?: string
   sections: PlanSection[]
   globalRequirementIds?: string[]
   specification?: CodeMakerSpecification
@@ -258,9 +261,13 @@ function normalize(value: string): string {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
-export function photosFor(niche: string | null | undefined): Photo[] {
+function photoGroup(niche: string | null | undefined): string | undefined {
   const key = normalize(niche ?? '')
-  const group = PHOTO_GROUPS.find((item) => item.match.some((word) => key.includes(word)))?.group
+  return PHOTO_GROUPS.find((item) => item.match.some((word) => key.includes(word)))?.group
+}
+
+export function photosFor(niche: string | null | undefined): Photo[] {
+  const group = photoGroup(niche)
   return [...(group ? PHOTOS[group] : []), ...PHOTOS.geral]
 }
 
@@ -338,10 +345,17 @@ interface PhotoChoice {
   about: string
 }
 
-// Quantas fotos cada seção usa quando o plano não diz.
+// Quantas fotos cada seção usa: as que o bloco pede; sem bloco, o que o plano
+// disser ou o padrão.
 function defaultPhotos(id: string): number {
   if (id === 'hero') return 2
   return /^(?:faq|duvidas|perguntas|como-funciona|passos|etapas|contato|planos|precos|cardapio)$/.test(id) ? 0 : 1
+}
+
+function sectionPhotos(section: PlanSection): number {
+  const block = section.layout ? BLOCKS[section.layout] : undefined
+  if (block) return block.photos
+  return section.photos ?? defaultPhotos(section.id)
 }
 
 // Distribui as fotos entre as seções. As partes são escritas ao mesmo tempo
@@ -356,7 +370,7 @@ export function photoPlan(plan: SitePlan, brief: SiteBrief): Record<string, Phot
   const result: Record<string, PhotoChoice[]> = {}
   let next = 0
   for (const section of plan.sections) {
-    const wanted = Math.max(0, Math.min(4, section.photos ?? defaultPhotos(section.id)))
+    const wanted = Math.max(0, Math.min(4, sectionPhotos(section)))
     result[section.id] = Array.from({ length: Math.min(wanted, pool.length) }, () => pool[next++ % pool.length])
   }
   return result
@@ -386,35 +400,27 @@ DIREÇÃO
 - O visual nasce do mundo do negócio: os materiais, ferramentas, texturas, cores e o jeito de falar do ramo (a navalha e o couro da barbearia, a planta e o concreto da construtora, a farinha e a madeira da padaria). Use isso em formas, ícones, fotos e textos.
 - Uma ousadia só: o plano define a "signature" (a marca registrada do site). Ela aparece com força na seção indicada; todo o resto fica calmo e disciplinado, a serviço dela. Antes de terminar, tire um enfeite que não serve ao negócio.
 - Estrutura é informação: rótulos pequenos acima de títulos, numeração (01, 02…), divisórias e selos só quando dizem algo verdadeiro (numeração só em sequência real, como etapas). Nada de rótulo decorativo em toda seção.
-- Sem "cara de IA": nada de degradê em tudo (no máximo um degradê sutil, e nunca o roxo/azul genérico), sombra pesada, card em volta de tudo, a mesma grade de cards em toda seção, bolhas de luz borradas de enfeite nem o mesmo respiro enorme em todo lugar. O layout segue a importância do conteúdo.
+- Acabamento de site premium (o nível de 21st.dev, Linear, Vercel, Framer): profundidade em camadas — brilho suave na cor da marca atrás do topo e das chamadas, bordas finas translúcidas, vidro fosco (backdrop-blur) em menu e etiquetas sobre foto, cartões com borda de 1px e sombra macia, fundo com grade ou pontos que somem nas bordas, foto com zoom lento no hover, uma palavra do título em degradê da marca. Os BLOCOS já trazem isso: mantenha essas camadas. Evite só o que barateia: degradê arco-íris ou roxo/azul que não é da marca, sombra preta pesada, o mesmo bloco repetido e seção chapada sem nenhum detalhe.
 
 DESIGN
 - Use SOMENTE estas cores do tema (Tailwind): brand, brand-dark, accent, ink, paper, surface, muted — com variações de opacidade (ex.: bg-brand/10, text-ink/70, border-ink/10) e também white/black. Nunca invente outros nomes de cor nem use cores fixas (#hex) nas classes.
 - Tipografia é a personalidade do site: font-display (títulos) usada com intenção — escala clara (título do topo bem maior que os de seção), peso e espaçamento escolhidos (ex.: caixa alta com tracking largo numa fonte condensada, ou serifada grande com leading-[1.05] e tracking-tight). Títulos grandes com tamanho fluido para caberem em 320px sem quebrar palavra (ex.: text-[clamp(2.5rem,8vw,5.5rem)]); tracking negativo forte só em título curto. font-body no texto: corpo em text-base ou maior com leading-relaxed; nada abaixo de text-xs. Pesos com disciplina: normal no texto, medium/semibold em rótulos e subtítulos, bold/black só nos títulos. Preços, horários e números em tabular-nums. Títulos em ordem: um h1 (no topo), h2 nas seções, h3 dentro delas — sem pular nível.
 - Cantos: siga o "radius" do plano em todo o site (sem radius: round) — round: rounded-2xl/rounded-3xl e botões rounded-full; soft: rounded-lg/rounded-xl e botões rounded-xl; sharp: rounded-none/rounded-sm e botões rounded-sm. Sombras suaves, bordas finas (border-ink/10 no claro, border-white/10 no escuro).
 - Espaçamento em escala (múltiplos de 4px: 2, 3, 4, 6, 8, 12, 16…) e com hierarquia: coisas relacionadas ficam perto (rótulo e campo, título e texto), grupos diferentes ficam longe. Seções com py-20 md:py-28 (a de destaque pode ter mais), container "mx-auto max-w-6xl px-5 md:px-8", textos com max-w-prose (65 a 75 caracteres por linha).
-- Siga o "layout" que o plano deu para a seção (veja FORMATOS abaixo). Seções vizinhas nunca têm o mesmo formato; nunca 3 cards iguais em seções seguidas.
+- Siga o BLOCO que o plano deu para a seção: o modelo dele vem no pedido. Seções vizinhas nunca usam o mesmo bloco.
 - Composição: cards lado a lado têm a mesma quantidade de conteúdo (nada de card alto e quase vazio — use items-start ou dê ao card maior uma foto). Cartão flutuante sobre foto: no máximo 1 por foto, só com texto curto, dentro da área da foto no celular (nada de posição negativa que vaze da tela) e nunca por cima de outro texto. Nada de texto escrito por cima de foto que já tenha cartão.
-- Movimento com propósito e moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Interações rápidas (duration-200, ease-out): hover com mudança de cor/sombra ou -translate-y-0.5, clique com active:scale-[0.98]. Anime só cor, opacidade e transform — nunca largura/altura. Nada de animação infinita chamativa (animate-bounce, animate-pulse, girar) em conteúdo. Quem prefere menos movimento: use motion-safe: nos efeitos de deslocamento ou motion-reduce:transition-none. Animação demais deixa o site com cara de feito por IA. Efeitos especiais (data-fx): só os que o plano escolheu para o site, onde servirem ao conteúdo — nunca invente outros nomes de data-fx.
+- Movimento com propósito e moderação: classe "reveal" (a animação já existe) só nos blocos principais — títulos de seção, grupos de cards, fotos grandes —, não em cada elemento. Interações rápidas (duration-200, ease-out): hover com mudança de cor/sombra ou -translate-y-0.5, clique com active:scale-[0.98]. Anime só cor, opacidade e transform — nunca largura/altura. Nada de animação infinita chamativa (animate-bounce, animate-pulse, girar) em conteúdo. Quem prefere menos movimento: use motion-safe: nos efeitos de deslocamento ou motion-reduce:transition-none. Animação demais deixa o site com cara de feito por IA. Efeitos especiais (data-fx): os que já vêm no modelo do bloco e os que o plano escolheu para o site, onde servirem ao conteúdo — nunca invente outros nomes de data-fx.
 - Botões: principal com bg-brand e texto em contraste, px-6 py-3.5 font-semibold; secundário contornado. Toda área clicável com pelo menos 44px de altura (min-h-11) e 8px de distância da vizinha.
 - Ícones: SVG inline estilo lucide (fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round", viewBox 0 0 24 24), coerentes com o que representam e todos do mesmo estilo; ícone decorativo com aria-hidden="true"; botão só de ícone com aria-label. Nunca emoji como ícone.
 - Acessibilidade e qualidade: contraste AA (4.5:1 no texto, 3:1 em título grande e em ícone), foco visível em links e botões (focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2; nunca outline-none sem substituto), HTML semântico (nav, section, footer, ul/li em listas, button para ação e a para navegação — nunca div clicável). Cor nunca é o único sinal: destaque também com texto ou ícone (ex.: selo "Mais escolhido" escrito). Link diz para onde leva ou o que faz ("Pedir orçamento no WhatsApp", não "Clique aqui"). Informação importante nunca só no hover. No menu do celular, o botão data-menu-toggle tem aria-label e aria-controls apontando para o painel.
 - Imagens: foto que informa tem alt descritivo; foto só decorativa tem alt="". Espaço reservado com aspect-[…] ou width/height para a página não pular ao carregar. Tamanho certo no w= da URL: w=1600 só em foto de tela cheia, w=1000 em foto de meia tela, w=600 em card. Foto do topo com fetchpriority="high"; as outras com loading="lazy" decoding="async".
 - 100% responsivo e mobile-first: pense primeiro em 320px de largura, depois 768, 1024 e 1440 — sem rolagem lateral, sem texto cortado, botões sem quebrar o texto, linhas de texto com largura confortável.
 
-FORMATOS (o plano escolhe um por seção)
-- split: texto de um lado e foto grande do outro (aspect-[4/5] ou [5/4]); lista curta de 3 itens com ícone abaixo do texto.
-- bento: grade de 4 a 5 blocos de tamanhos diferentes (um grande com foto + menores com ícone, preço ou um dado útil).
-- cards-foto: 3 ou 4 cards com foto no topo, título, 1 linha e um dado útil (preço "a partir de", duração, metragem).
-- lista-precos: lista estilo cardápio/tabela, nome à esquerda e preço à direita com linha pontilhada, agrupada por categoria.
-- planos: 2 ou 3 pacotes lado a lado, o do meio destacado (bg-ink ou borda brand) com selo "Mais escolhido".
-- passos: 3 ou 4 etapas com números grandes (01, 02…) ligadas por uma linha, em linha no desktop e em coluna no celular.
-- faixa-destaque: faixa cheia (bg-brand ou bg-ink) com uma frase forte, 1 linha de apoio e um botão. Sem cards.
-- galeria: mosaico de 3 a 5 fotos de alturas diferentes (grid com row-span), legenda curta em algumas.
-- editorial: título muito grande ocupando a largura, texto em 2 colunas e uma faixa com 3 diferenciais separados por linhas finas.
-- lista-icones: 4 a 6 diferenciais em grade 2×3 sem caixa (ícone + título + 1 linha), separados por linhas finas.
-- faq: 2 colunas — título, frase e botão à esquerda; <details> à direita (5 a 7 perguntas reais com respostas úteis).
-- contato: bloco grande com o botão principal de contato bem visível + os dados que existirem (cidade, horário) em lista limpa.
+COMO USAR O MODELO DO BLOCO
+- O modelo é o ponto de partida obrigatório: mantenha a estrutura, as classes, as camadas de fundo (brilhos, grades, degradês), os efeitos data-fx e as fotos já colocadas. Troque TODO o texto de exemplo ("Título…", "Item", "R$ 00", "Rótulo curto") pelo conteúdo real do plano.
+- Ajuste a quantidade de itens ao conteúdo repetindo ou tirando itens no mesmo padrão (ex.: 4 serviços em vez de 3). Troque o ícone de estrela por ícones SVG coerentes com cada item.
+- Pode melhorar o modelo para servir ao negócio e à marca registrada (outra proporção de foto, um detalhe a mais), mas nunca o deixe mais simples nem tire o acabamento.
+- Dado que não existe (preço, horário, endereço): tire o elemento, não escreva o texto de exemplo.
 
 TEXTO (o que mais vende — escreva como um bom redator publicitário brasileiro)
 - Idioma: português do Brasil por padrão. Só escreva em outro idioma se o pedido do usuário pedir explicitamente (ex.: "site em inglês"); nesse caso TODO o texto do site sai nesse idioma, inclusive menu, botões e rodapé.
@@ -453,9 +459,10 @@ Formato do JSON:
   "radius": "round" | "soft" | "sharp" (cantos do site inteiro, escolhidos pela direção de arte),
   "signature": "a marca registrada do site em 1 ou 2 frases concretas: o único elemento ousado de que o visitante vai lembrar, tirado do mundo do negócio (ex.: título do topo enorme em caixa alta condensada cortado pela foto da navalha; tabela de preços desenhada como a lousa de giz da padaria; faixa com a planta baixa do apartamento em linhas finas)",
   "signatureSection": "id da seção onde a marca registrada aparece (normalmente hero)",
+  "header": "id de um bloco de CABEÇALHO",
   "effects": ["de 0 a ${MAX_EFFECTS} ids da lista EFEITOS que este site realmente pede"],
   "globalRequirementIds": ["IDs dos requisitos transversais da especificação"],
-  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "layout": "um dos FORMATOS", "headline": "título exato da seção (até 8 palavras, específico do negócio)", "brief": "o conteúdo REAL da seção: itens com nome, descrição curta e preço/duração/tamanho quando fizer sentido; etapas; perguntas; o que a foto mostra", "photos": 0 a 3, "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
+  "sections": [ { "id": "kebab-case", "label": "nome curto no menu", "layout": "id de um BLOCO (o hero usa um bloco de TOPO)", "headline": "título exato da seção (até 8 palavras, específico do negócio)", "brief": "o conteúdo REAL da seção: itens com nome, descrição curta e preço/duração/tamanho quando fizer sentido; etapas; perguntas; o que a foto mostra", "requirementIds": ["IDs dos requisitos desta seção"], "bg": "paper" | "surface" | "ink" | "brand" } ],
   "business": { "name": "nome do negócio", "niche": "nicho em poucas palavras", "city": "cidade ou null", "phone": "WhatsApp só com dígitos ou null" }
 }
 "business": copie do pedido. Se o pedido não disser o nome, crie um nome curto e plausível; cidade e WhatsApp só se estiverem escritos no pedido (senão null).
@@ -464,10 +471,10 @@ Regras do plano:
 - A especificação é obrigatória quando fornecida. Copie seus IDs: globalRequirementIds para requisitos transversais e requirementIds em cada seção. Todo requisito aplicável deve ser atribuído. Requisitos backend limitados permanecem limitações explícitas. Não declare que estão implementados. Respeite constraints, forbiddenChanges, relevantFiles, dependencies e validation.
 - sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" perto do fim. Bons sites têm pelo menos uma seção com conteúdo concreto e escaneável (catálogo, preços ou planos), além de serviços.
 - Alterne "bg" entre as seções para dar ritmo (nunca 3 seguidas iguais); use "ink" ou "brand" em 1 ou 2 seções de destaque.
-- "layout": escolha dos FORMATOS abaixo; seções vizinhas sempre com formatos diferentes e no máximo 1 "faixa-destaque". O topo (hero) usa "hero".
+- "layout": o bloco de cada seção (lista BLOCOS abaixo). O hero usa um bloco de TOPO; as outras seções, blocos de SEÇÃO. Seções vizinhas sempre com blocos diferentes; "letreiro" e "faixa-destaque" no máximo uma vez cada; "depoimentos" só com depoimentos reais. O conteúdo do brief tem de caber no bloco (ex.: catálogo com fotos → cards-foto; preços sem foto → lista-precos; etapas → passos).
 - "headline": cada seção tem um título diferente, que diz um benefício concreto ou o que a seção entrega ("Cortes a partir de R$ 45", "Apartamentos perto do metrô", "Seu carro pronto no mesmo dia"). Proibidos: "Encontre seu próximo…", "Bem-vindo", "Nossos serviços", "Sobre nós", "Soluções completas", e repetir no meio do site o título do topo.
 - "brief": escreva o conteúdo que vai na tela, não instruções sobre o que evitar. Ex. ruim: "explica o apoio na compra, sem prometer condições". Ex. bom: "3 cards: Comprar (busca por bairro e orçamento, visitas na mesma semana), Vender (avaliação do preço, fotos profissionais, anúncio nos portais), Alugar (análise de fiador ou seguro-fiança)". Nunca escreva no brief que um dado falta ou que "será informado depois": sem o dado, a seção simplesmente não tem aquele campo.
-- "photos": quantas fotos a seção usa — hero 1 ou 2; split/editorial 1; cards-foto 3 ou 4; galeria 3 a 5; bento 1 ou 2; os outros 0. O sistema entrega fotos diferentes para cada seção.
+- Fotos: cada bloco já diz quantas usa e o sistema entrega fotos diferentes para cada seção.
 - Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Respeite a cor pedida pelo usuário (vira "brand", ou o fundo se ele pedir site "preto"/"escuro").
 - O pedido do usuário sempre vence: estilo, cores, fontes ou referências que ele pediu são seguidos à risca, mesmo que contrariem as dicas abaixo.
 
@@ -478,10 +485,16 @@ DIREÇÃO DE ARTE (pense nisto antes de escrever o JSON)
 - Quando o pedido deixar o visual livre, NÃO caia nos 3 visuais que toda IA repete: (1) fundo creme com serifada de alto contraste e acento terracota; (2) fundo quase preto com um único acento neon (verde-ácido, vermelhão); (3) layout de jornal com linhas finas, cantos retos e colunas densas. Eles só valem se o pedido pedir ou se o negócio realmente for assim.
 - Autocrítica antes de responder: se este plano serviria igual para outro negócio do mesmo nicho em outra cidade, troque a parte genérica (paleta, fontes, formato do topo ou marca registrada) por uma escolha feita para ESTE negócio.
 
-FORMATOS: hero, split, bento, cards-foto, lista-precos, planos, passos, faixa-destaque, galeria, editorial, lista-icones, faq, contato.
+BLOCOS (desenhos prontos com acabamento premium; escolha os que servem ao conteúdo e ao clima)
+CABEÇALHO:
+${blocksMenu('header')}
+TOPO (só para o hero):
+${blocksMenu('hero')}
+SEÇÃO:
+${blocksMenu('section')}
 
 EFEITOS (biblioteca do Code Maker — escolha com critério, nunca todos)
-Escolha de 0 a ${MAX_EFFECTS} efeitos para "effects", pensando no negócio, no público e na marca registrada: um efeito bem escolhido vale mais que vários. Zero é uma boa resposta para sites sóbrios (advocacia, saúde, contabilidade). Prefira o efeito que realiza a marca registrada; combine no máximo um efeito "forte" (horizontal, stack, scrub-text, aurora) com detalhes discretos. "smooth-scroll" só junto de efeitos de rolagem. Efeitos que dependem de dado real (count, countdown, before-after, price-toggle) só se o dado existir no pedido.
+Escolha de 0 a ${MAX_EFFECTS} efeitos para "effects", pensando no negócio, no público e na marca registrada: um efeito bem escolhido vale mais que vários. Zero é uma boa resposta para sites sóbrios (advocacia, saúde, contabilidade). Prefira o efeito que realiza a marca registrada; combine no máximo um efeito "forte" (horizontal, stack, scrub-text, aurora, particles, dot-grid) com detalhes discretos. Os blocos já trazem alguns efeitos próprios (spotlight no bento, beam nos planos, marquee no letreiro, stagger nas grades): não precisa repeti-los aqui. "smooth-scroll" só junto de efeitos de rolagem. Efeitos que dependem de dado real (count, countdown, before-after, price-toggle) só se o dado existir no pedido.
 ${effectsMenu()}
 
 PARES DE FONTES (todas do Google Fonts; escolha o que tem a cara do negócio e varie — não use sempre os mesmos):
@@ -502,6 +515,9 @@ export function buildPlanMessage(brief: SiteBrief, includeLiteral = true): strin
     `Estilo pedido: ${STYLE_DIRECTIONS[brief.style ?? 'auto']}`,
     brief.assets?.length
       ? `O usuário enviou ${logoOf(brief) ? 'a logo' : 'nenhuma logo'} e ${brief.assets.filter((asset) => asset.kind === 'photo').length} foto(s) do próprio negócio: o site vai usá-las. ${logoOf(brief) ? 'Escolha cores que combinem com uma logo de verdade (sóbrias, sem brigar com ela).' : ''}`
+      : null,
+    !brief.assets?.some((asset) => asset.kind === 'photo') && !photoGroup(brief.niche)
+      ? 'Fotos: não há banco de fotos deste ramo, só fotos genéricas de escritório e equipe. Prefira blocos com pouca ou nenhuma foto (hero-brilho, editorial, lista-icones, passos, lista-precos, planos, faq) e resolva o visual com tipografia, cor e os fundos dos blocos.'
       : null,
     brief.specification ? `Especificação completa com IDs obrigatórios:\n${JSON.stringify(brief.specification)}` : null,
     includeLiteral && brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
@@ -602,7 +618,7 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
   const headerAction = prototype ? leadAction : `botão de ação para o WhatsApp (${whatsapp})`
 
   if (partId === 'header') {
-    return `Escreva o CABEÇALHO: <header data-header class="fixed inset-x-0 top-0 z-50 ..."> com ${logoOf(brief) ? 'a LOGO do negócio (imagem enviada — veja abaixo)' : 'logotipo tipográfico do negócio (nome com um detalhe na cor brand, e um pequeno ícone SVG coerente com o nicho)'}, menu com os links: ${nav}, e ${headerAction}. No mobile, botão data-menu-toggle (ícone de menu) e um painel data-menu com class "hidden" contendo os mesmos links e o botão. O cabeçalho começa transparente sobre o topo (o topo é "${plan.sections[0]?.bg ?? 'paper'}") — no topo o texto do cabeçalho é text-${textOn(plan, plan.sections[0]?.bg ?? 'paper')}; ao rolar ele ganha fundo bg-paper/85 com backdrop-blur (o script marca [data-scrolled]) e o texto passa a text-${textOn(plan, 'paper')}. Escreva as classes do estado rolado com o prefixo "data-[scrolled]:" (ex.: data-[scrolled]:bg-paper/85 data-[scrolled]:text-${textOn(plan, 'paper')} data-[scrolled]:backdrop-blur data-[scrolled]:shadow-sm). O painel do menu mobile tem fundo bg-paper e texto text-${textOn(plan, 'paper')}.${leadRules}`
+    return `Escreva o CABEÇALHO a partir do MODELO DO BLOCO abaixo, com ${logoOf(brief) ? 'a LOGO do negócio (imagem enviada — veja abaixo) no lugar do ícone e do nome' : 'o nome do negócio e um ícone SVG coerente com o nicho no lugar da estrela'}, os links do menu: ${nav}, e ${headerAction}. Mantenha data-header, o botão data-menu-toggle e o painel data-menu (começa com a classe "hidden") com os mesmos links e o botão.${leadRules}`
   }
   if (partId === 'footer') {
     if (prototype) return `Escreva o RODAPE: <footer> com nome do negocio, frase curta, links do menu (${nav}), cidade ${brief.city ?? 'nao informada'} e "© <span data-year></span> ${brief.businessName}". ${routes?.contacts.length ? `Exibir somente estes canais reais: ${JSON.stringify(routes.contacts)}.` : 'Contato pendente: nao criar canal ficticio.'} ${routes?.confirmedWhatsapp ? `Pode adicionar botao flutuante de WhatsApp somente para o destino confirmado ${routes.confirmedWhatsapp}, com aria-label.` : 'Nao adicionar botao flutuante de WhatsApp nem usar #contato como se fosse WhatsApp.'}${leadRules}`
@@ -616,20 +632,66 @@ function partInstructions(partId: string, plan: SitePlan, brief: SiteBrief): str
     partId === 'hero'
       ? prototype
         ? ` Esta e a primeira secao: min-h-[88vh], pt-28 para o cabecalho fixo, titulo curto e especifico em text-5xl md:text-7xl, subtitulo e ${leadAction}. Usar destaques somente de fatos fornecidos e visual coerente com o negocio; nao criar numeros, horarios ou precos para preencher o layout.`
-        : ' Esta é a primeira seção e a tese do site (o cabeçalho fixo fica por cima): min-h-[88vh], com pt-28 para não ficar atrás do cabeçalho. Abra com o que há de mais característico deste negócio, na composição que a direção de arte pedir (foto grande sangrando na lateral, foto de fundo inteira com gradiente escuro e texto branco, título gigante com a foto recortada ao lado, etc. — evite o formato de template "texto à esquerda, foto em cartão à direita, 3 números embaixo" se não for o melhor). O título é o "headline" do plano, grande (text-5xl md:text-7xl ou mais) e com tratamento tipográfico marcante; subtítulo de até 2 linhas; botão principal para o WhatsApp + um secundário. Destaques curtos (a reputação real, se informada, ou vantagens concretas como "Orçamento em 1 dia") só se ajudarem: no máximo 3 e sem números inventados.'
+        : ' Esta é a primeira seção e a tese do site (o cabeçalho fixo fica por cima, por isso o espaço no alto do modelo). O título é o "headline" do plano (no h1, com uma palavra-chave em destaque se o modelo tiver); subtítulo de até 2 linhas; botão principal para o WhatsApp + um secundário. Selos e destaques curtos só com fatos verdadeiros (a reputação real, se informada, ou vantagens concretas como "Orçamento em 1 dia"), sem números inventados — se não houver, tire o selo.'
       : ''
   const signature = !plan.signature
     ? ''
     : (plan.signatureSection ?? 'hero') === partId
       ? ` MARCA REGISTRADA DO SITE (esta seção é dona dela — execute com força e capricho): ${plan.signature}`
       : ' A marca registrada do site fica em outra seção: aqui seja calmo e disciplinado, sem competir com ela.'
-  const layout = section?.layout && section.layout !== 'hero' ? ` Formato: ${section.layout} (veja FORMATOS).` : ''
+  const layout = section?.layout && BLOCKS[section.layout] ? ` Bloco: ${section.layout} (siga o MODELO DO BLOCO abaixo).` : ''
   const headline = section?.headline ? ` Título da seção (use exatamente): "${section.headline}".` : ''
   const others = plan.sections.filter((item) => item.id !== partId && item.headline).map((item) => `"${item.headline}"`)
   const avoid = others.length ? ` Títulos das outras seções (não repita nem parafraseie): ${others.join(', ')}.` : ''
   return `Escreva SOMENTE a seção <section id="${partId}" class="${bgClass} ..."> — "${section?.label ?? partId}".${headline}${layout} Conteúdo: ${section?.brief ?? ''}${hero}${signature}${avoid}${
     ` Fundo desta seção: ${bgClass} — texto principal text-${sectionText}, secundário text-${sectionText}/70.`
   } ${prototype ? `Acao de contato: ${leadAction}.${leadRules}` : `Link do WhatsApp: ${whatsapp}.`}`
+}
+
+// Link do botão principal: WhatsApp do negócio (ou o canal real do protótipo).
+function primaryLink(plan: SitePlan, brief: SiteBrief): string {
+  if (brief.mode === 'lead_prototype') {
+    const routes = brief.contactRoutes
+    if (routes?.primary) return routes.primary
+    if (routes?.goal === 'institutional') return `#${plan.sections.find((section) => section.id === 'servicos')?.id ?? plan.sections.find((section) => section.id !== 'hero')?.id ?? 'hero'}`
+    return '#contato'
+  }
+  const phone = phoneDigits(brief.phone)
+  return phone ? `https://wa.me/${phone}` : '#contato'
+}
+
+/** Bloco de cada parte: o do plano, ou o padrão do tipo de parte. */
+export function partBlock(partId: string, plan: SitePlan): string | null {
+  if (partId === 'header') return blockFor(plan.header, ['header']) ?? 'menu-pilula'
+  if (partId === 'footer') return 'rodape-assinatura'
+  const section = plan.sections.find((item) => item.id === partId)
+  if (!section) return null
+  return blockFor(section.layout, partId === 'hero' ? ['hero'] : ['section']) ?? (partId === 'hero' ? 'hero-dividido' : null)
+}
+
+// O modelo do bloco já com as cores, cantos, fotos e links deste site.
+export function blockModel(partId: string, plan: SitePlan, brief: SiteBrief, blockId?: string): string | null {
+  const id = blockId ?? partBlock(partId, plan)
+  if (!id) return null
+  const section = plan.sections.find((item) => item.id === partId)
+  const bg = section?.bg ?? 'paper'
+  const heroBlock = partBlock('hero', plan)
+  const dk = plan.theme === 'dark' ? 'surface' : 'ink'
+  return renderBlock(id, {
+    id: partId,
+    bg,
+    tx: textOn(plan, bg),
+    ptx: textOn(plan, 'paper'),
+    btx: textOn(plan, 'brand'),
+    dk,
+    dtx: textOn(plan, dk),
+    htx: heroBlock === 'hero-cinema' ? 'white' : textOn(plan, plan.sections[0]?.bg ?? 'paper'),
+    radius: plan.radius ?? 'round',
+    wa: primaryLink(plan, brief),
+    photos: blockId
+      ? photosFor(brief.niche).slice(0, BLOCKS[id].photos).map((photo) => stockUrl(photo.id))
+      : (photoPlan(plan, brief)[partId] ?? []).map((photo) => photo.url),
+  })
 }
 
 export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrief): string {
@@ -653,6 +715,7 @@ export function buildPartMessage(partId: string, plan: SitePlan, brief: SiteBrie
       : null,
     contrastGuide(plan),
     partInstructions(partId, plan, brief),
+    blockModel(partId, plan, brief) ? `MODELO DO BLOCO "${partBlock(partId, plan)}" (ponto de partida obrigatório — veja COMO USAR O MODELO DO BLOCO):\n${blockModel(partId, plan, brief)}` : null,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -695,6 +758,7 @@ Depois, só o que muda:
 - Remover uma seção: <remover id="id"/>
 - Mudar cores, fontes ou idioma do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}, "lang": "pt-PT"}</tema> (só os campos que mudam).
 - Pedido que muda os textos do site todo (idioma, tom, tratamento): troque cada texto com <substituir>, usando como "antes" só o texto visível (sem tags nem atributos), copiado exatamente como está no código; o mesmo texto repetido muda em todos os lugares. Não esqueça menu, botões, rodapé, alt das imagens e a mensagem dos links de WhatsApp. Em idioma novo, mande também o <tema> com o "lang".
+Redesenho de uma parte: siga o modelo de bloco que vier no pedido (como em COMO USAR O MODELO DO BLOCO), trocando o texto de exemplo pelo conteúdo que a parte já tem; sem modelo, use o mesmo acabamento dos blocos.
 Ajuste preserva, redesenho substitui: num ajuste, mantenha a identidade do site (cores, fontes, cantos, marca registrada), os textos com fatos e tudo o que não foi pedido exatamente igual. Quando o pedido for redesenhar uma parte, troque o visual dela por completo — sem meio-termo —, mantendo o conteúdo, os fatos e a função. Nunca troque preços, contatos, endereço ou outros fatos, nem acrescente afirmações novas sobre o negócio, sem o usuário pedir. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
 
 // Pedido que fala de movimento/visual recebe a biblioteca inteira; os outros
@@ -708,6 +772,55 @@ function editEffects(parts: SiteParts, instruction: string): string | null {
     return `EFEITOS ESPECIAIS DISPONÍVEIS (use só se o pedido pedir algo assim; no máximo ${MAX_EFFECTS} diferentes no site${inUse.length ? `; o site já usa: ${inUse.join(', ')}` : ''}):\n${effectsGuide()}`
   }
   return inUse.length ? `Efeitos especiais que o site já usa (mantenha os atributos data-fx ao mexer nessas partes):\n${effectsGuide(inUse)}` : null
+}
+
+// Pedido de redesenho recebe a lista de blocos e, quando dá para saber qual
+// parte ou tipo de bloco a pessoa quer, os modelos prontos deles.
+const REDESIGN_WORDS = /redesenh|refa[zç]|mais bonit|mais modern|feio|layout|visual|design|estilo|cara de|bloco|premium|sofisticad|profissional|impacto|chamativ/i
+const BLOCK_WORDS: [RegExp, string[]][] = [
+  [/pre[çc]o|tabela|card[aá]pio|menu de servi/i, ['lista-precos', 'planos']],
+  [/plano|pacote|mensalidade/i, ['planos']],
+  [/galeria|fotos|portf[oó]lio/i, ['galeria', 'cards-foto']],
+  [/etapa|passo|como funciona/i, ['passos', 'editorial']],
+  [/d[uú]vida|pergunta|faq/i, ['faq']],
+  [/depoimento|avalia[çc]/i, ['depoimentos']],
+  [/letreiro|faixa/i, ['letreiro', 'faixa-destaque']],
+  [/servi[çc]o|diferencia|vantage/i, ['bento', 'lista-icones', 'cards-foto']],
+  [/contato|fale|whats/i, ['contato']],
+  [/sobre|hist[oó]ria|quem somos/i, ['split', 'editorial']],
+]
+
+function editBlocks(plan: SitePlan, brief: SiteBrief, instruction: string): string | null {
+  if (!REDESIGN_WORDS.test(instruction)) return null
+  const text = normalize(instruction)
+  const models: { part: string; block: string }[] = []
+  const add = (part: string, block: string) => {
+    if (models.length < 4 && !models.some((model) => model.block === block)) models.push({ part, block })
+  }
+  for (const id of Object.keys(BLOCKS)) if (text.includes(id)) add(id === 'rodape-assinatura' ? 'footer' : 'nova-secao', id)
+  if (/topo|inicio|hero|primeira dobra|abertura/.test(text)) {
+    for (const id of Object.keys(BLOCKS)) if (BLOCKS[id].kind === 'hero' && id !== partBlock('hero', plan)) add('hero', id)
+  }
+  if (/menu|cabecalho/.test(text)) {
+    for (const id of Object.keys(BLOCKS)) if (BLOCKS[id].kind === 'header' && id !== partBlock('header', plan)) add('header', id)
+  }
+  for (const [pattern, ids] of BLOCK_WORDS) {
+    if (!pattern.test(instruction)) continue
+    const section = plan.sections.find((item) => item.id !== 'hero' && pattern.test(`${item.id} ${item.label}`))
+    for (const id of ids) if (id !== section?.layout) add(section?.id ?? 'nova-secao', id)
+  }
+  const rendered = models
+    .map(({ part, block }) => `MODELO DO BLOCO "${block}" (para ${part === 'nova-secao' ? 'uma seção' : `a parte ${part}`}):\n${blockModel(part, plan, brief, block)}`)
+    .join('\n\n')
+  return [
+    'BLOCOS DE DESIGN (redesenho: parta de um destes desenhos, com o mesmo acabamento — camadas, brilho da marca, vidro, bordas finas):',
+    `CABEÇALHO:\n${blocksMenu('header')}`,
+    `TOPO:\n${blocksMenu('hero')}`,
+    `SEÇÃO:\n${blocksMenu('section')}`,
+    rendered || null,
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: string, brief: SiteBrief, fresh: SiteAsset[] = [], recent: RecentEditContext[] = []): string {
@@ -724,6 +837,7 @@ export function buildEditMessage(plan: SitePlan, parts: SiteParts, instruction: 
     contrastGuide(plan),
     `Partes atuais do site:\n${current}`,
     editEffects(parts, instruction),
+    editBlocks(plan, brief, instruction),
     imagesMessage(brief, fresh, usedPhotos(parts)),
     fresh.length > 0
       ? `O usuário anexou ${fresh.length} imagem(ns) junto com este pedido (marcadas como "anexada agora" acima): use-as onde ele pedir; se ele não disser onde, a logo vai no cabeçalho/rodapé e as fotos no topo ou na galeria.`
@@ -783,8 +897,6 @@ const CLAIM_PATTERNS = [
   /\d[\d.]*\+?\s*(?:mil\s+)?(?:clientes|carros|ve[ií]culos|atendimentos|cortes|pacientes|alunos|pets|projetos|obras|im[oó]veis|casamentos|pedidos)\b/i,
 ]
 
-const LAYOUTS = ['hero', 'split', 'bento', 'cards-foto', 'lista-precos', 'planos', 'passos', 'faixa-destaque', 'galeria', 'editorial', 'lista-icones', 'faq', 'contato']
-
 // Sem reputação informada, estas seções só teriam números inventados.
 const INVENTED_SECTIONS = /^(?:numeros|depoimentos|avaliacoes|resultados|estatisticas|prova-social)$/
 
@@ -829,13 +941,14 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
     if (INVENTED_SECTIONS.test(id) && !(brief.rating && brief.reviews)) continue
     seen.add(id)
     const bg = ['paper', 'surface', 'ink', 'brand'].includes(item?.bg) ? item.bg : 'paper'
+    const layout = blockFor(item?.layout, id === 'hero' ? ['hero'] : ['section'])
     sections.push({
       id,
       label: String(item?.label ?? id).slice(0, 30),
       brief: stripInventedClaims(String(item?.brief ?? ''), brief).slice(0, 1400),
       bg,
       requirementIds: requirementIds(item.requirementIds),
-      ...(LAYOUTS.includes(item?.layout) ? { layout: item.layout } : {}),
+      ...(layout ? { layout } : {}),
       ...(typeof item?.headline === 'string' && item.headline.trim()
         ? { headline: stripInventedClaims(item.headline.trim(), brief).slice(0, 120) }
         : {}),
@@ -863,6 +976,7 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
     },
     ...(['round', 'soft', 'sharp'].includes(input.radius) ? { radius: input.radius } : {}),
     ...(cleanEffects(input.effects).length ? { effects: cleanEffects(input.effects) } : {}),
+    ...(blockFor(input.header, ['header']) ? { header: blockFor(input.header, ['header'])! } : {}),
     ...(typeof input.signature === 'string' && input.signature.trim()
       ? {
           signature: stripInventedClaims(input.signature.trim(), brief).slice(0, 400),
