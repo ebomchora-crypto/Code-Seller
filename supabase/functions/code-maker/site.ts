@@ -188,6 +188,18 @@ const PHOTOS: Record<string, Photo[]> = {
     { id: '1580273916550-e323be2ae537', about: 'carro esportivo cinza na estrada ao entardecer' },
     { id: '1503376780353-7e6692767b70', about: 'carro preto em movimento na rodovia' },
   ],
+  carros: [
+    { id: '1607860108855-64acf2078ed9', about: 'carro escuro sendo lavado à mão com espuma (hero)' },
+    { id: '1520340356584-f9917d1eea6f', about: 'jato de água lavando a traseira de um carro esportivo' },
+    { id: '1494976388531-d1058494cdd8', about: 'carro esportivo preto de frente, faróis acesos' },
+    { id: '1552519507-da3b142c6e3d', about: 'carro esportivo azul brilhando ao pôr do sol' },
+    { id: '1601362840469-51e4d8d58785', about: 'sedã prata impecável à beira-mar' },
+    { id: '1583121274602-3e2820c69888', about: 'carro esportivo vermelho em showroom claro' },
+    { id: '1542362567-b07e54358753', about: 'carro esportivo branco reluzente' },
+    { id: '1503736334956-4c8f8e92946d', about: 'carro esportivo amarelo em movimento na estrada' },
+    { id: '1605559424843-9e4c228bf1c2', about: 'carro esportivo amarelo na pista ao sol' },
+    { id: '1549399542-7e3f8b79c341', about: 'capô de carro vermelho brilhando numa avenida com palmeiras' },
+  ],
   fitness: [
     { id: '1534438327276-14e5300c3a48', about: 'academia com halteres (hero)' },
     { id: '1571902943202-507ec2618e8f', about: 'academia ampla e iluminada' },
@@ -293,6 +305,7 @@ const PHOTOS: Record<string, Photo[]> = {
 
 const PHOTO_GROUPS: { group: string; match: string[] }[] = [
   { group: 'barbearia', match: ['barbear', 'barber'] },
+  { group: 'carros', match: ['automotiv', 'lava jato', 'lava-jato', 'lavagem', 'polimento', 'vitrific', 'detail', 'martelinho', 'concessionar', 'seminovo', 'carros'] },
   { group: 'salao', match: ['salao', 'cabel', 'estetic', 'manicure', 'unha', 'sobrancelha', 'beleza', 'spa', 'maquiag', 'depila'] },
   { group: 'saude', match: ['clinic', 'dentist', 'odonto', 'fisio', 'psicolog', 'nutri', 'medic', 'saude', 'consultorio', 'fono', 'laborat'] },
   { group: 'auto', match: ['oficina', 'mecanic', 'auto', 'funilar', 'borrachar', 'pneu', 'lava', 'moto', 'guincho'] },
@@ -324,7 +337,9 @@ function photoGroup(niche: string | null | undefined): string | undefined {
 
 export function photosFor(niche: string | null | undefined): Photo[] {
   const group = photoGroup(niche)
-  return [...(group ? PHOTOS[group] : []), ...PHOTOS.geral]
+  // Fotos genéricas de escritório só quando o ramo não tem fotos próprias: no
+  // meio de um site de oficina ou de clínica elas pareciam fora de lugar.
+  return group ? PHOTOS[group] : PHOTOS.geral
 }
 
 export function photoCatalog(niche: string | null | undefined): string {
@@ -432,8 +447,7 @@ function sectionPhotos(section: PlanSection): number {
 
 // Distribui as fotos entre as seções. As partes são escritas ao mesmo tempo
 // e, recebendo a lista inteira, todas escolhiam a mesma "melhor" foto (a
-// mesma casa aparecia 4 vezes). Cada seção recebe as suas, sem repetir —
-// só repete se o banco de fotos acabar.
+// mesma casa aparecia 4 vezes). Cada seção recebe as suas, sem repetir.
 export function photoPlan(plan: SitePlan, brief: SiteBrief): Record<string, PhotoChoice[]> {
   const own = (brief.assets ?? [])
     .filter((asset) => asset.kind === 'photo')
@@ -443,7 +457,10 @@ export function photoPlan(plan: SitePlan, brief: SiteBrief): Record<string, Phot
   let next = 0
   for (const section of plan.sections) {
     const wanted = Math.max(0, Math.min(4, sectionPhotos(section)))
-    result[section.id] = Array.from({ length: Math.min(wanted, pool.length) }, () => pool[next++ % pool.length])
+    // Sem repetir foto: quando o banco acaba, o bloco usa o desenho sem foto.
+    const count = Math.max(0, Math.min(wanted, pool.length - next))
+    result[section.id] = pool.slice(next, next + count)
+    next += count
   }
   return result
 }
@@ -536,7 +553,7 @@ Regras do plano:
 - "layout": o bloco de cada seção (lista BLOCOS abaixo). O hero usa um bloco de TOPO; as outras seções, blocos de SEÇÃO. Seções vizinhas sempre com blocos diferentes; "letreiro" e "faixa-destaque" no máximo uma vez cada; "depoimentos" só com depoimentos reais. O conteúdo do brief tem de caber no bloco (ex.: catálogo com fotos → cards-foto; preços sem foto → lista-precos; etapas → passos).
 - "headline": cada seção tem um título diferente, que diz um benefício concreto ou o que a seção entrega ("Cortes a partir de R$ 45", "Apartamentos perto do metrô", "Seu carro pronto no mesmo dia"). Proibidos: "Encontre seu próximo…", "Bem-vindo", "Nossos serviços", "Sobre nós", "Soluções completas", e repetir no meio do site o título do topo.
 - "brief": escreva o conteúdo que vai na tela, não instruções sobre o que evitar. Ex. ruim: "explica o apoio na compra, sem prometer condições". Ex. bom: "3 cards: Comprar (busca por bairro e orçamento, visitas na mesma semana), Vender (avaliação do preço, fotos profissionais, anúncio nos portais), Alugar (análise de fiador ou seguro-fiança)". Nunca escreva no brief que um dado falta ou que "será informado depois": sem o dado, a seção simplesmente não tem aquele campo.
-- Fotos: cada bloco já diz quantas usa e o sistema entrega fotos diferentes para cada seção.
+- Fotos: cada bloco já diz quantas usa e o sistema entrega fotos diferentes para cada seção. Site bonito é site com imagem: com fotos do ramo, inclua pelo menos 2 seções de várias fotos (cards-foto, carrossel, galeria, bento) e prefira um topo com foto grande (hero-cinema, hero-mundo, hero-vitrine, hero-dividido, hero-neon, hero-retrato); hero-brilho é para quando quase não há fotos. Nunca monte o site só com blocos de texto.
 - Paleta com contraste AA entre ink/paper e entre o texto do botão e brand. Respeite a cor pedida pelo usuário (vira "brand", ou o fundo se ele pedir site "preto"/"escuro").
 - O pedido do usuário sempre vence: estilo, cores, fontes ou referências que ele pediu são seguidos à risca, mesmo que contrariem as dicas abaixo.
 

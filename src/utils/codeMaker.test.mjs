@@ -133,7 +133,8 @@ test('cada seção recebe fotos diferentes (as partes são escritas em paralelo)
   assert.equal(photos.hero.length, 2)
   assert.equal(photos.imoveis.length, 4) // o que o bloco cards-foto mostra
   assert.equal(photos.sobre.length, 1)
-  assert.equal(photos.faq.length, 0)
+  assert.equal(photos.faq.length, 1) // a coluna do título ganha uma foto
+  assert.equal(photos.contato.length, 1)
   const all = Object.values(photos).flat().map((photo) => photo.url)
   assert.equal(new Set(all).size, all.length)
   // Fotos do próprio negócio vêm antes das de banco.
@@ -144,7 +145,15 @@ test('cada seção recebe fotos diferentes (as partes são escritas em paralelo)
   assert.match(message, /Fotos que o bloco mostra, na ordem/)
   assert.doesNotMatch(message, /https:\/\/images\.unsplash\.com/)
   assert.match(message, /não repita nem parafraseie\): "Apartamentos perto do metrô"/)
-  assert.match(buildPartMessage('faq', plan, { businessName: 'D House', niche: 'Imobiliária' }), /Este bloco não usa foto/)
+  const prices = normalizePlan({ sections: [{ id: 'hero' }, { id: 'precos', layout: 'lista-precos' }] }, { businessName: 'D' })
+  assert.match(buildPartMessage('precos', prices, { businessName: 'D', niche: 'Imobiliária' }), /Este bloco não usa foto/)
+  // O banco acabou: as seções seguintes ficam sem foto em vez de repetir.
+  const many = normalizePlan({ sections: [{ id: 'hero', layout: 'hero-vitrine' }, ...Array.from({ length: 6 }, (_, i) => ({ id: `g${i}`, layout: 'galeria' }))] }, { businessName: 'D' })
+  const short = Object.values(photoPlan(many, { businessName: 'D', niche: 'Escola' })).flat().map((photo) => photo.url)
+  assert.equal(new Set(short).size, short.length)
+  // Estética automotiva usa fotos de carro, não de salão de beleza.
+  assert.match(photosFor('Estética automotiva')[0].about, /carro/)
+  assert.ok(photosFor('Barbearia').every((photo) => !/escritório/.test(photo.about)))
   assert.ok(usedPhotos({ a: '<img src="https://images.unsplash.com/photo-1?w=800">' }).has('https://images.unsplash.com/photo-1'))
 })
 

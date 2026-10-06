@@ -663,11 +663,21 @@ const split = (c: BlockContent, t: BlockTokens) => {
 </section>`
 }
 
+// Foto de apoio ao lado do título (colunas de texto ficavam vazias sem ela).
+function sidePhoto(c: BlockContent, t: BlockTokens, aspect = 'aspect-[4/3]'): string {
+  if (!t.photos[0]) return ''
+  return `<div class="reveal relative mt-10">
+        <div aria-hidden="true" class="absolute -inset-3 -z-10 ${r(t).rc} bg-gradient-to-br from-brand/20 to-accent/10 blur-2xl"></div>
+        <div${has(t, 'image-reveal') ? ' data-fx="image-reveal"' : ''} class="group overflow-hidden ${r(t).rc} shadow-xl">${photo(t, c, 0, `${aspect} w-full object-cover transition duration-700 ease-out group-hover:scale-105`)}</div>
+      </div>`
+}
+
 const editorial = (c: BlockContent, t: BlockTokens) => `<section id="${t.id}" class="bg-${t.bg} py-24 text-${t.tx} md:py-32">
   <div class="mx-auto grid max-w-7xl gap-12 px-5 md:grid-cols-[0.9fr_1.1fr] md:gap-20 md:px-10">
     <div class="md:sticky md:top-28 md:self-start">
       ${heading(c, t)}
       ${c.primary ? `<div class="mt-9">${primaryButton(c, t)}</div>` : ''}
+      ${sidePhoto(c, t)}
     </div>
     <ol class="divide-y divide-${t.tx}/10 border-y border-${t.tx}/10">
       ${items(c, 6)
@@ -682,20 +692,25 @@ const editorial = (c: BlockContent, t: BlockTokens) => `<section id="${t.id}" cl
 
 const listaIcones = (c: BlockContent, t: BlockTokens) => {
   const list = items(c, 6)
-  const cols = list.length === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : list.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'
-  return wrap(
-    t,
-    `${heading(c, t, true)}
-    <div data-fx="stagger" class="mt-14 grid gap-px overflow-hidden ${r(t).rc} border border-${t.tx}/10 bg-${t.tx}/10 ${cols}">
-      ${list
-        .map(
-          (item) =>
-            `<div class="bg-${t.bg} p-8 transition-colors duration-300 hover:bg-${t.tx}/[0.03]"><span class="grid size-12 place-items-center ${r(t).ri} bg-gradient-to-br from-brand to-accent text-${t.btx} shadow-lg shadow-brand/25">${icon(item.icon)}</span><h3 class="mt-6 font-display text-lg font-semibold">${esc(item.title)}</h3>${item.text ? `<p class="mt-2 leading-relaxed text-${t.tx}/70">${esc(item.text)}</p>` : ''}</div>`,
-        )
-        .join('\n      ')}
+  const card = (item: BlockItem) =>
+    `<div class="bg-${t.bg} p-8 transition-colors duration-300 hover:bg-${t.tx}/[0.03]"><span class="grid size-12 place-items-center ${r(t).ri} bg-gradient-to-br from-brand to-accent text-${t.btx} shadow-lg shadow-brand/25">${icon(item.icon)}</span><h3 class="mt-6 font-display text-lg font-semibold">${esc(item.title)}</h3>${item.text ? `<p class="mt-2 leading-relaxed text-${t.tx}/70">${esc(item.text)}</p>` : ''}</div>`
+  const grid = (cols: string) =>
+    `<div data-fx="stagger" class="grid gap-px overflow-hidden ${r(t).rc} border border-${t.tx}/10 bg-${t.tx}/10 ${cols}">
+      ${list.map(card).join('\n      ')}
+    </div>`
+  const fx = has(t, 'pattern') ? ' data-fx="pattern" data-pattern="dots"' : ''
+  if (t.photos[0]) {
+    return wrap(
+      t,
+      `<div class="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+      <div>${heading(c, t)}${sidePhoto(c, t, 'aspect-[4/3] lg:aspect-[4/5]')}</div>
+      <div class="lg:self-center">${grid(list.length === 1 ? '' : 'sm:grid-cols-2')}</div>
     </div>`,
-    has(t, 'pattern') ? ' data-fx="pattern" data-pattern="dots"' : '',
-  )
+      fx,
+    )
+  }
+  const cols = list.length === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : list.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'
+  return wrap(t, `${heading(c, t, true)}\n    <div class="mt-14">${grid(cols)}</div>`, fx)
 }
 
 const listaPrecos = (c: BlockContent, t: BlockTokens) => {
@@ -775,9 +790,15 @@ const passos = (c: BlockContent, t: BlockTokens) => {
     )
   }
   const cols = list.length >= 4 ? 'md:grid-cols-4' : list.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'
+  const top = t.photos[0]
+    ? `<div class="grid items-end gap-10 md:grid-cols-2 md:gap-16">
+      ${heading(c, t)}
+      <div class="reveal group overflow-hidden ${r(t).rc} shadow-xl">${photo(t, c, 0, 'aspect-[16/10] w-full object-cover transition duration-700 ease-out group-hover:scale-105')}</div>
+    </div>`
+    : heading(c, t)
   return wrap(
     t,
-    `${heading(c, t)}
+    `${top}
     <div class="relative mt-16">
       <div aria-hidden="true" class="absolute left-6 right-6 top-6 hidden h-px bg-gradient-to-r from-brand via-accent/60 to-transparent md:block"></div>
       <ol data-fx="stagger" class="relative grid gap-10 md:gap-6 ${cols}">
@@ -840,6 +861,7 @@ const letreiro = (c: BlockContent, t: BlockTokens) => {
 
 const faixaDestaque = (c: BlockContent, t: BlockTokens) => `<section id="${t.id}" class="bg-${t.bg} px-3 py-16 md:py-24">
   <div class="reveal relative isolate mx-auto max-w-7xl overflow-hidden ${r(t).rc} border border-${t.dtx}/10 bg-${t.dk} px-6 py-16 text-center text-${t.dtx} md:px-16 md:py-24"${sectionFx(t)}>
+    ${t.photos[0] ? `${photo(t, { ...c, alts: [''] }, 0, 'absolute inset-0 -z-30 size-full object-cover opacity-30')}<div aria-hidden="true" class="absolute inset-0 -z-20 bg-gradient-to-b from-${t.dk}/40 via-${t.dk}/70 to-${t.dk}"></div>` : ''}
     <div aria-hidden="true" class="absolute left-1/2 top-0 -z-10 h-[30rem] w-[52rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/45 blur-[110px]"></div>
     <div aria-hidden="true" class="absolute inset-0 -z-10 bg-[radial-gradient(currentColor_1px,transparent_1px)] bg-[size:22px_22px] opacity-[0.08] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]"></div>
     <h2${has(t, 'scrub-text') ? ' data-fx="scrub-text"' : ''} class="mx-auto max-w-3xl font-display text-[clamp(2.25rem,5.2vw,4.25rem)] font-bold leading-[1.04] tracking-tight">${has(t, 'scrub-text') ? esc(c.title) : titled(c, t)}</h2>
@@ -853,6 +875,7 @@ const faq = (c: BlockContent, t: BlockTokens) => `<section id="${t.id}" class="b
     <div class="md:sticky md:top-28 md:self-start">
       ${heading(c, t)}
       ${c.primary ? `<div class="mt-9">${primaryButton(c, t)}</div>` : ''}
+      ${sidePhoto(c, t)}
     </div>
     <div class="space-y-3">
       ${items(c, 8)
@@ -876,27 +899,34 @@ function factIcon(label: string): string {
 
 const contato = (c: BlockContent, t: BlockTokens) => {
   const facts = (c.facts ?? []).slice(0, 4)
+  // Sem destino de contato o botão apontaria para a própria seção.
+  const action = c.primary && !t.wa.startsWith('#')
+  // Em fundo da cor da marca, o cartão vira o painel escuro (antes sumia no fundo).
+  const onBrand = t.bg === 'brand'
+  const cardBg = onBrand ? `bg-${t.dk} text-${t.dtx}` : `bg-brand text-${t.btx}`
+  const button = onBrand ? `bg-brand text-${t.btx}` : `bg-${t.btx} text-brand`
+  const side = facts.length
+    ? `<div class="reveal ${r(t).rc} border border-${t.tx}/10 bg-${t.tx}/[0.04] p-8 md:p-12">
+      ${c.note ? `<h3 class="font-display text-xl font-semibold">${esc(c.note)}</h3>` : ''}
+      <dl class="mt-6 divide-y divide-${t.tx}/10">
+        ${facts.map((fact) => `<div class="flex gap-4 py-5"><dt class="${onBrand ? '' : 'text-brand'}">${icon(factIcon(fact.label))}<span class="sr-only">${esc(fact.label)}</span></dt><dd><strong class="block font-semibold">${esc(fact.label)}</strong><span class="text-${t.tx}/70">${esc(fact.value)}</span></dd></div>`).join('\n        ')}
+      </dl>
+    </div>`
+    : t.photos[0]
+      ? `<div class="reveal group relative min-h-[18rem] overflow-hidden ${r(t).rc}">${photo(t, c, 0, 'absolute inset-0 size-full object-cover transition duration-700 ease-out group-hover:scale-105')}</div>`
+      : ''
   return `<section id="${t.id}" class="bg-${t.bg} py-24 text-${t.tx} md:py-32">
-  <div class="mx-auto grid max-w-7xl gap-5 px-5 ${facts.length ? 'md:grid-cols-[1.2fr_1fr]' : ''} md:px-10">
-    <div class="reveal relative isolate flex flex-col justify-between overflow-hidden ${r(t).rc} bg-brand p-8 text-${t.btx} md:p-12">
-      <div aria-hidden="true" class="absolute -right-24 -top-24 -z-10 size-72 rounded-full bg-white/15 blur-3xl"></div>
+  <div class="mx-auto grid max-w-7xl gap-5 px-5 ${side ? 'md:grid-cols-[1.2fr_1fr]' : ''} md:px-10">
+    <div class="reveal relative isolate flex flex-col justify-between overflow-hidden ${r(t).rc} ${cardBg} p-8 md:p-12">
+      <div aria-hidden="true" class="absolute -right-24 -top-24 -z-10 size-72 rounded-full ${onBrand ? 'bg-brand/40' : 'bg-white/15'} blur-3xl"></div>
       <div>
         ${c.kicker ? `<p class="text-sm font-semibold uppercase tracking-[0.18em] opacity-80">${esc(c.kicker)}</p>` : ''}
         <h2 class="mt-4 font-display text-[clamp(2rem,4.4vw,3.4rem)] font-bold leading-[1.05] tracking-tight">${esc(c.title)}</h2>
         ${c.subtitle ? `<p class="mt-4 max-w-md text-lg opacity-80">${esc(c.subtitle)}</p>` : ''}
       </div>
-      ${c.primary ? `<a href="${esc(t.wa)}"${external(t.wa)} class="group mt-12 inline-flex min-h-14 w-fit items-center gap-3 ${r(t).rb} bg-${t.btx} px-7 font-semibold text-brand shadow-lg transition hover:-translate-y-0.5">${/wa\.me|whatsapp/.test(t.wa) ? WHATSAPP_ICON : ''}${esc(c.primary)}</a>` : ''}
+      ${action ? `<a href="${esc(t.wa)}"${external(t.wa)} class="group mt-12 inline-flex min-h-14 w-fit items-center gap-3 ${r(t).rb} ${button} px-7 font-semibold shadow-lg transition hover:-translate-y-0.5">${/wa\.me|whatsapp/.test(t.wa) ? WHATSAPP_ICON : ''}${esc(c.primary)}</a>` : ''}
     </div>
-    ${
-      facts.length
-        ? `<div class="reveal ${r(t).rc} border border-${t.tx}/10 bg-${t.tx}/[0.03] p-8 md:p-12">
-      ${c.note ? `<h3 class="font-display text-xl font-semibold">${esc(c.note)}</h3>` : ''}
-      <dl class="mt-6 divide-y divide-${t.tx}/10">
-        ${facts.map((fact) => `<div class="flex gap-4 py-5"><dt class="text-brand">${icon(factIcon(fact.label))}<span class="sr-only">${esc(fact.label)}</span></dt><dd><strong class="block font-semibold">${esc(fact.label)}</strong><span class="text-${t.tx}/70">${esc(fact.value)}</span></dd></div>`).join('\n        ')}
-      </dl>
-    </div>`
-        : ''
-    }
+    ${side}
   </div>
 </section>`
 }
@@ -1140,7 +1170,7 @@ export const BLOCKS: Record<string, Block> = {
     kind: 'section',
     name: 'Lista numerada com título fixo ao lado',
     when: 'Diferenciais, especialidades, áreas de atuação (advocacia, consultoria, saúde). Elegante.',
-    photos: 0,
+    photos: 1,
     fields: 'kicker, title, highlight, subtitle, items (3 a 6: title, text), primary',
     render: editorial,
     sample: S(ITEM(4)),
@@ -1149,7 +1179,7 @@ export const BLOCKS: Record<string, Block> = {
     kind: 'section',
     name: 'Grade de diferenciais com linhas finas',
     when: '3, 4 ou 6 diferenciais curtos com ícones em quadrado degradê. Limpo e organizado.',
-    photos: 0,
+    photos: 1,
     fields: 'kicker, title, highlight, subtitle, items (3, 4 ou 6: title, text, icon)',
     render: listaIcones,
     sample: S(ITEM(6)),
@@ -1180,7 +1210,7 @@ export const BLOCKS: Record<string, Block> = {
     kind: 'section',
     name: 'Etapas ligadas por uma linha de luz',
     when: 'Como funciona / como agendar: 3 ou 4 etapas reais.',
-    photos: 0,
+    photos: 1,
     fields: 'kicker, title, highlight, subtitle, items (3 ou 4: title, text)',
     render: passos,
     sample: S(ITEM(4)),
@@ -1231,7 +1261,7 @@ export const BLOCKS: Record<string, Block> = {
     kind: 'section',
     name: 'Painel de chamada com brilho',
     when: 'Chamada para a ação perto do fim: painel escuro com brilho da marca, título forte e botão.',
-    photos: 0,
+    photos: 1,
     fields: 'title (frase forte), highlight, subtitle, primary',
     render: faixaDestaque,
     sample: S([], { title: 'Frase forte que leva à ação', highlight: 'ação' }),
@@ -1240,7 +1270,7 @@ export const BLOCKS: Record<string, Block> = {
     kind: 'section',
     name: 'Perguntas frequentes em 2 colunas',
     when: 'Dúvidas reais do nicho: título fixo à esquerda, perguntas abrindo à direita.',
-    photos: 0,
+    photos: 1,
     fields: 'kicker, title, subtitle, items (5 a 7: title = pergunta, text = resposta completa), primary opcional',
     render: faq,
     sample: S([{ title: 'Pergunta real?', text: 'Resposta completa e útil.' }]),
@@ -1249,7 +1279,7 @@ export const BLOCKS: Record<string, Block> = {
     kind: 'section',
     name: 'Contato: cartão da marca + informações',
     when: 'Fechamento com o botão de contato grande num cartão na cor da marca e, ao lado, só as informações que existem.',
-    photos: 0,
+    photos: 1,
     fields: 'kicker, title, subtitle, primary, note (título do quadro de informações), facts (só dados reais: label = Cidade/Horário/Endereço, value)',
     render: contato,
     sample: S([], {
