@@ -84,9 +84,10 @@ export function PlanSection() {
         )}
       </div>
       {usage && usage.copilot_limit !== null && usage.sites_limit !== null && (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <UsageMeter label="Mensagens do CS Copilot hoje" used={usage.copilot_used} limit={usage.copilot_limit} />
           <UsageMeter label="Sites criados hoje" used={usage.sites_used} limit={usage.sites_limit} />
+          {usage.edits_limit != null && <UsageMeter label="Alterações de sites hoje" used={usage.edits_used ?? 0} limit={usage.edits_limit} />}
         </div>
       )}
       {status.state !== 'exempt' && (

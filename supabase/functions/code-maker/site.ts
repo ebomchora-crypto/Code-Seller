@@ -96,6 +96,8 @@ export interface SitePlan {
   cta?: string
   /** Frase curta do rodapé. */
   tagline?: string
+  /** Acabamento dos títulos (da receita do site). */
+  look?: 'clean' | 'bold' | 'soft'
   sections: PlanSection[]
   globalRequirementIds?: string[]
   specification?: CodeMakerSpecification
@@ -514,6 +516,283 @@ export const AUTO_EFFECTS = [
   'image-reveal', 'tilt', 'pattern', 'shimmer', 'scrub-text', 'stack', 'horizontal', 'count', 'scroll-progress', 'smooth-scroll',
 ]
 
+// ---------------------------------------------------------------------------
+// Receita de cada site: o diretor de arte repetia sempre o mesmo topo, o mesmo
+// tema claro e as mesmas seções — os sites só mudavam o texto. A receita é
+// sorteada pelo código (evitando o que a pessoa usou nos últimos sites) e o
+// plano é obrigado a segui-la: topo, cabeçalho, tema, fontes, blocos, efeitos
+// e acabamento. O pedido do usuário (fonte ou tema pedidos) continua vencendo.
+// ---------------------------------------------------------------------------
+
+export type SiteLook = 'clean' | 'bold' | 'soft'
+
+export interface SiteRecipe {
+  hero: string
+  header: string
+  theme: 'dark' | 'light'
+  /** Pares de fontes permitidos (o plano escolhe um). */
+  fonts: { display: string; body: string }[]
+  /** Blocos que o site tem de ter. */
+  blocks: string[]
+  effects: string[]
+  look: SiteLook
+}
+
+type FontMood = 'modern' | 'elegant' | 'strong' | 'friendly' | 'craft'
+const FONT_PAIRS: Record<FontMood, [string, string][]> = {
+  modern: [
+    ['Space Grotesk', 'IBM Plex Sans'],
+    ['Unbounded', 'Onest'],
+    ['Syne', 'Work Sans'],
+    ['Manrope', 'Public Sans'],
+    ['Plus Jakarta Sans', 'Inter'],
+    ['Sora', 'Figtree'],
+    ['Bricolage Grotesque', 'Hanken Grotesk'],
+  ],
+  elegant: [
+    ['Fraunces', 'Figtree'],
+    ['Cormorant Garamond', 'Manrope'],
+    ['Playfair Display', 'Source Sans 3'],
+    ['DM Serif Display', 'DM Sans'],
+    ['Instrument Serif', 'Hanken Grotesk'],
+    ['Gloock', 'Karla'],
+    ['Young Serif', 'Libre Franklin'],
+  ],
+  strong: [
+    ['Oswald', 'Source Sans 3'],
+    ['Bebas Neue', 'Work Sans'],
+    ['Archivo Black', 'Archivo'],
+    ['Anton', 'Karla'],
+    ['Big Shoulders Display', 'Public Sans'],
+  ],
+  friendly: [
+    ['Fredoka', 'Figtree'],
+    ['Baloo 2', 'Nunito Sans'],
+    ['Nunito', 'Nunito Sans'],
+    ['Quicksand', 'Nunito'],
+  ],
+  craft: [
+    ['Caprasimo', 'Karla'],
+    ['Abril Fatface', 'Lato'],
+    ['Young Serif', 'Figtree'],
+  ],
+}
+
+const GROUP_MOODS: Record<string, FontMood[]> = {
+  barbearia: ['strong', 'elegant'],
+  salao: ['elegant', 'friendly', 'modern'],
+  saude: ['modern', 'elegant'],
+  carros: ['strong', 'modern'],
+  auto: ['strong', 'modern'],
+  comida: ['craft', 'elegant', 'strong'],
+  juridico: ['elegant', 'modern'],
+  fitness: ['strong', 'modern'],
+  pet: ['friendly', 'modern'],
+  casa: ['elegant', 'modern'],
+  escola: ['friendly', 'modern'],
+  loja: ['strong', 'modern', 'elegant'],
+  hospedagem: ['elegant', 'craft'],
+  eventos: ['elegant', 'craft'],
+  fotografia: ['elegant', 'modern'],
+  tecnologia: ['modern', 'strong'],
+  pessoal: ['modern', 'elegant'],
+}
+
+const STYLE_MOODS: Partial<Record<SiteStyle, FontMood[]>> = {
+  elegant: ['elegant'],
+  dark: ['modern', 'strong'],
+  minimal: ['modern', 'elegant'],
+  vibrant: ['friendly', 'modern', 'strong'],
+}
+
+// Topos que combinam com cada ramo (todos com foto grande, menos o hero-brilho).
+const GROUP_HEROES: Record<string, string[]> = {
+  loja: ['hero-vitrine', 'hero-editorial', 'hero-cinema', 'hero-dividido'],
+  comida: ['hero-vitrine', 'hero-cinema', 'hero-mundo', 'hero-editorial'],
+  carros: ['hero-cinema', 'hero-vitrine', 'hero-neon', 'hero-editorial'],
+  auto: ['hero-cinema', 'hero-dividido', 'hero-neon', 'hero-editorial'],
+  barbearia: ['hero-cinema', 'hero-editorial', 'hero-neon', 'hero-dividido'],
+  fitness: ['hero-neon', 'hero-cinema', 'hero-editorial', 'hero-dividido'],
+  tecnologia: ['hero-neon', 'hero-brilho', 'hero-dividido', 'hero-editorial'],
+  pessoal: ['hero-retrato', 'hero-neon', 'hero-dividido', 'hero-mundo'],
+  hospedagem: ['hero-mundo', 'hero-cinema', 'hero-editorial', 'hero-dividido'],
+  eventos: ['hero-mundo', 'hero-cinema', 'hero-editorial'],
+  casa: ['hero-mundo', 'hero-cinema', 'hero-editorial', 'hero-dividido'],
+  salao: ['hero-mundo', 'hero-editorial', 'hero-dividido', 'hero-cinema'],
+  saude: ['hero-dividido', 'hero-mundo', 'hero-cinema', 'hero-brilho'],
+  juridico: ['hero-cinema', 'hero-dividido', 'hero-mundo', 'hero-editorial'],
+  pet: ['hero-dividido', 'hero-mundo', 'hero-editorial', 'hero-cinema'],
+  escola: ['hero-dividido', 'hero-mundo', 'hero-editorial'],
+  fotografia: ['hero-editorial', 'hero-mundo', 'hero-cinema'],
+}
+const PHOTO_BLOCKS = ['cards-foto', 'carrossel', 'galeria', 'bento', 'split']
+const ACCENT_BLOCKS = ['letreiro', 'faixa-destaque', 'lista-precos', 'planos']
+const ENTRANCE_FX = ['split-text', 'blur-in']
+const INTERACTION_FX = ['magnetic', 'tilt', 'image-reveal', 'gradient-text', 'annotate', 'shimmer']
+
+function hashOf(text: string): number {
+  let hash = 2166136261
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 16777619)
+  return hash >>> 0
+}
+
+// Escolhe pelo sorteio do site, preferindo o que não apareceu nos últimos sites.
+function pick<T>(options: T[], avoid: T[], seed: string): T {
+  const fresh = options.filter((option) => !avoid.includes(option))
+  const pool = fresh.length ? fresh : options
+  return pool[hashOf(seed) % pool.length]
+}
+
+function pickMany<T>(options: T[], avoid: T[], count: number, seed: string): T[] {
+  const chosen: T[] = []
+  for (let i = 0; i < count; i++) {
+    const rest = options.filter((option) => !chosen.includes(option))
+    if (!rest.length) break
+    chosen.push(pick(rest, avoid, `${seed}:${i}`))
+  }
+  return chosen
+}
+
+/** Receita sorteada para um site novo (`recent` = planos dos últimos sites da pessoa). */
+export function siteRecipe(brief: SiteBrief, recent: Partial<SitePlan>[], seed: string): SiteRecipe {
+  const group = photoGroup(brief.niche)
+  const hasPhotos = Boolean(group) || Boolean(brief.assets?.some((asset) => asset.kind === 'photo'))
+  const recentHeroes = recent.map((plan) => plan.sections?.[0]?.layout).filter(Boolean) as string[]
+  const recentLayouts = recent.slice(0, 2).flatMap((plan) => plan.sections?.map((section) => section.layout ?? '') ?? [])
+  const recentFonts = recent.map((plan) => plan.fonts?.display).filter(Boolean) as string[]
+  const recentEffects = recent.slice(0, 3).flatMap((plan) => plan.effects ?? [])
+  const darkShare = recent.length ? recent.filter((plan) => plan.theme === 'dark').length / recent.length : 0
+
+  const style = brief.style ?? 'auto'
+  const theme: 'dark' | 'light' =
+    style === 'dark' ? 'dark' : style === 'minimal' || style === 'vibrant' ? 'light' : darkShare < 1 / 3 ? 'dark' : hashOf(`${seed}:tema`) % 2 ? 'dark' : 'light'
+
+  let heroes = hasPhotos ? (GROUP_HEROES[group ?? ''] ?? ['hero-cinema', 'hero-mundo', 'hero-dividido', 'hero-editorial']) : ['hero-brilho', 'hero-neon', 'hero-dividido']
+  if (theme === 'light') heroes = heroes.filter((hero) => hero !== 'hero-neon')
+  if (!heroes.length) heroes = ['hero-dividido']
+  const hero = pick(heroes, recentHeroes.slice(0, 4), `${seed}:topo`)
+  const header = hero === 'hero-cinema' || hero === 'hero-retrato' ? 'menu-barra' : pick(['menu-pilula', 'menu-barra'], recent.slice(0, 1).map((plan) => plan.header ?? ''), `${seed}:menu`)
+
+  const moods = STYLE_MOODS[style] ?? GROUP_MOODS[group ?? ''] ?? ['modern', 'elegant', 'strong']
+  const pairs = moods.flatMap((mood) => FONT_PAIRS[mood])
+  const fonts = pickMany(pairs, pairs.filter(([display]) => recentFonts.includes(display)), 3, `${seed}:fontes`).map(([display, body]) => ({ display, body }))
+
+  const blocks = [
+    ...(hasPhotos ? pickMany(PHOTO_BLOCKS, recentLayouts, 2, `${seed}:fotos`) : []),
+    pick(ACCENT_BLOCKS, recentLayouts, `${seed}:destaque`),
+  ]
+
+  const backgrounds = ['hero-cinema', 'hero-mundo', 'hero-retrato'].includes(hero) ? ['grain', 'aurora'] : ['grain', 'aurora', 'dot-grid', 'particles']
+  const interactions = ['hero-cinema', 'hero-mundo'].includes(hero) ? [...INTERACTION_FX, 'parallax'] : INTERACTION_FX
+  const effects = [
+    pick(ENTRANCE_FX, recentEffects, `${seed}:entrada`),
+    pick(backgrounds, recentEffects, `${seed}:fundo`),
+    pick(interactions, recentEffects, `${seed}:interacao`),
+  ]
+
+  const look = pick<SiteLook>(['clean', 'bold', 'soft'], recent.slice(0, 1).map((plan) => plan.look ?? 'clean'), `${seed}:acabamento`)
+  return { hero, header, theme, fonts, blocks, effects, look }
+}
+
+export function recipeMessage(recipe: SiteRecipe): string {
+  const name = (id: string) => `${id} (${BLOCKS[id]?.name ?? id})`
+  return [
+    'RECEITA OBRIGATÓRIA DESTE SITE (sorteada para este site não sair igual aos anteriores; siga à risca e monte o resto em volta dela — só o pedido explícito do usuário, como uma fonte ou um tema pedido, vence a receita):',
+    `- Topo (layout do hero): ${name(recipe.hero)}`,
+    `- Cabeçalho: ${recipe.header}`,
+    `- Tema: ${recipe.theme === 'dark' ? 'ESCURO — "theme": "dark", paper e surface escuros (com a cor do negócio), ink claro' : 'CLARO — "theme": "light", paper e surface claros, ink quase preto'}`,
+    `- Fontes: use um destes pares: ${recipe.fonts.map((pair) => `"${pair.display}"+"${pair.body}"`).join(', ')}`,
+    `- Blocos que o site precisa ter (em seções cujo conteúdo combine): ${recipe.blocks.map(name).join('; ')}`,
+    `- Efeitos já escolhidos: ${recipe.effects.join(', ')} (pode somar no máximo mais 1)`,
+  ].join('\n')
+}
+
+function mixHex(a: string, b: string, weight: number): string {
+  const channel = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16)
+  return `#${[0, 1, 2]
+    .map((i) => Math.round(channel(a, i) * (1 - weight) + channel(b, i) * weight).toString(16).padStart(2, '0'))
+    .join('')}`
+}
+
+// O diretor de arte ignorou o tema da receita: refaz os fundos e o texto a
+// partir da cor da marca (a identidade continua, só a luz muda).
+function paletteFor(palette: SitePlan['palette'], theme: 'dark' | 'light'): SitePlan['palette'] {
+  const next =
+    theme === 'dark'
+      ? { ...palette, paper: mixHex(palette.brand, '#0a0a0c', 0.9), surface: mixHex(palette.brand, '#0a0a0c', 0.82), ink: '#f4f2ee', muted: '#a8a6a1' }
+      : { ...palette, paper: mixHex(palette.brand, '#ffffff', 0.95), surface: mixHex(palette.brand, '#ffffff', 0.88), ink: '#15171c', muted: '#5d6168' }
+  if (contrastRatio(next.brand, next.paper) < 3) {
+    next.brand = mixHex(palette.brand, theme === 'dark' ? '#ffffff' : '#000000', 0.35)
+    next.brandDark = mixHex(next.brand, '#000000', 0.25)
+  }
+  return next
+}
+
+function freeId(plan: SitePlan, id: string): string {
+  let candidate = id
+  for (let i = 2; plan.sections.some((section) => section.id === candidate); i++) candidate = `${id}-${i}`
+  return candidate
+}
+
+const GENERIC_BLOCKS = ['lista-icones', 'editorial', 'bento', 'split', 'cards-foto', 'carrossel']
+const PRICE_SECTIONS = /preco|cardapio|tabela|valor|plano|pacote/
+
+/** Aplica a receita ao plano (topo, cabeçalho, tema, fontes, blocos, efeitos, acabamento). */
+export function applyRecipe(plan: SitePlan, recipe: SiteRecipe, brief: SiteBrief): SitePlan {
+  const asked = normalize(brief.details ?? '')
+  const next: SitePlan = { ...plan, palette: { ...plan.palette }, sections: plan.sections.map((section) => ({ ...section })) }
+  next.sections[0] = { ...next.sections[0], layout: recipe.hero }
+  next.header = recipe.header
+  next.look = recipe.look
+  if (next.theme !== recipe.theme && !/escur|preto|dark|claro|branco|light/.test(asked)) {
+    next.palette = paletteFor(next.palette, recipe.theme)
+    next.theme = recipe.theme
+  }
+  if (!recipe.fonts.some((pair) => pair.display === next.fonts.display) && !asked.includes(normalize(next.fonts.display))) {
+    next.fonts = recipe.fonts[0] ?? next.fonts
+  }
+  next.effects = [...new Set([...recipe.effects, ...(plan.effects ?? [])])].slice(0, MAX_EFFECTS)
+
+  const bgAround = (index: number): SectionBackground => {
+    const near = [next.sections[index - 1]?.bg, next.sections[index]?.bg]
+    return (['surface', 'paper', 'ink'] as SectionBackground[]).find((bg) => !near.includes(bg)) ?? 'surface'
+  }
+  const beforeEnd = () => {
+    const end = next.sections.findIndex((section) => /^(faq|duvidas|perguntas|contato)/.test(section.id))
+    return end > 0 ? end : next.sections.length
+  }
+  for (const block of recipe.blocks) {
+    if (next.sections.some((section) => section.layout === block)) continue
+    if (block === 'letreiro') {
+      next.sections.splice(1, 0, { id: freeId(next, 'destaques'), label: 'Destaques', brief: 'Palavras curtas com os serviços, produtos ou especialidades do negócio.', bg: 'brand', layout: block })
+      continue
+    }
+    if (block === 'faixa-destaque') {
+      const at = beforeEnd()
+      next.sections.splice(at, 0, { id: freeId(next, 'chamada'), label: 'Chamada', brief: 'Chamada forte para a ação principal do site.', bg: bgAround(at), layout: block })
+      continue
+    }
+    // A galeria só tem legendas: entra como seção nova, sem tomar o lugar de
+    // uma seção de serviços (perderia as descrições).
+    const target = block === 'galeria' ? -1 : next.sections.findIndex(
+      (section, i) =>
+        i > 0 &&
+        GENERIC_BLOCKS.includes(section.layout ?? '') &&
+        !recipe.blocks.includes(section.layout ?? '') &&
+        next.sections[i - 1]?.layout !== block &&
+        next.sections[i + 1]?.layout !== block &&
+        (!['lista-precos', 'planos'].includes(block) || PRICE_SECTIONS.test(section.id)),
+    )
+    if (target > 0) {
+      next.sections[target] = { ...next.sections[target], layout: block }
+    } else if (block === 'galeria') {
+      const at = beforeEnd()
+      next.sections.splice(at, 0, { id: freeId(next, 'galeria'), label: 'Galeria', brief: 'Fotos do ambiente, dos trabalhos e dos detalhes do negócio.', bg: bgAround(at), layout: block })
+    }
+  }
+  return next
+}
+
 export const PLAN_SYSTEM = `Você é o diretor de arte do Code Maker. Você planeja sites de alto nível para pequenos negócios brasileiros. Nesta etapa você NÃO escreve HTML: define a direção de arte e a estrutura.
 
 Responda exatamente neste formato, sem nada antes ou depois:
@@ -583,7 +862,7 @@ PARES DE FONTES (todas do Google Fonts; escolha o que tem a cara do negócio e v
 - amigável/família: "Nunito"+"Nunito Sans", "Quicksand"+"Nunito", "Baloo 2"+"Nunito Sans", "Fredoka"+"Figtree", "Poppins"+"Poppins"
 - artesanal/comida: "Caprasimo"+"Karla", "Abril Fatface"+"Lato", "Young Serif"+"Figtree"`
 
-export function buildPlanMessage(brief: SiteBrief, includeLiteral = true): string {
+export function buildPlanMessage(brief: SiteBrief, includeLiteral = true, recipe?: SiteRecipe): string {
   const phone = phoneDigits(brief.phone)
   return [
     brief.businessName ? `Negócio: ${brief.businessName}` : 'Negócio: (tire o nome e os dados do pedido abaixo)',
@@ -599,6 +878,7 @@ export function buildPlanMessage(brief: SiteBrief, includeLiteral = true): strin
       ? 'Fotos: não há banco de fotos deste ramo, só fotos genéricas de escritório e equipe. Prefira blocos com pouca ou nenhuma foto (hero-brilho, editorial, lista-icones, passos, lista-precos, planos, faq) e resolva o visual com tipografia, cor e os fundos dos blocos.'
       : null,
     brief.specification ? `Especificação completa com IDs obrigatórios:\n${JSON.stringify(brief.specification)}` : null,
+    recipe ? recipeMessage(recipe) : null,
     includeLiteral && brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
   ]
     .filter(Boolean)
@@ -748,6 +1028,7 @@ export function blockTokens(partId: string, plan: SitePlan, brief: SiteBrief, ph
     next: index >= 0 && after ? `#${after.id}` : '#contato',
     photos,
     fx: plan.effects ?? [],
+    look: plan.look ?? 'clean',
   }
 }
 
@@ -1149,6 +1430,7 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
     ...(['round', 'soft', 'sharp'].includes(input.radius) ? { radius: input.radius } : {}),
     ...(planEffects(input.effects).length ? { effects: planEffects(input.effects) } : {}),
     ...(blockFor(input.header, ['header']) ? { header: blockFor(input.header, ['header'])! } : {}),
+    ...(['clean', 'bold', 'soft'].includes(input.look) ? { look: input.look } : {}),
     ...(typeof input.cta === 'string' && input.cta.trim() ? { cta: input.cta.replace(/\s+/g, ' ').trim().slice(0, 40) } : {}),
     ...(typeof input.tagline === 'string' && input.tagline.trim() ? { tagline: stripInventedClaims(input.tagline.replace(/\s+/g, ' ').trim(), brief).slice(0, 140) } : {}),
     ...(typeof input.signature === 'string' && input.signature.trim()
@@ -1174,7 +1456,7 @@ function cleanText(value: unknown, max: number): string | null {
   return text && text.toLowerCase() !== 'null' ? text : null
 }
 
-export function parsePlan(text: string, brief: SiteBrief): { actions: string[]; plan: SitePlan | null; business: BusinessInfo | null } {
+export function parsePlan(text: string, brief: SiteBrief, recipe?: SiteRecipe): { actions: string[]; plan: SitePlan | null; business: BusinessInfo | null } {
   const raw = text.match(/<plano>([\s\S]*?)<\/plano>/i)?.[1]
   let plan: SitePlan | null = null
   let business: BusinessInfo | null = null
@@ -1182,6 +1464,7 @@ export function parsePlan(text: string, brief: SiteBrief): { actions: string[]; 
     try {
       const json = JSON.parse(raw.trim().replace(/^```(?:json)?|```$/g, ''))
       plan = normalizePlan(json, brief)
+      if (plan && recipe) plan = applyRecipe(plan, recipe, brief)
       const info = json?.business
       if (info && typeof info === 'object') {
         business = {

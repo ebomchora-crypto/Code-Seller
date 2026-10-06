@@ -440,3 +440,54 @@ test('conteúdo continuado em duas chamadas (cerca reaberta) ainda é lido', asy
   const text = ['```json\n{"title":"Cortes do jeito', '```json\n que você pede","items":[{"title":"Corte"}]}\n```']
   assert.equal(parseContent(text[0] + text[1]).title, 'Cortes do jeito que você pede')
 })
+
+test('receita: cada site sai diferente dos anteriores e o plano é obrigado a seguir', async () => {
+  const { siteRecipe, applyRecipe, recipeMessage, blockTokens } = await import('../../supabase/functions/code-maker/site.ts')
+  const clinic = { businessName: 'Clínica', niche: 'Clínica de estética' }
+  const raw = {
+    title: 'x',
+    theme: 'light',
+    palette: { brand: '#9d4b6b', brandDark: '#7a3552', accent: '#d9a26b', ink: '#1c1917', paper: '#faf7f5', surface: '#f2e9ec', muted: '#78716c' },
+    fonts: { display: 'Sora', body: 'Figtree' },
+    sections: [{ id: 'hero', layout: 'hero-brilho' }, { id: 'servicos', layout: 'lista-icones' }, { id: 'como-funciona', layout: 'passos' }, { id: 'diferenciais', layout: 'editorial' }, { id: 'faq', layout: 'faq' }, { id: 'contato', layout: 'contato' }],
+  }
+  // Mesmo pedido, seis sites seguidos: topos, fontes e temas variam.
+  const recent = []
+  for (let i = 0; i < 6; i++) {
+    const recipe = siteRecipe(clinic, recent, `site-${i}`)
+    assert.deepEqual(siteRecipe(clinic, recent, `site-${i}`), recipe) // o sorteio é estável para o mesmo site
+    const plan = applyRecipe(normalizePlan(raw, clinic), recipe, clinic)
+    assert.equal(plan.sections[0].layout, recipe.hero)
+    assert.equal(plan.header, recipe.header)
+    assert.equal(plan.theme, recipe.theme)
+    assert.ok(recipe.fonts.some((pair) => pair.display === plan.fonts.display))
+    for (const block of recipe.blocks.filter((id) => !['lista-precos', 'planos'].includes(id))) assert.ok(plan.sections.some((section) => section.layout === block), block)
+    assert.deepEqual(plan.effects.slice(0, 3), recipe.effects)
+    if (i > 0) assert.notEqual(plan.sections[0].layout, recent[0].sections[0].layout)
+    recent.unshift(plan)
+  }
+  assert.ok(new Set(recent.map((plan) => plan.sections[0].layout)).size >= 3)
+  assert.ok(new Set(recent.map((plan) => plan.fonts.display)).size >= 4)
+  assert.ok(recent.some((plan) => plan.theme === 'dark') && recent.some((plan) => plan.theme === 'light'))
+  // Tema trocado pela receita: fundos escuros com texto claro, contraste garantido.
+  const dark = applyRecipe(normalizePlan(raw, clinic), { ...siteRecipe(clinic, [], 'x'), theme: 'dark' }, clinic)
+  assert.equal(dark.palette.ink, '#f4f2ee')
+  assert.ok(contrastOf(dark.palette.ink, dark.palette.paper) > 7)
+  // O pedido do usuário vence: fonte e tema pedidos ficam.
+  const asked = { ...clinic, details: 'Quero a fonte Sora e site claro' }
+  const kept = applyRecipe(normalizePlan(raw, asked), { ...siteRecipe(asked, [], 'y'), theme: 'dark' }, asked)
+  assert.equal(kept.fonts.display, 'Sora')
+  assert.equal(kept.theme, 'light')
+  // O acabamento chega aos blocos e a receita vai na mensagem do plano.
+  assert.equal(blockTokens('servicos', { ...kept, look: 'bold' }, asked, []).look, 'bold')
+  assert.match(recipeMessage(siteRecipe(clinic, [], 'z')), /RECEITA OBRIGATÓRIA[\s\S]*Topo/)
+})
+
+function contrastOf(a, b) {
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+  }
+  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p)
+  return (x + 0.05) / (y + 0.05)
+}

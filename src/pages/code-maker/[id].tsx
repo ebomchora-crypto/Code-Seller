@@ -33,7 +33,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui/Spinner'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { deleteSite, restoreSiteVersion, updateSite, type SiteVersion } from '@/services/supabase/codeMaker'
+import { deleteSite, getCodeMakerUsage, restoreSiteVersion, updateSite, type CodeMakerUsage, type SiteVersion } from '@/services/supabase/codeMaker'
 import { downloadName, publicSiteUrl, SLUG_PATTERN, slugify } from '@/utils/codeMakerStream'
 import { isReservedSlug } from '../../../supabase/functions/code-maker/site'
 import { useCodeMakerShell } from './layout'
@@ -70,6 +70,19 @@ export default function CodeMakerEditorPage() {
   const [reloadKey, setReloadKey] = useState(0)
   const autoStarted = useRef(false)
   const attachments = useAttachments()
+  // Alterações de hoje (o limite vale para todos os sites e landing pages).
+  const [usage, setUsage] = useState<CodeMakerUsage | null>(null)
+  useEffect(() => {
+    if (busy) return
+    let alive = true
+    getCodeMakerUsage()
+      .then((value) => alive && setUsage(value))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [busy, builder.versions.length])
+  const editsLeft = usage?.edits_limit != null ? Math.max(0, usage.edits_limit - usage.edits_today) : null
 
   // Chegou do "Criar site": começa a gerar sozinho.
   useEffect(() => {
@@ -547,6 +560,12 @@ export default function CodeMakerEditorPage() {
                 )}
               </div>
             </div>
+            {usage?.edits_limit != null && (
+              <p className={`mt-1.5 px-1 text-[11.5px] ${editsLeft === 0 ? 'text-amber-500' : 'text-[var(--text-muted)]'}`}>
+                {usage.edits_today} de {usage.edits_limit} alterações hoje
+                {editsLeft === 0 ? ' · o limite libera amanhã' : ''}
+              </p>
+            )}
           </form>
         </section>
 

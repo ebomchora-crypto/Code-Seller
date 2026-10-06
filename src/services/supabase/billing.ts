@@ -30,6 +30,8 @@ export interface UsageToday {
   copilot_limit: number | null
   sites_used: number
   sites_limit: number | null
+  edits_used?: number
+  edits_limit?: number | null
 }
 
 /** Uso de hoje e limites do plano (null = sem limite). */

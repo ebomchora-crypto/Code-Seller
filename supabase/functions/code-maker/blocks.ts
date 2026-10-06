@@ -49,6 +49,8 @@ export interface BlockTokens {
   photos: string[]
   /** Efeitos escolhidos no plano: os blocos aplicam onde fazem sentido. */
   fx: string[]
+  /** Acabamento dos títulos: limpo, forte (caixa alta com traço) ou suave (selo). */
+  look?: 'clean' | 'bold' | 'soft'
 }
 
 export interface Block {
@@ -189,9 +191,23 @@ function badge(c: BlockContent, t: BlockTokens, onPhoto = false): string {
 }
 
 function heading(c: BlockContent, t: BlockTokens, center = false): string {
+  const look = t.look ?? 'clean'
+  const kicker = !c.kicker
+    ? ''
+    : look === 'bold'
+      ? `<p class="flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.22em] text-brand ${center ? 'justify-center' : ''}"><span class="h-px w-10 bg-brand"></span>${esc(c.kicker)}</p>`
+      : look === 'soft'
+        ? `<p class="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/10 px-3.5 py-1 text-xs font-semibold text-brand"><span class="size-1.5 rounded-full bg-brand"></span>${esc(c.kicker)}</p>`
+        : `<p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand">${esc(c.kicker)}</p>`
+  const title =
+    look === 'bold'
+      ? 'font-bold uppercase leading-[0.98] tracking-tight'
+      : look === 'soft'
+        ? 'font-semibold leading-[1.08] tracking-tight'
+        : 'font-bold leading-[1.04] tracking-tight'
   return `<div class="reveal ${center ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'}">
-      ${c.kicker ? `<p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand">${esc(c.kicker)}</p>` : ''}
-      <h2 class="mt-4 font-display text-[clamp(2rem,4.6vw,3.6rem)] font-bold leading-[1.04] tracking-tight">${titled(c, t)}</h2>
+      ${kicker}
+      <h2 class="mt-4 font-display text-[clamp(2rem,4.6vw,3.6rem)] ${title}">${titled(c, t)}</h2>
       ${c.subtitle ? `<p class="mt-5 ${center ? 'mx-auto ' : ''}max-w-xl text-lg leading-relaxed text-${t.tx}/70">${esc(c.subtitle)}</p>` : ''}
     </div>`
 }

@@ -38,6 +38,7 @@ import {
   stripMissingInfo,
   parsePlan,
   partOrder,
+  siteRecipe,
   PART_SYSTEM,
   PLAN_SYSTEM,
   type SiteBrief,
@@ -529,6 +530,12 @@ Deno.serve(async (req: Request) => {
       }
       if (!partial) await admin.from('code_maker_calls').insert({ user_id: user.id, kind: 'plan' })
       let planningBrief = site.brief
+      // Receita sorteada para este site, fugindo do que a pessoa usou nos
+      // últimos sites (antes todos saíam com o mesmo topo, tema e seções).
+      const { data: recentRows, error: recentError } = await admin.from('sites').select('plan')
+        .eq('user_id', user.id).neq('id', site.id).not('plan', 'is', null).order('created_at', { ascending: false }).limit(6)
+      if (recentError) throw recentError
+      const recipe = siteRecipe(site.brief, (recentRows ?? []).map((row: { plan: SitePlan }) => row.plan), site.id)
       return streamAi({
         apiKey,
         model,
@@ -550,16 +557,16 @@ Deno.serve(async (req: Request) => {
             const {error} = await admin.from('sites').update({brief:planningBrief}).eq('id',site.id)
             if (error) throw error
           }
-          const literal = buildPlanMessage(planningBrief)
-          const content = literal.length + PLAN_SYSTEM.length < inputBudget ? literal : buildPlanMessage(planningBrief,false)
+          const literal = buildPlanMessage(planningBrief, true, recipe)
+          const content = literal.length + PLAN_SYSTEM.length < inputBudget ? literal : buildPlanMessage(planningBrief, false, recipe)
           return [{role:'system',content:PLAN_SYSTEM},{role:'user',content}]
         },
         messages: [
           { role: 'system', content: PLAN_SYSTEM },
-          { role: 'user', content: buildPlanMessage(site.brief) },
+          { role: 'user', content: buildPlanMessage(site.brief, true, recipe) },
         ],
         finish: async (full, signal) => {
-          const { actions, plan: parsedPlan, business } = parsePlan(full, planningBrief)
+          const { actions, plan: parsedPlan, business } = parsePlan(full, planningBrief, recipe)
           if (!parsedPlan) {
             await admin.from('sites').update({ status: 'error' }).eq('id', site.id)
             return 'A IA não conseguiu planejar o site. Tente gerar de novo.'
