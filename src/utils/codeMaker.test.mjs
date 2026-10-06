@@ -491,3 +491,10 @@ function contrastOf(a, b) {
   const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p)
   return (x + 0.05) / (y + 0.05)
 }
+
+test('receita: pedido livre sem ramo preenchido ainda usa as fotos e blocos do ramo', async () => {
+  const { siteRecipe } = await import('../../supabase/functions/code-maker/site.ts')
+  const recipe = siteRecipe({ businessName: '', niche: null, details: 'Site pra clínica de estética Dra Vanessa Vasconcelos' }, [], 'abc')
+  assert.ok(recipe.hero !== 'hero-brilho' || recipe.blocks.length === 3)
+  assert.equal(recipe.blocks.length, 3) // 2 blocos de fotos + 1 de destaque
+})
