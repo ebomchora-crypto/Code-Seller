@@ -58,12 +58,10 @@ export function readCommercialSignals(message: string): CommercialRequestSignals
 
 // Depois da prévia (seção 3 da metodologia): a próxima etapa é a reunião.
 export const AFTER_PROTOTYPE_RULES = [
-  'DEPOIS DA PRÉVIA — a próxima etapa da metodologia é a REUNIÃO. A mensagem pronta tem que puxar a reunião, não só "deixar aberto":',
-  '1) Uma frase entregando a prévia ("Segue a prévia que montei pro [negócio]").',
-  '2) Uma frase dizendo que é um ponto de partida: cores, textos e fotos mudam do jeito que o cliente quiser.',
-  '3) Convite direto para uma conversa rápida (10 a 15 minutos), sem compromisso, para ouvir o que ele gostou e o que mudaria.',
-  '4) Termine perguntando o melhor horário com duas opções concretas ("Fica melhor hoje à tarde ou amanhã de manhã?"). Nada de "se preferir, podemos conversar" nem "fico à disposição".',
-  '5) No máximo 4 linhas curtas de WhatsApp, sem "como te falei", sem explicar como o projeto funciona e sem preço.',
+  'DEPOIS DA PRÉVIA — o objetivo da mensagem é marcar a conversa (reunião rápida, sem compromisso), não deixar no ar.',
+  'A mensagem precisa: entregar a prévia (com o link se o usuário passou um), deixar claro que ela muda do jeito que o cliente quiser, convidar para uma conversa curta para ouvir o que ele achou e terminar com uma pergunta de horário fácil de responder.',
+  'Escreva com palavras suas, no jeito do usuário e do lead (nome do negócio, tratamento, o que já foi conversado): NÃO repita frases prontas como "segue a prévia que montei", "ponto de partida" ou "10 a 15 minutinhos" se já apareceram na conversa, e varie a pergunta de horário.',
+  'Nada de "se preferir, podemos conversar" ou "fico à disposição". Até 4 linhas curtas, sem preço e sem explicar como o projeto funciona.',
 ].join(' ')
 
 // Primeira abordagem pela metodologia (Área do aluno: "A primeira mensagem" e
@@ -82,8 +80,8 @@ export const FIRST_CONTACT_RULES = [
 export function commercialRequestGuidance(message: string): string {
   const signals = readCommercialSignals(message)
   const rules = [`Formato desta resposta comercial: ${signals.mode}.`]
-  if (signals.mode === 'quick_reply') rules.push('Abra com uma frase, traga a mensagem pronta logo em seguida (em <mensagem_pronta>) e explique em 2 ou 3 pontos por que ela funciona; feche com o próximo passo.')
-  if (signals.mode === 'analysis') rules.push('Entregue a análise comercial completa, em texto organizado: leitura do lead, risco, ação com o porquê, mensagem pronta e próximo passo.')
+  if (signals.mode === 'quick_reply') rules.push('O usuário quer o que mandar: uma frase de contexto, a mensagem pronta (em <mensagem_pronta>) e, depois, só o que for útil de verdade — o que esperar da resposta ou o que fazer em seguida —, em prosa curta. Nada de seção "Por que funciona" nem lista de justificativas óbvias.')
+  if (signals.mode === 'analysis') rules.push('Entregue a análise como um consultor explicaria a um colega: o que está acontecendo com esse lead, o que fazer agora e por quê, a mensagem pronta e o próximo passo. Use subtítulos só se a resposta for longa.')
   if (signals.mode === 'objection') rules.push('Identifique a objeção com cautela, explique o objetivo da resposta e dê uma mensagem pronta com próximo passo.')
   if (signals.mode === 'follow_up') rules.push('Indique quando agir e por quê, gere um follow-up curto e defina o que fazer se não houver resposta.')
   if (signals.meetingRefused) rules.push('O lead recusou reunião: não insista em reunião e continue pelo canal escolhido.')

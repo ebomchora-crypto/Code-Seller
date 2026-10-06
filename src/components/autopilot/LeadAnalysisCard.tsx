@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { BriefcaseBusiness, CalendarPlus, CircleHelp, Copy, MessageCircle, MoveRight, RotateCw, Save, Scissors, Sparkles } from 'lucide-react'
+import { CalendarPlus, Check, Copy, MessageCircle, RotateCw, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/Button'
 import { SendMessageModal } from '@/components/messages/SendMessageModal'
@@ -44,6 +44,7 @@ export function LeadAnalysisCard({ message, contact, sending, onPrompt, onSaved,
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [copied, setCopied] = useState(false)
   const lock = useRef(false)
   const candidate = message.analysis
   if (!candidate) return null
@@ -55,7 +56,8 @@ export function LeadAnalysisCard({ message, contact, sending, onPrompt, onSaved,
   async function copyMessage() {
     try {
       await navigator.clipboard.writeText(analysis.suggested_message)
-      toast.success('Mensagem copiada.')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
     } catch {
       toast.error('Não foi possível copiar.')
     }
@@ -86,20 +88,25 @@ export function LeadAnalysisCard({ message, contact, sending, onPrompt, onSaved,
 
   function renderSection(section: CommercialResponseSection) {
     if (section === 'reading') return <Reading key={section} analysis={analysis} />
-    if (section === 'message') return <section key={section} aria-label="Mensagem pronta" className="rounded-lg border border-[var(--accent-ring)] bg-[var(--accent-tint)] p-4 sm:p-5">
-      <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">Mensagem pronta</h3>
-      <p className="mt-3 select-text whitespace-pre-wrap text-[14.5px] leading-7 text-[var(--text-primary)]">{analysis.suggested_message}</p>
-      <div className="mt-4 flex flex-wrap gap-1.5">
-        <Button size="sm" onClick={() => void copyMessage()}><Copy className="size-4" />Copiar mensagem</Button>
-        <Button size="sm" variant="secondary" disabled={sending} onClick={() => onPrompt('Gere outra versão desta mensagem, preservando os fatos e o objetivo comercial.', response)}><RotateCw className="size-4" />Gerar outra</Button>
-        <Button size="sm" variant="secondary" disabled={sending} onClick={() => onPrompt('Deixe esta mensagem mais curta, sem perder o objetivo comercial.', response)}><Scissors className="size-4" />Mais curta</Button>
-        <Button size="sm" variant="secondary" disabled={sending} onClick={() => onPrompt('Reescreva esta mensagem de forma mais natural para WhatsApp.', response)}><Sparkles className="size-4" />Mais natural</Button>
-        <Button size="sm" variant="secondary" disabled={sending} onClick={() => onPrompt('Reescreva esta mensagem com tom mais profissional, sem ficar rígida.', response)}><BriefcaseBusiness className="size-4" />Mais profissional</Button>
-        <Button size="sm" variant="secondary" disabled={sending} onClick={() => onPrompt('Deixe esta mensagem mais direta e objetiva, sem ser agressiva.', response)}><MoveRight className="size-4" />Mais direta</Button>
-        <Button size="sm" variant="secondary" disabled={sending} onClick={() => onPrompt('Explique em poucas linhas a estratégia comercial desta mensagem e o resultado esperado.', response)}><CircleHelp className="size-4" />Explicar estratégia</Button>
-        {contact && <Button size="sm" variant="secondary" onClick={() => setReplyOpen(true)}><MessageCircle className="size-4" />Usar no WhatsApp</Button>}
-      </div>
-    </section>
+    if (section === 'message') {
+      const chip = 'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[12.5px] font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50'
+      return <section key={section} aria-label="Mensagem pronta" className="overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] shadow-[0_10px_30px_-20px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] px-4 py-2">
+          <span className="inline-flex items-center gap-2 text-[12px] font-semibold text-[var(--text-muted)]"><MessageCircle className="size-3.5 text-emerald-500" />Mensagem para enviar</span>
+          <button type="button" onClick={() => void copyMessage()} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[var(--accent-tint)] px-3 text-[12.5px] font-semibold text-[var(--accent-text)] transition hover:brightness-110">
+            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied ? 'Copiada' : 'Copiar'}
+          </button>
+        </div>
+        <p className="select-text whitespace-pre-wrap px-4 py-4 text-[15px] leading-7 text-[var(--text-primary)]">{analysis.suggested_message}</p>
+        <div className="flex flex-wrap items-center gap-0.5 border-t border-[var(--border-subtle)] px-2 py-1.5">
+          <button type="button" className={chip} disabled={sending} onClick={() => onPrompt('Escreva outra versão desta mensagem, com palavras diferentes, mantendo os fatos e o objetivo.', response)}><RotateCw className="size-3.5" />Outra versão</button>
+          <button type="button" className={chip} disabled={sending} onClick={() => onPrompt('Deixe esta mensagem mais curta, sem perder o objetivo.', response)}>Mais curta</button>
+          <button type="button" className={chip} disabled={sending} onClick={() => onPrompt('Reescreva esta mensagem mais natural, como alguém digitando no WhatsApp.', response)}>Mais natural</button>
+          <button type="button" className={chip} disabled={sending} onClick={() => onPrompt('Deixe esta mensagem mais direta, sem ser agressiva.', response)}>Mais direta</button>
+          {contact && <button type="button" className={`${chip} ml-auto text-emerald-500 hover:text-emerald-400`} onClick={() => setReplyOpen(true)}><MessageCircle className="size-3.5" />Usar no WhatsApp</button>}
+        </div>
+      </section>
+    }
     if (section === 'strategy') return <p key={section} className="text-sm leading-6 text-[var(--text-secondary)]"><strong className="text-[var(--text-primary)]">Estratégia:</strong> {analysis.strategy}</p>
 
     const content = section === 'situation' ? analysis.summary
