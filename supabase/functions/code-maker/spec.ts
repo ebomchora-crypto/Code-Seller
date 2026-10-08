@@ -22,6 +22,15 @@ const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && Boolean(item.trim())).map(item => item.trim()) : []
 const unique = (values: string[]) => [...new Set(values)]
 
+// Só o que precisa de servidor é limitação de um site estático. A leitura do
+// pedido às vezes marcava como "impossível" escrever textos que o usuário não
+// mandou prontos (artigos, explicações, perguntas) — e a alteração inteira
+// voltava vazia ("Não entendi o que mudar").
+const BACKEND_LIMIT = /backend|servidor|banco de dados|base de dados|login|autentica|senha|conta de usu|cadastro de usu|[aá]rea (?:restrita|do cliente|de membros)|pagamento|checkout|carrinho|upload|envio de arquivo|armazen|persist|agendamento autom|integra[cç][aã]o com|api\b|e-?mail autom|disparo/i
+export function backendLimitations(values: string[]): string[] {
+  return values.filter((value) => BACKEND_LIMIT.test(value))
+}
+
 export function splitPromptByBoundary(text: string, maxChars: number): string[] {
   if (!Number.isInteger(maxChars) || maxChars < 2) throw new Error('Invalid context budget')
   const chunks: string[] = []
@@ -43,7 +52,7 @@ export function normalizeSpecification(raw: unknown, originalPrompt: string): Co
   const input = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {}
   const requirements: CodeMakerRequirement[] = []
   const seen = new Set<string>()
-  const limitations = strings(input.limitations)
+  const limitations = backendLimitations(strings(input.limitations))
   for (const value of Array.isArray(input.requirements) ? input.requirements : []) {
     const item = typeof value === 'string' ? {text:value} : value as Record<string, unknown>
     if (!item || typeof item.text !== 'string' || !item.text.trim()) continue
@@ -113,4 +122,4 @@ export async function prepareSpecificationContext(
 
 export const SPEC_SYSTEM = `Leia a especificação completa recebida, preservando todas as funcionalidades, regras, arquivos, dependências e critérios de conclusão. Responda apenas JSON:
 {"objective":"objetivo","requirements":[{"text":"requisito completo","scope":"frontend|backend|visual|business","validation":"como conferir"}],"constraints":[],"forbiddenChanges":[],"relevantFiles":[],"dependencies":[],"validation":[],"limitations":[]}
-Cada requisito funcional ou visual distinto deve ter um item. Não omita os últimos itens. Regras de processo (não alterar áreas externas, preservar o projeto, não truncar o pedido, seguir todos os itens) ficam em constraints ou forbiddenChanges, não viram requisitos de conteúdo HTML. Preserve literalmente instruções de NÃO ALTERAR. Não crie novos requisitos a partir de contexto repetido ou lembretes de seguir a especificação. HTML estático suporta links, menu, FAQ e contato externo; banco, autenticação própria, persistência remota, execução de servidor e testes de backend exigem backend e devem ter scope backend. Não transforme uma interface decorativa em implementação de backend. Imagens e logos anexados pelo usuário já estão hospedados: colocá-los, trocá-los ou mostrá-los no site é scope frontend. Não inclua raciocínio privado.`
+Cada requisito funcional ou visual distinto deve ter um item. Não omita os últimos itens. Regras de processo (não alterar áreas externas, preservar o projeto, não truncar o pedido, seguir todos os itens) ficam em constraints ou forbiddenChanges, não viram requisitos de conteúdo HTML. Preserve literalmente instruções de NÃO ALTERAR. Não crie novos requisitos a partir de contexto repetido ou lembretes de seguir a especificação. HTML estático suporta links, menu, FAQ, conteúdo longo (artigos, guias, textos explicativos) e contato externo; escrever textos que o usuário pediu sem mandar prontos (artigos, explicações, resumos, perguntas e respostas) é sempre possível e é scope frontend, nunca limitação. limitations é só para o que exige backend; banco, autenticação própria, persistência remota, execução de servidor e testes de backend exigem backend e devem ter scope backend. Não transforme uma interface decorativa em implementação de backend. Imagens e logos anexados pelo usuário já estão hospedados: colocá-los, trocá-los ou mostrá-los no site é scope frontend. Não inclua raciocínio privado.`

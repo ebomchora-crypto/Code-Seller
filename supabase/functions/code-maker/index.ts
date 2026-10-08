@@ -734,7 +734,10 @@ Deno.serve(async (req: Request) => {
       finish: async (full, signal) => {
         const edit = parseEdit(full)
         if (edit.parts.length === 0 && !edit.blocks?.length && !edit.replacements?.length && edit.removals.length === 0 && !edit.theme) {
-          return 'Não entendi o que mudar. Tente explicar de outro jeito.'
+          // A IA respondeu só com explicações: mostra o motivo em vez de "não entendi".
+          return edit.actions.length
+            ? `Nada foi alterado. ${edit.actions.join(' ').slice(0, 600)}`
+            : 'Não entendi o que mudar. Tente explicar de outro jeito.'
         }
         const next = applyEdit(plan, site.parts, edit, { brief, fresh })
         if (JSON.stringify(next.plan) === JSON.stringify(plan) && JSON.stringify(next.parts) === JSON.stringify(site.parts)) {

@@ -1248,7 +1248,8 @@ Depois, só o que muda:
 - Mudar cores, fontes ou idioma do site inteiro: <tema>{"palette": {...só as cores que mudam...}, "fonts": {...}, "lang": "pt-PT"}</tema> (só os campos que mudam).
 - Pedido que muda os textos do site todo (idioma, tom, tratamento): troque cada texto com <substituir>, usando como "antes" só o texto visível (sem tags nem atributos), copiado exatamente como está no código; o mesmo texto repetido muda em todos os lugares. Não esqueça menu, botões, rodapé, alt das imagens e a mensagem dos links de WhatsApp. Em idioma novo, mande também o <tema> com o "lang".
 O cabeçalho e o rodapé não são blocos: mude-os com <substituir> (ou <parte> em último caso).
-Ajuste preserva, redesenho substitui: num ajuste, mantenha a identidade do site (cores, fontes, cantos, marca registrada), os textos com fatos e tudo o que não foi pedido exatamente igual. Quando o pedido for redesenhar uma parte, troque o visual dela por completo — sem meio-termo —, mantendo o conteúdo, os fatos e a função. Nunca troque preços, contatos, endereço ou outros fatos, nem acrescente afirmações novas sobre o negócio, sem o usuário pedir. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.`
+Ajuste preserva, redesenho substitui: num ajuste, mantenha a identidade do site (cores, fontes, cantos, marca registrada), os textos com fatos e tudo o que não foi pedido exatamente igual. Quando o pedido for redesenhar uma parte, troque o visual dela por completo — sem meio-termo —, mantendo o conteúdo, os fatos e a função. Nunca troque preços, contatos, endereço ou outros fatos, nem acrescente afirmações novas sobre o negócio, sem o usuário pedir. Se o pedido afetar o menu (seção nova/removida), devolva também o cabeçalho e o rodapé atualizados.
+TEXTOS PEDIDOS: quando o usuário pede para escrever ou preencher conteúdo (explicar cada área, artigo completo de um guia, resumo de publicação, novas perguntas e respostas), ESCREVA você — não deixe de fora por falta de texto pronto. Escreva conteúdo informativo, correto e geral sobre o tema, no tom do site, sem inventar fatos específicos do negócio (números, casos, clientes, prêmios, preços, prazos, garantias). Artigo longo cabe no próprio site: dentro do item, use <details><summary>Ler artigo completo</summary>…texto em parágrafos e subtítulos…</details>. Faça TODOS os itens do pedido; deixe de fora só o que exige servidor (login, pagamento, banco de dados) ou um dado que só o usuário tem (ex.: número de WhatsApp que não existe no site), dizendo isso numa ação.`
 
 // Pedido que fala de movimento/visual recebe a biblioteca inteira; os outros
 // recebem só os efeitos que o site já usa (para mantê-los funcionando).
@@ -1657,9 +1658,17 @@ export interface EditResult {
   blocks?: { id: string; block: string; content: BlockContent; after?: string; label?: string; bg?: SectionBackground }[]
   removals: string[]
   theme: { palette?: Partial<SitePlan['palette']>; fonts?: Partial<SitePlan['fonts']>; lang?: string } | null
+  /** Itens com defeito que foram pulados. */
+  invalid?: number
 }
 
-export function parseEdit(text: string): EditResult {
+export function parseEdit(raw: string): EditResult {
+  // A resposta às vezes termina com a última tag cortada ("</substituir"):
+  // completa em vez de descartar a alteração inteira.
+  const text = raw.replace(/<\/(substituir|parte|bloco|acoes|tema)\s*$/i, '</$1>')
+  // Um item com defeito (JSON inválido, bloco sem conteúdo) é pulado e o resto
+  // vale; antes um único item ruim recusava todas as outras mudanças.
+  let invalid = 0
   const parts: EditResult['parts'] = []
   const replacements: NonNullable<EditResult['replacements']> = []
   for (const match of text.matchAll(/<substituir\s+id="([^"]+)">([\s\S]*?)<\/substituir>/gi)) {
@@ -1669,13 +1678,10 @@ export function parseEdit(text: string): EditResult {
       if (!id || typeof patch.antes !== 'string' || !patch.antes || typeof patch.depois !== 'string') throw new Error()
       replacements.push({ id, before: patch.antes, after: patch.depois })
     } catch {
-      throw new Error('A edição veio incompleta. Tente novamente.')
+      invalid++
     }
   }
-  if ((text.match(/<substituir\b/gi) ?? []).length !== replacements.length ||
-      (text.match(/<parte\b/gi) ?? []).length !== (text.match(/<\/parte>/gi) ?? []).length) {
-    throw new Error('A edição veio incompleta. Tente novamente.')
-  }
+  invalid += Math.max(0, (text.match(/<substituir\b/gi) ?? []).length - (text.match(/<\/substituir>/gi) ?? []).length)
   for (const match of text.matchAll(/<parte\s+([^>]*)>([\s\S]*?)<\/parte>/gi)) {
     const attrs = match[1]
     const id = cleanId(attrs.match(/id="([^"]+)"/i)?.[1])
@@ -1684,13 +1690,14 @@ export function parseEdit(text: string): EditResult {
     const label = attrs.match(/rotulo="([^"]+)"/i)?.[1]
     parts.push({ id, html: cleanFragment(match[2]), after: after ? cleanId(after) : undefined, label })
   }
+  invalid += Math.max(0, (text.match(/<parte\b/gi) ?? []).length - (text.match(/<\/parte>/gi) ?? []).length)
   const blocks: NonNullable<EditResult['blocks']> = []
   for (const match of text.matchAll(/<bloco\s+([^>]*)>([\s\S]*?)<\/bloco>/gi)) {
     const attrs = match[1]
     const id = cleanId(attrs.match(/id="([^"]+)"/i)?.[1])
     const block = attrs.match(/modelo="([^"]+)"/i)?.[1]?.trim() ?? ''
     const content = parseContent(match[2])
-    if (!id || !content) throw new Error('A edição veio incompleta. Tente novamente.')
+    if (!id || !content) { invalid++; continue }
     const after = attrs.match(/depois="([^"]+)"/i)?.[1]
     const label = attrs.match(/rotulo="([^"]+)"/i)?.[1]
     const bg = attrs.match(/fundo="([^"]+)"/i)?.[1]
@@ -1703,7 +1710,7 @@ export function parseEdit(text: string): EditResult {
       ...(bg && ['paper', 'surface', 'ink', 'brand'].includes(bg) ? { bg: bg as SectionBackground } : {}),
     })
   }
-  if ((text.match(/<bloco\b/gi) ?? []).length !== blocks.length) throw new Error('A edição veio incompleta. Tente novamente.')
+  invalid += Math.max(0, (text.match(/<bloco\b/gi) ?? []).length - (text.match(/<\/bloco>/gi) ?? []).length)
   const removals = [...text.matchAll(/<remover\s+id="([^"]+)"\s*\/?>/gi)].map((match) => cleanId(match[1]))
   let theme: EditResult['theme'] = null
   const rawTheme = text.match(/<tema>([\s\S]*?)<\/tema>/i)?.[1]
@@ -1714,7 +1721,10 @@ export function parseEdit(text: string): EditResult {
       theme = null
     }
   }
-  return { actions: parseActions(text), parts, replacements, ...(blocks.length ? { blocks } : {}), removals, theme }
+  if (invalid > 0 && !parts.length && !replacements.length && !blocks.length && !removals.length && !theme) {
+    throw new Error('A edição veio incompleta. Tente novamente.')
+  }
+  return { actions: parseActions(text), parts, replacements, ...(blocks.length ? { blocks } : {}), removals, theme, ...(invalid ? { invalid } : {}) }
 }
 
 // Onde está o trecho que a IA quer trocar. A IA às vezes copia o trecho com

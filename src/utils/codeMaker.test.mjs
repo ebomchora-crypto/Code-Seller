@@ -20,6 +20,7 @@ import {
   usedPhotos,
   buildPartMessage,
 } from '../../supabase/functions/code-maker/site.ts'
+import { backendLimitations } from '../../supabase/functions/code-maker/spec.ts'
 
 const brief = { businessName: 'Barbearia do João', niche: 'Barbearia', city: 'Campinas', phone: '19998887777' }
 
@@ -497,4 +498,20 @@ test('receita: pedido livre sem ramo preenchido ainda usa as fotos e blocos do r
   const recipe = siteRecipe({ businessName: '', niche: null, details: 'Site pra clínica de estética Dra Vanessa Vasconcelos' }, [], 'abc')
   assert.ok(recipe.hero !== 'hero-brilho' || recipe.blocks.length === 3)
   assert.equal(recipe.blocks.length, 3) // 2 blocos de fotos + 1 de destaque
+})
+
+test('alteração: tag final cortada e item com defeito não descartam as outras mudanças', () => {
+  const cut = parseEdit('<acoes>\n- Troquei o subtítulo\n</acoes>\n<substituir id="hero">{"antes":"A","depois":"B"}</substituir>\n<substituir id="guias">{"antes":"C","depois":"D"}</substituir')
+  assert.equal(cut.replacements.length, 2)
+  const broken = parseEdit('<substituir id="hero">{"antes":"A","depois":"B"}</substituir>\n<substituir id="faq">{antes: sem aspas}</substituir>')
+  assert.equal(broken.replacements.length, 1)
+  assert.equal(broken.invalid, 1)
+  assert.throws(() => parseEdit('<substituir id="faq">{quebrado}</substituir>'), /incompleta/)
+})
+
+test('escrever textos que o usuário não mandou prontos não vira limitação; só o que precisa de servidor', () => {
+  assert.deepEqual(backendLimitations([
+    'A solicitação não fornece os textos dos artigos completos; o conteúdo não pode ser especificado sem essas fontes.',
+    'Login de clientes: exige um backend que o publicador de sites estáticos não executa.',
+  ]), ['Login de clientes: exige um backend que o publicador de sites estáticos não executa.'])
 })
