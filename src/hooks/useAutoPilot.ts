@@ -12,6 +12,7 @@ import { sendAutoPilotMessage, summarizeCommercialMemory } from '@/integrations/
 import { generateConversationTitle, parseAutoPilotResponse } from '@/utils/autopilot'
 import { useAuthContext } from '@/stores/AuthContext'
 import { attachmentsPromptBlock, storedAttachment, type PreparedAttachment } from '@/utils/copilotAttachments'
+import { historyForModel } from '@/utils/copilotHistory'
 import { DEFAULT_COPILOT_PREFERENCES, type AutoPilotContext, type AutoPilotConversation, type AutoPilotMessage, type CopilotPreferences, type ActionStatus } from '@/types'
 
 export function useAutoPilot(contactId?: string) {
@@ -168,11 +169,9 @@ export function useAutoPilot(contactId?: string) {
         if (snapshot.selected_lead) snapshot.selected_lead.commercial_memory = memory
         if (scope === epoch.current) setActiveConversation(conversation)
       }
-      const response = await sendAutoPilotMessage(history.map((message) => ({
-        role: message.role,
-        content: message.content + attachmentsPromptBlock(message.attachments, 'history')
-          + (message.actions.length ? '\nAções registradas: ' + JSON.stringify(message.actions) : ''),
-      })), snapshot, trimmed, selectedPreferences, controller.signal,
+      // Conversa geral: a memória dela vai junto do contexto (com lead, já vem em selected_lead).
+      if (!contactId && conversation.commercial_memory) snapshot.conversation_memory = conversation.commercial_memory
+      const response = await sendAutoPilotMessage(historyForModel(history), snapshot, trimmed, selectedPreferences, controller.signal,
       attachments.length ? { text: attachmentsPromptBlock(attachments, 'current'), images } : undefined, profile,
       {
         onText: (text) => { if (scope === epoch.current) { setLiveText(text); setLiveStatus(null) } },
@@ -182,21 +181,21 @@ export function useAutoPilot(contactId?: string) {
       const answer = await saveMessage({ conversation_id: conversation.id, user_id: user.id, role: 'assistant',
         content: parsed.text, analysis: parsed.analysis, actions: parsed.actions.map((action) => ({ ...action, status: 'pending' })) })
       if (scope === epoch.current) { setMessages((current) => [...current, answer]); setLiveText(''); setLiveStatus(null) }
-      if (contactId && !controller.signal.aborted) {
-        try {
-          const memory = await summarizeCommercialMemory(snapshot.selected_lead?.commercial_memory ?? null,
-            trimmed, response, snapshot.selected_lead?.previous_analysis?.summary, controller.signal)
-          await updateCommercialMemory(conversation.id, memory)
-          if (scope === epoch.current) {
-            setActiveConversation((current) => current?.id === conversation.id ? { ...current, commercial_memory: memory } : current)
-            setContext((current) => current?.selected_lead
-              ? { ...current, selected_lead: { ...current.selected_lead, commercial_memory: memory } } : current)
-          }
-        } catch (memoryError) {
-          if (!controller.signal.aborted) toast.error(memoryError instanceof Error ? memoryError.message : 'Falha ao atualizar memória comercial.')
-        }
-      }
       if (!contactId && conversation.title === 'Nova conversa') await renameConversation(conversation.id, generateConversationTitle(trimmed))
+      // Memória estruturada (lead, preço, objeções, idioma, última mensagem…), em
+      // todas as conversas. Atualiza em segundo plano: a resposta já está na tela.
+      if (!controller.signal.aborted) {
+        const memoryConversation = conversation
+        const previousMemory = (contactId ? snapshot.selected_lead?.commercial_memory : memoryConversation.commercial_memory) ?? null
+        void summarizeCommercialMemory(previousMemory, trimmed, response, snapshot.selected_lead?.previous_analysis?.summary)
+          .then(async (memory) => {
+            await updateCommercialMemory(memoryConversation.id, memory)
+            setActiveConversation((current) => current?.id === memoryConversation.id ? { ...current, commercial_memory: memory } : current)
+            if (contactId) setContext((current) => current?.selected_lead
+              ? { ...current, selected_lead: { ...current.selected_lead, commercial_memory: memory } } : current)
+          })
+          .catch((memoryError) => console.warn('[CS Copilot] Memória da conversa não atualizada:', memoryError instanceof Error ? memoryError.message : memoryError))
+      }
     } catch (err) { if (scope === epoch.current && !controller.signal.aborted) setError(err instanceof Error ? err.message : 'Falha ao consultar o CS Copilot.') }
     finally { if (abortRef.current === controller) abortRef.current = null; sendLock.current = false; setSending(false); setLiveText(''); setLiveStatus(null) }
   }, [user, loading, contactId, activeConversation, messages, hasOlder, preferences, renameConversation, loadCommercialProfile])

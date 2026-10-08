@@ -12,6 +12,11 @@ export interface ReviewOptions {
   mode?: string
   /** A prévia já foi (ou está sendo) enviada: a mensagem tem que puxar a reunião. */
   afterPrototype?: boolean
+  /** O lead achou caro ou pediu desconto: desconto não pode sair sozinho nem inventado. */
+  priceObjection?: boolean
+  discountRequested?: boolean
+  /** Instruções + contexto: um percentual ou valor de desconto só vale se aparecer aqui. */
+  allowedText?: string
 }
 
 function normalize(value: string): string {
@@ -29,6 +34,18 @@ export function isFirstContactRequest(request: string): boolean {
 // Mesmo critério de src/utils/copilotGuidance.ts (AFTER_PROTOTYPE / MEETING_REFUSED).
 const AFTER_PROTOTYPE = /(?:depois|apos|agora que|ja) (?:de |que |da |do )?(?:eu )?(?:enviar|mandar|mandei|enviei|mostrar|mostrei|entregar|entreguei)?\s?(?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:enviei|mandei|mostrei|vou enviar|vou mandar|como envio|como mando|segue) (?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:prototipo|previa) (?:ja )?(?:enviad|mandad|pront)/
 const MEETING_REFUSED = /nao (?:quero|vou|posso|consigo|quer|pode) (?:fazer )?(?:reuniao|call|ligacao)|sem (?:reuniao|call)|so por (?:aqui|mensagem|whatsapp)|(?:pode|prefiro) (?:explicar|falar) por aqui/
+
+// Mesmo critério de src/utils/copilotGuidance.ts (PRICE_OBJECTION / DISCOUNT).
+const PRICE_OBJECTION = /esta caro|ta caro|ficou caro|muito caro|achou caro|acha caro|achando caro|caro demais|passou do orcamento|fora do orcamento|proposta mais barata/
+const DISCOUNT_REQUEST = /desconto|faz(?:er)? por menos|(?:baixar|abaixar|reduzir|melhorar) (?:o |um pouco o |esse )?(?:preco|valor)|faz(?:er)? mais barato|chorou (?:o )?preco|pechinch/
+
+export function isPriceObjectionRequest(request: string): boolean {
+  return PRICE_OBJECTION.test(normalize(request))
+}
+
+export function isDiscountRequest(request: string): boolean {
+  return DISCOUNT_REQUEST.test(normalize(request))
+}
 
 export function isAfterPrototypeRequest(request: string): boolean {
   const text = normalize(request)
@@ -63,6 +80,25 @@ const FAKE_URGENCY = [
   ['por tempo limitado', 'por tempo limitado'],
   ['oferta relampago', 'oferta relâmpago'],
 ] as const
+
+// Frases que servem para qualquer empresa e não podem substituir argumento.
+const GENERIC = [
+  ['gostaria de apresentar', 'gostaria de apresentar meus serviços'],
+  ['solucao inovadora', 'solução inovadora'],
+  ['merece um site', 'seu negócio merece um site'],
+  ['aguardo seu retorno', 'aguardo seu retorno'],
+  ['aguardo o seu retorno', 'aguardo seu retorno'],
+  ['aguardo retorno', 'aguardo retorno'],
+  ['so passando para saber', 'só passando para saber'],
+  ['so passando pra saber', 'só passando para saber'],
+  ['passando para saber se', 'passando para saber'],
+  ['fico a disposicao', 'fico à disposição'],
+  ['fico a sua disposicao', 'fico à disposição'],
+  ['estou a disposicao', 'estou à disposição'],
+] as const
+// Desconto oferecido na mensagem.
+const DISCOUNT_OFFER = /(?:consigo|posso|faco|dou|te dou|ofereco|oferecer|dar|fazer|aplico|aplicar) (?:um |uma |te |lhe |para voce |pra voce )?(?:desconto|abatimento|condicao especial)|\d+ ?% (?:de desconto|off|a menos)|desconto de \d/
+const PERCENT = /\d+(?:[.,]\d+)? ?%/g
 
 export const FIRST_CONTACT_MAX_LINES = 5
 export const FIRST_CONTACT_MAX_CHARS = 480
@@ -113,6 +149,20 @@ export function reviewSuggestedMessage(message: string, options: ReviewOptions):
     }
   }
 
+  const generic = [...new Set(GENERIC.filter(([needle]) => plain.includes(needle)).map(([, label]) => label))]
+  if (generic.length) {
+    problems.push({ code: 'generic', message: `Usa frase genérica que serviria para qualquer empresa: ${generic.join(', ')}. Troque por algo específico deste lead ou por um pedido concreto.` })
+  }
+  if (options.priceObjection && !options.discountRequested && DISCOUNT_OFFER.test(plain)) {
+    problems.push({ code: 'auto_discount', message: 'Oferece desconto logo na objeção de preço. Primeiro descubra se a trava é orçamento ou valor e reforce o que está incluído; não baixe o preço do mesmo escopo.' })
+  }
+  if (options.discountRequested || options.priceObjection) {
+    const allowed = normalize(options.allowedText ?? '')
+    const invented = (text.match(PERCENT) ?? []).filter((value) => !allowed.includes(value.replace(/\s/g, '')) && !allowed.includes(value))
+    if (invented.length) {
+      problems.push({ code: 'invented_discount', message: `Cita percentual que não está no perfil nem no contexto (${invented.join(', ')}). Não invente desconto: use [desconto] ou ofereça ajuste de escopo.` })
+    }
+  }
   if (MASS_OUTREACH.test(plain)) {
     problems.push({ code: 'mass_outreach', message: 'Soa como disparo em massa ("estou entrando em contato com algumas empresas").' })
   }
@@ -137,8 +187,8 @@ export function reviewRewritePrompt(problems: ReviewProblem[], options: ReviewOp
     options.firstContact
       ? `Primeira abordagem: comece pelo negócio do lead, sem se apresentar; no máximo ${FIRST_CONTACT_MAX_LINES} linhas curtas; termine com uma pergunta simples (ex.: pedir permissão para mostrar).`
       : options.afterPrototype
-        ? 'Depois da prévia: em 3 ou 4 linhas curtas, diga que é um ponto de partida que dá para ajustar, que quer ouvir a opinião do cliente, convide para uma conversa rápida sem compromisso e termine perguntando o melhor horário com duas opções concretas.'
-        : 'Mantenha curta e natural, como WhatsApp real.',
+        ? 'Depois da prévia: entregue a prévia, deixe claro que ela muda conforme o que o cliente quiser e termine convidando para uma conversa curta, sem compromisso, com uma pergunta de horário fácil de responder — com palavras suas, específicas para esse lead.'
+        : 'Mantenha natural, como WhatsApp real, e específica para esse lead.',
     'Mantenha o idioma, os fatos, os nomes, os preços e os marcadores entre colchetes da mensagem original. Não acrescente fatos, preços, prazos ou promessas.',
     'Responda SOMENTE com o texto final da mensagem, sem aspas, sem título e sem explicação.',
   ].join('\n')

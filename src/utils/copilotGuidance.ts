@@ -13,6 +13,14 @@ export interface CommercialRequestSignals {
   afterPrototype: boolean
   /** Pergunta curta e direta: resposta curta, sem análise completa. */
   shortQuestion: boolean
+  /** O lead visualizou e não respondeu. */
+  viewedNoReply: boolean
+  /** O lead pediu desconto ou para baixar o valor. */
+  discountRequested: boolean
+  /** Ajustar a última mensagem pronta ("mais persuasiva", "mais curta", "outra versão"). */
+  refineRequest: boolean
+  /** Lead ou pedido em português de Portugal. */
+  portuguesePortugal: boolean
 }
 
 function normalize(value: string): string {
@@ -25,15 +33,23 @@ const FIRST_CONTACT = /primeir[oa]s? (?:contato|mensage(?:m|ns)|abordage(?:m|ns)
 const AFTER_PROTOTYPE = /(?:depois|apos|agora que|ja) (?:de |que |da |do )?(?:eu )?(?:enviar|mandar|mandei|enviei|mostrar|mostrei|entregar|entreguei)?\s?(?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:enviei|mandei|mostrei|vou enviar|vou mandar|como envio|como mando|segue) (?:o |a |um |uma |meu |minha )?(?:prototipo|previa)|(?:prototipo|previa) (?:ja )?(?:enviad|mandad|pront)/
 const MEETING_REFUSED = /nao (?:quero|vou|posso|consigo|quer|pode) (?:fazer )?(?:reuniao|call|ligacao)|sem (?:reuniao|call)|so por (?:aqui|mensagem|whatsapp)|(?:pode|prefiro) (?:explicar|falar) por aqui/
 // Pedido explícito para escrever uma mensagem.
+// Silêncio depois de ver a mensagem.
+const VIEWED_NO_REPLY = /visualiz|\b(?:viu|leu) e nao (?:respond|falou|disse)|vacuo|ficou no visto|so (?:viu|visualizou)/
+const PRICE_OBJECTION = /esta caro|ta caro|ficou caro|muito caro|achou caro|acha caro|achando caro|caro demais|passou do orcamento|fora do orcamento|proposta mais barata/
+const DISCOUNT = /desconto|faz(?:er)? por menos|(?:baixar|abaixar|reduzir|melhorar) (?:o |um pouco o |esse )?(?:preco|valor)|faz(?:er)? mais barato|chorou (?:o )?preco|pechinch/
+// Ajuste da mensagem anterior.
+const REFINE = /\b(?:deixa|deixe|deixar|torna|torne|tornar|faz|faca|fazer|fica|escreve|escreva)\b.{0,24}\bmais (?:persuasiv|curt|natural|diret|formal|informal|leve|human|profission|convincente|objetiv|simpatic|educad|empolgant|firme)|\b(?:melhora|melhore|melhorar)\b(?! (?:o |um pouco o |esse |seu )?(?:preco|valor|orcamento))|\b(?:reescreve|reescreva|reescrever|refaz|refaca|refazer|encurta|encurte)\b|outra (?:versao|opcao)|\bmais (?:curta|curto|persuasiva|persuasivo|natural|direta|direto)\b|(?:agora|passa|passe|traduz|coloca|versao) (?:em|para|pro|pra) (?:pt-?pt|portugues de portugal|portugues europeu)/
+const PORTUGAL = /portugal|pt-?pt|portugues (?:de portugal|europeu)|lisboa|\bporto\b(?! (?:alegre|seguro|velho|de galinhas|belo|nacional|feliz))|braga|coimbra|\bfaro\b|setubal|aveiro|madeira|acores/
 const WRITE_MESSAGE = /\b(?:faz|faca|fazer|cria|crie|criar|escreve|escreva|escrever|gera|gere|gerar|monta|monte|montar|me da|me de|manda|preciso de) (?:uma |a |umas |as )?(?:mensage(?:m|ns)|msg|texto|copy)/
 
 export function inferCommercialResponseMode(message: string): CommercialResponseMode {
   const text = normalize(message)
   if (FIRST_CONTACT.test(text)) return 'quick_reply'
   if (/analis[ae]|analise detalhada|leitura completa/.test(text)) return 'analysis'
-  if (/follow[ -]?up|sumiu|sem resposta|nao respondeu|retomar|recuperar lead/.test(text)) return 'follow_up'
-  if (/quebr(?:ar|e) (?:a )?objecao|esta caro|ficou caro|vou pensar|falar com (?:meu )?socio|proposta mais barata|quero desconto/.test(text)) return 'objection'
-  if (/o ?que (?:eu )?(?:respondo|mando|envio|falo|digo|escrevo)|responde (?:isso|pra mim)|mensagem sugerida|manda o valor|quanto custa|qual (?:e )?o valor|como (?:eu )?(?:respondo|mando|envio|falo)/.test(text)) return 'quick_reply'
+  if (REFINE.test(text) && !FIRST_CONTACT.test(text)) return 'quick_reply'
+  if (/follow[ -]?up|sumiu|sem resposta|nao respondeu|retomar|recuperar lead/.test(text) || VIEWED_NO_REPLY.test(text)) return 'follow_up'
+  if (/quebr(?:ar|e) (?:a )?objecao|vou pensar|falar com (?:meu )?socio/.test(text) || PRICE_OBJECTION.test(text) || DISCOUNT.test(text)) return 'objection'
+  if (/o ?que (?:eu )?(?:respondo|mando|envio|falo|digo|escrevo)|responde (?:isso|pra mim)|mensagem sugerida|manda o valor|quanto (?:custa|fica|sai|cobra)\b|qual (?:e )?o (?:valor|preco)|como (?:eu )?(?:respondo|mando|envio|falo)/.test(text)) return 'quick_reply'
   if (AFTER_PROTOTYPE.test(text)) return 'quick_reply'
   if (WRITE_MESSAGE.test(text)) return 'quick_reply'
   return 'analysis'
@@ -44,15 +60,19 @@ export function readCommercialSignals(message: string): CommercialRequestSignals
   return {
     mode: inferCommercialResponseMode(message),
     meetingRefused: MEETING_REFUSED.test(text),
-    priceRequested: /quanto custa|qual (?:e )?o valor|manda (?:o )?valor|passa (?:o )?preco|so (?:quero|manda) (?:o )?(?:preco|valor)/.test(text),
+    priceRequested: /quanto (?:custa|fica|sai|cobra|e)\b|qual (?:e )?o (?:valor|preco)|manda (?:o )?valor|passa (?:o )?preco|so (?:quero|manda) (?:o )?(?:preco|valor)/.test(text),
     // Cliente cobrando o valor de novo ou antes de qualquer conversa.
     priceInsisted: /mas (?:quanto|qual (?:e )?o (?:valor|preco))|quero saber (?:o )?(?:preco|valor)|me passa (?:o )?(?:valor|preco)|ja (?:perguntei|pedi)|fala (?:o )?(?:valor|preco)|so (?:quero|manda) (?:o )?(?:preco|valor)/.test(text),
-    priceObjection: /esta caro|ficou caro|muito caro|passou do orcamento|proposta mais barata|quero desconto/.test(text),
+    priceObjection: PRICE_OBJECTION.test(text),
     positiveInterest: /gostei|curti|interessante|ficou (?:bom|otimo)|quero avancar/.test(text),
     prototypeFollowUp: /(?:enviei|mandei).{0,80}(?:prototipo|previa).{0,80}(?:sumiu|sem resposta|nao respondeu|[2-9]\s*dias)/s.test(text),
     firstContact: FIRST_CONTACT.test(text),
     afterPrototype: AFTER_PROTOTYPE.test(text) && !FIRST_CONTACT.test(text),
     shortQuestion: message.trim().length <= 180 && !/analis|detalh|completa/.test(text),
+    viewedNoReply: VIEWED_NO_REPLY.test(text),
+    discountRequested: DISCOUNT.test(text),
+    refineRequest: REFINE.test(text),
+    portuguesePortugal: PORTUGAL.test(text),
   }
 }
 
@@ -83,22 +103,28 @@ export function commercialRequestGuidance(message: string): string {
   if (signals.mode === 'quick_reply') rules.push('O usuário quer o que mandar: uma frase de contexto, a mensagem pronta (em <mensagem_pronta>) e, depois, só o que for útil de verdade — o que esperar da resposta ou o que fazer em seguida —, em prosa curta. Nada de seção "Por que funciona" nem lista de justificativas óbvias.')
   if (signals.mode === 'analysis') rules.push('Entregue a análise como um consultor explicaria a um colega: o que está acontecendo com esse lead, o que fazer agora e por quê, a mensagem pronta e o próximo passo. Use subtítulos só se a resposta for longa.')
   if (signals.mode === 'objection') rules.push('Identifique a objeção com cautela, explique o objetivo da resposta e dê uma mensagem pronta com próximo passo.')
-  if (signals.mode === 'follow_up') rules.push('Indique quando agir e por quê, gere um follow-up curto e defina o que fazer se não houver resposta.')
+  if (signals.mode === 'follow_up') rules.push('Indique quando agir e por quê, gere um follow-up curto que acrescente algo novo (ideia para a prévia, observação real do negócio, pergunta fácil sobre um ponto, outro caminho como explicar por mensagem) e diga o que fazer se não houver resposta. Nada de "só passando para saber" nem cobrança.')
+  if (signals.viewedNoReply) rules.push('Visualizou e não respondeu: não é recusa (quem vê correndo esquece). Diga quando mandar — em geral 1 a 2 dias depois, em horário de trabalho do lead — e escreva um follow-up leve que acrescente algo. Não peça explicação pelo silêncio.')
+  if (signals.refineRequest) rules.push('Ajuste de mensagem: reescreva a ÚLTIMA mensagem pronta do histórico (ou a que o usuário colou) aplicando só o que foi pedido. Mantenha fatos, nomes, links, preço e objetivo; não invente nada novo para "persuadir" — persuasão vem de ser mais específico, mais claro sobre o ganho do lead e de um pedido mais fácil de responder. Entregue a nova versão em <mensagem_pronta> e diga em uma frase o que mudou. Não peça para colar a mensagem de novo se ela está no histórico.')
   if (signals.meetingRefused) rules.push('O lead recusou reunião: não insista em reunião e continue pelo canal escolhido.')
   if (signals.priceRequested || signals.priceInsisted) {
     if (signals.priceInsisted || signals.meetingRefused) {
       rules.push('O cliente insistiu no preço ou prefere mensagem: responda diretamente sobre o preço quando houver valor real, sem desviar nem irritar. Se não houver valor registrado, pergunte só o que falta para calcular.')
     } else {
-      rules.push('Há pedido de preço. Se for a primeira vez (confira o histórico) e houver abertura, tente primeiro levar para uma conversa breve, explicando que a prévia ainda pode mudar conforme a necessidade; não esconda um preço conhecido e não enrole. Se ele já perguntou antes, passe o valor direto.')
+      rules.push('Há pedido de preço. Se for a primeira vez (confira o histórico) e houver abertura: reconheça a pergunta, dê a referência real que existir no perfil ou no negócio ("fica a partir de R$ X, dependendo do que entrar") e proponha uma conversa breve para fechar o escopo, já que a prévia ainda pode mudar. Sem valor registrado, não invente: proponha a conversa ou pergunte o que falta. Se ele já perguntou antes, passe o valor direto.')
     }
   }
-  if (signals.priceObjection) rules.push('Não ofereça desconto imediatamente; descubra se a causa é orçamento ou percepção de valor antes de alterar a proposta.')
+  if (signals.priceObjection) rules.push('Objeção de preço: não ofereça desconto de cara. A mensagem descobre se a trava é orçamento ou valor percebido (uma pergunta), lembra o que está incluído e o ganho concreto para o negócio do lead e, se o perfil tiver, mostra um caminho alternativo (pacote menor, etapas, parcelamento) sem baixar o preço do mesmo escopo.')
+  if (signals.discountRequested) rules.push('Pedido de desconto: não conceda por reflexo e nunca invente percentual. Reforce o que está incluído; se o perfil comercial trouxer condição (à vista, pacote menor, parcelamento), ofereça como troca por algo (pagamento à vista, escopo menor, fechar com data de início). Sem condição registrada, a mensagem segura o valor com educação e oferece ajustar o escopo; diga ao usuário que, se quiser dar desconto, defina o limite e peça uma contrapartida.')
   if (signals.positiveInterest) rules.push('Reconheça o interesse observado sem chamar o lead de quente ou assumir intenção de compra.')
   if (signals.prototypeFollowUp) rules.push('A prévia foi enviada e houve espera: recomende um follow-up curto, sem repetir a apresentação nem pressionar.')
   else if (signals.afterPrototype && !signals.meetingRefused) rules.push(AFTER_PROTOTYPE_RULES)
   if (signals.firstContact) rules.push(FIRST_CONTACT_RULES)
-  if (signals.shortQuestion && signals.mode !== 'analysis') {
-    rules.push('Pedido curto: resposta curta. No máximo umas 120 palavras fora da mensagem pronta. Não explique a metodologia nem liste etapas; vá direto ao que fazer.')
+  if (signals.portuguesePortugal) rules.push('Português de Portugal na mensagem para o lead: vocabulário e tratamento de Portugal ("contactar", "telemóvel", "equipa", "o senhor/a senhora" ou sem pronome, "está a" em vez de gerúndio); explicações ao usuário podem seguir em português do Brasil.')
+  if (signals.refineRequest) {
+    // Ajuste de mensagem: a explicação já está na regra acima.
+  } else if (signals.shortQuestion && signals.mode !== 'analysis') {
+    rules.push('Pedido curto: resposta curta — o essencial fora da mensagem pronta, sem explicar a metodologia nem listar etapas; vá direto ao que fazer.')
   } else if (signals.shortQuestion) {
     rules.push('Pergunta curta: responda direto, como numa conversa, em poucos parágrafos. Só faça análise completa de lead se houver um lead ou conversa para analisar.')
   }

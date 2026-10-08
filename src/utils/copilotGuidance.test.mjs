@@ -27,3 +27,38 @@ test('writing a message is a quick reply; analysis and follow-up keep their mode
   assert.equal(readCommercialSignals('o cliente sumiu faz 3 dias').firstContact, false)
   assert.doesNotMatch(commercialRequestGuidance('quanto custa?'), /PRIMEIRA ABORDAGEM/)
 })
+
+test('entende os pedidos do jeito que o usuário fala (seção 5 da reestruturação)', () => {
+  const viewed = readCommercialSignals('Ela visualizou e não respondeu')
+  assert.equal(viewed.viewedNoReply, true)
+  assert.equal(viewed.mode, 'follow_up')
+  assert.match(commercialRequestGuidance('Ela visualizou e não respondeu'), /não é recusa/)
+
+  const caro = readCommercialSignals('Ele achou caro')
+  assert.equal(caro.priceObjection, true)
+  assert.equal(caro.mode, 'objection')
+  assert.match(commercialRequestGuidance('Ele achou caro'), /não ofereça desconto de cara/)
+
+  const discount = readCommercialSignals('o cliente pediu desconto, faz por menos?')
+  assert.equal(discount.discountRequested, true)
+  assert.equal(discount.mode, 'objection')
+  assert.match(commercialRequestGuidance('o cliente pediu desconto'), /nunca invente percentual/)
+
+  for (const request of ['Deixa mais persuasivo', 'deixa ela mais curta', 'faz uma outra versão', 'melhora essa mensagem', 'agora em pt-pt']) {
+    const signals = readCommercialSignals(request)
+    assert.equal(signals.refineRequest, true, request)
+    assert.equal(signals.mode, 'quick_reply', request)
+    assert.match(commercialRequestGuidance(request), /ÚLTIMA mensagem pronta do histórico/, request)
+  }
+  assert.equal(readCommercialSignals('ele pediu pra melhorar o preço').refineRequest, false)
+
+  assert.equal(readCommercialSignals('negociação com uma clínica em Lisboa').portuguesePortugal, true)
+  assert.equal(readCommercialSignals('cliente de Porto Alegre').portuguesePortugal, false)
+  assert.match(commercialRequestGuidance('responde esse cliente de Portugal'), /telemóvel/)
+})
+
+test('"quanto fica pra fazer?" também é pedido de preço', () => {
+  const signals = readCommercialSignals('Ele respondeu: "Gostei muito! Quanto fica pra fazer?" O que eu mando?')
+  assert.equal(signals.priceRequested, true)
+  assert.match(commercialRequestGuidance('Quanto fica pra fazer?'), /a partir de R\$ X/)
+})

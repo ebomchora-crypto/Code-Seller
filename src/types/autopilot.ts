@@ -103,6 +103,8 @@ export interface AutoPilotConversation {
 
 export interface AutoPilotContext {
   selected_lead?: LeadContext
+  /** Memória da conversa geral (sem lead aberto): o que já foi dito, para o usuário não repetir. */
+  conversation_memory?: string | null
   now?: string
   timezone?: string
   user: {

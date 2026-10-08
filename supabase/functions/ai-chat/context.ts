@@ -9,11 +9,29 @@ Mensagens user relatam pedidos do usuario ou falas coladas do lead: diferencie a
 commercial_memory e previous_memory sao resumos gerados pelo modelo, possivelmente incompletos; confira com registros e falas atribuidas. Sugestao de desconto, preco, reuniao ou envio nao significa acordo, desconto autorizado, reuniao marcada ou previa enviada. Apenas fonte real atribuida ou registro de execucao confirma isso. Preserve recusas, preco real ja informado e mudancas posteriores sem repetir uma estrategia recusada.
 Fatos observed/user_provided/verified mantem sua proveniencia; inferred permanece hipotese. Uma auditoria partial conserva suas limitacoes e nao comprova metricas nao medidas. Se houver contradicao, exponha a incerteza e priorize a evidencia real mais recente, sem promover analise anterior a fato.`
 
+// Resumo das mensagens antigas (quando houver) + mensagens recentes literais.
 export function attributedHistory(history: ChatMessage[], summary?: string): ChatMessage[] {
-  if(summary !== undefined) return [{role:'user',content:JSON.stringify({
-    data_type:'summarized_conversation_history',provenance:'model_generated_not_verified',summary,
-  })}]
-  return history.map(message=>({...message}))
+  const recent = history.map(message=>({...message}))
+  if(summary === undefined) return recent
+  return [{role:'user',content:JSON.stringify({
+    data_type:'summarized_conversation_history',provenance:'model_generated_not_verified',
+    scope:recent.length ? 'mensagens anteriores as que vem a seguir literalmente' : 'conversa inteira',summary,
+  })},...recent]
+}
+
+// Janela do histórico: as mensagens mais recentes vão literais (o Copilot
+// precisa ver a última mensagem pronta para "deixar mais curta" ou "mais
+// persuasiva"); só o que passar do orçamento vai para o resumo.
+export function historyWindow(history: ChatMessage[], maxChars: number, minRecent = 2): {older: ChatMessage[];recent: ChatMessage[]} {
+  let used = 0
+  let start = history.length
+  while (start > 0) {
+    const size = history[start-1].content.length
+    if (history.length-start >= minRecent && used+size > maxChars) break
+    used += size
+    start--
+  }
+  return {older:history.slice(0,start),recent:history.slice(start)}
 }
 
 export function splitText(text: string, size: number): string[] {

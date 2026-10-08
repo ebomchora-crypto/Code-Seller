@@ -3,6 +3,8 @@ import test from 'node:test'
 import {
   cleanRewrite,
   isAfterPrototypeRequest,
+  isDiscountRequest,
+  isPriceObjectionRequest,
   isFirstContactRequest,
   pickBetter,
   reviewRewritePrompt,
@@ -85,10 +87,24 @@ test('depois da prévia a mensagem tem que puxar a reunião e perguntar o horár
   assert.equal(isAfterPrototypeRequest('faz a primeira mensagem dizendo que tenho uma prévia'), false)
   const AFTER = { firstContact: false, mode: 'quick_reply', afterPrototype: true }
   const weak = 'Oi! Como te falei, segue o protótipo. Qualquer dúvida estou à disposição. Se preferir, podemos conversar.'
-  assert.deepEqual(codes(weak, AFTER), ['no_meeting'])
+  assert.deepEqual(codes(weak, AFTER), ['no_meeting', 'generic'])
   const good = 'Segue a prévia que montei pra clínica! É só um ponto de partida, dá pra mudar tudo.\nQueria marcar 15 minutinhos pra ouvir o que você achou, sem compromisso. Fica melhor hoje à tarde ou amanhã de manhã?'
   assert.deepEqual(codes(good, AFTER), [])
-  // Follow-up não precisa marcar horário.
-  assert.deepEqual(codes(weak, { ...AFTER, mode: 'follow_up' }), [])
-  assert.match(reviewRewritePrompt([{ code: 'no_meeting', message: 'x' }], AFTER), /duas opções/)
+  // Follow-up não precisa marcar horário (mas "estou à disposição" continua genérico).
+  assert.deepEqual(codes(weak, { ...AFTER, mode: 'follow_up' }), ['generic'])
+  assert.match(reviewRewritePrompt([{ code: 'no_meeting', message: 'x' }], AFTER), /pergunta de horário/)
+})
+
+test('frases genéricas, desconto automático e percentual inventado voltam para reescrita', () => {
+  const NONE = { firstContact: false, mode: 'quick_reply' }
+  assert.deepEqual(codes('Oi! Só passando para saber se conseguiu ver. Aguardo seu retorno.', NONE), ['generic'])
+  assert.deepEqual(codes('Tenho uma solução inovadora e seu negócio merece um site profissional.', NONE), ['generic'])
+  const objection = { firstContact: false, mode: 'objection', priceObjection: true, allowedText: 'Pacote: R$ 1.500' }
+  assert.deepEqual(codes('Entendo! Consigo fazer um desconto pra você fechar hoje.', objection), ['auto_discount'])
+  assert.deepEqual(codes('Entendo. O que pesou mais: o valor total ou não ter ficado claro o que está incluído?', objection), [])
+  const discount = { firstContact: false, mode: 'objection', discountRequested: true, allowedText: 'à vista 5% de desconto' }
+  assert.deepEqual(codes('Consigo 5% à vista, fechando esta semana.', discount), [])
+  assert.deepEqual(codes('Consigo 15% à vista.', discount), ['invented_discount'])
+  assert.equal(isPriceObjectionRequest('ele achou caro'), true)
+  assert.equal(isDiscountRequest('pediu desconto'), true)
 })
