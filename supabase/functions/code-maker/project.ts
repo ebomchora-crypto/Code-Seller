@@ -399,7 +399,11 @@ export function applyProjectEdit(
     if (page) {
       const problem = rejectEmbedded(content)
       if (problem) return problem
-      const html = balanceHtml(cleanFragment(content))
+      // O <main> da página é posto na montagem: um <main> do arquivo vira só o conteúdo.
+      let body = cleanFragment(content).trim()
+      const wrapped = body.match(/^<main\b[^>]*>([\s\S]*)<\/main>$/i)
+      if (wrapped) body = wrapped[1].trim()
+      const html = balanceHtml(body)
       if (!html) return 'HTML vazio'
       if (html.length > MAX_FILE_CHARS) return 'arquivo grande demais'
       if (nextFiles[path] === undefined && pageSlugs(nextFiles).length >= MAX_PAGES) return `limite de ${MAX_PAGES} páginas`

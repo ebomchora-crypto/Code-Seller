@@ -166,3 +166,11 @@ test('troca de trecho: formato <antes>/<depois> com aspas cruas e JSON com aspas
   assert.match(result.parts.artigos, /<h2 class="text-2xl md:text-4xl">/)
   assert.match(changeReport(result.changes, result.results, edit.invalid).at(-1), /formato quebrado/)
 })
+
+test('página extra escrita com <main> próprio não fica com <main> dentro de <main>', () => {
+  const edit = parseProjectEdit('<escrever arquivo="paginas/blog.html"><main class="bg-paper"><section><h1>Blog</h1></section></main></escrever>')
+  const result = applyProjectEdit(plan, parts, {}, edit, { brief })
+  assert.equal(result.files['paginas/blog.html'], '<section><h1>Blog</h1></section>')
+  const page = assembleSite(result.plan, result.parts, { files: result.files, page: 'blog' })
+  assert.equal((page.match(/<main\b/g) ?? []).length, 1)
+})
