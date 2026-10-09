@@ -27,7 +27,7 @@ export function EditorTabs({ markers, onSplit, onQuickOpen }: { markers: Marker[
       })}
     </div>
     <div className="flex items-center px-1 shrink-0">
-      <button className="icon-btn" title="Dividir editor" aria-label="Dividir editor" onClick={onSplit}><Columns2 size={16} /></button>
+      <button className="icon-btn hidden md:inline-flex" title="Dividir editor" aria-label="Dividir editor" onClick={onSplit}><Columns2 size={16} /></button>
       <button className="icon-btn" title="Abrir arquivo · Ctrl+P" aria-label="Abrir arquivo" onClick={onQuickOpen}><Search size={15} /></button>
     </div>
     {menu && <ContextMenu x={menu.x} y={menu.y} close={() => setMenu(null)} items={[

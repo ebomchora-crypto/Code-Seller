@@ -5,11 +5,11 @@ import { ContextMenu, type MenuItem } from './ContextMenu';
 export type MenuGroups = Record<string, MenuItem[]>;
 type Props = {
   projectName: string; menus: MenuGroups; onBack: () => void; onForward: () => void; canBack: boolean; canForward: boolean; onQuickOpen: () => void;
-  sidebar: boolean; bottom: boolean; preview: boolean; chat: boolean; previewDisabled: boolean; hasProject: boolean;
+  sidebar: boolean; bottom: boolean; preview: boolean; chat: boolean; previewDisabled: boolean; hasProject: boolean; publish?: { label: string; done: boolean; busy: boolean; onClick: () => void };
   onSidebar: () => void; onBottom: () => void; onPreview: () => void; onChat: () => void;
 };
 // Barra de título no estilo do VS Code: ícone, menus, navegação, central de comandos e botões de layout.
-export function TitleBar({ projectName, menus, onBack, onForward, canBack, canForward, onQuickOpen, sidebar, bottom, preview, chat, previewDisabled, hasProject, onSidebar, onBottom, onPreview, onChat }: Props) {
+export function TitleBar({ projectName, menus, onBack, onForward, canBack, canForward, onQuickOpen, sidebar, bottom, preview, chat, previewDisabled, hasProject, publish, onSidebar, onBottom, onPreview, onChat }: Props) {
   const [open, setOpen] = useState<{ name: string; x: number; y: number } | null>(null);
   const names = Object.keys(menus); const visible = names.slice(0, 6); const hidden = names.slice(6);
   const toggle = (label: string, on: boolean, Icon: typeof PanelLeft, action: () => void, disabled = false) =>
@@ -31,6 +31,7 @@ export function TitleBar({ projectName, menus, onBack, onForward, canBack, canFo
         <Search size={12} className="shrink-0" /><span className="truncate">{hasProject ? projectName : 'Code Sellers IDE'}</span></button>
     </div>
     <div className="flex items-center justify-end gap-0.5 pr-2">
+      {publish && <button className="btn-primary !min-h-[22px] !py-0 !px-3 text-xs mr-2" style={publish.done ? { background: 'var(--vs-btn2-bg)' } : undefined} disabled={publish.busy} onClick={publish.onClick} title="Salvar e publicar o site (Ctrl+S)">{publish.label}</button>}
       {toggle('Alternar explorador', sidebar, PanelLeft, onSidebar)}
       {toggle('Alternar painel inferior', bottom, PanelBottom, onBottom, !hasProject)}
       {toggle('Alternar preview', preview, Eye, onPreview, previewDisabled)}

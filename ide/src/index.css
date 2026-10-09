@@ -337,3 +337,16 @@ html.has-bg-image body::before {
   background: var(--cm-bg-image) center / cover no-repeat; filter: blur(var(--cm-bg-blur, 0px));
 }
 html.has-bg-image #root { position: relative; z-index: 1; }
+
+/* Toque: alvos maiores e texto legível no celular */
+@media (max-width: 767px) {
+  body { font-size: 14px; }
+  .list-row { height: 40px; font-size: 14px; gap: 6px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .btn-primary, .btn-secondary { min-height: 40px; font-size: 14px; }
+  .field { font-size: 16px; padding: 8px 10px; }
+  .panel-title { font-size: 12px; }
+  .menu-item { height: 40px !important; }
+  select.field { padding-right: 8px; }
+}
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }

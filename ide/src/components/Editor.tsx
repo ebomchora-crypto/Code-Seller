@@ -9,6 +9,7 @@ import { useStatus } from '../store/statusStore';
 import { setActiveEditor } from '../lib/editorRef';
 import { Code2 } from 'lucide-react';
 import { cloud } from '../lib/mode';
+import { useIsMobile } from '../lib/useIsMobile';
 
 const shortcuts: [string, string][] = [['Abrir arquivo', 'Ctrl+P'], ['Mostrar todos os comandos', 'Ctrl+Shift+P'], ['Buscar no projeto', 'Ctrl+Shift+F'], ['Alternar terminal', 'Ctrl+`'], ['Abrir configurações', 'Ctrl+,']];
 export function Watermark() {
@@ -25,6 +26,7 @@ export const Editor = ({ projectId, fileId }: { projectId: string; fileId?: stri
   const instance = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const preferences = usePreferences();
   const monacoTheme = useMonacoTheme();
+  const mobile = useIsMobile();
   const files = useEditorStore(state => state.files);
   const activeFileId = useEditorStore(state => state.activeFileId);
   const openFiles = useEditorStore(state => state.openFiles);
@@ -55,5 +57,5 @@ export const Editor = ({ projectId, fileId }: { projectId: string; fileId?: stri
     const report = () => { const position = editor.getPosition(); const selection = editor.getSelection(); const model = editor.getModel(); useStatus.getState().set({ line: position?.lineNumber ?? 1, column: position?.column ?? 1, selected: selection && model ? model.getValueInRange(selection).length : 0 }); };
     report(); editor.onDidChangeCursorPosition(report); editor.onDidChangeCursorSelection(report);
   }} height="100%" keepCurrentModel path={`file:///projects/${projectId}${file.id}`} language={language} theme={monacoTheme} value={file.content ?? ''} onChange={value => { if (typeof value === 'string') updateFileContent(file.id, value, projectId); }} loading={<div className="p-8" style={{ color: 'var(--vs-fg-dim)' }}>Carregando editor…</div>}
-    options={{ readOnly: locked, minimap: { enabled: preferences.minimap }, fontSize: preferences.fontSize, tabSize: preferences.tabSize, fontFamily: fontFamilies[preferences.fontFamily]?.stack, lineHeight: preferences.lineHeight || 0, lineNumbers: preferences.lineNumbers, cursorStyle: preferences.cursorStyle, wordWrap: preferences.wordWrap ? 'on' : 'off', scrollBeyondLastLine: false, smoothScrolling: true, formatOnPaste: true, automaticLayout: true, renderWhitespace: 'selection', bracketPairColorization: { enabled: true }, guides: { bracketPairs: true, indentation: true }, stickyScroll: { enabled: true }, cursorBlinking: 'smooth', cursorSmoothCaretAnimation: 'on', fontLigatures: preferences.ligatures, lineNumbersMinChars: 4, renderLineHighlight: 'all', roundedSelection: false, overviewRulerBorder: false, scrollbar: { verticalScrollbarSize: 14, horizontalScrollbarSize: 10, useShadows: false } }} /></div>;
+    options={{ readOnly: locked, minimap: { enabled: preferences.minimap && !mobile }, fontSize: mobile ? Math.min(preferences.fontSize, 14) : preferences.fontSize, tabSize: preferences.tabSize, fontFamily: fontFamilies[preferences.fontFamily]?.stack, lineHeight: preferences.lineHeight || 0, lineNumbers: preferences.lineNumbers, cursorStyle: preferences.cursorStyle, wordWrap: preferences.wordWrap || mobile ? 'on' : 'off', glyphMargin: !mobile, folding: !mobile, lineDecorationsWidth: mobile ? 4 : 10, lineNumbersMinChars: mobile ? 3 : 4, stickyScroll: { enabled: !mobile }, scrollBeyondLastLine: false, smoothScrolling: true, formatOnPaste: true, automaticLayout: true, renderWhitespace: 'selection', bracketPairColorization: { enabled: true }, guides: { bracketPairs: true, indentation: true }, cursorBlinking: 'smooth', cursorSmoothCaretAnimation: 'on', fontLigatures: preferences.ligatures, renderLineHighlight: 'all', roundedSelection: false, overviewRulerBorder: false, scrollbar: { verticalScrollbarSize: mobile ? 8 : 14, horizontalScrollbarSize: 10, useShadows: false } }} /></div>;
 };

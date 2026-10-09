@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { X, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Maximize2, Minimize2, Menu as MenuIcon, Files, Code2, Eye, Sparkles } from 'lucide-react';
+import { useIsMobile } from '../lib/useIsMobile';
 import { Sidebar } from '../components/Sidebar';
 import { Editor } from '../components/Editor';
 import { TitleBar } from '../components/TitleBar';
@@ -80,6 +81,9 @@ function ProjectWorkbench({ id }: { id: string }) {
   const git = useGitSummary(id);
   const trail = useRef<{ stack: string[]; index: number; jumping: boolean }>({ stack: [], index: -1, jumping: false });
   const [, nudge] = useState(0);
+  const mobile = useIsMobile();
+  const [tab, setTab] = useState<'files' | 'editor' | 'preview' | 'ai' | 'search'>('files');
+  const [burger, setBurger] = useState<{ x: number; y: number } | null>(null);
   const publishedFiles = useRef<Record<string, string> | null>(null);
   useEffect(() => { if (session && publishedFiles.current === null) publishedFiles.current = session.files; }, [session]);
   useEffect(() => { void useProjectStore.getState().fetchProjects(false); }, []);
@@ -239,6 +243,38 @@ function ProjectWorkbench({ id }: { id: string }) {
       runFile, history: () => setHistory(true), renameFile: () => void renamePath(), deleteFile: () => void deletePath(),
     },
   });
+  const unpublished = publishedFiles.current !== session.files || session.project.published === false;
+  const publishButton = cloud ? { label: busy ? 'Publicando…' : session.status === 'saving' ? 'Salvando…' : unpublished ? 'Publicar' : 'Publicado ✓', done: !unpublished && !busy, busy: busy || session.status === 'saving', onClick: save } : undefined;
+  if (mobile) {
+    const burgerItems = [
+      { label: 'Buscar no projeto', action: () => setTab('search') }, { label: 'Histórico de versões', action: () => setHistory(true) },
+      { label: 'Configurações', action: () => useUi.getState().set({ settings: true, settingsTab: 'appearance' }) }, { separator: true as const },
+      ...Object.entries(menus).filter(([name]) => ['Arquivo', 'Editar', 'Ver'].includes(name)).map(([name, items]) => ({ label: name, submenu: items })),
+      ...(cloud ? [{ separator: true as const }, { label: 'Voltar ao Code Maker', action: () => { location.href = '/code-maker'; } }] : []),
+    ];
+    const tabs = [{ id: 'files' as const, label: 'Arquivos', Icon: Files }, { id: 'editor' as const, label: 'Código', Icon: Code2 }, ...(noPreview ? [] : [{ id: 'preview' as const, label: 'Site', Icon: Eye }]), { id: 'ai' as const, label: 'IA', Icon: Sparkles }];
+    return <div className="flex flex-col overflow-hidden" style={{ height: '100dvh', background: 'var(--vs-editor)', color: 'var(--vs-fg)' }}>
+      <header className="h-12 shrink-0 flex items-center gap-1 pl-1 pr-2" style={{ background: 'var(--vs-titlebar)', borderBottom: '1px solid var(--vs-border-soft)' }}>
+        <button className="icon-btn" aria-label="Menu" onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); setBurger({ x: rect.left, y: rect.bottom }); }}><MenuIcon size={20} /></button>
+        <span className="flex-1 min-w-0 truncate font-medium text-[15px]" style={{ color: 'var(--vs-fg-strong)' }}>{session.project.name}</span>
+        {publishButton && <button className="btn-primary !min-h-[36px] !px-4" style={publishButton.done ? { background: 'var(--vs-btn2-bg)' } : undefined} disabled={publishButton.busy} onClick={publishButton.onClick}>{publishButton.label}</button>}
+      </header>
+      {(error || session.error) && <div role="alert" className="error-banner rounded-none shrink-0 py-2 flex justify-between items-center gap-2 text-[13px]"><span>{error || session.error}</span><button className="underline shrink-0" onClick={() => { setError(null); if (session.error) void run(() => session.flush()); }}>{session.error ? 'Tentar de novo' : 'Fechar'}</button></div>}
+      <main className="flex-1 min-h-0 relative flex flex-col">
+        {tab === 'files' && <div className="flex-1 min-h-0" style={{ background: 'var(--vs-sidebar)' }}><Sidebar disabled={busy} markers={markers} projectName={session.project.name} onOpenFile={() => setTab('editor')} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} /></div>}
+        {tab === 'editor' && <><EditorTabs markers={markers} onSplit={() => undefined} onQuickOpen={() => setPalette('files')} /><Breadcrumbs path={active} /><div className="flex flex-col flex-1 min-h-0"><Editor projectId={session.project.id} /></div></>}
+        {tab === 'preview' && !noPreview && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando…</p>}><Preview project={session.project} files={session.files} /></Suspense></div>}
+        {tab === 'ai' && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}>{cloud ? <CloudAssistant key={id} session={session} /> : <ChatPanel key={id} session={session} apply={apply} />}</Suspense></div>}
+        {tab === 'search' && <div className="flex-1 min-h-0"><Suspense fallback={null}><SearchPanel session={session} apply={apply} /></Suspense></div>}
+      </main>
+      <nav className="shrink-0 flex safe-bottom" style={{ background: 'var(--vs-activitybar)', borderTop: '1px solid var(--vs-border-soft)' }} aria-label="Seções">
+        {tabs.map(({ id: key, label, Icon }) => <button key={key} aria-label={label} aria-current={tab === key} className="flex-1 h-14 flex flex-col items-center justify-center gap-0.5 text-[11px]" style={{ color: tab === key ? 'var(--vs-fg-strong)' : 'var(--vs-activitybar-fg-dim)', borderTop: tab === key ? '2px solid var(--vs-focus)' : '2px solid transparent' }} onClick={() => setTab(key)}><Icon size={20} strokeWidth={1.7} />{label}</button>)}
+      </nav>
+      {burger && <ContextMenu x={burger.x} y={burger.y} close={() => setBurger(null)} items={burgerItems} />}
+      {history && <Suspense fallback={null}><HistoryPanel session={session} busy={busy} close={() => setHistory(false)} checkpoint={() => void checkpoint()} restore={checkpointId => void run(async () => { await session.flush(); const project = await api<ProjectDetail>(`/projects/${id}/restore`, 'POST', { id: checkpointId }); session.replace(project); useEditorStore.getState().syncFiles(project.files, session.project.id); })} /></Suspense>}
+      {palette && <Suspense fallback={null}><CommandPalette title={palette === 'files' ? 'Abrir arquivo…' : 'Executar comando…'} close={() => setPalette(null)} items={palette === 'files' ? openFileItems : commands} /></Suspense>}
+    </div>;
+  }
   const t = trail.current;
   const sidebarPanel = sidebar && <div className={`relative shrink-0 min-h-0 ${sidebarRight ? 'border-l' : 'border-r'}`} style={{ width: sidebarWidth, background: 'var(--vs-sidebar)', borderColor: 'var(--vs-border-soft)' }}>
     {activity === 'files' && <Sidebar disabled={busy} markers={markers} projectName={session.project.name} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} />}
@@ -246,7 +282,7 @@ function ProjectWorkbench({ id }: { id: string }) {
     <Sash orientation="vertical" edge={sidebarRight ? 'start' : 'end'} invert={sidebarRight} label="Redimensionar barra lateral" value={sidebarWidth} min={170} max={520} onChange={setSidebarWidth} onCommit={value => patchLayout({ sidebarWidth: value })} />
   </div>;
   return <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--vs-editor)', color: 'var(--vs-fg)' }}>
-    <TitleBar projectName={session.project.name} menus={menus} hasProject sidebar={sidebar} bottom={showBottom} preview={preview && !noPreview} chat={chat} previewDisabled={noPreview}
+    <TitleBar publish={publishButton} projectName={session.project.name} menus={menus} hasProject sidebar={sidebar} bottom={showBottom} preview={preview && !noPreview} chat={chat} previewDisabled={noPreview}
       canBack={t.index > 0} canForward={t.index < t.stack.length - 1} onBack={() => go(-1)} onForward={() => go(1)} onQuickOpen={() => setPalette('files')}
       onSidebar={() => setSidebar(value => !value)} onBottom={() => toggleBottom(primaryBottom)} onPreview={() => setPreview(value => !value)} onChat={() => setChat(value => !value)} />
     {(error || session.error) && <div role="alert" className="error-banner rounded-none shrink-0 py-1.5 flex justify-between items-center"><span>{error || session.error}</span><span>{session.error && <button className="underline text-xs ml-3" onClick={() => void run(() => session.flush())}>Tentar salvar</button>}{error && <button className="underline text-xs ml-3" onClick={() => setError(null)}>Dispensar</button>}</span></div>}

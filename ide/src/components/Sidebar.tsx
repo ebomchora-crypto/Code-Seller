@@ -8,7 +8,7 @@ import type { Marker } from '../lib/markers';
 type Actions = { onCreate: (folder?: string) => void; onRename: (path?: string, folder?: boolean) => void; onDelete: (path?: string, folder?: boolean) => void };
 type Menu = { x: number; y: number; node: FileNode } | null;
 
-function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu }: { node: FileNode; level: number; collapsed: Set<string>; toggle: (id: string) => void; filtering: boolean; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void }) {
+function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu, onOpenFile }: { onOpenFile?: () => void; node: FileNode; level: number; collapsed: Set<string>; toggle: (id: string) => void; filtering: boolean; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void }) {
   const active = useEditorStore(state => state.activeFileId);
   const openFile = useEditorStore(state => state.openFile);
   const folder = node.type === 'folder';
@@ -19,17 +19,17 @@ function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu }
   const color = errors ? 'var(--vs-error)' : warnings ? 'var(--vs-warning)' : undefined;
   return <div>
     <button className="list-row pr-3 text-[13px]" data-active={!folder && active === node.id} title={node.id} style={{ paddingLeft: level * 8 + 8 }}
-      onClick={() => folder ? toggle(node.id) : openFile(node)} onContextMenu={event => onMenu(event, node)}>
+      onClick={() => { if (folder) toggle(node.id); else { openFile(node); onOpenFile?.(); } }} onContextMenu={event => onMenu(event, node)}>
       {folder ? (open ? <ChevronDown size={16} className="shrink-0 text-vs-muted" /> : <ChevronRight size={16} className="shrink-0 text-vs-muted" />) : <span className="w-4 shrink-0" />}
       {folder ? <FolderIcon open={open} /> : <FileIcon name={node.name} />}
       <span className="truncate" style={{ color }}>{node.name}</span>
       {(errors > 0 || warnings > 0) && <span className="ml-auto text-xs" style={{ color }}>{folder ? '●' : errors || warnings}</span>}
     </button>
-    {open && node.children?.map(child => <TreeNode key={child.id} node={child} level={level + 1} collapsed={collapsed} toggle={toggle} filtering={filtering} markers={markers} onMenu={onMenu} />)}
+    {open && node.children?.map(child => <TreeNode key={child.id} node={child} level={level + 1} collapsed={collapsed} toggle={toggle} filtering={filtering} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} />)}
   </div>;
 }
 
-export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], projectName = 'Projeto' }: Actions & { disabled: boolean; markers?: Marker[]; projectName?: string }) {
+export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], projectName = 'Projeto', onOpenFile }: Actions & { onOpenFile?: () => void; disabled: boolean; markers?: Marker[]; projectName?: string }) {
   const files = useEditorStore(state => state.files);
   const active = useEditorStore(state => state.activeFileId);
   const [search, setSearch] = useState('');
@@ -72,7 +72,7 @@ export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], 
         <button className="icon-btn" aria-label="Recolher pastas" title="Recolher pastas" onClick={collapseAll}><ChevronsDownUp size={15} /></button>
       </div>
     </div>
-    <div className="overflow-auto flex-1 tree-focus py-0.5">{rootOpen && visible.map(file => <TreeNode key={file.id} node={file} level={0} collapsed={collapsed} toggle={toggle} filtering={!!term} markers={markers} onMenu={openMenu} />)}
+    <div className="overflow-auto flex-1 tree-focus py-0.5">{rootOpen && visible.map(file => <TreeNode key={file.id} node={file} level={0} collapsed={collapsed} toggle={toggle} filtering={!!term} markers={markers} onMenu={openMenu} onOpenFile={onOpenFile} />)}
       {rootOpen && !visible.length && <p className="px-5 py-3 text-xs text-vs-dim">{term ? 'Nenhum arquivo encontrado.' : 'Nenhum arquivo no projeto.'}</p>}</div>
     {menu && <ContextMenu x={menu.x} y={menu.y} items={items(menu.node)} close={() => setMenu(null)} />}
   </aside>;
