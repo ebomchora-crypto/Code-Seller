@@ -27,14 +27,32 @@ export function visibleStreamText(raw: string): string {
 // dentro de um quadro isolado): links "#secao" rolam a página em vez de
 // sair do quadro, links externos abrem em outra aba e a posição da rolagem
 // é devolvida para a prévia manter o lugar quando o site é atualizado.
-export function frameDocument(html: string, options: { scrollY?: number } = {}): string {
+// Link para outra página do projeto: "publicacoes.html", "./paginas/x.html",
+// "index.html#contato". Devolve a página ('' = inicial) e o #trecho.
+export function internalPageLink(href: string): { page: string; hash: string } | null {
+  const match = href.trim().match(/^(?:\.\/|\/)?(?:paginas\/)?([a-z0-9-]+)\.html(#[^?]*)?$/i)
+  if (!match) return null
+  const page = match[1].toLowerCase()
+  return { page: page === 'index' ? '' : page, hash: match[2] ?? '' }
+}
+
+// `page`: página extra aberta (um #trecho que não existe nela leva à inicial).
+// `hash`: trecho para rolar ao abrir. Links entre páginas viram uma mensagem
+// para quem mostra o quadro trocar o documento (o site roda isolado).
+export function frameDocument(html: string, options: { scrollY?: number; page?: string; hash?: string } = {}): string {
   const start = Math.max(0, Math.round(options.scrollY ?? 0))
+  const page = JSON.stringify(options.page ?? '')
+  const hash = JSON.stringify((options.hash ?? '').replace(/^#/, ''))
   const extra = `<style>[id]{scroll-margin-top:84px}</style><script>(function(){
+var page=${page},hash=${hash};
+function go(p,h){try{parent.postMessage({codeMakerPage:p,codeMakerHash:h||''},'*')}catch(_){}}
 document.addEventListener('click',function(e){var a=e.target&&e.target.closest?e.target.closest('a[href]'):null;if(!a)return;var href=a.getAttribute('href')||'';
-if(href.charAt(0)==='#'){e.preventDefault();var id=decodeURIComponent(href.slice(1));var el=id?document.getElementById(id):null;if(el){el.scrollIntoView({behavior:'smooth'})}else{window.scrollTo({top:0,behavior:'smooth'})}return}
+if(href.charAt(0)==='#'){e.preventDefault();var id=decodeURIComponent(href.slice(1));var el=id?document.getElementById(id):null;if(el){el.scrollIntoView({behavior:'smooth'})}else if(page){go('',id)}else{window.scrollTo({top:0,behavior:'smooth'})}return}
+var m=href.trim().match(/^(?:\\.\\/|\\/)?(?:paginas\\/)?([a-z0-9-]+)\\.html(#[^?]*)?$/i);
+if(m){e.preventDefault();var p=m[1].toLowerCase();go(p==='index'?'':p,(m[2]||'').slice(1));return}
 if(!a.getAttribute('target'))a.setAttribute('target','_blank');a.setAttribute('rel','noopener')},true);
 var last=0;window.addEventListener('scroll',function(){var now=Date.now();if(now-last<120)return;last=now;try{parent.postMessage({codeMakerScroll:window.scrollY},'*')}catch(_){}} ,{passive:true});
-var start=${start};if(start>0){window.addEventListener('load',function(){setTimeout(function(){window.scrollTo(0,start)},60)})}
+var start=${start};window.addEventListener('load',function(){setTimeout(function(){if(hash){var el=document.getElementById(hash);if(el){el.scrollIntoView();return}}if(start>0)window.scrollTo(0,start)},60)});
 })();</script>`
   return /<\/body>/i.test(html) ? html.replace(/<\/body>(?![\s\S]*<\/body>)/i, `${extra}</body>`) : html + extra
 }

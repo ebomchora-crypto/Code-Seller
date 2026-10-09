@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { joinContinuation, type SiteBrief, type SiteParts, type SitePlan } from '../../../supabase/functions/code-maker/site'
+import { assemblePages, assembleSite, joinContinuation, type ProjectFiles, type SiteBrief, type SiteParts, type SitePlan } from '../../../supabase/functions/code-maker/site'
 import { splitStreamEnd, visibleStreamText } from '@/utils/codeMakerStream'
 
 export type SiteStatus = 'planning' | 'building' | 'ready' | 'error'
@@ -14,7 +14,11 @@ export interface Site {
   brief: SiteBrief
   plan: StoredPlan | null
   parts: SiteParts
+  /** Arquivos do projeto além das seções: estilos.css, script.js, paginas/*.html. */
+  files?: ProjectFiles | null
   html: string | null
+  /** Documento montado de cada página extra. */
+  pages_html?: Record<string, string> | null
   status: SiteStatus
   published: boolean
   views: number
@@ -32,6 +36,7 @@ export interface SiteVersion {
   actions: string[]
   plan: StoredPlan | null
   parts: SiteParts | null
+  files?: ProjectFiles | null
   created_at: string
 }
 
@@ -185,7 +190,7 @@ export async function deleteSite(id: string): Promise<void> {
 export async function listSiteVersions(siteId: string): Promise<SiteVersion[]> {
   const { data, error } = await supabase
     .from('site_versions')
-    .select('id, site_id, kind, instruction, actions, plan, parts, created_at')
+    .select('id, site_id, kind, instruction, actions, plan, parts, files, created_at')
     .eq('site_id', siteId)
     .order('created_at', { ascending: true })
   if (error) throw new Error(error.message)
@@ -193,11 +198,19 @@ export async function listSiteVersions(siteId: string): Promise<SiteVersion[]> {
 }
 
 // Volta o site para uma versão anterior (e registra isso no histórico).
-export async function restoreSiteVersion(site: Site, version: SiteVersion, html: string): Promise<Site> {
+export async function restoreSiteVersion(site: Site, version: SiteVersion): Promise<Site> {
   if (!version.plan || !version.parts) throw new Error('Esta versão não pode ser restaurada.')
+  const files = version.files ?? {}
   const { data, error } = await supabase
     .from('sites')
-    .update({ plan: version.plan, parts: version.parts, html, status: 'ready' })
+    .update({
+      plan: version.plan,
+      parts: version.parts,
+      files,
+      html: assembleSite(version.plan, version.parts, { files }),
+      pages_html: assemblePages(version.plan, version.parts, files),
+      status: 'ready',
+    })
     .eq('id', site.id)
     .select('*')
     .single()
@@ -210,6 +223,7 @@ export async function restoreSiteVersion(site: Site, version: SiteVersion, html:
     actions: [],
     plan: version.plan,
     parts: version.parts,
+    files,
   })
   if (versionError) throw new Error(versionError.message)
   return data as Site
@@ -219,12 +233,14 @@ export async function restoreSiteVersion(site: Site, version: SiteVersion, html:
 export interface PublicSite {
   name: string
   html?: string
+  /** A página extra pedida não existe. */
+  page_missing?: boolean
   badge?: boolean
   offline?: boolean
 }
 
-export async function getPublicSite(slug: string): Promise<PublicSite | null> {
-  const { data, error } = await supabase.rpc('get_public_site', { p_slug: slug })
+export async function getPublicSite(slug: string, page?: string): Promise<PublicSite | null> {
+  const { data, error } = await supabase.rpc('get_public_site', page ? { p_slug: slug, p_page: page } : { p_slug: slug })
   if (error) throw new Error(error.message)
   return (data as PublicSite | null) ?? null
 }

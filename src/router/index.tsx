@@ -89,6 +89,7 @@ export function AppRouter() {
           <Route path="/proposta/:token" element={<PublicProposalPage />} />
           {/* Sites criados no Code Maker. */}
           <Route path="/s/:slug" element={<PublicSitePage />} />
+          <Route path="/s/:slug/:page" element={<PublicSitePage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
 
@@ -146,6 +147,7 @@ export function AppRouter() {
 
           {/* Link curto dos sites do Code Maker (/apelido). As telas acima têm prioridade. */}
           <Route path="/:slug" element={<PublicSitePage />} />
+          <Route path="/:slug/:page" element={<PublicSitePage />} />
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

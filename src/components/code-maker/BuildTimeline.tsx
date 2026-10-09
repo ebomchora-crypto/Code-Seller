@@ -56,19 +56,36 @@ function AiBlock({ title, status, children }: { title: string; status: 'working'
   )
 }
 
+const FILE_LINE = /^(?:Arquivo (?:alterado|criado|apagado)|Não aplicado)/
+
 function ActionList({ actions, live = false }: { actions: string[]; live?: boolean }) {
   if (actions.length === 0) {
     return live ? <p className="text-[13px] text-[var(--text-muted)]">Pensando…</p> : null
   }
+  // Linhas conferidas pelo servidor (arquivos que mudaram de verdade) vêm
+  // separadas do que a IA contou.
+  const said = actions.filter((action) => !FILE_LINE.test(action))
+  const files = actions.filter((action) => FILE_LINE.test(action))
   return (
-    <ul className="flex flex-col gap-1.5">
-      {actions.map((action, index) => (
-        <li key={index} className="flex gap-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-          <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--accent-text)]/70" />
-          <span>{action}</span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="flex flex-col gap-1.5">
+        {said.map((action, index) => (
+          <li key={index} className="flex gap-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--accent-text)]/70" />
+            <span>{action}</span>
+          </li>
+        ))}
+      </ul>
+      {files.length > 0 && (
+        <ul className="mt-2.5 flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)]/50 px-3 py-2">
+          {files.map((line, index) => (
+            <li key={index} className={`font-mono text-[11.5px] leading-relaxed ${/^Não aplicado/.test(line) ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-secondary)]'}`}>
+              {line}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   )
 }
 

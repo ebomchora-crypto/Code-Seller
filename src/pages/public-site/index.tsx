@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import NotFoundPage from '@/pages/not-found'
 import { getPublicSite, type PublicSite } from '@/services/supabase/codeMaker'
 import { SITE_SANDBOX } from '@/components/code-maker/SitePreview'
@@ -16,32 +16,53 @@ function titleOf(html: string, fallback: string): string {
 // Site criado no Code Maker: /:apelido (e o link antigo /s/:apelido). O site roda num quadro isolado,
 // sem acesso ao Code Sellers.
 export default function PublicSitePage() {
-  const { slug = '' } = useParams()
-  const shortLink = !useLocation().pathname.startsWith('/s/')
+  const { slug = '', page = '' } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const shortLink = !location.pathname.startsWith('/s/')
+  const hash = location.hash.replace(/^#/, '')
+  const frame = useRef<HTMLIFrameElement>(null)
   const [site, setSite] = useState<PublicSite | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'missing' | 'offline' | 'error'>('loading')
 
   useEffect(() => {
     let cancelled = false
-    getPublicSite(slug)
+    setStatus('loading')
+    getPublicSite(slug, page || undefined)
       .then((data) => {
         if (cancelled) return
         setSite(data)
-        setStatus(!data ? 'missing' : data.offline || !data.html ? 'offline' : 'ready')
+        setStatus(!data || data.page_missing ? 'missing' : data.offline || !data.html ? 'offline' : 'ready')
         if (data) document.title = data.html ? titleOf(data.html, data.name) : data.name
       })
       .catch(() => !cancelled && setStatus('error'))
     return () => {
       cancelled = true
     }
-  }, [slug])
+  }, [slug, page])
 
-  const doc = useMemo(() => (site?.html ? frameDocument(site.html) : null), [site])
+  // Link entre páginas do site (dentro do quadro isolado): troca o endereço.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (!frame.current || event.source !== frame.current.contentWindow) return
+      const data = event.data as { codeMakerPage?: unknown; codeMakerHash?: unknown } | null
+      if (typeof data?.codeMakerPage !== 'string' || !/^[a-z0-9-]{0,40}$/.test(data.codeMakerPage)) return
+      const base = shortLink ? `/${slug}` : `/s/${slug}`
+      const target = data.codeMakerPage ? `${base}/${data.codeMakerPage}` : base
+      const anchor = typeof data.codeMakerHash === 'string' && /^[\w-]{1,80}$/.test(data.codeMakerHash) ? `#${data.codeMakerHash}` : ''
+      navigate(target + anchor)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [navigate, shortLink, slug])
+
+  const doc = useMemo(() => (site?.html ? frameDocument(site.html, { page, hash }) : null), [site, page, hash])
 
   if (status === 'ready' && doc) {
     return (
       <>
         <iframe
+          ref={frame}
           title={site?.name ?? 'Site'}
           sandbox={SITE_SANDBOX}
           srcDoc={doc}

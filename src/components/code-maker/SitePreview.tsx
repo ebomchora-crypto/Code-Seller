@@ -10,25 +10,34 @@ interface SitePreviewProps {
   html: string | null
   title: string
   className?: string
+  /** Página extra aberta ('' ou ausente = inicial) e o #trecho para rolar. */
+  page?: string
+  hash?: string
+  /** Link para outra página do projeto clicado dentro do site. */
+  onNavigate?: (page: string, hash: string) => void
 }
 
 // Prévia sem piscar: o documento novo carrega num quadro escondido e só
 // troca de lugar com o atual quando está pronto, na mesma posição de rolagem.
-export function SitePreview({ html, title, className = '' }: SitePreviewProps) {
+export function SitePreview({ html, title, className = '', page = '', hash = '', onNavigate }: SitePreviewProps) {
   const [docs, setDocs] = useState<[string | null, string | null]>([null, null])
   const [active, setActive] = useState<0 | 1>(0)
   const frames = [useRef<HTMLIFrameElement>(null), useRef<HTMLIFrameElement>(null)]
   const scrollY = useRef(0)
   const activeRef = useRef<0 | 1>(0)
   const waiting = useRef<0 | 1 | null>(null)
+  const navigate = useRef(onNavigate)
+  navigate.current = onNavigate
+  const shownPage = useRef(page)
 
   // Guarda a rolagem do quadro visível.
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       const visible = frames[activeRef.current].current
       if (!visible || event.source !== visible.contentWindow) return
-      const y = (event.data as { codeMakerScroll?: unknown } | null)?.codeMakerScroll
-      if (typeof y === 'number') scrollY.current = y
+      const data = event.data as { codeMakerScroll?: unknown; codeMakerPage?: unknown; codeMakerHash?: unknown } | null
+      if (typeof data?.codeMakerScroll === 'number') scrollY.current = data.codeMakerScroll
+      if (typeof data?.codeMakerPage === 'string') navigate.current?.(data.codeMakerPage, typeof data.codeMakerHash === 'string' ? data.codeMakerHash : '')
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -37,7 +46,12 @@ export function SitePreview({ html, title, className = '' }: SitePreviewProps) {
 
   useEffect(() => {
     if (!html) return
-    const doc = frameDocument(html, { scrollY: scrollY.current })
+    // Outra página: abre do topo (ou no trecho pedido).
+    if (shownPage.current !== page) {
+      shownPage.current = page
+      scrollY.current = 0
+    }
+    const doc = frameDocument(html, { scrollY: hash ? 0 : scrollY.current, page, hash })
     const current = activeRef.current
     // Primeiro documento: mostra direto.
     if (docs[current] === null) {
@@ -48,7 +62,7 @@ export function SitePreview({ html, title, className = '' }: SitePreviewProps) {
     waiting.current = next
     setDocs((state) => (next === 0 ? [doc, state[1]] : [state[0], doc]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [html])
+  }, [html, page, hash])
 
   function handleLoad(index: 0 | 1) {
     if (waiting.current !== index) return

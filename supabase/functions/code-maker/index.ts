@@ -18,7 +18,7 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 import { editsLimit, editsLimitMessage, NO_ACCESS_MESSAGE, planUsage, sitesLimitMessage } from '../_shared/plan.ts'
 import {
-  applyEdit,
+  assemblePages,
   assembleSite,
   buildEditMessage,
   buildPartMessage,
@@ -29,7 +29,6 @@ import {
   fillBrief,
   isReservedSlug,
   joinContinuation,
-  parseEdit,
   normalizePart,
   parseContent,
   parsePart,
@@ -41,10 +40,12 @@ import {
   siteRecipe,
   PART_SYSTEM,
   PLAN_SYSTEM,
+  type ProjectFiles,
   type SiteBrief,
   type SiteParts,
   type SitePlan,
 } from './site.ts'
+import { applyProjectEdit, changeReport, fileIndex, parseProjectEdit, projectTree, selectFiles } from './project.ts'
 import { cleanUserText } from './prompt.ts'
 import { findPrototype, prepareLeadPrototype, PrototypeError } from './prototype.ts'
 import { prepareSpecificationContext, SPEC_SYSTEM, validateRequirementCoverage, type RecentEditContext, type CodeMakerSpecification } from './spec.ts'
@@ -58,6 +59,8 @@ const AI_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
 const CALLS_PER_DAY = 600
 // O servidor corta cada chamada em 150 s; paramos antes e continuamos depois.
 const CALL_BUDGET_MS = 115_000
+// Escolha dos arquivos que a alteração precisa ler inteiros (projeto grande).
+const SELECT_SYSTEM = `Você escolhe quais arquivos de um projeto de site precisam ser lidos inteiros para fazer o pedido do usuário. Responda só JSON: {"arquivos":["caminho", ...]}. Inclua todo arquivo que o pedido pode mudar ou que serve de modelo (ex.: para criar uma página nova, a seção parecida que já existe e o cabeçalho com o menu; para responsividade, as seções com grades e textos grandes). Não invente caminhos.`
 const MAX_TOKENS = { plan: 9000, part: 6000, edit: 9000 } as const
 
 type Message = { role: 'system' | 'user' | 'assistant'; content: string }
@@ -69,19 +72,29 @@ type SiteRow = {
   brief: SiteBrief
   plan: (SitePlan & { actions?: string[] }) | null
   parts: SiteParts
+  files: ProjectFiles | null
+  html: string | null
+  pages_html: Record<string, string> | null
   status: string
   updated_at: string
 }
 
+// Diagnóstico da alteração: só etapas, tamanhos, contagens e motivos — nunca
+// o texto do site nem o pedido.
+function logEdit(stage: string, data: Record<string, unknown>) {
+  console.log(JSON.stringify({ event: 'code_maker_edit', stage, ...data }))
+}
+
 async function preserveCurrentVersion(admin: SupabaseClient, site: SiteRow): Promise<void> {
-  const { data, error } = await admin.from('site_versions').select('plan, parts')
+  const { data, error } = await admin.from('site_versions').select('plan, parts, files')
     .eq('site_id', site.id).eq('user_id', site.user_id).order('created_at', { ascending: false }).limit(1)
   if (error) throw error
-  if (data?.some((version: { plan: unknown; parts: unknown }) =>
-    JSON.stringify(version.plan) === JSON.stringify(site.plan) && JSON.stringify(version.parts) === JSON.stringify(site.parts))) return
+  if (data?.some((version: { plan: unknown; parts: unknown; files: unknown }) =>
+    JSON.stringify(version.plan) === JSON.stringify(site.plan) && JSON.stringify(version.parts) === JSON.stringify(site.parts) &&
+    JSON.stringify(version.files ?? {}) === JSON.stringify(site.files ?? {}))) return
   const { error: saveError } = await admin.from('site_versions').insert({
     site_id: site.id, user_id: site.user_id, kind: 'create',
-    actions: site.plan?.actions ?? [], plan: site.plan, parts: site.parts,
+    actions: site.plan?.actions ?? [], plan: site.plan, parts: site.parts, files: site.files ?? {},
   })
   if (saveError) throw saveError
 }
@@ -424,7 +437,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: siteData } = await admin
       .from('sites')
-      .select('id, user_id, slug, name, brief, plan, parts, status, updated_at')
+      .select('id, user_id, slug, name, brief, plan, parts, files, html, pages_html, status, updated_at')
       .eq('id', String(body.site_id ?? ''))
       .eq('user_id', user.id)
       .maybeSingle()
@@ -436,7 +449,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === 'restore') {
       if (site.status === 'planning' || site.status === 'building') return json({ error: 'Espere a geração terminar antes de restaurar.' }, 409)
-      const { data: version, error: versionError } = await admin.from('site_versions').select('id, plan, parts')
+      const { data: version, error: versionError } = await admin.from('site_versions').select('id, plan, parts, files')
         .eq('id', String(body.version_id ?? '')).eq('site_id', site.id).eq('user_id', user.id).maybeSingle()
       if (versionError) throw versionError
       if (!version) return json({ error: 'Versão não encontrada.' }, 404)
@@ -445,21 +458,24 @@ Deno.serve(async (req: Request) => {
           !partOrder(version.plan).every(id => typeof version.parts[id] === 'string' && version.parts[id].trim())) {
         return json({ error: 'Esta versão está incompleta e não pode ser restaurada.' }, 409)
       }
+      const versionFiles = (version.files ?? {}) as ProjectFiles
       if (site.status === 'ready' && JSON.stringify(site.plan) === JSON.stringify(version.plan) &&
-          JSON.stringify(site.parts) === JSON.stringify(version.parts)) {
+          JSON.stringify(site.parts) === JSON.stringify(version.parts) && JSON.stringify(site.files ?? {}) === JSON.stringify(versionFiles)) {
         const { data: current, error } = await admin.from('sites').select('*').eq('id', site.id).eq('user_id', user.id).maybeSingle()
         if (error) throw error
         return json({ site: current })
       }
       if (site.plan && Object.values(site.parts).some(Boolean)) await preserveCurrentVersion(admin, site)
       const { data: restored, error: restoreError } = await admin.from('sites').update({
-        plan: version.plan, parts: version.parts, html: assembleSite(version.plan, version.parts), status: 'ready',
+        plan: version.plan, parts: version.parts, files: versionFiles, status: 'ready',
+        html: assembleSite(version.plan, version.parts, { files: versionFiles }),
+        pages_html: assemblePages(version.plan, version.parts, versionFiles),
         brief: { ...site.brief, specification: version.plan.specification ?? site.brief.specification },
       }).eq('id', site.id).eq('user_id', user.id).eq('updated_at', site.updated_at).select('*').maybeSingle()
       if (restoreError) throw restoreError
       if (!restored) return json({ error: 'O site mudou durante a restauração. Atualize e tente novamente.' }, 409)
       const { error: historyError } = await admin.from('site_versions').insert({
-        site_id: site.id, user_id: user.id, kind: 'restore', instruction: null, actions: [], plan: version.plan, parts: version.parts,
+        site_id: site.id, user_id: user.id, kind: 'restore', instruction: null, actions: [], plan: version.plan, parts: version.parts, files: versionFiles,
       })
       if (historyError) return json({ error: 'A versão foi restaurada, mas o histórico não pôde ser atualizado. Atualize o site antes de continuar.' }, 500)
       return json({ site: restored })
@@ -482,7 +498,7 @@ Deno.serve(async (req: Request) => {
         const { error: statusError } = await admin.from('sites').update({ status: 'building' }).eq('id', site.id).eq('updated_at', site.updated_at)
         if (statusError) throw statusError
       }
-      const { data: first, error: readyError } = await admin.rpc('code_maker_mark_ready', { p_site: site.id, p_html: assembleSite(plan, site.parts) })
+      const { data: first, error: readyError } = await admin.rpc('code_maker_mark_ready', { p_site: site.id, p_html: assembleSite(plan, site.parts, { files: site.files }) })
       if (readyError) throw readyError
       if (first === true) {
         const { error: versionError } = await admin.from('site_versions').insert({
@@ -672,10 +688,15 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // action === 'edit'
+    // action === 'edit': a IA altera os ARQUIVOS-FONTE do projeto (site.json,
+    // secoes/*.html, paginas/*.html, estilos.css, script.js). O servidor aplica
+    // cada operação conferindo o arquivo, monta as páginas, grava, confere o que
+    // ficou gravado e só então diz que mudou — e diz exatamente o que mudou.
     const instruction = cleanUserText(body.instruction)
     if (!instruction) return json({ error: 'Diga o que você quer mudar.' }, 400)
     if (site.status !== 'ready') return json({ error: 'Espere o site terminar de ser gerado.' }, 409)
+    const editId = crypto.randomUUID().slice(0, 8)
+    const files: ProjectFiles = site.files ?? {}
     // Imagens anexadas junto com o pedido: passam a fazer parte do site
     // (uma logo nova substitui a antiga).
     const fresh = cleanAssets(body.assets, user.id, supabaseUrl)
@@ -700,79 +721,129 @@ Deno.serve(async (req: Request) => {
     if (historyError) throw historyError
     const recent = (versionRows ?? []) as RecentEditContext[]
     let editSpecification: CodeMakerSpecification | null = null
+    const tree = projectTree(plan, site.parts, files)
+    const treeChars = Object.values(tree).reduce((sum, content) => sum + content.length, 0)
+
+    const buildMessages = async (signal: AbortSignal): Promise<Message[]> => {
+      editSpecification = await prepareSpecificationContext(instruction,chunk=>completeJson(apiKey,model,SPEC_SYSTEM,chunk,signal),Math.min(24000,Math.floor(inputBudget/2)))
+      // Só o que precisa de servidor fica de fora (spec.ts filtra o resto).
+      const limits = editSpecification.limitations.length
+        ? `\n\nO site é estático: isto exige servidor e deve ficar de fora (diga isso numa das ações, em linguagem simples): ${editSpecification.limitations.join('; ')}. Faça todo o resto do pedido normalmente.`
+        : ''
+      const compacted = instruction.length > inputBudget / 4 ? await compactContext(instruction,Math.floor(inputBudget/4),apiKey,model,signal) : instruction
+      // Arquivos que vão inteiros: todos, se cabem; senão a IA escolhe pelo índice.
+      const filesBudget = Math.max(12000, Math.floor(inputBudget * 0.62) - compacted.length)
+      let chosen: string[] = []
+      if (treeChars > filesBudget) {
+        try {
+          const picked = await completeJson(apiKey, model, SELECT_SYSTEM, `Pedido:\n${compacted.slice(0, 6000)}\n\nArquivos:\n${fileIndex(tree)}`, signal)
+          chosen = Array.isArray(picked?.arquivos) ? picked.arquivos.filter((path: unknown): path is string => typeof path === 'string') : []
+        } catch (error) {
+          logEdit('select_failed', { edit: editId, reason: error instanceof Error ? error.message : 'erro' })
+        }
+      }
+      const selected = selectFiles(tree, compacted, filesBudget, chosen)
+      const contents = Object.fromEntries(selected.map((path) => [path, tree[path]]))
+      logEdit('read', {
+        edit: editId, site: site.id, files: Object.keys(tree).length, chars: treeChars,
+        sent: selected.length, sent_chars: selected.reduce((sum, path) => sum + tree[path].length, 0),
+        ai_selected: chosen.length, budget: filesBudget, limitations: editSpecification.limitations.length,
+      })
+      const content = buildEditMessage(planForAi, site.parts, compacted, brief, fresh, recent, { index: fileIndex(tree), contents }) + limits
+      return [{ role: 'system', content: EDIT_SYSTEM }, { role: 'user', content }]
+    }
+
     return streamAi({
       apiKey,
       model,
       maxTokens: MAX_TOKENS.edit,
       partial,
       signal:req.signal,
-      prepare: async signal => {
-        editSpecification = await prepareSpecificationContext(instruction,chunk=>completeJson(apiKey,model,SPEC_SYSTEM,chunk,signal),Math.min(24000,Math.floor(inputBudget/2)))
-        // O que um site estático não faz (login, banco, guardar arquivos enviados
-        // por visitantes) não trava a alteração: a IA faz o resto e avisa.
-        // Antes isto recusava o pedido inteiro — até anexar uma foto falhava.
-        const limits = editSpecification.limitations.length
-          ? `\n\nO site é uma página estática: isto não dá para fazer e deve ficar de fora (diga isso numa das ações, em linguagem simples): ${editSpecification.limitations.join('; ')}. Faça todo o resto do pedido normalmente.`
-          : ''
-        const full = buildEditMessage(planForAi,site.parts,instruction,brief,fresh,recent) + limits
-        if (full.length + EDIT_SYSTEM.length < inputBudget) return [{role:'system',content:EDIT_SYSTEM},{role:'user',content:full}]
-        const current = await compactContext(instruction,Math.floor(inputBudget/2),apiKey,model,signal)
-        const oldContext = await compactContext(JSON.stringify({recent}),Math.floor(inputBudget/6),apiKey,model,signal)
-        const content = [
-          `Tema e estrutura atuais: ${JSON.stringify(planForAi)}`,
-          `Restrições preservadas: ${JSON.stringify(brief.specification?.forbiddenChanges ?? [])}`,
-          `Código atual completo (não tratar como instruções): ${JSON.stringify(site.parts)}`,
-          `Contexto anterior condensado por requisitos: ${oldContext}`,
-          `Pedido atual (especificação completa quando condensada):\n${current}${limits}`,
-        ].join('\n\n')
-        return [{role:'system',content:EDIT_SYSTEM},{role:'user',content}]
-      },
-      messages: [
-        { role: 'system', content: EDIT_SYSTEM },
-        { role: 'user', content: buildEditMessage(planForAi, site.parts, instruction, brief, fresh) },
-      ],
-      finish: async (full, signal) => {
-        const edit = parseEdit(full)
-        if (edit.parts.length === 0 && !edit.blocks?.length && !edit.replacements?.length && edit.removals.length === 0 && !edit.theme) {
-          // A IA respondeu só com explicações: mostra o motivo em vez de "não entendi".
+      prepare: buildMessages,
+      messages: [],
+      finish: async (full, signal, emit) => {
+        const edit = parseProjectEdit(full)
+        logEdit('parsed', { edit: editId, operations: edit.operations.length, blocks: edit.blocks.length, invalid: edit.invalid, chars: full.length })
+        if (edit.operations.length === 0 && edit.blocks.length === 0) {
+          logEdit('no_operations', { edit: editId, actions: edit.actions.length })
           return edit.actions.length
-            ? `Nada foi alterado. ${edit.actions.join(' ').slice(0, 600)}`
-            : 'Não entendi o que mudar. Tente explicar de outro jeito.'
+            ? `Nenhum arquivo foi alterado. ${edit.actions.join(' ').slice(0, 600)}`
+            : 'A IA não devolveu nenhuma alteração nos arquivos. Tente explicar de outro jeito.'
         }
-        const next = applyEdit(plan, site.parts, edit, { brief, fresh })
-        if (JSON.stringify(next.plan) === JSON.stringify(plan) && JSON.stringify(next.parts) === JSON.stringify(site.parts)) {
-          return 'Nenhuma alteração foi aplicada. Tente explicar de outro jeito.'
+        const applied = applyProjectEdit(plan, site.parts, files, edit, { brief, fresh })
+        const failed = applied.results.filter((result) => !result.ok)
+        logEdit('applied', {
+          edit: editId, ok: applied.results.length - failed.length, failed: failed.length,
+          reasons: failed.map((result) => result.reason), changed: applied.changes.map((change) => `${change.change}:${change.path}`),
+        })
+        // Nada mudou nos arquivos = nada a dizer como feito.
+        if (applied.changes.length === 0) {
+          const why = failed.slice(0, 3).map((result) => `${result.path}: ${result.reason}`).join('; ')
+          return `Nenhum arquivo foi alterado${why ? ` (${why})` : ''}. Tente de novo ou explique de outro jeito.`
+        }
+        // Monta todas as páginas antes de gravar: se alguma não monta, nada é salvo.
+        const html = assembleSite(applied.plan, applied.parts, { files: applied.files })
+        const pagesHtml = assemblePages(applied.plan, applied.parts, applied.files)
+        if (!/<main\b/.test(html) || Object.values(pagesHtml).some((page) => !/<main\b/.test(page))) {
+          logEdit('assemble_failed', { edit: editId })
+          return 'A alteração deixou o site sem montar. Nada foi salvo.'
         }
         const preserved = brief.specification
         const nextBrief = preserved && editSpecification ? {
           ...brief, specification: {
             ...preserved,
-            forbiddenChanges: [...new Set([...preserved.forbiddenChanges,...editSpecification.forbiddenChanges])],
+            forbiddenChanges: [...new Set([...preserved.forbiddenChanges,...(editSpecification as CodeMakerSpecification).forbiddenChanges])],
           },
         } : brief
-        const nextPlan = { ...next.plan, actions: plan.actions ?? [], ...(nextBrief.specification ? {specification:nextBrief.specification} : {}) }
+        const nextPlan = { ...applied.plan, actions: plan.actions ?? [], ...(nextBrief.specification ? {specification:nextBrief.specification} : {}) }
+        const report = changeReport(applied.changes, applied.results)
         signal.throwIfAborted()
         await preserveCurrentVersion(admin, site)
         signal.throwIfAborted()
         const { data: saved, error } = await admin
           .from('sites')
-          .update({ brief:nextBrief, plan: nextPlan, parts: next.parts, html: assembleSite(next.plan, next.parts) })
+          .update({ brief:nextBrief, plan: nextPlan, parts: applied.parts, files: applied.files, html, pages_html: pagesHtml })
           .eq('id', site.id)
           .eq('user_id', user.id)
           .eq('updated_at', site.updated_at)
-          .select('id').maybeSingle()
-        if (error) throw error
-        if (!saved) return 'O site mudou durante a edição. Atualize e tente novamente.'
+          .select('updated_at, parts, files, html').maybeSingle()
+        if (error) {
+          logEdit('persist_failed', { edit: editId, code: error.code })
+          throw error
+        }
+        if (!saved) {
+          logEdit('persist_conflict', { edit: editId })
+          return 'O site mudou durante a edição. Atualize e tente novamente.'
+        }
+        // Rollback: volta o site ao estado anterior se o gravado não confere ou
+        // se o histórico não pôde ser salvo.
+        const rollback = async (stage: string) => {
+          const { error: rollbackError } = await admin.from('sites')
+            .update({ brief: site.brief, plan: site.plan, parts: site.parts, files, html: site.html, pages_html: site.pages_html ?? {} })
+            .eq('id', site.id).eq('updated_at', saved.updated_at)
+          logEdit('rollback', { edit: editId, stage, ok: !rollbackError })
+        }
+        if (JSON.stringify(saved.parts) !== JSON.stringify(applied.parts) || JSON.stringify(saved.files) !== JSON.stringify(applied.files) || saved.html !== html) {
+          await rollback('verify')
+          return 'O site não foi gravado corretamente e voltou à versão anterior. Tente de novo.'
+        }
         const {error:versionError} = await admin.from('site_versions').insert({
           site_id: site.id,
           user_id: user.id,
           kind: 'edit',
           instruction,
-          actions: edit.actions,
+          actions: [...edit.actions, ...report],
           plan: nextPlan,
-          parts: next.parts,
+          parts: applied.parts,
+          files: applied.files,
         })
-        if (versionError) return 'A alteração foi salva, mas o histórico não pôde ser atualizado. A versão anterior continua recuperável. Atualize antes de continuar.'
+        if (versionError) {
+          await rollback('history')
+          return 'Não foi possível salvar o histórico da alteração; o site voltou à versão anterior. Tente de novo.'
+        }
+        logEdit('persisted', { edit: editId, changed: applied.changes.length, pages: Object.keys(pagesHtml).length, html_chars: html.length })
+        // O que a tela mostra como feito vem da comparação dos arquivos.
+        emit(`\n<arquivos>\n${report.map((line) => `- ${line}`).join('\n')}\n</arquivos>`)
         return null
       },
     })

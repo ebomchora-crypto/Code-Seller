@@ -23,10 +23,11 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useBilling } from '@/stores/BillingContext'
-import { assembleSite, parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
+import { assembleSite, pageSlugs, pageTitle, parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
+import { projectTree } from '../../../supabase/functions/code-maker/project'
 import { useSiteBuilder } from '@/hooks/useSiteBuilder'
 import { AttachButton, AttachmentTray, useAttachments } from '@/components/code-maker/Attachments'
-import { BuildTimeline, partLabel } from '@/components/code-maker/BuildTimeline'
+import { BuildTimeline } from '@/components/code-maker/BuildTimeline'
 import { CodeView } from '@/components/code-maker/CodeView'
 import { SitePreview } from '@/components/code-maker/SitePreview'
 import { Modal } from '@/components/ui/Modal'
@@ -68,6 +69,9 @@ export default function CodeMakerEditorPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  // Página aberta na prévia ('' = inicial) e o #trecho para rolar.
+  const [previewPage, setPreviewPage] = useState('')
+  const [previewHash, setPreviewHash] = useState('')
   const autoStarted = useRef(false)
   const attachments = useAttachments()
   // Alterações de hoje (o limite vale para todos os sites e landing pages).
@@ -158,24 +162,36 @@ export default function CodeMakerEditorPage() {
     }
   }, [siteName, unseenReady])
 
+  const pages = useMemo(() => pageSlugs(site?.files), [site?.files])
+  // Página que sumiu (apagada numa alteração): volta para a inicial.
+  const shownPage = previewPage && pages.includes(previewPage) ? previewPage : ''
   const previewHtml = useMemo(() => {
     if (!site) return null
     if (site.plan && (phase === 'building' || site.status === 'building')) {
       return assembleSite(site.plan, { ...site.parts, ...builder.builtParts }, { pending: true })
     }
+    if (shownPage && site.plan) {
+      return site.pages_html?.[shownPage] ?? assembleSite(site.plan, site.parts, { files: site.files, page: shownPage })
+    }
     if (site.html) return site.html
-    return site.plan ? assembleSite(site.plan, site.parts, { pending: true }) : null
-  }, [builder.builtParts, phase, site])
+    return site.plan ? assembleSite(site.plan, site.parts, { pending: true, files: site.files }) : null
+  }, [builder.builtParts, phase, shownPage, site])
 
-  // Arquivo mostrado no painel de código: o que a IA está escrevendo agora,
-  // ou o que a pessoa escolheu.
+  // Arquivos do projeto (os mesmos que a IA lê e altera) + o index.html montado.
   const sitePlan = site?.plan ?? null
-  const files = useMemo(() => (sitePlan ? ['index.html', ...partOrder(sitePlan)] : ['index.html']), [sitePlan])
+  const tree = useMemo(() => (site && sitePlan ? projectTree(sitePlan, site.parts, site.files ?? {}) : {}), [site, sitePlan])
+  const files = useMemo(() => {
+    if (!sitePlan) return ['index.html']
+    const paths = Object.keys(tree)
+    // Durante a criação, as seções ainda sem código também aparecem.
+    for (const id of ['header', ...partOrder(sitePlan)]) if (!paths.includes(`secoes/${id}.html`)) paths.push(`secoes/${id}.html`)
+    return ['index.html', ...paths]
+  }, [sitePlan, tree])
   const writingPart = useMemo(() => {
     const writing = Object.entries(builder.progress).filter(([, value]) => value.status === 'writing')
     return writing[writing.length - 1]?.[0] ?? null
   }, [builder.progress])
-  const autoFile = phase === 'planning' ? 'plano' : phase === 'editing' ? 'alteracao' : phase === 'building' && writingPart ? writingPart : 'index.html'
+  const autoFile = phase === 'planning' ? 'plano' : phase === 'editing' ? 'alteracao' : phase === 'building' && writingPart ? `secoes/${writingPart}.html` : 'index.html'
   const currentFile = pickedFile && (files.includes(pickedFile) || pickedFile === autoFile) ? pickedFile : autoFile
 
   const code = useMemo(() => {
@@ -183,14 +199,16 @@ export default function CodeMakerEditorPage() {
     if (currentFile === 'plano') return builder.planText
     if (currentFile === 'alteracao') return builder.editText
     if (currentFile === 'index.html') return previewHtml ?? ''
-    const live = builder.progress[currentFile]
+    const sectionId = currentFile.match(/^secoes\/(.+)\.html$/)?.[1]
+    if (!sectionId) return tree[currentFile] ?? ''
+    const live = builder.progress[sectionId]
     if (live && live.status === 'writing') return parsePart(live.text).html
-    return builder.builtParts[currentFile] ?? site.parts[currentFile] ?? parsePart(live?.text ?? '').html
-  }, [builder.builtParts, builder.editText, builder.planText, builder.progress, currentFile, previewHtml, site])
+    return builder.builtParts[sectionId] ?? site.parts[sectionId] ?? parsePart(live?.text ?? '').html
+  }, [builder.builtParts, builder.editText, builder.planText, builder.progress, currentFile, previewHtml, site, tree])
   const codeIsLive =
     (currentFile === 'plano' && phase === 'planning') ||
     (currentFile === 'alteracao' && phase === 'editing') ||
-    builder.progress[currentFile]?.status === 'writing'
+    builder.progress[currentFile.replace(/^secoes\/|\.html$/g, '')]?.status === 'writing'
 
   if (builder.loading) {
     return (
@@ -303,7 +321,7 @@ export default function CodeMakerEditorPage() {
   async function restore(version: SiteVersion) {
     if (!version.plan || !version.parts || busy) return
     try {
-      await restoreSiteVersion(site!, version, assembleSite(version.plan, version.parts))
+      await restoreSiteVersion(site!, version)
       await builder.refresh()
       toast.success('Versão restaurada.')
     } catch (error) {
@@ -324,13 +342,13 @@ export default function CodeMakerEditorPage() {
   }
 
   function openPart(partId: string) {
-    setPickedFile(partId)
+    setPickedFile(`secoes/${partId}.html`)
     setView('codigo')
     setMobileTab('site')
   }
 
   const fileLabel = (file: string) =>
-    file === 'index.html' ? 'index.html' : file === 'plano' ? 'plano.json' : file === 'alteracao' ? 'alteração' : partLabel(site.plan, file)
+    file === 'plano' ? 'plano.json' : file === 'alteracao' ? 'alteração' : file
   const fileTabs = [...(autoFile === 'plano' || autoFile === 'alteracao' ? [autoFile] : []), ...files]
   const live = ready && site.published
   const mobileSelected: MobileTab | View = mobileTab === 'chat' ? 'chat' : view
@@ -581,7 +599,42 @@ export default function CodeMakerEditorPage() {
                       : 'w-full'
                   }`}
                 >
-                  <SitePreview key={reloadKey} html={previewHtml} title={`Prévia de ${site.name}`} className="h-full w-full" />
+                  <SitePreview
+                    key={reloadKey}
+                    html={previewHtml}
+                    title={`Prévia de ${site.name}`}
+                    className="h-full w-full"
+                    page={shownPage}
+                    hash={previewHash}
+                    onNavigate={(page, hash) => {
+                      if (page && !pages.includes(page)) {
+                        toast.error(`A página ${page}.html não existe neste site.`)
+                        return
+                      }
+                      setPreviewPage(page)
+                      setPreviewHash(hash)
+                    }}
+                  />
+                  {pages.length > 0 && (
+                    <label className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 rounded-full border border-black/10 bg-white/95 py-1 pl-3 pr-1 text-[12px] font-medium text-[#18181b] shadow-lg backdrop-blur">
+                      Página
+                      <select
+                        value={shownPage}
+                        onChange={(event) => {
+                          setPreviewPage(event.target.value)
+                          setPreviewHash('')
+                        }}
+                        className="rounded-full bg-transparent py-0.5 pr-1 text-[12px] font-semibold outline-none"
+                      >
+                        <option value="">Início</option>
+                        {pages.map((page) => (
+                          <option key={page} value={page}>
+                            {site.files?.[`paginas/${page}.html`] ? pageTitle(site.files[`paginas/${page}.html`], page) : page}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   {readyPill && (
                     <div className="cm-ready-pop pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(16,185,129,0.8)]">
                       <CheckCircle2 className="size-4" /> Site pronto
@@ -596,7 +649,7 @@ export default function CodeMakerEditorPage() {
             <div className="flex min-h-0 flex-1 flex-col bg-[#0d0c12]">
               <div className="flex gap-1 overflow-x-auto border-b border-white/5 px-2 py-2 [scrollbar-width:none]">
                 {fileTabs.map((file) => {
-                  const status = builder.progress[file]?.status
+                  const status = builder.progress[file.replace(/^secoes\/|\.html$/g, '')]?.status
                   return (
                     <button
                       key={file}
