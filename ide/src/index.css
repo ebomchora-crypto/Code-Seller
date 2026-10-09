@@ -1,0 +1,339 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+/*
+ * Sistema visual da IDE, no estilo do VS Code.
+ * Todas as cores vêm das variáveis --vs-*; os três temas (escuro "Dark+",
+ * claro "Light+" e alto contraste) só trocam essas variáveis. O tema do Monaco
+ * e o do terminal seguem o mesmo atributo data-theme (ver lib/preferences.ts).
+ */
+:root, [data-theme="vs-dark"] {
+  --vs-font: "Segoe UI", system-ui, -apple-system, "Ubuntu", "Droid Sans", "Helvetica Neue", sans-serif;
+  --vs-mono: "Cascadia Code", "Cascadia Mono", Consolas, "Courier New", monospace;
+
+  --vs-editor: #1e1e1e;
+  --vs-fg: #cccccc;
+  --vs-fg-muted: #9d9d9d;
+  --vs-fg-dim: #6e7681;
+  --vs-fg-strong: #ffffff;
+  --vs-border: #3c3c3c;
+  --vs-border-soft: #2b2b2b;
+
+  --vs-titlebar: #3c3c3c;
+  --vs-titlebar-fg: #cccccc;
+  --vs-activitybar: #333333;
+  --vs-activitybar-fg: #ffffff;
+  --vs-activitybar-fg-dim: #858585;
+  --vs-activitybar-badge: #007acc;
+  --vs-sidebar: #252526;
+  --vs-sidebar-header: #bbbbbb;
+  --vs-panel: #1e1e1e;
+  --vs-tab-bar: #252526;
+  --vs-tab-inactive: #2d2d2d;
+  --vs-tab-inactive-fg: #ffffff80;
+  --vs-tab-active: #1e1e1e;
+  --vs-tab-active-fg: #ffffff;
+  --vs-tab-accent: #007acc;
+  --vs-statusbar: #007acc;
+  --vs-statusbar-fg: #ffffff;
+  --vs-statusbar-hover: #ffffff1f;
+  --vs-statusbar-remote: #16825d;
+
+  --vs-list-hover: #2a2d2e;
+  --vs-list-active: #37373d;
+  --vs-list-focus: #094771;
+  --vs-list-focus-fg: #ffffff;
+  --vs-toolbar-hover: #5a5d5e50;
+  --vs-selection: #264f78;
+
+  --vs-input-bg: #3c3c3c;
+  --vs-input-border: transparent;
+  --vs-input-fg: #cccccc;
+  --vs-focus: #007fd4;
+  --vs-btn-bg: #0e639c;
+  --vs-btn-hover: #1177bb;
+  --vs-btn-fg: #ffffff;
+  --vs-btn2-bg: #3a3d41;
+  --vs-btn2-hover: #45494e;
+  --vs-btn2-fg: #ffffff;
+  --vs-link: #3794ff;
+  --vs-badge-bg: #4d4d4d;
+  --vs-badge-fg: #ffffff;
+
+  --vs-menu-bg: #252526;
+  --vs-menu-border: #454545;
+  --vs-menu-hover: #04395e;
+  --vs-quick-bg: #252526;
+  --vs-shadow: 0 0 8px 2px #0000005c;
+
+  --vs-error: #f14c4c;
+  --vs-error-bg: #5a1d1d;
+  --vs-error-border: #be1100;
+  --vs-warning: #cca700;
+  --vs-info: #3794ff;
+  --vs-success: #89d185;
+  --vs-git-modified: #e2c08d;
+  --vs-git-added: #73c991;
+  --vs-git-deleted: #c74e39;
+  --vs-diff-add: #4ec9b01f;
+  --vs-diff-del: #f14c4c1f;
+  --vs-scroll: #79797966;
+  --vs-scroll-hover: #646464b3;
+  --vs-scroll-active: #bfbfbf66;
+  color-scheme: dark;
+}
+
+[data-theme="vs"] {
+  --vs-editor: #ffffff;
+  --vs-fg: #3b3b3b;
+  --vs-fg-muted: #616161;
+  --vs-fg-dim: #8b8b8b;
+  --vs-fg-strong: #000000;
+  --vs-border: #d4d4d4;
+  --vs-border-soft: #e5e5e5;
+
+  --vs-titlebar: #dddddd;
+  --vs-titlebar-fg: #333333;
+  --vs-activitybar: #2c2c2c;
+  --vs-activitybar-fg: #ffffff;
+  --vs-activitybar-fg-dim: #ffffff66;
+  --vs-sidebar: #f3f3f3;
+  --vs-sidebar-header: #6f6f6f;
+  --vs-panel: #ffffff;
+  --vs-tab-bar: #f3f3f3;
+  --vs-tab-inactive: #ececec;
+  --vs-tab-inactive-fg: #333333b3;
+  --vs-tab-active: #ffffff;
+  --vs-tab-active-fg: #333333;
+  --vs-statusbar-remote: #16825d;
+
+  --vs-list-hover: #e8e8e8;
+  --vs-list-active: #e4e6f1;
+  --vs-list-focus: #0060c0;
+  --vs-list-focus-fg: #ffffff;
+  --vs-toolbar-hover: #b8b8b850;
+  --vs-selection: #add6ff;
+
+  --vs-input-bg: #ffffff;
+  --vs-input-border: #cecece;
+  --vs-input-fg: #3b3b3b;
+  --vs-btn-bg: #007acc;
+  --vs-btn-hover: #0062a3;
+  --vs-btn2-bg: #5f6a79;
+  --vs-btn2-hover: #4c5561;
+  --vs-link: #006ab1;
+  --vs-badge-bg: #c4c4c4;
+  --vs-badge-fg: #333333;
+
+  --vs-menu-bg: #ffffff;
+  --vs-menu-border: #c8c8c8;
+  --vs-menu-hover: #0060c0;
+  --vs-quick-bg: #f3f3f3;
+  --vs-shadow: 0 0 8px 2px #00000029;
+
+  --vs-error: #e51400;
+  --vs-error-bg: #f2dede;
+  --vs-error-border: #be1100;
+  --vs-warning: #bf8803;
+  --vs-info: #1a85ff;
+  --vs-success: #388a34;
+  --vs-git-modified: #895503;
+  --vs-git-added: #587c0c;
+  --vs-git-deleted: #ad0707;
+  --vs-diff-add: #2ea04326;
+  --vs-diff-del: #e5140026;
+  --vs-scroll: #64646466;
+  --vs-scroll-hover: #646464b3;
+  --vs-scroll-active: #00000099;
+  color-scheme: light;
+}
+
+[data-theme="hc-black"] {
+  --vs-editor: #000000;
+  --vs-fg: #ffffff;
+  --vs-fg-muted: #ffffff;
+  --vs-fg-dim: #cccccc;
+  --vs-fg-strong: #ffffff;
+  --vs-border: #6fc3df;
+  --vs-border-soft: #6fc3df;
+
+  --vs-titlebar: #000000;
+  --vs-titlebar-fg: #ffffff;
+  --vs-activitybar: #000000;
+  --vs-activitybar-fg-dim: #ffffff;
+  --vs-sidebar: #000000;
+  --vs-sidebar-header: #ffffff;
+  --vs-panel: #000000;
+  --vs-tab-bar: #000000;
+  --vs-tab-inactive: #000000;
+  --vs-tab-inactive-fg: #ffffff;
+  --vs-tab-active: #000000;
+  --vs-tab-accent: #f38518;
+  --vs-statusbar: #000000;
+  --vs-statusbar-hover: #ffffff33;
+
+  --vs-list-hover: #ffffff1f;
+  --vs-list-active: #f38518;
+  --vs-list-focus: #f38518;
+  --vs-list-focus-fg: #000000;
+  --vs-toolbar-hover: #ffffff33;
+
+  --vs-input-bg: #000000;
+  --vs-input-border: #6fc3df;
+  --vs-focus: #f38518;
+  --vs-btn-bg: #000000;
+  --vs-btn-hover: #ffffff1f;
+  --vs-btn2-bg: #000000;
+  --vs-btn2-hover: #ffffff1f;
+  --vs-link: #3794ff;
+
+  --vs-menu-bg: #000000;
+  --vs-menu-border: #6fc3df;
+  --vs-menu-hover: #f38518;
+  --vs-quick-bg: #0c141f;
+  --vs-shadow: none;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-vs-editor: var(--vs-editor);
+  --color-vs-fg: var(--vs-fg);
+  --color-vs-muted: var(--vs-fg-muted);
+  --color-vs-dim: var(--vs-fg-dim);
+  --color-vs-strong: var(--vs-fg-strong);
+  --color-vs-border: var(--vs-border);
+  --color-vs-border-soft: var(--vs-border-soft);
+  --color-vs-titlebar: var(--vs-titlebar);
+  --color-vs-activitybar: var(--vs-activitybar);
+  --color-vs-sidebar: var(--vs-sidebar);
+  --color-vs-panel: var(--vs-panel);
+  --color-vs-tabbar: var(--vs-tab-bar);
+  --color-vs-tab: var(--vs-tab-inactive);
+  --color-vs-tab-active: var(--vs-tab-active);
+  --color-vs-statusbar: var(--vs-statusbar);
+  --color-vs-hover: var(--vs-list-hover);
+  --color-vs-active: var(--vs-list-active);
+  --color-vs-focus: var(--vs-focus);
+  --color-vs-toolbar: var(--vs-toolbar-hover);
+  --color-vs-input: var(--vs-input-bg);
+  --color-vs-btn: var(--vs-btn-bg);
+  --color-vs-link: var(--vs-link);
+  --color-vs-menu: var(--vs-menu-bg);
+  --color-vs-quick: var(--vs-quick-bg);
+  --color-vs-error: var(--vs-error);
+  --color-vs-warning: var(--vs-warning);
+  --color-vs-success: var(--vs-success);
+  --font-ui: var(--vs-font);
+  --font-code: var(--vs-mono);
+}
+
+@layer base {
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--vs-font);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--vs-fg);
+  background: var(--vs-editor);
+  -webkit-font-smoothing: antialiased;
+}
+* { border-color: var(--vs-border); }
+::selection { background: var(--vs-selection); color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: default; }
+input, select, textarea { font: inherit; }
+a { color: var(--vs-link); }
+:focus { outline: none; }
+:focus-visible { outline: 1px solid var(--vs-focus); outline-offset: -1px; }
+
+/* Barras de rolagem como as do VS Code */
+* { scrollbar-width: thin; scrollbar-color: var(--vs-scroll) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--vs-scroll); }
+::-webkit-scrollbar-thumb:hover { background: var(--vs-scroll-hover); }
+::-webkit-scrollbar-thumb:active { background: var(--vs-scroll-active); }
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+}
+
+@layer components {
+/* Componentes base (mesmos nomes de antes, agora com o visual do VS Code) */
+.btn-primary, .btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 26px; padding: 4px 12px; border: 1px solid transparent; border-radius: 2px;
+  font-size: 13px; line-height: 18px; white-space: nowrap; user-select: none;
+}
+.btn-primary { background: var(--vs-btn-bg); color: var(--vs-btn-fg); }
+.btn-primary:hover:not(:disabled) { background: var(--vs-btn-hover); }
+.btn-secondary { background: var(--vs-btn2-bg); color: var(--vs-btn2-fg); }
+.btn-secondary:hover:not(:disabled) { background: var(--vs-btn2-hover); }
+[data-theme="hc-black"] .btn-primary, [data-theme="hc-black"] .btn-secondary { border-color: var(--vs-focus); }
+.btn-primary:disabled, .btn-secondary:disabled { opacity: .4; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border-radius: 5px; color: var(--vs-fg-muted);
+}
+.icon-btn:hover:not(:disabled) { background: var(--vs-toolbar-hover); color: var(--vs-fg-strong); }
+.icon-btn:disabled { opacity: .35; }
+.field {
+  background: var(--vs-input-bg); color: var(--vs-input-fg);
+  border: 1px solid var(--vs-input-border); border-radius: 2px; padding: 4px 6px;
+  font-size: 13px; line-height: 18px; outline: none;
+}
+.field::placeholder { color: var(--vs-fg-dim); }
+.field:focus { border-color: var(--vs-focus); outline: 1px solid var(--vs-focus); outline-offset: -1px; }
+select.field { padding-right: 4px; }
+.error-banner {
+  color: var(--vs-fg-strong); background: var(--vs-error-bg); border: 1px solid var(--vs-error-border);
+  border-radius: 2px; padding: 6px 10px; font-size: 12px; line-height: 1.5;
+}
+.kbd {
+  display: inline-block; min-width: 20px; padding: 1px 6px; border: 1px solid var(--vs-border);
+  border-bottom-width: 2px; border-radius: 3px; background: var(--vs-input-bg); color: var(--vs-fg);
+  font: 11px/16px var(--vs-font); text-align: center;
+}
+.panel-title {
+  font-size: 11px; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; color: var(--vs-sidebar-header);
+}
+.badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 16px;
+  padding: 0 5px; border-radius: 9px; background: var(--vs-badge-bg); color: var(--vs-badge-fg);
+  font-size: 11px; font-weight: 400; line-height: 16px; letter-spacing: 0;
+}
+.link { color: var(--vs-link); background: none; border: 0; padding: 0; text-align: left; }
+.link:hover { text-decoration: underline; }
+.settings-row { padding: 10px 0 14px; }
+.settings-row .settings-title { display: block; font-weight: 600; color: var(--vs-fg-strong); margin-bottom: 2px; }
+.settings-row .settings-help { display: block; color: var(--vs-fg-muted); font-size: 12px; margin-bottom: 6px; }
+}
+
+/* Divisórias arrastáveis (sash) */
+.sash-v, .sash-h { position: absolute; z-index: 30; background: transparent; transition: background-color .1s .15s; }
+.sash-v { top: 0; bottom: 0; width: 4px; cursor: col-resize; }
+.sash-h { left: 0; right: 0; height: 4px; cursor: row-resize; }
+.sash-v:hover, .sash-h:hover, .sash-active { background: var(--vs-focus); }
+body.is-dragging { user-select: none; }
+body.is-dragging iframe { pointer-events: none; }
+
+.monaco-editor, .monaco-editor-background { outline: none !important; }
+
+@keyframes cm-fade { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
+.menu-pop { animation: cm-fade .08s ease-out; }
+@media (prefers-reduced-motion: reduce) { .menu-pop { animation: none; } }
+
+/* Itens de menu e listas */
+.menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--vs-menu-hover); color: var(--vs-fg-strong); outline: none; }
+.list-row { white-space: nowrap; overflow: hidden; display: flex; align-items: center; gap: 4px; width: 100%; height: 22px; text-align: left; color: var(--vs-fg); }
+.list-row:hover { background: var(--vs-list-hover); }
+.list-row[data-active="true"] { background: var(--vs-list-active); color: var(--vs-fg-strong); }
+:focus-within > .list-row[data-active="true"], .tree-focus:focus-within .list-row[data-active="true"] { background: var(--vs-list-focus); color: var(--vs-list-focus-fg); }
+
+/* Imagem de fundo escolhida pelo usuário (as superfícies ficam translúcidas) */
+body { background: var(--cm-base, var(--vs-editor)); }
+html.has-bg-image body::before {
+  content: ''; position: fixed; inset: -20px; z-index: 0; pointer-events: none;
+  background: var(--cm-bg-image) center / cover no-repeat; filter: blur(var(--cm-bg-blur, 0px));
+}
+html.has-bg-image #root { position: relative; z-index: 1; }

@@ -19,6 +19,7 @@ import {
   RotateCw,
   Smartphone,
   Square,
+  SquareTerminal,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -355,6 +356,7 @@ export default function CodeMakerEditorPage() {
 
   const menuItems: MenuItem[] = [
     ...(live ? [{ icon: ExternalLink, label: 'Abrir site', href: url }] : []),
+    ...(ready ? [{ icon: SquareTerminal, label: 'Editar na IDE', href: `/ide/project/${site.id}` }] : []),
     {
       icon: Link2,
       label: 'Mudar o link',

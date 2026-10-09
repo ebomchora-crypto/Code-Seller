@@ -158,7 +158,7 @@ export function DashboardSidebar({
               )}
 
               {group.items.map((item) => {
-                const isActive = !item.download && isSidebarRouteActive(item.path, currentPath)
+                const isActive = !item.download && !item.external && isSidebarRouteActive(item.path, currentPath)
                 const itemClassName = cn(
                   'group relative flex h-9 items-center rounded-lg text-[13.5px] transition-colors duration-150 [@media(max-height:780px)]:h-8',
                   collapsed ? 'mx-auto w-10 justify-center' : 'gap-2.5 px-3',
@@ -189,12 +189,12 @@ export function DashboardSidebar({
 
                 // Item de arquivo (baixar o app): link de verdade, não rota do
                 // react-router — senão cairia na tela de "não encontrada".
-                if (item.download) {
+                if (item.download || item.external) {
                   return (
                     <a
                       key={item.path}
                       href={item.path}
-                      download
+                      download={item.download ? true : undefined}
                       title={`${item.label}: ${item.hint}`}
                       onClick={onCloseMobile}
                       className={itemClassName}

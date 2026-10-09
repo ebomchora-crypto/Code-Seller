@@ -14,7 +14,7 @@ interface SidebarProps {
 // "baixar o app" de novo, então tira esse item do menu.
 const groupsForWeb =
   typeof window !== 'undefined' && window.codeSellersDesktop
-    ? navGroups.map((group) => ({ ...group, items: group.items.filter((item) => !item.download) }))
+    ? navGroups.map((group) => ({ ...group, items: group.items.filter((item) => !item.hideInApp) }))
     : navGroups
 
 export function Sidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile }: SidebarProps) {

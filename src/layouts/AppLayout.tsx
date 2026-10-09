@@ -51,7 +51,7 @@ function useDownloadAfterSignup() {
     const intent = takeDownloadIntent()
     if (!intent) return
     startDownload(intent)
-    toast.success('Conta pronta! O download do app para Windows começou.', {
+    toast.success(intent === 'ide' ? 'Conta pronta! O download da IDE para Windows começou.' : 'Conta pronta! O download do app para Windows começou.', {
       description: 'Se não começar, clique em Baixar.',
       action: { label: 'Baixar', onClick: () => startDownload(intent) },
       duration: 20000,

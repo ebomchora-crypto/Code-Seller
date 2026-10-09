@@ -30,7 +30,7 @@ export type FileTree = Record<string, string>
 export const SITE_JSON = 'site.json'
 export const STYLES = 'estilos.css'
 export const SCRIPT = 'script.js'
-const SECTION_PATH = /^secoes\/([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)\.html$/
+export const SECTION_PATH = /^secoes\/([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)\.html$/
 const MAX_FILE_CHARS = 120_000
 const MAX_CODE_CHARS = 80_000
 const MAX_PAGES = 12
@@ -304,7 +304,7 @@ function validateCode(path: string, content: string): string | null {
 
 // site.json → plano. Seção que não está na lista continua no fim (só some com
 // <apagar>); seção listada sem arquivo é ignorada.
-function planFromSiteJson(text: string, plan: SitePlan, sectionIds: string[]): SitePlan | string {
+export function planFromSiteJson(text: string, plan: SitePlan, sectionIds: string[]): SitePlan | string {
   let value: Partial<SiteJson>
   try {
     value = JSON.parse(text)

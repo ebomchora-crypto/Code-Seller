@@ -1,4 +1,4 @@
-import { Download, Laptop, RefreshCw, Wifi } from 'lucide-react'
+import { Download, Laptop, RefreshCw, SquareTerminal, Wifi } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { LandingFadeIn } from '@/components/landing/LandingFadeIn'
 import { rememberDownloadIntent, type DownloadKind } from '@/utils/downloadIntent'
@@ -75,8 +75,16 @@ export function LandingDownload() {
                 >
                   Versão portátil
                 </button>
+                <button
+                  type="button"
+                  onClick={() => signUpToDownload('ide')}
+                  className="inline-flex h-[52px] items-center justify-center gap-2 rounded-full border border-white/15 px-6 text-[14px] font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white"
+                >
+                  <SquareTerminal className="size-[16px]" strokeWidth={2.2} />
+                  Baixar a IDE
+                </button>
               </div>
-              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta grátis para baixar · Windows 10 ou 11</p>
+              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta grátis para baixar · Windows 10 ou 11 · A IDE é o editor de código completo, com terminal e Git</p>
             </div>
 
             <div className="relative hidden lg:block" aria-hidden>

@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
-import { ChartColumnBig, CodeXml, Download, GalleryHorizontalEnd, GraduationCap } from 'lucide-react'
+import { ChartColumnBig, CodeXml, Download, GalleryHorizontalEnd, GraduationCap, SquareTerminal } from 'lucide-react'
 import {
   AutopilotIcon,
   CrmIcon,
@@ -20,6 +20,10 @@ export interface NavItem {
   hint: string
   /** Link de arquivo (não é uma página do app) — vira <a download> em vez de <Link>. */
   download?: boolean
+  /** Página fora do app (outra aplicação do site, como a IDE): link comum, sem rota do react-router. */
+  external?: boolean
+  /** Dentro do app de Windows não faz sentido oferecer (o próprio app já está instalado). */
+  hideInApp?: boolean
 }
 
 export interface NavGroup {
@@ -48,16 +52,25 @@ const downloadAppItem: NavItem = {
   icon: Download,
   hint: 'Code Sellers no Windows',
   download: true,
+  hideInApp: true,
+}
+const ideItem: NavItem = { label: 'IDE', path: '/ide/', icon: SquareTerminal, hint: 'Editor de código completo, como o VS Code', external: true }
+const downloadIdeItem: NavItem = {
+  label: 'Baixar IDE',
+  path: '/downloads/CodeSellersIDE-Setup.exe',
+  icon: Download,
+  hint: 'IDE completa no Windows, com terminal e Git',
+  download: true,
 }
 
 // Os grupos seguem a ordem do trabalho: achar o cliente, vender, organizar.
 export const navGroups: NavGroup[] = [
   { label: 'Principal', items: [dashboardItem], hideLabel: true },
   { label: 'Encontrar clientes', items: [prospectionItem, crmItem] },
-  { label: 'Vender', items: [autopilotItem, codeMakerItem, dealsItem, portfolioItem] },
+  { label: 'Vender', items: [autopilotItem, codeMakerItem, ideItem, dealsItem, portfolioItem] },
   { label: 'Organizar', items: [tasksItem, financialItem, reportsItem] },
   { label: 'Aprender', items: [academyItem] },
-  { label: 'Conta', items: [settingsItem, supportItem, downloadAppItem] },
+  { label: 'Conta', items: [settingsItem, supportItem, downloadAppItem, downloadIdeItem] },
 ]
 
 export const navItems: NavItem[] = navGroups.flatMap((group) => group.items)

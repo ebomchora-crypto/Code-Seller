@@ -2,11 +2,12 @@
 // aba e o download começa assim que a pessoa entra no sistema.
 const KEY = 'cs-download-intent'
 
-export type DownloadKind = 'setup' | 'portable'
+export type DownloadKind = 'setup' | 'portable' | 'ide'
 
 export const DOWNLOAD_URLS: Record<DownloadKind, string> = {
   setup: '/downloads/CodeSellers-Setup.exe',
   portable: '/downloads/CodeSellers-Portable.exe',
+  ide: '/downloads/CodeSellersIDE-Setup.exe',
 }
 
 export function rememberDownloadIntent(kind: DownloadKind = 'setup'): void {
@@ -21,7 +22,7 @@ export function takeDownloadIntent(): DownloadKind | null {
   try {
     const value = sessionStorage.getItem(KEY)
     if (value) sessionStorage.removeItem(KEY)
-    return value === 'setup' || value === 'portable' ? value : null
+    return value === 'setup' || value === 'portable' || value === 'ide' ? value : null
   } catch {
     return null
   }

@@ -30,7 +30,7 @@ const ACTIONS: PaletteItem[] = [
 
 const PAGES: PaletteItem[] = navGroups.flatMap((group) =>
   // Dentro do app de Windows não oferece baixar o app (igual ao menu lateral).
-  group.items.filter((item) => !(item.download && typeof window !== 'undefined' && window.codeSellersDesktop)).map((item) => ({ id: `page-${item.path}`, group: 'Páginas', label: item.label, hint: item.hint, icon: item.icon, to: item.path, download: item.download })),
+  group.items.filter((item) => !(item.hideInApp && typeof window !== 'undefined' && window.codeSellersDesktop)).map((item) => ({ id: `page-${item.path}`, group: 'Páginas', label: item.label, hint: item.hint, icon: item.icon, to: item.path, download: item.download || item.external })),
 )
 
 function normalize(value: string): string {
