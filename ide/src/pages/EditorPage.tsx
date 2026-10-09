@@ -80,6 +80,8 @@ function ProjectWorkbench({ id }: { id: string }) {
   const git = useGitSummary(id);
   const trail = useRef<{ stack: string[]; index: number; jumping: boolean }>({ stack: [], index: -1, jumping: false });
   const [, nudge] = useState(0);
+  const publishedFiles = useRef<Record<string, string> | null>(null);
+  useEffect(() => { if (session && publishedFiles.current === null) publishedFiles.current = session.files; }, [session]);
   useEffect(() => { void useProjectStore.getState().fetchProjects(false); }, []);
   useEffect(() => { setSplit(null); return () => { monaco.editor.getModels().forEach(model => { if (model.uri.path.startsWith(`/projects/${id}/`)) model.dispose(); }); }; }, [id]);
   useEffect(() => { if (split && session && session.files[split] === undefined) setSplit(null); }, [session?.files, split]);
@@ -109,7 +111,7 @@ function ProjectWorkbench({ id }: { id: string }) {
       if (event.altKey && !event.ctrlKey && event.key === 'ArrowRight') { event.preventDefault(); go(1); return; }
       if (!(event.ctrlKey || event.metaKey)) return;
       const key = event.key.toLowerCase();
-      if (key === 's') { event.preventDefault(); void session?.flush().catch(error => setError(error.message)); }
+      if (key === 's') { event.preventDefault(); void saveNow(); }
       if (key === 'p') { event.preventDefault(); setPalette(event.shiftKey ? 'commands' : 'files'); }
       if (key === 'b') { event.preventDefault(); setSidebar(value => !value); }
       if (key === 'n' && !event.shiftKey) { event.preventDefault(); void newFile(); }
@@ -143,6 +145,18 @@ function ProjectWorkbench({ id }: { id: string }) {
       const project = await api<ProjectDetail>(`/projects/${id}/apply`, 'POST', { revision: session.project.revision, files: next, label });
       session.replace(project); useEditorStore.getState().syncFiles(project.files, session.project.id);
     } finally { if (useEditorStore.getState().projectId === session.project.id) useEditorStore.setState({ locked: previousLock }); }
+  }
+  // Salvar = gravar o rascunho e, no site, publicar (monta as páginas e deixa o site no ar).
+  async function saveNow() {
+    if (!session) return;
+    try {
+      await session.flush();
+      if (!cloud) return;
+      const sent = session.files; setBusy(true);
+      const result = await api<{ revision: number; publicUrl: string }>(`/projects/${id}/publish`, 'POST', { revision: session.project.revision });
+      session.project = { ...session.project, revision: result.revision, publicUrl: result.publicUrl, published: true };
+      publishedFiles.current = sent;
+    } catch (e) { setError((e as Error).message); } finally { setBusy(false); nudge(value => value + 1); }
   }
   async function newFile(folder?: string) {
     if (!session) return;
@@ -202,7 +216,7 @@ function ProjectWorkbench({ id }: { id: string }) {
   const showView = (value: Activity) => { setActivity(value); setSidebar(true); };
   const selectActivity = (value: Activity) => { if (activity === value && sidebar) setSidebar(false); else showView(value); };
   const openFileItems = Object.keys(session.files).map(path => ({ label: path, action: () => useEditorStore.getState().openFile({ id: path, name: path.split('/').at(-1)!, type: 'file' }, session.project.id) }));
-  const save = () => void session.flush().catch(e => setError(e.message));
+  const save = () => void saveNow();
   const toggleBottom = (value: Exclude<Bottom, null>) => setBottom(current => current === value ? null : value);
   const runCommand = (command: string, label: string) => setLaunch({ command, label });
   const runFile = () => { const command = active ? commandForFile(active) : null; if (command && active) runCommand(command, `Executar ${active.slice(1)}`); else setError('Este tipo de arquivo não tem comando de execução automático.'); };
@@ -270,7 +284,7 @@ function ProjectWorkbench({ id }: { id: string }) {
         <Sash orientation="vertical" invert={!sidebarRight} edge={sidebarRight ? 'end' : 'start'} label="Redimensionar assistente" value={chatWidth} min={280} max={700} onChange={setChatWidth} onCommit={value => patchLayout({ chatWidth: value })} />
         <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}>{cloud ? <CloudAssistant key={id} session={session} /> : <ChatPanel key={id} session={session} apply={apply} />}</Suspense></div>}
     </div>
-    <StatusBar status={session.status} busy={busy} active={active} git={git} markers={markers} tabSize={tabSize} onSave={save} onProblems={() => setBottom('problems')} onGit={() => showView('git')} />
+    <StatusBar publish={cloud ? { published: publishedFiles.current === session.files && session.project.published !== false, url: session.project.publicUrl } : undefined} status={session.status} busy={busy} active={active} git={git} markers={markers} tabSize={tabSize} onSave={save} onProblems={() => setBottom('problems')} onGit={() => showView('git')} />
     {history && <Suspense fallback={null}><HistoryPanel session={session} busy={busy} close={() => setHistory(false)} checkpoint={() => void checkpoint()} restore={checkpointId => void run(async () => { await session.flush(); const project = await api<ProjectDetail>(`/projects/${id}/restore`, 'POST', { id: checkpointId }); session.replace(project); useEditorStore.getState().syncFiles(project.files, session.project.id); })} /></Suspense>}
     {palette && <Suspense fallback={null}><CommandPalette title={palette === 'files' ? 'Abrir arquivo…' : 'Executar comando…'} close={() => setPalette(null)} items={palette === 'files' ? openFileItems : commands} /></Suspense>}
     {gear && <ContextMenu x={gear.x} y={gear.y} close={() => setGear(null)} items={[

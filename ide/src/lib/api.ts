@@ -2,7 +2,7 @@ import { cloud } from './mode';
 export type Template = 'react' | 'static' | 'generic' | 'next' | 'node' | 'python' | 'java';
 export const previewable = (template: Template) => template === 'react' || template === 'static';
 export interface Project {
-  id: string; name: string; description: string; template: Template; folderPath?: string;
+  id: string; name: string; description: string; template: Template; folderPath?: string; publicUrl?: string; published?: boolean;
   created_at: string; updated_at: string; revision: number; deleted_at: string | null;
 }
 export interface Checkpoint { id: string; label: string; created_at: string; files: Record<string, string> }

@@ -529,6 +529,16 @@ export default function CodeMakerEditorPage() {
                 ))}
               </div>
             )}
+            {ready && (
+              <a
+                href={busy ? undefined : `/ide/project/${site.id}`}
+                aria-disabled={busy}
+                title="Abre o código do site na IDE. Ao salvar lá (Ctrl+S), o site é publicado automaticamente."
+                className={`mb-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)] ${busy ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <SquareTerminal className="size-3.5" /> Importar para a IDE
+              </a>
+            )}
             <div
               onDragOver={(event) => {
                 if (event.dataTransfer.types.includes('Files')) event.preventDefault()

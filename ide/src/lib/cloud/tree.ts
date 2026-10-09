@@ -1,6 +1,6 @@
-import { assemblePages, assembleSite, type ProjectFiles, type SiteParts, type SitePlan } from '../../../../supabase/functions/code-maker/site';
-import { planFromSiteJson, projectTree, SECTION_PATH, SITE_JSON, STYLES, SCRIPT, isProjectPath } from '../../../../supabase/functions/code-maker/project';
-import { PAGE_PATH } from '../../../../supabase/functions/code-maker/site';
+import { assemblePages, assembleSite, type ProjectFiles, type SiteParts, type SitePlan } from '../../../../supabase/functions/code-maker/site.ts';
+import { planFromSiteJson, projectTree, SECTION_PATH, SITE_JSON, STYLES, SCRIPT, isProjectPath } from '../../../../supabase/functions/code-maker/project.ts';
+import { PAGE_PATH } from '../../../../supabase/functions/code-maker/site.ts';
 
 export type SiteState = { plan: SitePlan; parts: SiteParts; files: ProjectFiles };
 const PROTECTED = new Set(['header', 'footer']);

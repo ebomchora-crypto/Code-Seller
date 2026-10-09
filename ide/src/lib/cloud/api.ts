@@ -2,7 +2,7 @@ import { supabase } from './client';
 import { assemble, fromIdeTree, isSitePath, toIdeTree, type SiteState } from './tree';
 import type { Checkpoint, Project, ProjectDetail } from '../api';
 
-type Row = { id: string; user_id: string; name: string; slug: string; status: string; plan: SiteState['plan'] | null; parts: SiteState['parts'] | null; files: SiteState['files'] | null; updated_at: string; created_at: string };
+type Row = { id: string; user_id: string; name: string; slug: string; status: string; published: boolean; plan: SiteState['plan'] | null; parts: SiteState['parts'] | null; files: SiteState['files'] | null; updated_at: string; created_at: string };
 type VersionRow = { id: string; kind: string; instruction: string | null; plan: SiteState['plan'] | null; parts: SiteState['parts'] | null; files: SiteState['files'] | null; created_at: string };
 const fail = (message: string) => { throw new Error(message); };
 // updated_at com microssegundos não cabe num number: guardamos o texto original e entregamos ao IDE um contador.
@@ -10,9 +10,9 @@ const revisions = new Map<string, { rev: number; updated_at: string }>();
 let counter = 1;
 const remember = (row: Pick<Row, 'id' | 'updated_at'>) => { const rev = counter++; revisions.set(row.id, { rev, updated_at: row.updated_at }); return rev; };
 const stateOf = (row: Row): SiteState => ({ plan: row.plan ?? fail('Este site ainda não terminou de ser gerado.'), parts: row.parts ?? {}, files: row.files ?? {} });
-const summary = (row: Pick<Row, 'id' | 'name' | 'created_at' | 'updated_at'>): Project => ({ id: row.id, name: row.name, description: 'Site do Code Maker', template: 'static', created_at: row.created_at, updated_at: row.updated_at, revision: revisions.get(row.id)?.rev ?? 0, deleted_at: null });
+const summary = (row: Pick<Row, 'id' | 'name' | 'created_at' | 'updated_at'> & Partial<Pick<Row, 'slug' | 'published'>>): Project => ({ id: row.id, name: row.name, description: 'Site do Code Maker', template: 'static', created_at: row.created_at, updated_at: row.updated_at, revision: revisions.get(row.id)?.rev ?? 0, deleted_at: null, publicUrl: row.slug ? `${location.origin}/${row.slug}` : undefined, published: row.published });
 async function fetchRow(id: string): Promise<Row> {
-  const { data, error } = await supabase.from('sites').select('id, user_id, name, slug, status, plan, parts, files, updated_at, created_at').eq('id', id).maybeSingle();
+  const { data, error } = await supabase.from('sites').select('id, user_id, name, slug, status, published, plan, parts, files, updated_at, created_at').eq('id', id).maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Row | null) ?? fail('Site não encontrado.');
 }
@@ -33,7 +33,7 @@ async function save(id: string, revision: number, next: Record<string, string>):
   if (bad) fail(`Neste ambiente só são editados site.json, secoes/*.html, paginas/*.html, estilos.css e script.js (${bad.slice(1)}).`);
   const row = await fetchRow(id);
   const state = fromIdeTree(next, stateOf(row));
-  const { data, error } = await supabase.from('sites').update({ plan: state.plan, parts: state.parts, files: state.files, ...assemble(state) }).eq('id', id).eq('updated_at', known!.updated_at).select('id, user_id, name, slug, status, plan, parts, files, updated_at, created_at').maybeSingle();
+  const { data, error } = await supabase.from('sites').update({ plan: state.plan, parts: state.parts, files: state.files }).eq('id', id).eq('updated_at', known!.updated_at).select('id, user_id, name, slug, status, published, plan, parts, files, updated_at, created_at').maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Row | null) ?? fail('O site mudou em outra janela (ou pelo assistente). Recarregue a página.');
 }
@@ -50,7 +50,7 @@ export async function cloudApi<T>(path: string, method: string, body?: unknown):
   if (parts[0] === 'projects' && parts.length === 1) {
     if (method === 'GET') {
       if (url.searchParams.get('deleted') === 'true') return out([]);
-      const { data, error } = await supabase.from('sites').select('id, name, created_at, updated_at').eq('status', 'ready').order('updated_at', { ascending: false });
+      const { data, error } = await supabase.from('sites').select('id, name, slug, published, created_at, updated_at').eq('status', 'ready').order('updated_at', { ascending: false });
       if (error) throw new Error(error.message);
       return out((data ?? []).map(row => { remember(row as Row); return summary(row as Row); }));
     }
@@ -73,6 +73,17 @@ export async function cloudApi<T>(path: string, method: string, body?: unknown):
       await checkpoint(row, String(input.label || 'Antes da alteração'));
       return out(await detail(await save(id, Number(input.revision), input.files as Record<string, string>)));
     }
+    if (action === 'publish' && method === 'POST') {
+      // Salvar de verdade: monta as páginas a partir do que está gravado e publica o site.
+      const row = await fetchRow(id); const known = revisions.get(id);
+      if (!known || known.rev !== Number(input.revision)) fail('O projeto foi alterado em outra janela. Recarregue a página.');
+      const state = stateOf(row); const built = assemble(state);
+      if (!/<main\b/.test(built.html) || Object.values(built.pages_html).some(page => !/<main\b/.test(page))) fail('O site não monta com esses arquivos (falta o <main>). Nada foi publicado.');
+      const { data, error } = await supabase.from('sites').update({ ...built, published: true }).eq('id', id).eq('updated_at', known!.updated_at).select('id, user_id, name, slug, status, published, plan, parts, files, updated_at, created_at').maybeSingle();
+      if (error) throw new Error(error.message);
+      const saved = (data as Row | null) ?? fail('O site mudou em outra janela (ou pelo assistente). Recarregue a página.');
+      return out({ revision: remember(saved), publicUrl: `${location.origin}/${saved.slug}` });
+    }
     if (action === 'checkpoint' && method === 'POST') { await checkpoint(await fetchRow(id), String(input.label || 'Checkpoint manual')); return out({}); }
     if (action === 'restore' && method === 'POST') {
       const row = await fetchRow(id);
@@ -80,7 +91,7 @@ export async function cloudApi<T>(path: string, method: string, body?: unknown):
       if (error || !data?.plan || !data.parts) throw new Error(error?.message || 'Esta versão não pode ser restaurada.');
       await checkpoint(row, 'Antes de restaurar uma versão');
       const state: SiteState = { plan: data.plan, parts: data.parts, files: (data.files as SiteState['files']) ?? {} };
-      const { data: saved, error: updateError } = await supabase.from('sites').update({ plan: state.plan, parts: state.parts, files: state.files, status: 'ready', ...assemble(state) }).eq('id', id).select('id, user_id, name, slug, status, plan, parts, files, updated_at, created_at').single();
+      const { data: saved, error: updateError } = await supabase.from('sites').update({ plan: state.plan, parts: state.parts, files: state.files, status: 'ready', ...assemble(state) }).eq('id', id).select('id, user_id, name, slug, status, published, plan, parts, files, updated_at, created_at').single();
       if (updateError) throw new Error(updateError.message);
       return out(await detail(saved as Row));
     }
