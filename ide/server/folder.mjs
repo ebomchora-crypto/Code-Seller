@@ -13,7 +13,7 @@ const HIDDEN = new Set(['.git', '.code-makers']);
 const SKIPPED_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', 'coverage', 'target', 'venv', '.venv', '__pycache__', '.gradle', '.idea', '.vs', '.cache', '.turbo', '.code-makers']);
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.avif', '.mp3', '.wav', '.ogg', '.flac', '.mp4', '.mov', '.avi', '.mkv', '.webm', '.zip', '.gz', '.tar', '.7z', '.rar', '.exe', '.dll', '.so', '.dylib', '.bin', '.pdf', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.psd', '.ai', '.sketch', '.fig', '.blend', '.fbx', '.glb', '.obj', '.class', '.jar', '.pyc', '.o', '.a', '.lib', '.iso', '.dmg', '.sqlite', '.db', '.parquet']);
 const IMAGE_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.ico': 'image/x-icon', '.avif': 'image/avif' };
-export const MAX_TEXT_BYTES = 5 * 1024 * 1024;
+export const MAX_TEXT_BYTES = 24 * 1024 * 1024;
 const MAX_LIST = 10000;
 const lower = value => process.platform === 'win32' ? value.toLowerCase() : value;
 

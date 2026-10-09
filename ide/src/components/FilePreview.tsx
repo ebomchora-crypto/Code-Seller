@@ -10,5 +10,5 @@ export function FilePreview({ file, projectId }: { file: FileNode; projectId: st
   return <div className="flex-1 flex items-center justify-center text-center p-8"><div className="max-w-sm"><Icon size={44} className="mx-auto mb-4 text-vs-dim" strokeWidth={1.3} />
     <p className="text-vs-strong text-[15px] mb-1">{file.kind === 'large' ? 'Arquivo grande demais para editar' : 'Arquivo binário'}</p>
     <p className="text-vs-muted text-sm">{file.name}{typeof file.size === 'number' ? ` · ${formatSize(file.size)}` : ''}</p>
-    <p className="text-vs-dim text-xs mt-3">{file.kind === 'large' ? 'A IDE edita arquivos de texto de até 5 MB. Abra este arquivo em outro programa.' : 'Esse tipo de arquivo não pode ser editado como texto.'}</p></div></div>;
+    <p className="text-vs-dim text-xs mt-3">{file.kind === 'large' ? 'A IDE edita arquivos de texto de até 24 MB. Abra este arquivo em outro programa.' : 'Esse tipo de arquivo não pode ser editado como texto.'}</p></div></div>;
 }

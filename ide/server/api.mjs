@@ -19,7 +19,7 @@ async function bodyOf(request) {
   let body = '';
   for await (const chunk of request) {
     body += chunk;
-    if (Buffer.byteLength(body) > 24 * 1024 * 1024) throw fail('Pedido muito grande.', 413);
+    if (Buffer.byteLength(body) > 64 * 1024 * 1024) throw fail('Pedido muito grande.', 413);
   }
   try { const data = JSON.parse(body || '{}'); if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(); return data; } catch { throw fail('JSON inválido.'); }
 }
