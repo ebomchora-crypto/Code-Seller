@@ -766,6 +766,7 @@ Deno.serve(async (req: Request) => {
         logEdit('parsed', { edit: editId, operations: edit.operations.length, blocks: edit.blocks.length, invalid: edit.invalid, chars: full.length })
         if (edit.operations.length === 0 && edit.blocks.length === 0) {
           logEdit('no_operations', { edit: editId, actions: edit.actions.length })
+          if (edit.invalid) return `Nenhum arquivo foi alterado: ${edit.invalid} operação(ões) vieram com formato quebrado. Tente de novo.`
           return edit.actions.length
             ? `Nenhum arquivo foi alterado. ${edit.actions.join(' ').slice(0, 600)}`
             : 'A IA não devolveu nenhuma alteração nos arquivos. Tente explicar de outro jeito.'
@@ -796,7 +797,7 @@ Deno.serve(async (req: Request) => {
           },
         } : brief
         const nextPlan = { ...applied.plan, actions: plan.actions ?? [], ...(nextBrief.specification ? {specification:nextBrief.specification} : {}) }
-        const report = changeReport(applied.changes, applied.results)
+        const report = changeReport(applied.changes, applied.results, edit.invalid)
         signal.throwIfAborted()
         await preserveCurrentVersion(admin, site)
         signal.throwIfAborted()

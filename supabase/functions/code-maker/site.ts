@@ -1250,7 +1250,16 @@ FORMATO DA RESPOSTA (sem nada antes ou depois):
 - (2 a 6 itens curtos, 1ª pessoa, linguagem simples, contando o que você mudou)
 </acoes>
 Depois, as operações nos arquivos (quantas precisar):
-- Trocar um trecho (preferido para texto, link, classe ou um bloco de código): <editar arquivo="secoes/guias.html">{"antes":"trecho EXATO copiado do arquivo atual, único nele","depois":"novo trecho"}</editar>. JSON válido (aspas e quebras de linha escapadas). Pode repetir.
+- Trocar um trecho (preferido para texto, link, classe ou um bloco de código), com o código cru, sem escapar aspas:
+<editar arquivo="secoes/guias.html">
+<antes>
+trecho EXATO copiado do arquivo atual (único nele, com as mesmas aspas e espaços)
+</antes>
+<depois>
+novo trecho
+</depois>
+</editar>
+Pode repetir quantas vezes precisar; prefira trechos curtos (uma tag ou poucas linhas).
 - Criar um arquivo ou reescrever um inteiro: <escrever arquivo="paginas/publicacoes.html">conteúdo completo</escrever>. Seção nova da página inicial: <escrever arquivo="secoes/novo-id.html" depois="id-da-secao-anterior" rotulo="Nome no menu">…</escrever>. Para estilos.css e script.js, mande o arquivo inteiro (o atual + o novo).
 - Apagar: <apagar arquivo="paginas/antiga.html"/> (secoes/header, secoes/hero e secoes/footer não se apagam).
 - Redesenhar uma seção com um bloco premium pronto (o código monta o HTML): <bloco id="id" modelo="id-do-bloco">{JSON do conteúdo}</bloco> (seção nova: com depois="..." rotulo="..." e, se quiser, fundo="paper|surface|ink|brand"). Os campos seguem a lista BLOCOS PRONTOS.

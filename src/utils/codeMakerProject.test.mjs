@@ -147,3 +147,22 @@ test('links entre páginas: o quadro reconhece e manda para quem mostra o site',
   assert.match(script, /codeMakerPage/)
   assert.deepEqual(pageSlugs({ 'paginas/b.html': 'x', 'paginas/a.html': 'y', 'estilos.css': 'z' }), ['a', 'b'])
 })
+
+test('troca de trecho: formato <antes>/<depois> com aspas cruas e JSON com aspas do HTML sem escapar', () => {
+  const edit = parseProjectEdit(`<editar arquivo="secoes/hero.html">
+<antes>
+<h1>Advocacia trabalhista</h1>
+</antes>
+<depois>
+<h1 class="text-3xl sm:text-5xl">Advocacia trabalhista</h1>
+</depois>
+</editar>
+<editar arquivo="secoes/artigos.html">{"antes":"<h2>Artigos</h2>","depois":"<h2 class="text-2xl md:text-4xl">Artigos</h2>"}</editar>
+<editar arquivo="secoes/artigos.html">{quebrado</editar>`)
+  assert.equal(edit.operations.length, 2)
+  assert.equal(edit.invalid, 1)
+  const result = applyProjectEdit(plan, parts, {}, edit, { brief })
+  assert.match(result.parts.hero, /<h1 class="text-3xl sm:text-5xl">/)
+  assert.match(result.parts.artigos, /<h2 class="text-2xl md:text-4xl">/)
+  assert.match(changeReport(result.changes, result.results, edit.invalid).at(-1), /formato quebrado/)
+})

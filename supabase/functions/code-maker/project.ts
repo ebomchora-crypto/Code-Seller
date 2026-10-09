@@ -168,6 +168,24 @@ export interface ProjectEdit {
 
 const attr = (attrs: string, name: string) => attrs.match(new RegExp(`\\b${name}="([^"]*)"`, 'i'))?.[1]?.trim()
 
+// Trecho de uma troca. Formato principal: <antes>…</antes><depois>…</depois>
+// (código cru, sem escapar aspas). Também aceita o JSON {"antes","depois"} e,
+// se o JSON veio com aspas do HTML sem escapar, recupera os dois textos.
+function readPatch(body: string): { before: string; after: string } | null {
+  const tagged = body.match(/<antes>\n?([\s\S]*?)\n?<\/antes>\s*<depois>\n?([\s\S]*?)\n?<\/depois>/i)
+  if (tagged) return tagged[1] ? { before: tagged[1], after: tagged[2] } : null
+  try {
+    const patch = JSON.parse(body)
+    if (typeof patch.antes === 'string' && patch.antes && typeof patch.depois === 'string') return { before: patch.antes, after: patch.depois }
+    return null
+  } catch {
+    const loose = body.trim().match(/^\{\s*"antes"\s*:\s*"([\s\S]*?)"\s*,\s*"depois"\s*:\s*"([\s\S]*)"\s*\}$/)
+    if (!loose || !loose[1]) return null
+    const unescape = (value: string) => value.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+    return { before: unescape(loose[1]), after: unescape(loose[2]) }
+  }
+}
+
 function cleanPath(value: string | undefined): string {
   return (value ?? '').trim().replace(/^\.?\//, '').toLowerCase()
 }
@@ -187,13 +205,9 @@ export function parseProjectEdit(raw: string): ProjectEdit {
   for (const match of text.matchAll(tags)) {
     if (match[1]) {
       const path = match[1].toLowerCase() === 'substituir' ? sectionPath(cleanPath(attr(match[2], 'id'))) : cleanPath(attr(match[2], 'arquivo'))
-      try {
-        const patch = JSON.parse(match[3])
-        if (typeof patch.antes !== 'string' || !patch.antes || typeof patch.depois !== 'string') throw new Error()
-        operations.push({ kind: 'edit', path, before: patch.antes, after: patch.depois })
-      } catch {
-        invalid++
-      }
+      const patch = readPatch(match[3])
+      if (patch) operations.push({ kind: 'edit', path, ...patch })
+      else invalid++
     } else if (match[4]) {
       const legacy = match[4].toLowerCase() === 'parte'
       const path = legacy ? sectionPath(cleanPath(attr(match[5], 'id'))) : cleanPath(attr(match[5], 'arquivo'))
@@ -496,7 +510,7 @@ export function applyProjectEdit(
 }
 
 /** Linhas do relatório que a tela mostra: só o que de fato mudou nos arquivos. */
-export function changeReport(changes: FileChange[], results: OperationResult[]): string[] {
+export function changeReport(changes: FileChange[], results: OperationResult[], invalid = 0): string[] {
   const lines = changes.map((change) => {
     const delta = change.after - change.before
     return change.change === 'alterado'
@@ -505,5 +519,6 @@ export function changeReport(changes: FileChange[], results: OperationResult[]):
   })
   const failed = results.filter((result) => !result.ok)
   if (failed.length) lines.push(`Não aplicado (${failed.length}): ${failed.slice(0, 4).map((result) => `${result.path} — ${result.reason}`).join('; ')}`)
+  if (invalid) lines.push(`Não aplicado (${invalid}): ${invalid === 1 ? 'uma operação veio' : `${invalid} operações vieram`} com formato quebrado`)
   return lines
 }
