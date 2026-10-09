@@ -6,7 +6,7 @@ export interface Project {
   created_at: string; updated_at: string; revision: number; deleted_at: string | null;
 }
 export interface Checkpoint { id: string; label: string; created_at: string; files: Record<string, string> }
-export interface ProjectDetail extends Project { files: Record<string, string>; history: Checkpoint[] }
+export interface ProjectDetail extends Project { files: Record<string, string>; history: Checkpoint[]; lazy?: boolean }
 export async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   if (cloud) return (await import('./cloud/api')).cloudApi<T>(path, method, body);
   let response: Response;

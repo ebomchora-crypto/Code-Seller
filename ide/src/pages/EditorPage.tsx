@@ -11,6 +11,7 @@ import { StatusBar } from '../components/StatusBar';
 import { ContextMenu } from '../components/ContextMenu';
 import { Sash } from '../components/Sash';
 import EmptyWorkbench from './EmptyWorkbench';
+import LazyWorkbench from './LazyWorkbench';
 import { useEditorStore } from '../store/editorStore';
 import { useProjectStore } from '../store/projectStore';
 import { useLocalProject } from '../hooks/useLocalProject';
@@ -48,7 +49,17 @@ const normalize = (value: string) => { const trimmed = value.trim().replace(/\\/
 
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();
-  return id ? <ProjectWorkbench key={id} id={id} /> : <EmptyWorkbench />;
+  return id ? <ProjectRouter key={id} id={id} /> : <EmptyWorkbench />;
+}
+
+// Pasta aberta do computador (sem limite de tamanho) usa o modo sob demanda; os demais projetos, o modo completo.
+function ProjectRouter({ id }: { id: string }) {
+  const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { let alive = true; api<ProjectDetail>(`/projects/${id}`).then(value => { if (alive) setProject(value); }).catch(e => { if (alive) setError(e.message); }); return () => { alive = false; }; }, [id]);
+  if (error) return <div className="p-10"><p className="error-banner mb-4">{error}</p><Link to="/" className="link">Voltar</Link></div>;
+  if (!project) return <div className="p-10 text-vs-dim">Abrindo…</div>;
+  return project.lazy ? <LazyWorkbench project={project} /> : <ProjectWorkbench id={id} />;
 }
 
 function ProjectWorkbench({ id }: { id: string }) {

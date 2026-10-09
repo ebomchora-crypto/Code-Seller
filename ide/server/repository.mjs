@@ -1,6 +1,7 @@
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { join, isAbsolute, resolve, basename } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { stat as statPath } from 'node:fs/promises';
 import { readWorkspace, writeWorkspace, reservedPath } from './workspace.mjs';
 import { atomicWrite } from './atomic.mjs';
 
@@ -91,6 +92,8 @@ export function createRepository(root, options = {}) {
   const workspace = id => { filePath(id); return folders.get(id) || join(workspaceRoot, id); };
   const save = async (project, synchronize = true) => {
     await mkdir(root, { recursive: true });
+    // Pasta aberta do computador: os arquivos são do usuário; a IDE nunca os sincroniza em bloco.
+    if (project.folderPath) { synchronize = false; project = { ...project, files: {}, history: [] }; }
     if (synchronize) {
       let previous = {};
       try { previous = await readWorkspace(workspace(project.id)); } catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -114,9 +117,16 @@ export function createRepository(root, options = {}) {
     project.history = [snapshot, ...project.history].slice(0, 30);
     return snapshot;
   };
+  // Pasta aberta do computador: nada é lido de uma vez (a IDE navega e salva arquivo por arquivo).
+  const lazyView = project => ({ ...project, files: {}, history: [], lazy: true });
   const hydrate = async id => {
     let project = await read(id);
     if (project.deleted_at) throw fail('Projeto está na lixeira.', 404);
+    if (project.folderPath) {
+      const available = await statPath(project.folderPath).then(info => info.isDirectory(), () => false);
+      if (!available) throw fail('A pasta não está disponível. Verifique o caminho e abra a pasta novamente.', 404);
+      return lazyView(project);
+    }
     let files;
     try { files = await readWorkspace(workspace(id)); }
     catch (error) { if (error.code !== 'ENOENT') throw error; if (project.folderPath) throw fail('A pasta do workspace não está disponível. Verifique o caminho e abra a pasta novamente.', 404); await writeWorkspace(workspace(id), project.files); return project; }
@@ -146,7 +156,7 @@ export function createRepository(root, options = {}) {
     openFolder(input) { return serial(async () => {
       if (typeof input.path !== 'string' || !isAbsolute(input.path)) throw fail('Informe o caminho completo da pasta.');
       const folderPath = resolve(input.path);
-      const files = await readWorkspace(folderPath);
+      if (!(await statPath(folderPath).then(info => info.isDirectory(), () => false))) throw fail('A pasta não existe ou não é uma pasta.', 404);
       await mkdir(root, { recursive: true });
       for (const name of await readdir(root)) {
         if (!/^[a-f0-9-]{36}\.json$/.test(name)) continue;
@@ -154,23 +164,26 @@ export function createRepository(root, options = {}) {
         if (existing.folderPath?.toLowerCase() === folderPath.toLowerCase() && !existing.deleted_at) return hydrate(existing.id);
       }
       const now = new Date().toISOString(); const id = randomUUID(); folders.set(id, folderPath);
-      return save({ id, name: nameOf(input.name || basename(folderPath) || folderPath), description: 'Pasta local', template: 'generic', folderPath, files, revision: 1, created_at: now, updated_at: now, deleted_at: null, history: [] }, false);
+      return lazyView(await save({ id, name: nameOf(input.name || basename(folderPath) || folderPath), description: 'Pasta local', template: 'generic', folderPath, files: {}, lazy: true, revision: 1, created_at: now, updated_at: now, deleted_at: null, history: [] }, false));
     }); },
     update(id, input) { return serial(async () => {
       const project = await hydrate(id);
       if (input.revision !== project.revision) throw fail('Projeto alterado em outra sessão. Exporte suas mudanças antes de recarregar.', 409);
       if (input.name !== undefined) project.name = nameOf(input.name);
+      if (project.folderPath) return lazyView(await save(touch({ ...project, files: {}, history: [] }), false));
       if (input.files !== undefined) project.files = validateFiles(input.files);
       return save(touch(project));
     }); },
     checkpoint(id, label) { return serial(async () => {
       const project = await hydrate(id);
+      if (project.folderPath) throw fail('Em pastas abertas, use o Git para guardar versões.', 400);
       const snapshot = addCheckpoint(project, label);
       await save(project);
       return snapshot;
     }); },
     restore(id, checkpointId) { return serial(async () => {
       const project = await hydrate(id);
+      if (project.folderPath) throw fail('Em pastas abertas, use o Git para voltar versões.', 400);
       const snapshot = project.history.find(item => item.id === checkpointId);
       if (!snapshot) throw fail('Versão não encontrada.', 404);
       addCheckpoint(project, 'Antes de restaurar');
@@ -179,6 +192,7 @@ export function createRepository(root, options = {}) {
     }); },
     apply(id, input) { return serial(async () => {
       const project = await hydrate(id);
+      if (project.folderPath) throw fail('Pastas abertas são alteradas arquivo por arquivo.', 400);
       if (project.revision !== input.revision) throw fail('Projeto alterado em outra sessão. Gere a proposta novamente.', 409);
       const files = validateFiles(input.files);
       addCheckpoint(project, input.label ?? 'Antes das alterações');
@@ -192,6 +206,7 @@ export function createRepository(root, options = {}) {
     }); },
     recover(id) { return serial(async () => {
       const project = await read(id);
+      if (project.folderPath) { project.deleted_at = null; return lazyView(await save(touch({ ...project, files: {}, history: [] }), false)); }
       let files;
       try { files = await readWorkspace(workspace(id)); }
       catch (error) { if (error.code !== 'ENOENT') throw error; if (project.folderPath) throw fail('A pasta do workspace não está disponível.', 404); await writeWorkspace(workspace(id), project.files); files = project.files; }

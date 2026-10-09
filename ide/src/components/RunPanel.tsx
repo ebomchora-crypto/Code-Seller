@@ -5,12 +5,12 @@ import { commandForFile } from '../lib/runFile';
 import { useEditorStore } from '../store/editorStore';
 
 type Workspace = { scripts: Record<string, string> };
-export default function RunPanel({ projectId, files, run }: { projectId: string; files: Record<string, string>; run: (command: string, label: string) => void }) {
+export default function RunPanel({ projectId, files, run, hasPackage: forced }: { hasPackage?: boolean; projectId: string; files: Record<string, string>; run: (command: string, label: string) => void }) {
   const [scripts, setScripts] = useState<Record<string, string>>({});
   const active = useEditorStore(state => state.activeFileId);
   useEffect(() => { let alive = true; void api<Workspace>(`/projects/${projectId}/workspace`).then(data => { if (alive) setScripts(data.scripts && typeof data.scripts === 'object' ? data.scripts : {}); }).catch(() => undefined); return () => { alive = false; }; }, [projectId, files['/package.json']]);
   const fileCommand = active ? commandForFile(active) : null;
-  const hasPackage = files['/package.json'] !== undefined;
+  const hasPackage = forced ?? files['/package.json'] !== undefined;
   return <aside className="h-full w-full overflow-auto bg-vs-sidebar text-[13px]" aria-label="Executar">
     <div className="h-[35px] flex items-center pl-5"><span className="panel-title">Executar</span></div>
     <div className="px-3 space-y-2 pb-3">

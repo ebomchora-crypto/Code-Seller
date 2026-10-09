@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-export interface FileNode { id: string; name: string; type: 'file' | 'folder'; content?: string; children?: FileNode[]; parentId?: string | null }
+export interface FileNode { id: string; name: string; type: 'file' | 'folder'; content?: string; children?: FileNode[]; parentId?: string | null; heavy?: boolean; kind?: 'text' | 'image' | 'binary' | 'large'; size?: number }
 export function fileTree(files: Record<string, string>): FileNode[] {
   const root: FileNode[] = [];
   for (const [path, content] of Object.entries(files).sort(([a], [b]) => a.localeCompare(b))) {
@@ -23,6 +23,10 @@ function findFile(nodes: FileNode[], id: string): FileNode | undefined {
   for (const node of nodes) { if (node.id === id) return node; const child = findFile(node.children || [], id); if (child) return child; }
 }
 interface EditorState {
+  /** Pasta aberta do computador: a árvore e os arquivos são carregados sob demanda. */
+  lazy: boolean; lazyOpener: ((path: string) => void) | null;
+  setLazyRoot: (projectId: string, nodes: FileNode[], opener: (path: string) => void) => void;
+  setChildren: (path: string, nodes: FileNode[]) => void; openLoaded: (file: FileNode) => void; replaceOpen: (id: string, content: string) => void;
   locked: boolean;
   projectId: string | null;
   files: FileNode[]; openFiles: FileNode[]; activeFileId: string | null;
@@ -30,11 +34,23 @@ interface EditorState {
   openFile: (file: FileNode, projectId?: string) => void; closeFile: (id: string) => void;
   setActiveFile: (id: string) => void; updateFileContent: (id: string, content: string, projectId?: string) => void;
 }
+function mergeChildren(previous: FileNode[] | undefined, next: FileNode[]): FileNode[] {
+  const old = new Map((previous ?? []).map(node => [node.id, node]));
+  return next.map(node => { const before = old.get(node.id); return before && before.type === node.type && node.type === 'folder' ? { ...node, children: before.children } : node; });
+}
+function withChildren(nodes: FileNode[], path: string, children: FileNode[]): FileNode[] {
+  return nodes.map(node => node.id === path ? { ...node, children: mergeChildren(node.children, children) } : node.children && path.startsWith(`${node.id}/`) ? { ...node, children: withChildren(node.children, path, children) } : node);
+}
 export const useEditorStore = create<EditorState>((set, get) => ({
+  lazy: false, lazyOpener: null,
+  setLazyRoot: (projectId, nodes, opener) => set({ lazy: true, lazyOpener: opener, projectId, files: nodes, openFiles: [], activeFileId: null, locked: false }),
+  setChildren: (path, nodes) => set(state => path === '/' ? { files: mergeChildren(state.files, nodes) } : { files: withChildren(state.files, path, nodes) }),
+  openLoaded: file => set(state => ({ openFiles: state.openFiles.some(item => item.id === file.id) ? state.openFiles.map(item => item.id === file.id ? { ...item, ...file } : item) : [...state.openFiles, file], activeFileId: file.id })),
+  replaceOpen: (id, content) => set(state => ({ openFiles: state.openFiles.map(item => item.id === id ? { ...item, content } : item) })),
   locked: false,
   projectId: null,
   files: [], openFiles: [], activeFileId: null,
-  setFiles: (files, projectId = null) => set({ files, projectId, locked: false, openFiles: [], activeFileId: null }),
+  setFiles: (files, projectId = null) => set({ files, projectId, locked: false, openFiles: [], activeFileId: null, lazy: false, lazyOpener: null }),
   syncFiles: (files, projectId) => {
     if (projectId !== undefined && get().projectId !== projectId) return;
     const tree = fileTree(files);
@@ -44,6 +60,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   openFile: (file, projectId) => {
     if (projectId !== undefined && get().projectId !== projectId) return;
+    if (get().lazy) { const known = get().openFiles.some(item => item.id === file.id); if (known) set({ activeFileId: file.id }); else get().lazyOpener?.(file.id); return; }
     const current = findFile(get().files, file.id);
     if (!current || current.type !== 'file') return;
     set({ openFiles: get().openFiles.some(item => item.id === file.id) ? get().openFiles : [...get().openFiles, current], activeFileId: file.id });
@@ -56,6 +73,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   updateFileContent: (id, content, projectId) => {
     if (projectId !== undefined && get().projectId !== projectId) return;
     if (get().locked) return;
+    if (get().lazy) { if (get().openFiles.some(item => item.id === id && item.content !== content)) get().replaceOpen(id, content); return; }
     const files = flattenFiles(get().files);
     if (files[id] === undefined || files[id] === content) return;
     get().syncFiles({ ...files, [id]: content });

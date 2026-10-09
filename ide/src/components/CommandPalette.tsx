@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { FileIcon } from '../lib/fileIcons';
 type Item = { label: string; action: () => void };
 // Paleta rápida (Ctrl+P / Ctrl+Shift+P) no estilo do VS Code: caixa no topo, lista logo abaixo.
-export default function CommandPalette({ items, close, title }: { items: Item[]; close: () => void; title: string }) {
+export default function CommandPalette({ items, close, title, search }: { items: Item[]; close: () => void; title: string; search?: (query: string) => Promise<Item[]> }) {
   const [query, setQuery] = useState(''); const [selected, setSelected] = useState(0); const input = useRef<HTMLInputElement>(null); const list = useRef<HTMLDivElement>(null);
   const files = title.startsWith('Abrir');
   useEffect(() => { input.current?.focus(); }, []);
   useEffect(() => { list.current?.querySelector('[data-selected="true"]')?.scrollIntoView?.({ block: 'nearest' }); }, [selected]);
-  const matches = items.filter(item => item.label.toLowerCase().includes(query.toLowerCase())).slice(0, 100);
+  const [remote, setRemote] = useState<Item[]>([]);
+  useEffect(() => { if (!search) return; let alive = true; const timer = setTimeout(() => { void search(query).then(found => { if (alive) setRemote(found); }).catch(() => { if (alive) setRemote([]); }); }, 120); return () => { alive = false; clearTimeout(timer); }; }, [query, search]);
+  const matches = search ? remote.slice(0, 100) : items.filter(item => item.label.toLowerCase().includes(query.toLowerCase())).slice(0, 100);
   function choose(index: number) { if (matches[index]) { close(); matches[index].action(); } }
   return <div className="fixed inset-0 z-50 flex justify-center items-start" onMouseDown={close}>
     <div role="dialog" aria-modal="true" aria-label={title} className="menu-pop mt-0 w-[600px] max-w-[92vw] border border-t-0 p-1.5" style={{ background: 'var(--vs-quick-bg)', borderColor: 'var(--vs-menu-border)', boxShadow: 'var(--vs-shadow)' }} onMouseDown={e => e.stopPropagation()}>

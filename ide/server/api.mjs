@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { readFile, mkdir } from 'node:fs/promises';
 import { atomicWrite } from './atomic.mjs';
 import { readWorkspace } from './workspace.mjs';
+import { listDirectory, readEntry, rawEntry, findFiles, searchText, writeEntry, operate, statEntries, forgetIndex, packageScripts, chatContext } from './folder.mjs';
 import { isAbsolute, basename } from 'node:path';
 import { pickFolder } from './folder-picker.mjs';
 import { serveStatic } from './static.mjs';
@@ -65,6 +66,20 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
         if (request.method === 'POST') return json(await repo.create(await bodyOf(request)), 201);
       }
       const id = parts[2];
+      if (parts[3] === 'fs') {
+        const project = await repo.get(id);
+        if (!project.folderPath) throw fail('Este recurso é só para pastas abertas do computador.', 400);
+        const root = project.folderPath; const action = parts[4];
+        if (action === 'list' && request.method === 'GET') return json(await listDirectory(root, url.searchParams.get('path') || '/', { all: url.searchParams.get('all') === '1' }));
+        if (action === 'file' && request.method === 'GET') return json(await readEntry(root, url.searchParams.get('path')));
+        if (action === 'raw' && request.method === 'GET') return await rawEntry(root, url.searchParams.get('path'), response);
+        if (action === 'find' && request.method === 'GET') return json(await findFiles(root, url.searchParams.get('q') || ''));
+        if (action === 'search' && request.method === 'GET') { let closed = false; response.on('close', () => { closed = true; }); return json(await searchText(root, url.searchParams.get('q') || '', { caseSensitive: url.searchParams.get('cs') === '1', all: url.searchParams.get('all') === '1', cancelled: () => closed })); }
+        if (action === 'file' && request.method === 'PUT') return json(await writeEntry(root, await bodyOf(request)));
+        if (action === 'op' && request.method === 'POST') { const result = await operate(root, await bodyOf(request)); forgetIndex(root); return json(result); }
+        if (action === 'stats' && request.method === 'POST') return json(await statEntries(root, (await bodyOf(request)).paths));
+        throw fail('Rota não encontrada.', 404);
+      }
       if (parts[3] === 'conversation') {
         await repo.get(id);
         const path = join(root, 'conversations', `${id}.json`);
@@ -83,7 +98,7 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
       }
       if (parts[3] === 'workspace' && request.method === 'GET') {
         const project = await repo.get(id); let scripts = {};
-        try { const candidate = JSON.parse(project.files['/package.json'] || '{}').scripts; if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) scripts = Object.fromEntries(Object.entries(candidate).filter(([name, command]) => /^[\w:.-]{1,100}$/.test(name) && typeof command === 'string')); } catch {}
+        if (project.folderPath) scripts = await packageScripts(project.folderPath); else try { const candidate = JSON.parse(project.files['/package.json'] || '{}').scripts; if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) scripts = Object.fromEntries(Object.entries(candidate).filter(([name, command]) => /^[\w:.-]{1,100}$/.test(name) && typeof command === 'string')); } catch {}
         return json({ path: repo.workspace(id), trusted: Boolean(project.trusted), shell: process.platform === 'win32' ? 'PowerShell' : 'Bash', scripts });
       }
       if (request.method === 'POST') {
@@ -118,7 +133,8 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
             if (!ai.baseUrl || !ai.model) throw fail('IA não configurada. Defina AI_BASE_URL e AI_MODEL em .env.local e reinicie.', 503);
             if (aiBusy) throw fail('Aguarde a geração atual terminar.', 429);
             if (!['ask', 'plan', 'agent', 'edit'].includes(input.mode) || typeof input.prompt !== 'string' || !input.prompt.trim() || input.prompt.length > 12000) throw fail('Pedido de IA inválido.');
-            const project = await repo.get(id);
+            let project = await repo.get(id);
+            if (project.folderPath) project = { ...project, files: await chatContext(project.folderPath, input.activeFile, input.prompt) };
             if (input.mode === 'edit' && !Object.hasOwn(project.files, input.activeFile)) throw fail('Selecione um arquivo existente para o modo Edit.');
             const paths = Object.keys(project.files);
             const selected = [...new Set([input.activeFile, ...paths.filter(path => input.prompt.includes(path.slice(1))), ...paths])].filter(path => paths.includes(path)).slice(0, 12);

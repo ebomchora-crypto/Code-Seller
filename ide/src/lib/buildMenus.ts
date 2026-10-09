@@ -7,7 +7,7 @@ import { useUi } from './ui';
 import { cloud, IDE_DOWNLOAD } from './mode';
 
 export type MenuContext = {
-  hasProject: boolean; active: string | null; previewable: boolean; recents: { id: string; name: string }[];
+  lazy?: boolean; hasProject: boolean; active: string | null; previewable: boolean; recents: { id: string; name: string }[];
   actions: {
     newFile: () => void; newProject: () => void; openFolder: () => void; openByPath: () => void; importCopy: () => void; importZip: () => void; openRecent: (id: string) => void;
     save: () => void; closeTab: () => void; closeFolder: () => void; exportZip: () => void; quickOpen: () => void; commands: () => void;
@@ -16,7 +16,7 @@ export type MenuContext = {
   };
 };
 const sep: MenuItem = { separator: true };
-export function buildMenus({ hasProject, active, previewable, recents, actions }: MenuContext): MenuGroups {
+export function buildMenus({ lazy = false, hasProject, active, previewable, recents, actions }: MenuContext): MenuGroups {
   const prefs = usePreferences.getState();
   const editor = (label: string, id: string, shortcut?: string): MenuItem => ({ label, shortcut, disabled: !active, action: () => runEditorAction(id) });
   const menus: MenuGroups = {
@@ -77,6 +77,12 @@ export function buildMenus({ hasProject, active, previewable, recents, actions }
     Terminal: [{ label: 'Abrir ou fechar terminal', shortcut: 'Ctrl+`', disabled: !hasProject, action: actions.terminal }, { label: 'Problemas', disabled: !hasProject, action: actions.problems }],
     Ajuda: [{ label: 'Atalhos de teclado', action: () => useUi.getState().set({ settings: true, settingsTab: 'keys' }) }, { label: 'Histórico de versões', disabled: !hasProject, action: actions.history }, { label: 'Configurar assistente de IA', action: () => useUi.getState().set({ settings: true, settingsTab: 'ai' }) }],
   };
+  if (lazy) {
+    // Pasta aberta do computador: sem ZIP, preview nem histórico (o histórico é o Git).
+    const hide = new Set(['Exportar como ZIP', 'Preview', 'Histórico de versões']);
+    const clean = (items: MenuItem[]): MenuItem[] => items.filter(item => !('label' in item) || !hide.has(item.label)).map(item => 'submenu' in item && item.submenu ? { ...item, submenu: clean(item.submenu) } : item);
+    return Object.fromEntries(Object.entries(menus).map(([name, items]) => [name, clean(items)]));
+  }
   if (!cloud) return menus;
   // No site: sem terminal, Git, pastas locais nem execução; o projeto vem do Code Maker.
   const hide = new Set(['Abrir pasta…', 'Abrir por caminho…', 'Importar cópia de pasta…', 'Importar ZIP…', 'Abrir recente', 'Novo projeto…']);

@@ -9,6 +9,7 @@ import { useStatus } from '../store/statusStore';
 import { setActiveEditor } from '../lib/editorRef';
 import { Code2 } from 'lucide-react';
 import { cloud } from '../lib/mode';
+import { FilePreview } from './FilePreview';
 import { useIsMobile } from '../lib/useIsMobile';
 
 const shortcuts: [string, string][] = [['Abrir arquivo', 'Ctrl+P'], ['Mostrar todos os comandos', 'Ctrl+Shift+P'], ['Buscar no projeto', 'Ctrl+Shift+F'], ['Alternar terminal', 'Ctrl+`'], ['Abrir configurações', 'Ctrl+,']];
@@ -32,8 +33,9 @@ export const Editor = ({ projectId, fileId }: { projectId: string; fileId?: stri
   const openFiles = useEditorStore(state => state.openFiles);
   const updateFileContent = useEditorStore(state => state.updateFileContent);
   const locked = useEditorStore(state => state.locked);
+  const lazy = useEditorStore(state => state.lazy);
   useEffect(() => {
-    for (const [path, content] of Object.entries(flattenFiles(files))) {
+    for (const [path, content] of Object.entries(lazy ? Object.fromEntries(openFiles.filter(item => !item.kind || item.kind === 'text').map(item => [item.id, item.content ?? ''])) : flattenFiles(files))) {
       const uri = monaco.Uri.parse(`file:///projects/${projectId}${path}`);
       const model = monaco.editor.getModel(uri);
       if (model) { if (model.getValue() !== content) model.setValue(content); }
@@ -42,12 +44,14 @@ export const Editor = ({ projectId, fileId }: { projectId: string; fileId?: stri
         monaco.editor.createModel(content, language, uri);
       }
     }
-    const paths = flattenFiles(files);
+    const paths = lazy ? Object.fromEntries(openFiles.filter(item => !item.kind || item.kind === 'text').map(item => [item.id, item.content ?? ''])) : flattenFiles(files);
     monaco.editor.getModels().forEach(model => { if (model.uri.path.startsWith(`/projects/${projectId}/`) && paths[model.uri.path.slice(`/projects/${projectId}`.length)] === undefined) model.dispose(); });
-  }, [files, projectId]);
+  }, [lazy ? openFiles : files, projectId, lazy]);
   useEffect(() => { const reveal = (event: Event) => { const { line, path } = (event as CustomEvent).detail; setTimeout(() => { if (instance.current?.getModel()?.uri.path !== `/projects/${projectId}${path}`) return; instance.current.revealLineInCenter(line); instance.current.setPosition({ lineNumber: line, column: 1 }); instance.current.focus(); }, 100); }; window.addEventListener('cm-reveal-line', reveal); return () => window.removeEventListener('cm-reveal-line', reveal); }, [projectId]);
   const file = fileId ? { id: fileId, name: fileId.split('/').at(-1)!, content: flattenFiles(files)[fileId] } : openFiles.find(file => file.id === activeFileId);
   if (!file) return <Watermark />;
+  const kind = (file as { kind?: string }).kind;
+  if (kind && kind !== 'text') return <FilePreview file={file as never} projectId={projectId} />;
   const language = languageForPath(file.name);
   return <div className="flex-1 min-h-0"><MonacoEditor onMount={editor => {
     instance.current = editor;

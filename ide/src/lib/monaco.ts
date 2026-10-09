@@ -1,11 +1,8 @@
 import { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor/editor/editor.api';
-import 'monaco-editor/language/typescript/monaco.contribution';
-import 'monaco-editor/language/json/monaco.contribution';
-import 'monaco-editor/language/css/monaco.contribution';
-import 'monaco-editor/language/html/monaco.contribution';
 // Todas as linguagens do Monaco (carregadas sob demanda) para abrir qualquer tipo de arquivo de texto.
-import 'monaco-editor/languages/definitions/register.all';
+// Editor completo (sugestões, busca, comentários, múltiplos cursores, dobras…) e todas as linguagens.
+import 'monaco-editor/editor/editor.main';
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker';
 import TypeScriptWorker from 'monaco-editor/language/typescript/ts.worker?worker';
 import JsonWorker from 'monaco-editor/language/json/json.worker?worker';

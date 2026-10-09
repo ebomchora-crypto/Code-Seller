@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FileNode, useEditorStore } from '../store/editorStore';
-import { ChevronRight, ChevronDown, FilePlus, Pencil, Trash2, ChevronsDownUp, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, FilePlus, Pencil, Trash2, ChevronsDownUp, Search, RefreshCw, Loader2 } from 'lucide-react';
 import { FileIcon, FolderIcon } from '../lib/fileIcons';
 import { ContextMenu, type MenuItem } from './ContextMenu';
 import type { Marker } from '../lib/markers';
@@ -8,11 +8,11 @@ import type { Marker } from '../lib/markers';
 type Actions = { onCreate: (folder?: string) => void; onRename: (path?: string, folder?: boolean) => void; onDelete: (path?: string, folder?: boolean) => void };
 type Menu = { x: number; y: number; node: FileNode } | null;
 
-function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu, onOpenFile }: { onOpenFile?: () => void; node: FileNode; level: number; collapsed: Set<string>; toggle: (id: string) => void; filtering: boolean; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void }) {
+function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu, onOpenFile, lazy, expanded }: { lazy?: boolean; expanded?: Set<string>; onOpenFile?: () => void; node: FileNode; level: number; collapsed: Set<string>; toggle: (id: string) => void; filtering: boolean; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void }) {
   const active = useEditorStore(state => state.activeFileId);
   const openFile = useEditorStore(state => state.openFile);
   const folder = node.type === 'folder';
-  const open = folder && (filtering || !collapsed.has(node.id));
+  const open = folder && (filtering || (lazy ? Boolean(expanded?.has(node.id)) : !collapsed.has(node.id)));
   const own = markers.filter(item => folder ? item.path.startsWith(`${node.id}/`) : item.path === node.id);
   const errors = own.filter(item => item.severity === 'error').length;
   const warnings = own.filter(item => item.severity === 'warning').length;
@@ -22,14 +22,16 @@ function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu, 
       onClick={() => { if (folder) toggle(node.id); else { openFile(node); onOpenFile?.(); } }} onContextMenu={event => onMenu(event, node)}>
       {folder ? (open ? <ChevronDown size={16} className="shrink-0 text-vs-muted" /> : <ChevronRight size={16} className="shrink-0 text-vs-muted" />) : <span className="w-4 shrink-0" />}
       {folder ? <FolderIcon open={open} /> : <FileIcon name={node.name} />}
-      <span className="truncate" style={{ color }}>{node.name}</span>
+      <span className="truncate" style={{ color: color ?? (node.heavy ? 'var(--vs-fg-dim)' : undefined) }}>{node.name}</span>
       {(errors > 0 || warnings > 0) && <span className="ml-auto text-xs" style={{ color }}>{folder ? '●' : errors || warnings}</span>}
     </button>
-    {open && node.children?.map(child => <TreeNode key={child.id} node={child} level={level + 1} collapsed={collapsed} toggle={toggle} filtering={filtering} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} />)}
+    {open && lazy && node.children === undefined && <p className="flex items-center gap-1.5 text-xs text-vs-dim h-[22px]" style={{ paddingLeft: level * 8 + 36 }}><Loader2 size={12} className="animate-spin" />Carregando…</p>}
+    {open && lazy && node.children?.length === 0 && <p className="text-xs text-vs-dim h-[22px] flex items-center" style={{ paddingLeft: level * 8 + 36 }}>Pasta vazia</p>}
+    {open && node.children?.map(child => <TreeNode key={child.id} node={child} level={level + 1} collapsed={collapsed} toggle={toggle} filtering={filtering} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} lazy={lazy} expanded={expanded} />)}
   </div>;
 }
 
-export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], projectName = 'Projeto', onOpenFile }: Actions & { onOpenFile?: () => void; disabled: boolean; markers?: Marker[]; projectName?: string }) {
+export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], projectName = 'Projeto', onOpenFile, lazy, onExpand, onRefresh }: Actions & { lazy?: boolean; onExpand?: (path: string) => void; onRefresh?: () => void; onOpenFile?: () => void; disabled: boolean; markers?: Marker[]; projectName?: string }) {
   const files = useEditorStore(state => state.files);
   const active = useEditorStore(state => state.activeFileId);
   const [search, setSearch] = useState('');
@@ -37,11 +39,15 @@ export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<Menu>(null);
   const [rootOpen, setRootOpen] = useState(true);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const term = search.trim().toLowerCase();
   function filter(nodes: FileNode[]): FileNode[] { return nodes.flatMap(node => { if (node.type === 'file') return node.id.toLowerCase().includes(term) ? [node] : []; const children = filter(node.children || []); return children.length ? [{ ...node, children }] : []; }); }
-  function toggle(id: string) { setCollapsed(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
+  function toggle(id: string) {
+    if (lazy) { setExpanded(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else { next.add(id); onExpand?.(id); } return next; }); return; }
+    setCollapsed(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
   function collapseAll() {
     const ids: string[] = []; const walk = (nodes: FileNode[]) => nodes.forEach(node => { if (node.type === 'folder') { ids.push(node.id); walk(node.children || []); } }); walk(files);
+    if (lazy) { setExpanded(new Set()); return; }
     setCollapsed(new Set(ids));
   }
   function openMenu(event: React.MouseEvent, node: FileNode) { event.preventDefault(); setMenu({ x: event.clientX, y: event.clientY, node }); }
@@ -69,10 +75,10 @@ export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], 
         <button className="icon-btn" aria-label="Criar arquivo" title="Novo arquivo" onClick={() => onCreate()} disabled={disabled}><FilePlus size={15} /></button>
         <button className="icon-btn" aria-label="Renomear arquivo ativo" title="Renomear arquivo ativo (F2)" onClick={() => onRename()} disabled={disabled || !active}><Pencil size={14} /></button>
         <button className="icon-btn" aria-label="Excluir arquivo ativo" title="Excluir arquivo ativo (Del)" onClick={() => onDelete()} disabled={disabled || !active}><Trash2 size={14} /></button>
-        <button className="icon-btn" aria-label="Recolher pastas" title="Recolher pastas" onClick={collapseAll}><ChevronsDownUp size={15} /></button>
+        {lazy && <button className="icon-btn" aria-label="Atualizar lista de arquivos" title="Atualizar" onClick={onRefresh}><RefreshCw size={14} /></button>}<button className="icon-btn" aria-label="Recolher pastas" title="Recolher pastas" onClick={collapseAll}><ChevronsDownUp size={15} /></button>
       </div>
     </div>
-    <div className="overflow-auto flex-1 tree-focus py-0.5">{rootOpen && visible.map(file => <TreeNode key={file.id} node={file} level={0} collapsed={collapsed} toggle={toggle} filtering={!!term} markers={markers} onMenu={openMenu} onOpenFile={onOpenFile} />)}
+    <div className="overflow-auto flex-1 tree-focus py-0.5">{rootOpen && visible.map(file => <TreeNode key={file.id} node={file} level={0} collapsed={collapsed} toggle={toggle} filtering={!!term} markers={markers} onMenu={openMenu} onOpenFile={onOpenFile} lazy={lazy} expanded={expanded} />)}
       {rootOpen && !visible.length && <p className="px-5 py-3 text-xs text-vs-dim">{term ? 'Nenhum arquivo encontrado.' : 'Nenhum arquivo no projeto.'}</p>}</div>
     {menu && <ContextMenu x={menu.x} y={menu.y} items={items(menu.node)} close={() => setMenu(null)} />}
   </aside>;
