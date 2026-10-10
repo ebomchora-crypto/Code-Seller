@@ -1,7 +1,7 @@
-version: 1.1.0
+version: 1.1.1
 files:
   - url: CodeSellersIDE-Setup.exe
-    sha512: Ed6/Xbg3zZdgOUrGTWshL3+V8mf0iUQNMuOkrTzfYd7dgSjblW9yVsbN10RvcbqlsV9yZfsGYEOogIUDQYP8tQ==
+    sha512: yaRq0+wRi3Oho4qPxvwr5q5J2XEpYBz/u6o3tRF/l7Lp30Ui/6v/dD5icW/HonzRph8fNZIfSOBRsJsLH6W8uQ==
 path: CodeSellersIDE-Setup.exe
-sha512: Ed6/Xbg3zZdgOUrGTWshL3+V8mf0iUQNMuOkrTzfYd7dgSjblW9yVsbN10RvcbqlsV9yZfsGYEOogIUDQYP8tQ==
-releaseDate: '2026-10-10T03:32:56.766Z'
+sha512: yaRq0+wRi3Oho4qPxvwr5q5J2XEpYBz/u6o3tRF/l7Lp30Ui/6v/dD5icW/HonzRph8fNZIfSOBRsJsLH6W8uQ==
+releaseDate: '2026-10-10T18:26:14.321Z'

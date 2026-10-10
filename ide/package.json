@@ -1,7 +1,7 @@
 {
   "name": "code-makers-ide",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "main": "desktop/main.cjs",
   "description": "Editor local de código com Monaco, PowerShell e inteligência artificial opcional",
