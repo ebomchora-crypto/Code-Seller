@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
 const root = resolve('.'); const stage = join(root, '.pack');
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-const runtimeDeps = Object.fromEntries(['esbuild', 'node-pty', 'parse5', 'jszip', 'ws'].map(name => [name, pkg.dependencies[name]]));
+const runtimeDeps = Object.fromEntries(['electron-updater', 'esbuild', 'node-pty', 'parse5', 'jszip', 'ws'].map(name => [name, pkg.dependencies[name]]));
 await rm(stage, { recursive: true, force: true }); await mkdir(stage, { recursive: true });
 await cp('dist', join(stage, 'dist'), { recursive: true }); await cp('server', join(stage, 'server'), { recursive: true });
 await mkdir(join(stage, 'desktop'), { recursive: true }); await copyFile('desktop/main.cjs', join(stage, 'desktop/main.cjs'));

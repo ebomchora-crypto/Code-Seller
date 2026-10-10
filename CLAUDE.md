@@ -12,3 +12,9 @@
 
 ## Textos na tela
 - Nunca mencionar Supabase, Vercel, Apify ou qualquer provedor/API externo em algo que o usuário veja (telas, changelog, propriedades do .exe).
+
+## IDE instalada (`ide/`)
+- A IDE do Windows se atualiza sozinha: ela confere `/downloads/ide.yml` ao abrir e a cada 6 horas, baixa o instalador novo e oferece reiniciar.
+- Toda mudança em `ide/` (telas, servidor ou app) só chega ao usuário com versão nova: subir `"version"` em `ide/package.json` → `cd ide && npm run release` (build, instalador, `ide.yml` e conferência do sha512) → commit de `CodeSellersIDE-Setup.exe` e `ide.yml` juntos → push na `main`.
+- Nunca publicar o instalador sem o `ide.yml` da mesma versão (nem o contrário).
+- O instalador não leva chave de IA: o assistente usa a conta do Code Sellers (função `ide-ai`).

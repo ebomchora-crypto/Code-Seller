@@ -7,6 +7,25 @@ app.setName('Code Sellers IDE');
 const profile = join(app.getPath('appData'), 'Code Sellers IDE');
 mkdirSync(profile, { recursive: true });
 app.setPath('userData', profile);
+// Atualização automática: confere ao abrir e a cada 6 horas em /downloads/ide.yml, baixa em segundo plano e
+// pergunta se pode reiniciar. Se o usuário deixar para depois, instala sozinho quando ele fechar a IDE.
+const CHECK_EVERY = 6 * 60 * 60 * 1000;
+function setupAutoUpdate() {
+  if (!app.isPackaged) return;
+  let autoUpdater;
+  try { ({ autoUpdater } = require('electron-updater')); } catch (error) { appendFileSync(join(profile, 'data', 'desktop.log'), `auto-update indisponível: ${error.message}\n`); return; }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('error', error => { try { appendFileSync(join(profile, 'data', 'desktop.log'), `auto-update: ${error?.message ?? error}\n`); } catch {} });
+  let asked = false;
+  autoUpdater.on('update-downloaded', info => {
+    if (asked || !window) return; asked = true;
+    const choice = dialog.showMessageBoxSync(window, { type: 'info', title: 'Atualização da IDE', message: `A versão ${info.version} da Code Sellers IDE está pronta.`, detail: 'Reiniciar agora aplica a atualização em poucos segundos. Seus arquivos ficam salvos. Se preferir, ela é instalada sozinha quando você fechar a IDE.', buttons: ['Reiniciar agora', 'Depois'], defaultId: 0, cancelId: 1 });
+    if (choice === 0) { autoUpdater.quitAndInstall(false, true); } else asked = false;
+  });
+  const check = () => autoUpdater.checkForUpdates().catch(() => undefined);
+  check(); setInterval(check, CHECK_EVERY).unref();
+}
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.focus(); } });
@@ -50,6 +69,7 @@ else {
       { label: 'Exibir', submenu: [{ role: 'reload', label: 'Recarregar' }, { role: 'toggleDevTools', label: 'Ferramentas de desenvolvimento' }, { role: 'resetZoom', label: 'Zoom padrão' }, { role: 'zoomIn', label: 'Ampliar' }, { role: 'zoomOut', label: 'Reduzir' }, { role: 'togglefullscreen', label: 'Tela cheia' }] },
     ]));
     await window.loadURL(home);
+    setupAutoUpdate();
   }).catch(error => { dialog.showErrorBox('Não foi possível abrir o Code Sellers IDE', error.message); app.quit(); });
   app.on('window-all-closed', () => app.quit());
   app.on('will-quit', event => {
