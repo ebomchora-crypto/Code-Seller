@@ -58,7 +58,7 @@ function AiBlock({ title, status, children }: { title: string; status: 'working'
 
 const FILE_LINE = /^(?:Arquivo (?:alterado|criado|apagado)|Não aplicado)/
 
-function ActionList({ actions, live = false }: { actions: string[]; live?: boolean }) {
+function ActionList({ actions, live = false, collapse = false, extra }: { actions: string[]; live?: boolean; collapse?: boolean; extra?: ReactNode }) {
   if (actions.length === 0) {
     return live ? <p className="text-[13px] text-[var(--text-muted)]">Pensando…</p> : null
   }
@@ -66,24 +66,48 @@ function ActionList({ actions, live = false }: { actions: string[]; live?: boole
   // separadas do que a IA contou.
   const said = actions.filter((action) => !FILE_LINE.test(action))
   const files = actions.filter((action) => FILE_LINE.test(action))
-  return (
-    <>
-      <ul className="flex flex-col gap-1.5">
-        {said.map((action, index) => (
-          <li key={index} className="flex gap-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
-            <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--accent-text)]/70" />
-            <span>{action}</span>
+  // Depois de pronta, a alteração mostra só o essencial; o resto fica em "Detalhes".
+  const shown = collapse ? said.slice(0, 2) : said
+  const hidden = collapse ? said.slice(2) : []
+  const fileList =
+    files.length > 0 ? (
+      <ul className="mt-2 flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)]/50 px-3 py-2">
+        {files.map((line, index) => (
+          <li key={index} className={`font-mono text-[11.5px] leading-relaxed ${/^Não aplicado/.test(line) ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-secondary)]'}`}>
+            {line}
           </li>
         ))}
       </ul>
-      {files.length > 0 && (
-        <ul className="mt-2.5 flex flex-col gap-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)]/50 px-3 py-2">
-          {files.map((line, index) => (
-            <li key={index} className={`font-mono text-[11.5px] leading-relaxed ${/^Não aplicado/.test(line) ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-secondary)]'}`}>
-              {line}
-            </li>
-          ))}
-        </ul>
+    ) : null
+  const bullets = (list: string[]) => (
+    <ul className="flex flex-col gap-1.5">
+      {list.map((action, index) => (
+        <li key={index} className="flex gap-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+          <span className="mt-[7px] size-1.5 shrink-0 rounded-full bg-[var(--accent-text)]/70" />
+          <span>{action}</span>
+        </li>
+      ))}
+    </ul>
+  )
+  const warned = files.some((line) => /^Não aplicado/.test(line))
+  return (
+    <>
+      {bullets(shown)}
+      {collapse ? (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {(hidden.length > 0 || files.length > 0) && (
+            <Expandable label={warned ? 'Detalhes · algo não foi aplicado' : 'Detalhes'}>
+              {hidden.length > 0 && bullets(hidden)}
+              {fileList}
+            </Expandable>
+          )}
+          {extra}
+        </div>
+      ) : (
+        <>
+          {fileList}
+          {extra}
+        </>
       )}
     </>
   )
@@ -103,7 +127,7 @@ function CodeTail({ code }: { code: string }) {
 function Palette({ plan }: { plan: StoredPlan }) {
   const colors = [plan.palette.brand, plan.palette.accent, plan.palette.ink, plan.palette.paper, plan.palette.surface]
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)]/50 px-3 py-2.5">
+    <div className="flex flex-wrap items-center gap-3">
       <span className="flex -space-x-1">
         {colors.map((color, index) => (
           <span key={index} className="size-5 rounded-full ring-2 ring-[var(--panel-bg)]" style={{ background: color }} title={color} />
@@ -191,6 +215,7 @@ export function BuildTimeline(props: BuildTimelineProps) {
   const briefChips = [brief.niche, brief.city, brief.style && brief.style !== 'auto' ? STYLE_NAMES[brief.style] : null].filter(Boolean) as string[]
   const planStatus = planning ? 'working' : plan ? 'done' : error ? 'error' : 'idle'
   const needsContinue = !busy && site.status !== 'ready'
+  const finished = Boolean(plan) && site.status === 'ready' && !building && !planning
   const partList = plan ? (
     <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
       {parts.map((id) => {
@@ -252,6 +277,23 @@ export function BuildTimeline(props: BuildTimelineProps) {
         )}
       </UserBubble>
 
+      {finished && plan ? (
+        <AiBlock title="Site criado" status="done">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <Palette plan={plan} />
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <Expandable label="Detalhes">
+              <PlanSteps planning={false} plan={plan} actions={[]} />
+              <ActionList actions={plan.actions ?? []} />
+              <p className="mb-1 mt-3 text-[12px] font-medium text-[var(--text-muted)]">{parts.length} partes escritas</p>
+              {partList}
+            </Expandable>
+            {createVersion && versions.length > 1 && lastVersionId !== createVersion.id && !busy && <RestoreButton onClick={() => props.onRestore(createVersion)} />}
+          </div>
+        </AiBlock>
+      ) : (
+        <>
       <AiBlock title={planning || !plan ? 'Planejando o site' : 'Direção de arte'} status={planStatus}>
         {planning || !plan ? (
           <>
@@ -283,6 +325,8 @@ export function BuildTimeline(props: BuildTimelineProps) {
           )}
         </AiBlock>
       )}
+        </>
+      )}
 
       {props.readyCard && site.status === 'ready' && !building && history.length === 0 && props.readyCard}
 
@@ -295,8 +339,11 @@ export function BuildTimeline(props: BuildTimelineProps) {
           <div key={version.id} className="flex flex-col gap-3">
             <UserBubble time={formatTime(version.created_at)}>{version.instruction}</UserBubble>
             <AiBlock title="Alteração feita" status="done">
-              <ActionList actions={version.actions} />
-              {version.id !== lastVersionId && !busy && <RestoreButton onClick={() => props.onRestore(version)} />}
+              <ActionList
+                actions={version.actions}
+                collapse
+                extra={version.id !== lastVersionId && !busy ? <RestoreButton onClick={() => props.onRestore(version)} /> : undefined}
+              />
             </AiBlock>
           </div>
         ),
@@ -353,7 +400,7 @@ function RestoreButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-default)] px-2.5 py-1 text-[11.5px] font-medium text-[var(--text-muted)] transition hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)]"
+      className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-muted)] transition hover:text-[var(--accent-text)]"
     >
       <RotateCcw className="size-3" /> Voltar para esta versão
     </button>

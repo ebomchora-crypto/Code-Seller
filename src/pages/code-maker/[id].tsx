@@ -536,16 +536,6 @@ export default function CodeMakerEditorPage() {
                 ))}
               </div>
             )}
-            {ready && (
-              <a
-                href={busy ? undefined : `/ide/project/${site.id}`}
-                aria-disabled={busy}
-                title="Abre o código do site na IDE. Ao salvar lá (Ctrl+S), o site é publicado automaticamente."
-                className={`mb-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent-ring)] hover:text-[var(--accent-text)] ${busy ? 'pointer-events-none opacity-50' : ''}`}
-              >
-                <SquareTerminal className="size-3.5" /> Importar para a IDE
-              </a>
-            )}
             <PromptInputBox
               value={instruction}
               onValueChange={setInstruction}
@@ -560,11 +550,27 @@ export default function CodeMakerEditorPage() {
               ariaLabel="Peça uma mudança no site"
               placeholder={busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança no site…' : 'Espere o site ficar pronto'}
             />
-            {usage?.edits_limit != null && (
-              <p className={`mt-1.5 px-1 text-[11.5px] ${editsLeft === 0 ? 'text-amber-500' : 'text-[var(--text-muted)]'}`}>
-                {usage.edits_today} de {usage.edits_limit} alterações hoje
-                {editsLeft === 0 ? ' · o limite libera amanhã' : ''}
-              </p>
+            {(ready || usage?.edits_limit != null) && (
+              <div className="mt-1.5 flex items-center justify-between gap-3 px-1 text-[11.5px] text-[var(--text-muted)]">
+                {ready ? (
+                  <a
+                    href={busy ? undefined : `/ide/project/${site.id}`}
+                    aria-disabled={busy}
+                    title="Abre o código do site na IDE. Ao salvar lá (Ctrl+S), o site é publicado automaticamente."
+                    className={`inline-flex items-center gap-1.5 font-medium transition hover:text-[var(--accent-text)] ${busy ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    <SquareTerminal className="size-3.5" /> Importar para a IDE
+                  </a>
+                ) : (
+                  <span />
+                )}
+                {usage?.edits_limit != null && (
+                  <span className={editsLeft === 0 ? 'text-amber-500' : undefined}>
+                    {usage.edits_today} de {usage.edits_limit} alterações hoje
+                    {editsLeft === 0 ? ' · libera amanhã' : ''}
+                  </span>
+                )}
+              </div>
             )}
           </form>
         </section>

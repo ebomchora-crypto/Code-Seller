@@ -144,7 +144,7 @@ export function SitesSidebar({ sites, activeId, loading, collapsed, onToggleColl
                       <span className="min-w-0 flex-1">
                         <span className={`block truncate text-[13.5px] ${active ? 'font-semibold text-[var(--text-primary)]' : 'font-medium text-[var(--text-secondary)]'}`}>{site.name}</span>
                         <span className="block truncate text-[11.5px] text-[var(--text-muted)]">
-                          {statusLabel(site)} · {formatRelativeDate(site.updated_at)}
+                          {statusLabel(site) === 'No ar' ? formatRelativeDate(site.updated_at) : `${statusLabel(site)} · ${formatRelativeDate(site.updated_at)}`}
                         </span>
                       </span>
                     )}
