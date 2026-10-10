@@ -8,6 +8,7 @@ import { applyProposal, parseProposal, Proposal } from '../lib/proposals';
 import type { Autosave } from '../lib/autosave';
 import { useEditorStore } from '../store/editorStore';
 import AiSettings from './AiSettings';
+import AccountLogin from './AccountLogin';
 import { useMonacoTheme } from '../lib/monacoTheme';
 
 export default function ChatPanel({ session, apply, modes }: { modes?: string[]; session: Autosave; apply: (files: Record<string, string>, label: string) => Promise<void> }) {
@@ -19,7 +20,7 @@ export default function ChatPanel({ session, apply, modes }: { modes?: string[];
   const [busy, setBusy] = useState(false);
   const [partial, setPartial] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [config, setConfig] = useState<{ ai: boolean; model: string | null } | null>(null);
+  const [config, setConfig] = useState<{ ai: boolean; model: string | null; account?: { signedIn: boolean; email: string } } | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [base, setBase] = useState<Record<string, string> | null>(null);
   const [diff, setDiff] = useState(0);
@@ -27,7 +28,8 @@ export default function ChatPanel({ session, apply, modes }: { modes?: string[];
   const conversationQueue = useRef(Promise.resolve());
   const activeFile = useEditorStore(state => state.activeFileId);
   const theme = useMonacoTheme();
-  useEffect(() => { void api<{ ai: boolean; model: string | null }>('/status').then(setConfig).catch(error => setError(error.message)); return () => abort.current?.abort(); }, []);
+  const refreshStatus = () => void api<NonNullable<typeof config>>('/status').then(setConfig).catch(e => setError(e.message));
+  useEffect(() => { void api<NonNullable<typeof config>>('/status').then(setConfig).catch(error => setError(error.message)); return () => abort.current?.abort(); }, []);
   useEffect(() => { try { localStorage.setItem(`cm-chat-${id}`, JSON.stringify(messages.slice(-80))); } catch { setError('Não foi possível salvar a conversa no navegador. Exporte o código para preservar o projeto.'); } }, [id, messages]);
   async function send() {
     if (!prompt.trim() || busy || !conversationLoaded) return;
@@ -62,8 +64,8 @@ export default function ChatPanel({ session, apply, modes }: { modes?: string[];
     } catch (error) { setError((error as Error).message); } finally { setBusy(false); }
   }
   return <aside className="w-full overflow-hidden bg-vs-sidebar text-[13px] flex flex-col h-full">
-    <div className="p-4 border-b border-vs-border"><h2 className="flex gap-2 items-center text-sm font-medium"><Sparkles size={16} className="text-vs-link" /> Assistente de código</h2><p className="text-xs text-vs-dim mt-2">{config?.model || 'Modelo não configurado'}</p><AiSettings changed={() => void api<{ ai: boolean; model: string | null }>('/status').then(setConfig).catch(e => setError(e.message))} /></div>
-    {!config?.ai && <p className="m-4 text-xs text-vs-warning border border-vs-border p-3">Abra “Configurar modelo de IA” e informe o endpoint e o modelo. Para processamento local, o servidor do modelo precisa estar instalado e em execução.</p>}
+    <div className="p-4 border-b border-vs-border"><h2 className="flex gap-2 items-center text-sm font-medium"><Sparkles size={16} className="text-vs-link" /> Assistente de código</h2><p className="text-xs text-vs-dim mt-2">{config?.model || 'Modelo não configurado'}</p><AccountLogin status={config} changed={refreshStatus} /><AiSettings changed={refreshStatus} /></div>
+    {!config?.ai && <p className="m-4 text-xs text-vs-warning border border-vs-border p-3">Entre com a sua conta do Code Sellers para ligar o assistente. Se preferir, também dá para usar um modelo próprio em “Configurar modelo de IA”.</p>}
     <div className="flex-1 overflow-auto p-4 space-y-5">{messages.length === 0 && <div className="text-sm text-vs-dim py-6"><p className="text-vs-fg mb-2">Uma ideia. Um próximo passo.</p><p>Pergunte sobre o código ou peça uma alteração. Você revisa os arquivos antes de aplicar.</p></div>}{messages.map((message, index) => <div key={index} className={message.role === 'user' ? 'bg-vs-hover rounded-sm p-3' : ''}><p className="text-[10px] uppercase tracking-widest text-vs-dim mb-2">{message.role === 'user' ? 'Você' : 'Assistente'}</p><p className="text-xs leading-relaxed text-vs-fg whitespace-pre-wrap break-words">{message.content}</p></div>)}{partial && <p className="text-xs whitespace-pre-wrap text-vs-muted break-words">{partial}</p>}
     {proposal && base && <div className="border border-vs-border p-3"><p className="text-xs text-vs-link mb-3">{proposal.changes.length} arquivo(s) proposto(s)</p><select className="field w-full text-xs mb-2" aria-label="Arquivo da proposta" value={diff} onChange={e => setDiff(Number(e.target.value))}>{proposal.changes.map((change, index) => <option value={index} key={change.path}>{change.content === null ? 'Excluir' : base[change.path] === undefined ? 'Criar' : 'Editar'} {change.path}</option>)}</select><DiffEditor keepCurrentOriginalModel keepCurrentModifiedModel height="200px" theme={theme} original={base[proposal.changes[diff].path] || ''} modified={proposal.changes[diff].content || ''} options={{ readOnly: true, renderSideBySide: false, minimap: { enabled: false } }} /><div className="flex gap-2 mt-3"><button className="btn-primary text-xs flex-1" disabled={busy} onClick={() => void accept()}><Check size={13} /> Aplicar</button><button className="btn-secondary text-xs" disabled={busy} onClick={() => setProposal(null)}><X size={13} /> Rejeitar</button></div><p className="text-[10px] text-vs-dim mt-2">Um checkpoint será salvo antes de aplicar.</p></div>}
     {error && <p className="error-banner" role="alert">{error}</p>}</div>

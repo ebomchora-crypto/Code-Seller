@@ -31,6 +31,24 @@ function readDesktopHandoffFlag(): boolean {
 
 type HandoffStatus = 'working' | 'done' | 'error'
 
+// Login pedido pela IDE instalada: ela abre /?ide_port=…&ide_state=…; depois do login devolvemos um código de uso único
+// para o endereço local da IDE (127.0.0.1), do mesmo jeito que o app de Windows.
+type IdeHandoff = { port: number; state: string }
+function readIdeHandoff(): IdeHandoff | null {
+  try {
+    const query = new URLSearchParams(window.location.search)
+    const port = Number(query.get('ide_port')); const state = query.get('ide_state') ?? ''
+    if (port && state) {
+      if (Number.isInteger(port) && port >= 1024 && port <= 65535 && /^[a-f0-9]{32}$/.test(state)) sessionStorage.setItem('cs_ide_handoff', JSON.stringify({ port, state }))
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+    const saved = JSON.parse(sessionStorage.getItem('cs_ide_handoff') ?? 'null') as IdeHandoff | null
+    return saved && Number.isInteger(saved.port) && /^[a-f0-9]{32}$/.test(saved.state) ? saved : null
+  } catch {
+    return null
+  }
+}
+
 function HandoffScreen({ status }: { status: HandoffStatus }) {
   const copy = {
     working: { title: 'Conectando o app…', text: 'Só um instante.' },
@@ -64,6 +82,21 @@ export function RootRoute() {
   const [desktopHandoff] = useState(readDesktopHandoffFlag)
   const [handoffStatus, setHandoffStatus] = useState<HandoffStatus>('working')
   const handoffStarted = useRef(false)
+  const [ideHandoff] = useState(readIdeHandoff)
+  const [ideStatus, setIdeStatus] = useState<HandoffStatus>('working')
+  const ideStarted = useRef(false)
+
+  useEffect(() => {
+    if (!ideHandoff || loading || !user || ideStarted.current) return
+    ideStarted.current = true
+    try { sessionStorage.removeItem('cs_ide_handoff') } catch { /* some ao fechar a aba */ }
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke<{ token_hash?: string }>('desktop-handoff', { method: 'POST' })
+      if (error || !data?.token_hash) { setIdeStatus('error'); return }
+      setIdeStatus('done')
+      window.location.href = `http://127.0.0.1:${ideHandoff.port}/api/account/callback?token_hash=${encodeURIComponent(data.token_hash)}&state=${ideHandoff.state}`
+    })()
+  }, [ideHandoff, loading, user])
 
   useEffect(() => {
     if (!desktopHandoff || loading || !user || handoffStarted.current) return
@@ -109,6 +142,17 @@ export function RootRoute() {
 
   if (desktopHandoff && user) {
     return <HandoffScreen status={handoffStatus} />
+  }
+
+  if (ideHandoff && !user) return <Navigate to="/login" replace />
+  if (ideHandoff && user) {
+    const copy = { working: 'Conectando a IDE…', done: 'Pronto! Voltando para a IDE…', error: 'Não deu para conectar a IDE. Volte nela e clique em "Entrar" de novo.' }[ideStatus]
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#0b0812] px-6 text-center text-white">
+        <img src="/logo.png" alt="Code Sellers" className="h-10 w-10 object-contain" />
+        <p className="text-lg font-semibold">{copy}</p>
+      </div>
+    )
   }
 
   return (

@@ -20,7 +20,7 @@ test('API creates real projects, rejects foreign origins and reports unconfigure
     assert.match(project.files['/index.html'], /doctype/);
     const disabled = await fetch(`${url}/api/projects/${project.id}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: 'Olá', mode: 'ask' }) });
     assert.equal(disabled.status, 503);
-    assert.match((await disabled.json()).error, /IA não configurada/);
+    assert.match((await disabled.json()).error, /Entre com a sua conta do Code Sellers/);
     assert.equal((await (await fetch(`${url}/api/projects`)).json()).length, 1);
   } finally {
     await new Promise(done => server.close(done));

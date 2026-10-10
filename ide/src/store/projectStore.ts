@@ -4,7 +4,7 @@ export type { Project } from '../lib/api';
 interface ProjectState {
   projects: Project[]; loading: boolean; error: string | null; deleted: boolean;
   fetchProjects: (deleted?: boolean) => Promise<void>;
-  createProject: (name: string, description: string, template: Template, files?: Record<string, string>) => Promise<ProjectDetail>;
+  createProject: (name: string, description: string, template: Template, files?: Record<string, string>, location?: string) => Promise<ProjectDetail>;
   action: (id: string, action: 'delete' | 'recover' | 'duplicate') => Promise<void>;
   rename: (project: Project, name: string) => Promise<void>;
 }
@@ -16,8 +16,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     catch (error) { set({ error: (error as Error).message }); }
     finally { set({ loading: false }); }
   },
-  createProject: async (name, description, template, files) => {
-    const project = await api<ProjectDetail>('/projects', 'POST', { name, description, template, files });
+  createProject: async (name, description, template, files, location) => {
+    const project = await api<ProjectDetail>('/projects', 'POST', { name, description, template, files, location });
     await get().fetchProjects(); return project;
   },
   action: async (id, action) => {

@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Maximize2, Minimize2, Menu as MenuIcon, Files, Code2, Sparkles, Terminal as TerminalIcon, Search as SearchIcon } from 'lucide-react';
+import { X, Maximize2, Minimize2, Menu as MenuIcon, Files, Code2, Sparkles, Terminal as TerminalIcon, Play, Eye } from 'lucide-react';
 import { useIsMobile } from '../lib/useIsMobile';
+import { api } from '../lib/api';
+import type { PreviewTarget } from '../components/FolderPreview';
 import { Sidebar } from '../components/Sidebar';
 import { Editor } from '../components/Editor';
 import { TitleBar } from '../components/TitleBar';
@@ -32,6 +34,7 @@ const GitPanel = lazy(() => import('../components/GitPanel'));
 const LazySearchPanel = lazy(() => import('../components/LazySearchPanel'));
 const RunPanel = lazy(() => import('../components/RunPanel'));
 const ProblemsPanel = lazy(() => import('../components/ProblemsPanel'));
+const FolderPreview = lazy(() => import('../components/FolderPreview'));
 const CommandPalette = lazy(() => import('../components/CommandPalette'));
 
 type Bottom = 'terminal' | 'problems' | null;
@@ -42,7 +45,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const id = project.id;
   const lazyProject = useLazyProject(project);
   const mobile = useIsMobile();
-  const [tab, setTab] = useState<'files' | 'editor' | 'search' | 'terminal' | 'ai'>('files');
+  const [tab, setTab] = useState<'files' | 'editor' | 'search' | 'terminal' | 'site' | 'ai'>('files');
   const [burger, setBurger] = useState<{ x: number; y: number } | null>(null);
   const { status, error, setError, flush, open, loadDir, writeFile, disk, reload, loadMore } = lazyProject;
   const active = useEditorStore(state => state.activeFileId);
@@ -59,6 +62,11 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const [activity, setActivity] = useState<Activity>('files');
   const [bottom, setBottom] = useState<Bottom>('terminal');
   const [maximized, setMaximized] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const [previewTarget, setPreviewTarget] = useState<PreviewTarget>({ kind: 'static' });
+  const [previewWidth, setPreviewWidth] = useState(() => savedSize(initial.previewWidth, 440, 280, 1000));
+  const [running, setRunning] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [terminalOpened, setTerminalOpened] = useState(true);
   const [palette, setPalette] = useState<'files' | 'commands' | 'versions' | null>(null);
   const [versionItems, setVersionItems] = useState<{ label: string; action: () => void }[]>([]);
@@ -70,6 +78,8 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const trail = useRef<{ stack: string[]; index: number; jumping: boolean }>({ stack: [], index: -1, jumping: false });
   const [, nudge] = useState(0);
   useEffect(() => { void useProjectStore.getState().fetchProjects(false); }, []);
+  const lastStatus = useRef(status);
+  useEffect(() => { if (lastStatus.current === 'saving' && status === 'saved') setReloadKey(value => value + 1); lastStatus.current = status; }, [status]);
   useEffect(() => { if (bottom === 'terminal') setTerminalOpened(true); }, [bottom]);
   useEffect(() => { patchLayout({ sidebar, chat }); }, [sidebar, chat]);
   useEffect(() => { if (!launch) return; setBottom('terminal'); const timer = setTimeout(() => runInTerminal(launch), 350); setLaunch(null); return () => clearTimeout(timer); }, [launch]);
@@ -83,6 +93,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   function go(step: number) { const t = trail.current; const file = t.stack[t.index + step]; if (!file) return; t.index += step; t.jumping = true; useEditorStore.getState().setActiveFile(file); nudge(value => value + 1); }
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'F5' && !event.ctrlKey) { event.preventDefault(); void runProject(); return; }
       if (event.altKey && !event.ctrlKey && event.key === 'ArrowLeft') { event.preventDefault(); go(-1); return; }
       if (event.altKey && !event.ctrlKey && event.key === 'ArrowRight') { event.preventDefault(); go(1); return; }
       if (event.altKey && event.key.toLowerCase() === 'z' && !event.ctrlKey) { event.preventDefault(); usePreferences.getState().update({ wordWrap: !usePreferences.getState().wordWrap }); return; }
@@ -102,7 +113,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
       if (event.code === 'Backquote') { event.preventDefault(); setBottom(value => value === 'terminal' ? null : 'terminal'); }
     };
     window.addEventListener('keydown', keydown); return () => window.removeEventListener('keydown', keydown);
-  }, [flush]);
+  }, [flush, id]);
 
   const refreshParent = (path: string) => loadDir(parentOf(path));
   const closeUnder = (path: string, folder: boolean) => useEditorStore.getState().openFiles.filter(file => file.id === path || (folder && file.id.startsWith(`${path}/`))).forEach(file => { disk.delete(file.id); useEditorStore.getState().closeFile(file.id); });
@@ -135,6 +146,21 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   }
   async function openAt(path: string, line: number) { await open(path); setTimeout(() => window.dispatchEvent(new CustomEvent('cm-reveal-line', { detail: { line, path } })), 250); }
   const runCommand = (command: string, label: string) => setLaunch({ command, label });
+  /** Executar: apps com servidor (npm) rodam no terminal e abrem ao lado; sites simples abrem direto na visualização. */
+  async function runProject() {
+    setError(null); await flush();
+    const show = (target: PreviewTarget) => { setPreviewTarget(target); setPreview(true); setReloadKey(value => value + 1); if (mobile) setTab('site'); };
+    try {
+      const workspace = await api<{ scripts?: Record<string, string> }>(`/projects/${id}/workspace`);
+      const script = workspace.scripts?.dev ? 'dev' : workspace.scripts?.start ? 'start' : null;
+      if (script) {
+        const text = workspace.scripts![script]; const port = /vite/.test(text) ? 5173 : /next|react-scripts|node/.test(text) ? 3000 : 3000;
+        setRunning(true); show({ kind: 'url', url: `http://localhost:${port}` }); runCommand(`npm install && npm run ${script}`, 'Executar projeto'); return;
+      }
+    } catch { /* sem package.json: tenta como site simples */ }
+    try { await api(`/projects/${id}/fs/serve`, 'POST', {}); show({ kind: 'static' }); return; } catch { /* sem index.html */ }
+    runFile();
+  }
   const runFile = () => { const command = active ? commandForFile(active) : null; if (command && active) runCommand(command, `Executar ${active.slice(1)}`); else setError('Este tipo de arquivo não tem comando de execução automático.'); };
   const toggleBottom = (value: Exclude<Bottom, null>) => setBottom(current => current === value ? null : value);
   const showView = (value: Activity) => { setActivity(value); setSidebar(true); };
@@ -144,32 +170,33 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const applyFiles = async (next: Record<string, string>) => { const current = (session as { files: Record<string, string> }).files; for (const [path, content] of Object.entries(next)) if (current[path] !== content) await writeFile(path, content); };
   const commands = [
     { label: 'Arquivo: novo arquivo', action: () => void newFile() }, { label: 'Arquivo: renomear arquivo ativo', action: () => void renamePath() }, { label: 'Arquivo: excluir arquivo ativo', action: () => void deletePath() },
-    { label: 'Arquivo: salvar', action: () => void flush() }, { label: 'Arquivo: restaurar versão anterior…', action: () => void showVersions() }, { label: 'Executar: arquivo atual', action: runFile }, { label: 'Terminal: abrir', action: () => setBottom('terminal') }, { label: 'Problemas: abrir', action: () => setBottom('problems') },
+    { label: 'Executar: projeto', action: () => void runProject() }, { label: 'Visualização: alternar', action: () => setPreview(value => !value) }, { label: 'Arquivo: salvar', action: () => void flush() }, { label: 'Arquivo: restaurar versão anterior…', action: () => void showVersions() }, { label: 'Executar: arquivo atual', action: runFile }, { label: 'Terminal: abrir', action: () => setBottom('terminal') }, { label: 'Problemas: abrir', action: () => setBottom('problems') },
     { label: 'Git: controle de código', action: () => showView('git') }, { label: 'Buscar: texto na pasta', action: () => showView('search') }, { label: 'Executar: painel de scripts', action: () => showView('run') },
     { label: 'Configurações: abrir', action: () => useUi.getState().set({ settings: true, settingsTab: 'appearance' }) }, { label: 'Configurações: assistente de IA', action: () => useUi.getState().set({ settings: true, settingsTab: 'ai' }) },
     ...themeNames.map(name => ({ label: `Tema de cores: ${themes[name].label}`, action: () => usePreferences.getState().update({ theme: name }) })), { label: 'Assistente: abrir', action: () => setChat(true) },
   ];
   const leaveTo = async (work: () => Promise<string | null>) => { try { await flush(); const next = await work(); if (next) navigate(`/project/${next}`); } catch (e) { setError((e as Error).message); } };
   const menus = buildMenus({
-    lazy: true, hasProject: true, active, previewable: false, recents: recents.filter(item => item.id !== id).map(item => ({ id: item.id, name: item.name })),
+    lazy: true, hasProject: true, active, previewable: true, recents: recents.filter(item => item.id !== id).map(item => ({ id: item.id, name: item.name })),
     actions: {
       newFile: () => void newFile(), newProject: () => useUi.getState().set({ newProject: true }), openFolder: () => void leaveTo(pickFolder), openByPath: () => void leaveTo(openByPath), importCopy: () => void leaveTo(importCopy), importZip: () => void leaveTo(pickZip),
       openRecent: next => void leaveTo(async () => next), save: () => void flush(), closeTab: () => { if (active) useEditorStore.getState().closeFile(active); }, closeFolder: () => void leaveTo(async () => { navigate('/'); return null; }),
       exportZip: () => undefined, quickOpen: () => setPalette('files'), commands: () => setPalette('commands'), view: showView, problems: () => setBottom('problems'), terminal: () => toggleBottom('terminal'),
-      sidebar: () => setSidebar(value => !value), preview: () => undefined, chat: () => setChat(value => !value), runFile, history: () => void showVersions(), renameFile: () => void renamePath(), deleteFile: () => void deletePath(),
+      sidebar: () => setSidebar(value => !value), preview: () => setPreview(value => !value), chat: () => setChat(value => !value), runFile: () => void runProject(), history: () => void showVersions(), renameFile: () => void renamePath(), deleteFile: () => void deletePath(),
     },
   });
   if (mobile) {
     const burgerItems = [
-      { label: 'Versões anteriores do arquivo', action: () => void showVersions() },
+      { label: 'Executar', action: () => void runProject() }, { label: 'Buscar no projeto', action: () => setTab('search') }, { label: 'Versões anteriores do arquivo', action: () => void showVersions() },
       { label: 'Configurações', action: () => useUi.getState().set({ settings: true, settingsTab: 'appearance' }) }, { separator: true as const },
       ...Object.entries(menus).filter(([name]) => ['Arquivo', 'Editar', 'Ver'].includes(name)).map(([name, items]) => ({ label: name, submenu: items })),
     ];
-    const tabs = [{ id: 'files' as const, label: 'Arquivos', Icon: Files }, { id: 'editor' as const, label: 'Código', Icon: Code2 }, { id: 'search' as const, label: 'Buscar', Icon: SearchIcon }, { id: 'terminal' as const, label: 'Terminal', Icon: TerminalIcon }, { id: 'ai' as const, label: 'IA', Icon: Sparkles }];
+    const tabs = [{ id: 'files' as const, label: 'Arquivos', Icon: Files }, { id: 'editor' as const, label: 'Código', Icon: Code2 }, { id: 'site' as const, label: 'Site', Icon: Eye }, { id: 'terminal' as const, label: 'Terminal', Icon: TerminalIcon }, { id: 'ai' as const, label: 'IA', Icon: Sparkles }];
     return <div className="flex flex-col overflow-hidden" style={{ height: '100dvh', background: 'var(--vs-editor)', color: 'var(--vs-fg)' }}>
       <header className="h-12 shrink-0 flex items-center gap-1 pl-1 pr-2" style={{ background: 'var(--vs-titlebar)', borderBottom: '1px solid var(--vs-border-soft)' }}>
         <button className="icon-btn" aria-label="Menu" onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); setBurger({ x: rect.left, y: rect.bottom }); }}><MenuIcon size={20} /></button>
         <span className="flex-1 min-w-0 truncate font-medium text-[15px]" style={{ color: 'var(--vs-fg-strong)' }}>{project.name}</span>
+        <button className="btn-primary !min-h-[34px] !px-3" onClick={() => void runProject()}><Play size={13} fill="currentColor" />Executar</button>
         <span className="text-[11px]" style={{ color: 'var(--vs-fg-dim)' }}>{status === 'saving' ? 'Salvando…' : status === 'error' ? 'Erro ao salvar' : 'Salvo'}</span>
       </header>
       {error && <div role="alert" className="error-banner rounded-none shrink-0 py-2 flex justify-between items-center gap-2 text-[13px]"><span>{error}</span><button className="underline shrink-0" onClick={() => setError(null)}>Fechar</button></div>}
@@ -177,6 +204,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
         {tab === 'files' && <div className="flex-1 min-h-0" style={{ background: 'var(--vs-sidebar)' }}><Sidebar lazy disabled={busy} markers={markers} projectName={project.name} onOpenFile={() => setTab('editor')} onExpand={path => void loadDir(path)} onMore={path => void loadMore(path)} onRefresh={() => { void loadDir('/'); }} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} /></div>}
         {tab === 'editor' && <><EditorTabs markers={markers} onSplit={() => undefined} onQuickOpen={() => setPalette('files')} /><Breadcrumbs path={active} /><div className="flex flex-col flex-1 min-h-0"><Editor projectId={id} /></div></>}
         {tab === 'search' && <div className="flex-1 min-h-0"><Suspense fallback={null}><LazySearchPanel projectId={id} onOpen={(path, line) => { setTab('editor'); void openAt(path, line); }} /></Suspense></div>}
+        {tab === 'site' && <div className="flex-1 min-h-0"><Suspense fallback={null}><FolderPreview projectId={id} target={previewTarget} reloadKey={reloadKey} running={running} onUrl={url => { setPreviewTarget({ kind: 'url', url }); setReloadKey(value => value + 1); }} /></Suspense></div>}
         {tab === 'terminal' && <div className="flex-1 min-h-0 relative"><Suspense fallback={null}><div className="absolute inset-0"><TerminalPanel key={id} projectId={id} /></div></Suspense></div>}
         {tab === 'ai' && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}><ChatPanel key={id} session={session} modes={['ask', 'plan', 'edit']} apply={applyFiles} /></Suspense></div>}
       </main>
@@ -195,8 +223,8 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
     <Sash orientation="vertical" edge={sidebarRight ? 'start' : 'end'} invert={sidebarRight} label="Redimensionar barra lateral" value={sidebarWidth} min={170} max={560} onChange={setSidebarWidth} onCommit={value => patchLayout({ sidebarWidth: value })} />
   </div>;
   return <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--vs-editor)', color: 'var(--vs-fg)' }}>
-    <TitleBar projectName={project.name} menus={menus} hasProject sidebar={sidebar} bottom={showBottom} preview={false} chat={chat} previewDisabled canBack={t.index > 0} canForward={t.index < t.stack.length - 1}
-      onBack={() => go(-1)} onForward={() => go(1)} onQuickOpen={() => setPalette('files')} onSidebar={() => setSidebar(value => !value)} onBottom={() => toggleBottom('terminal')} onPreview={() => undefined} onChat={() => setChat(value => !value)} />
+    <TitleBar projectName={project.name} menus={menus} hasProject sidebar={sidebar} bottom={showBottom} preview={preview} run={{ label: 'Executar', onClick: () => void runProject() }} chat={chat} previewDisabled={false} canBack={t.index > 0} canForward={t.index < t.stack.length - 1}
+      onBack={() => go(-1)} onForward={() => go(1)} onQuickOpen={() => setPalette('files')} onSidebar={() => setSidebar(value => !value)} onBottom={() => toggleBottom('terminal')} onPreview={() => setPreview(value => !value)} onChat={() => setChat(value => !value)} />
     {error && <div role="alert" className="error-banner rounded-none shrink-0 py-1.5 flex justify-between items-center"><span>{error}</span><button className="underline text-xs ml-3" onClick={() => setError(null)}>Dispensar</button></div>}
     <div className={`flex-1 flex min-h-0 min-w-0 ${sidebarRight ? 'flex-row-reverse' : ''}`}>
       <ActivityBar active={activity} sidebar={sidebar} chat={chat} hasProject onSelect={value => { if (activity === value && sidebar) setSidebar(false); else showView(value); }} onHistory={() => void showVersions()} onChat={() => setChat(value => !value)} gitChanges={git.changes} onGear={(x, y) => setGear({ x, y })} />
@@ -219,6 +247,9 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
           </Suspense></div>
         </div>}
       </div>
+      {preview && <div className={`relative shrink-0 min-h-0 ${sidebarRight ? 'border-r' : 'border-l'}`} style={{ width: previewWidth, borderColor: 'var(--vs-border)' }}>
+        <Sash orientation="vertical" invert={!sidebarRight} edge={sidebarRight ? 'end' : 'start'} label="Redimensionar visualização" value={previewWidth} min={280} max={1000} onChange={setPreviewWidth} onCommit={value => patchLayout({ previewWidth: value })} />
+        <Suspense fallback={null}><FolderPreview projectId={id} target={previewTarget} reloadKey={reloadKey} running={running} onUrl={url => { setPreviewTarget({ kind: 'url', url }); setReloadKey(value => value + 1); }} /></Suspense></div>}
       {chat && <div className={`relative shrink-0 min-h-0 ${sidebarRight ? 'border-r' : 'border-l'}`} style={{ width: chatWidth, borderColor: 'var(--vs-border)' }}>
         <Sash orientation="vertical" invert={!sidebarRight} edge={sidebarRight ? 'end' : 'start'} label="Redimensionar assistente" value={chatWidth} min={280} max={700} onChange={setChatWidth} onCommit={value => patchLayout({ chatWidth: value })} />
         <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}><ChatPanel key={id} session={session} modes={['ask', 'plan', 'edit']} apply={applyFiles} /></Suspense></div>}

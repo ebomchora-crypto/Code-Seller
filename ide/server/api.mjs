@@ -1,18 +1,22 @@
 import { createServer } from 'node:http';
-import { createRepository, fail } from './repository.mjs';
+import { createRepository, fail, starterFiles, validateFiles } from './repository.mjs';
 import { compileProject } from './runtime.mjs';
 import { attachTerminals } from './terminal.mjs';
 import { localRequest } from './local-access.mjs';
 import { gitStatus, gitDiff, gitAction } from './git.mjs';
 import { createAiConfig } from './ai-config.mjs';
 import { join } from 'node:path';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, readdir } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { dirname, isAbsolute as isAbs, resolve as resolvePath } from 'node:path';
 import { atomicWrite } from './atomic.mjs';
 import { readWorkspace } from './workspace.mjs';
 import { listDirectory, readEntry, rawEntry, findFiles, searchText, writeEntry, operate, statEntries, forgetIndex, packageScripts, chatContext } from './folder.mjs';
 import { isAbsolute, basename } from 'node:path';
 import { pickFolder } from './folder-picker.mjs';
 import { createBackups } from './backups.mjs';
+import { createSites } from './site.mjs';
+import { createAccount, openInBrowser, SUPABASE_ANON_KEY } from './account.mjs';
 import { serveStatic } from './static.mjs';
 
 async function bodyOf(request) {
@@ -25,10 +29,29 @@ async function bodyOf(request) {
   try { const data = JSON.parse(body || '{}'); if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(); return data; } catch { throw fail('JSON inválido.'); }
 }
 
-export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
+const TEMPLATES = ['react', 'static', 'generic', 'next', 'node', 'python', 'java'];
+/** Novo projeto direto numa pasta do computador, escolhida pelo usuário: cria a pasta, grava o modelo e abre. */
+async function createInFolder(repo, input) {
+  if (!isAbs(input.location)) throw fail('Escolha a pasta onde o projeto será salvo.');
+  const template = input.template ?? 'react';
+  if (!TEMPLATES.includes(template)) throw fail('Modelo não suportado.');
+  const name = String(input.name ?? '').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/[-. ]+$/g, '').trim().slice(0, 80);
+  if (!name || /^(con|prn|aux|nul|com\d|lpt\d)$/i.test(name)) throw fail('Dê ao projeto um nome válido.');
+  const target = join(resolvePath(input.location), name);
+  const existing = await readdir(target).catch(() => null);
+  if (existing && existing.length) throw fail(`A pasta "${name}" já existe nesse local e não está vazia. Escolha outro nome ou outro local.`, 409);
+  const files = validateFiles(starterFiles(template));
+  await mkdir(target, { recursive: true });
+  for (const [path, content] of Object.entries(files)) { const file = join(target, ...path.split('/').filter(Boolean)); await mkdir(dirname(file), { recursive: true }); await atomicWrite(file, content); }
+  return repo.openFolder({ path: target });
+}
+
+export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot, accountOptions = {} }) {
   const repo = createRepository(root, { workspaceRoot });
   const backups = createBackups(join(root, 'backups'));
   const trash = join(root, 'trash');
+  const account = createAccount(join(root, 'account.json'), accountOptions);
+  const sites = createSites();
   const configuration = createAiConfig(join(root, 'ai-config.json'), ai);
   let aiBusy = false;
   let builds = 0;
@@ -39,13 +62,25 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
       response.end(JSON.stringify(data));
     };
     try {
+      // Volta do login feito no navegador: é uma navegação vinda de outro site, então só confere que o endereço é local.
+      const early = new URL(request.url, `http://${request.headers.host}`);
+      if (early.pathname === '/api/account/callback' && request.method === 'GET' && ['127.0.0.1', 'localhost', '[::1]'].includes(early.hostname)) {
+        const page = (title, text) => { response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); response.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Code Sellers IDE</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#0d0a14;color:#f6f4fa;font-family:Inter,system-ui,sans-serif;text-align:center"><div><h1 style="font-size:22px">${title}</h1><p style="color:#aba5b8">${text}</p></div>`); };
+        try { const done = await account.complete(early.searchParams.get('token_hash'), early.searchParams.get('state')); return page('Pronto! Pode voltar para a IDE', `Você entrou como ${String(done.email).replace(/[<>&"]/g, '')}. Esta aba pode ser fechada.`); }
+        catch (error) { return page('Não deu para entrar', String(error.message || 'Tente de novo pela IDE.').replace(/[<>&"]/g, '')); }
+      }
       const url = localRequest(request);
       const parts = url.pathname.split('/').filter(Boolean);
       if (parts[0] !== 'api') {
         if (staticRoot) return await serveStatic(request, response, url, staticRoot);
         throw fail('Rota não encontrada.', 404);
       }
-      if (parts[1] === 'status' && request.method === 'GET') { const value = await configuration.public(); return json({ local: true, ai: value.ai, model: value.model || null }); }
+      if (parts[1] === 'status' && request.method === 'GET') { const value = await configuration.public(); const login = await account.status(); return json({ local: true, ai: value.ai || login.signedIn, model: value.ai ? value.model : login.signedIn ? 'Assistente do Code Sellers' : null, account: login }); }
+      if (parts[1] === 'account') {
+        if (parts[2] === undefined && request.method === 'GET') return json(await account.status());
+        if (parts[2] === 'start' && request.method === 'POST') { await bodyOf(request); return json(await account.start(Number(url.port))); }
+        if (parts[2] === 'logout' && request.method === 'POST') { await bodyOf(request); await account.logout(); return json({ signedIn: false, email: '' }); }
+      }
       if (parts[1] === 'ai-config') {
         if (parts[2] === 'models' && request.method === 'GET') {
           const config = await configuration.get(); if (!config.baseUrl) throw fail('Configure o endpoint antes de listar modelos.');
@@ -56,6 +91,13 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
         if (request.method === 'GET') return json(await configuration.public());
         if (request.method === 'POST') return json(await configuration.set(await bodyOf(request)));
       }
+      if (parts[1] === 'default-location' && request.method === 'GET') return json({ path: join(homedir(), 'Documents', 'Code Sellers IDE'), canPick: process.platform === 'win32' });
+      if (parts[1] === 'open-external' && request.method === 'POST') {
+        const input = await bodyOf(request); let target; try { target = new URL(String(input.url)); } catch { throw fail('Endereço inválido.'); }
+        if (!['http:', 'https:'].includes(target.protocol) || !['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname)) throw fail('Só endereços do seu próprio computador podem ser abertos daqui.', 403);
+        await openInBrowser(target.href); return json({ opened: true });
+      }
+      if (parts[1] === 'pick-directory' && request.method === 'POST') { await bodyOf(request); const path = await pickFolder('Escolha onde salvar o projeto'); return json(path ? { path } : { canceled: true }); }
       if (parts[1] === 'pick-folder' && request.method === 'POST') { await bodyOf(request); const path = await pickFolder(); return path ? json(await repo.openFolder({ path }), 201) : json({ canceled: true }); }
       if (parts[1] === 'open-folder' && request.method === 'POST') return json(await repo.openFolder(await bodyOf(request)), 201);
       if (parts[1] === 'import-folder' && request.method === 'POST') {
@@ -66,7 +108,11 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
       if (parts[1] !== 'projects') throw fail('Rota não encontrada.', 404);
       if (parts.length === 2) {
         if (request.method === 'GET') return json(await repo.list(url.searchParams.get('deleted') === 'true'));
-        if (request.method === 'POST') return json(await repo.create(await bodyOf(request)), 201);
+        if (request.method === 'POST') {
+          const input = await bodyOf(request);
+          if (typeof input.location === 'string' && input.location.trim()) return json(await createInFolder(repo, input), 201);
+          return json(await repo.create(input), 201);
+        }
       }
       const id = parts[2];
       if (parts[3] === 'fs') {
@@ -80,6 +126,7 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
         if (action === 'search' && request.method === 'GET') { let closed = false; response.on('close', () => { closed = true; }); return json(await searchText(root, url.searchParams.get('q') || '', { caseSensitive: url.searchParams.get('cs') === '1', all: url.searchParams.get('all') === '1', cancelled: () => closed })); }
         if (action === 'file' && request.method === 'PUT') return json(await writeEntry(root, await bodyOf(request), { backups, projectId: id }));
         if (action === 'op' && request.method === 'POST') { const result = await operate(root, await bodyOf(request), { trash }); forgetIndex(root); return json(result); }
+        if (action === 'serve' && request.method === 'POST') { await bodyOf(request); if (!(await sites.hasIndex(root))) throw fail('Este projeto não tem um index.html na raiz. Para apps com servidor (React, Next, Node), use o terminal.', 404); return json({ url: await sites.start(id, root) }); }
         if (action === 'versions' && request.method === 'GET') return json({ versions: await backups.versions(id, url.searchParams.get('path') || '') });
         if (action === 'restore' && request.method === 'POST') {
           const input = await bodyOf(request); const data = await backups.read(id, input.path, input.version);
@@ -140,8 +187,9 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
           case 'restore': return json(await repo.restore(id, input.id));
           case 'apply': return json(await repo.apply(id, input));
           case 'chat': {
-            const ai = await configuration.get();
-            if (!ai.baseUrl || !ai.model) throw fail('IA não configurada. Defina AI_BASE_URL e AI_MODEL em .env.local e reinicie.', 503);
+            const own = await configuration.get(); const token = own.baseUrl && own.model ? null : await account.accessToken();
+            if (!token && (!own.baseUrl || !own.model)) throw fail('Entre com a sua conta do Code Sellers (botão "Entrar" no assistente) para usar a IA.', 503);
+            const ai = token ? { baseUrl: `${account.supabaseUrl}/functions/v1`, model: 'ide-ai', key: '' } : own;
             if (aiBusy) throw fail('Aguarde a geração atual terminar.', 429);
             if (!['ask', 'plan', 'agent', 'edit'].includes(input.mode) || typeof input.prompt !== 'string' || !input.prompt.trim() || input.prompt.length > 12000) throw fail('Pedido de IA inválido.');
             let project = await repo.get(id);
@@ -169,12 +217,12 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
             const timeout = setTimeout(() => controller.abort(), 180000);
             response.on('close', () => controller.abort());
             try {
-              const upstream = await fetch(`${ai.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+              const upstream = await fetch(token ? `${ai.baseUrl}/ide-ai` : `${ai.baseUrl.replace(/\/$/, '')}/chat/completions`, {
                 method: 'POST', signal: controller.signal,
-                headers: { 'Content-Type': 'application/json', ...(ai.key ? { Authorization: `Bearer ${ai.key}` } : {}) },
+                headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}`, apikey: SUPABASE_ANON_KEY } : ai.key ? { Authorization: `Bearer ${ai.key}` } : {}) },
                 body: JSON.stringify({ model: ai.model, messages, stream: true }),
               });
-              if (!upstream.ok) throw fail(`O provedor de IA respondeu HTTP ${upstream.status}. Confira modelo, endereço e credenciais.`, 502);
+              if (!upstream.ok) { const detail = token ? await upstream.json().catch(() => null) : null; throw fail(detail?.error || `O provedor de IA respondeu HTTP ${upstream.status}. Confira modelo, endereço e credenciais.`, token && [401, 402, 429].includes(upstream.status) ? upstream.status : 502); }
               if (!upstream.headers.get('content-type')?.includes('text/event-stream')) throw fail('Este endpoint não retornou streaming compatível.', 502);
               response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' });
               for await (const chunk of upstream.body) {
@@ -196,5 +244,6 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
     }
   });
   terminals = attachTerminals(server, repo);
+  server.on('close', () => { void sites.stopAll(); });
   return server;
 }
