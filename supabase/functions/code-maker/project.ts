@@ -7,6 +7,10 @@
 
 import {
   applyEdit,
+  ASSET_PATH,
+  FAVICON_PATH,
+  HEAD_FILE,
+  sanitizeFavicon,
   balanceHtml,
   cleanFragment,
   normalizePart,
@@ -30,6 +34,7 @@ export type FileTree = Record<string, string>
 export const SITE_JSON = 'site.json'
 export const STYLES = 'estilos.css'
 export const SCRIPT = 'script.js'
+export const FAVICON_FILE = 'favicon.svg'
 export const SECTION_PATH = /^secoes\/([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)\.html$/
 const MAX_FILE_CHARS = 120_000
 const MAX_CODE_CHARS = 80_000
@@ -42,8 +47,14 @@ export function sectionPath(id: string): string {
 }
 
 export function isProjectPath(path: string): boolean {
-  return path === SITE_JSON || path === STYLES || path === SCRIPT || SECTION_PATH.test(path) || PAGE_PATH.test(path)
+  return (
+    path === SITE_JSON || path === STYLES || path === SCRIPT || path === HEAD_FILE || path === FAVICON_FILE ||
+    SECTION_PATH.test(path) || PAGE_PATH.test(path) || ASSET_PATH.test(path) || FAVICON_PATH.test(path)
+  )
 }
+
+// favicon.ico / icone.png / apple-touch-icon.png… — qualquer nome de ícone vira o favicon.svg do site.
+const canonical = (path: string): string => (FAVICON_PATH.test(path) ? FAVICON_FILE : path)
 
 // ---------------------------------------------------------------------------
 // Árvore de arquivos a partir do que está guardado
@@ -83,6 +94,9 @@ export function projectTree(plan: SitePlan, parts: SiteParts, files: ProjectFile
   for (const slug of pageSlugs(files)) tree[`paginas/${slug}.html`] = files[`paginas/${slug}.html`]
   if (files[STYLES]) tree[STYLES] = files[STYLES]
   if (files[SCRIPT]) tree[SCRIPT] = files[SCRIPT]
+  if (files[HEAD_FILE]) tree[HEAD_FILE] = files[HEAD_FILE]
+  if (plan.favicon) tree[FAVICON_FILE] = plan.favicon
+  for (const path of Object.keys(files).sort()) if (ASSET_PATH.test(path)) tree[path] = files[path]
   return tree
 }
 
@@ -276,11 +290,15 @@ export interface ProjectEditResult {
   changes: FileChange[]
 }
 
-function rejectEmbedded(html: string): string | null {
-  if (/<script\b/i.test(html)) return 'HTML com <script>: o JavaScript vai em script.js'
-  if (/<style\b/i.test(html)) return 'HTML com <style>: o CSS vai em estilos.css'
-  if (/\son[a-z]+\s*=/i.test(html)) return 'HTML com evento inline (onclick…): use script.js'
-  return null
+// <style> e <script> dentro do HTML não são recusados: o CSS vai para estilos.css e o JavaScript
+// para script.js (o código faz a mudança de lugar, a IA não precisa refazer nada).
+function hoistEmbedded(html: string): { html: string; css: string; js: string } {
+  let css = ''
+  let js = ''
+  const stripped = html
+    .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gi, (_all, body: string) => { css += `\n${body.trim()}\n`; return '' })
+    .replace(/<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script>/gi, (_all, body: string) => { js += `\n${body.trim()}\n`; return '' })
+  return { html: stripped, css: css.trim(), js: js.trim() }
 }
 
 function validateCode(path: string, content: string): string | null {
@@ -363,14 +381,20 @@ export function applyProjectEdit(
 
   const read = (path: string): string | undefined => {
     if (path === SITE_JSON) return jsonText
+    if (path === FAVICON_FILE) return nextPlan.favicon
     const section = path.match(SECTION_PATH)?.[1]
     if (section) return nextParts[section]
     return nextFiles[path]
   }
 
-  const writeSection = (id: string, html: string, options: { after?: string; label?: string } = {}): string | null => {
-    const problem = rejectEmbedded(html)
-    if (problem) return problem
+  const appendCode = (path: string, code: string) => {
+    if (!code) return
+    const current = nextFiles[path] ?? ''
+    if (!current.includes(code)) nextFiles[path] = `${current}${current ? '\n' : ''}${code}\n`
+  }
+
+  const writeSection = (id: string, source: string, options: { after?: string; label?: string } = {}): string | null => {
+    const { html, css, js } = hoistEmbedded(source)
     const normalized = normalizePart(id, cleanFragment(html))
     if (!normalized) return 'HTML vazio'
     if (normalized.length > MAX_FILE_CHARS) return 'arquivo grande demais'
@@ -382,10 +406,13 @@ export function applyProjectEdit(
       else nextPlan.sections.push(section)
     }
     nextParts[id] = normalized
+    appendCode(STYLES, css)
+    appendCode(SCRIPT, js)
     return null
   }
 
-  const writeFile = (path: string, content: string, options: { after?: string; label?: string } = {}): string | null => {
+  const writeFile = (rawPath: string, content: string, options: { after?: string; label?: string } = {}): string | null => {
+    const path = canonical(rawPath)
     const section = path.match(SECTION_PATH)?.[1]
     if (section) return writeSection(section, content, options)
     if (path === SITE_JSON) {
@@ -397,8 +424,8 @@ export function applyProjectEdit(
     }
     const page = path.match(PAGE_PATH)?.[1]
     if (page) {
-      const problem = rejectEmbedded(content)
-      if (problem) return problem
+      const hoisted = hoistEmbedded(content)
+      content = hoisted.html
       // O <main> da página é posto na montagem: um <main> do arquivo vira só o conteúdo.
       let body = cleanFragment(content).trim()
       const wrapped = body.match(/^<main\b[^>]*>([\s\S]*)<\/main>$/i)
@@ -408,6 +435,28 @@ export function applyProjectEdit(
       if (html.length > MAX_FILE_CHARS) return 'arquivo grande demais'
       if (nextFiles[path] === undefined && pageSlugs(nextFiles).length >= MAX_PAGES) return `limite de ${MAX_PAGES} páginas`
       nextFiles[path] = html
+      appendCode(STYLES, hoisted.css)
+      appendCode(SCRIPT, hoisted.js)
+      return null
+    }
+    if (path === FAVICON_FILE) {
+      const svg = sanitizeFavicon(content)
+      if (!svg) return 'o ícone precisa ser um SVG simples (<svg viewBox="0 0 64 64">…</svg>) de até 3000 caracteres, sem scripts nem imagens externas'
+      nextPlan = { ...nextPlan, favicon: svg }
+      return null
+    }
+    if (path === HEAD_FILE) {
+      if (content.length > MAX_CODE_CHARS) return `arquivo grande demais (máximo ${MAX_CODE_CHARS} caracteres)`
+      if (content.trim()) nextFiles[path] = content.trim() + '\n'
+      else delete nextFiles[path]
+      return null
+    }
+    if (ASSET_PATH.test(path)) {
+      const svg = content.trim().replace(/^```(?:svg|xml)?\s*|\s*```$/g, '')
+      if (!/^<svg[\s>]/i.test(svg) || !/<\/svg>\s*$/i.test(svg)) return 'o arquivo precisa ser um SVG completo (<svg>…</svg>)'
+      if (/<script\b|\son[a-z]+\s*=|javascript:/i.test(svg)) return 'SVG sem scripts nem eventos'
+      if (svg.length > MAX_CODE_CHARS) return `arquivo grande demais (máximo ${MAX_CODE_CHARS} caracteres)`
+      nextFiles[path] = svg + '\n'
       return null
     }
     if (path === STYLES || path === SCRIPT) {
@@ -421,7 +470,7 @@ export function applyProjectEdit(
   }
 
   for (const operation of edit.operations) {
-    const path = operation.path
+    const path = canonical(operation.path)
     const record = (reason: string | null) => results.push({ path: path.replace(/#tema$/, ''), kind: operation.kind, ok: !reason, ...(reason ? { reason } : {}) })
     // Tema no formato antigo: mistura com o site.json atual.
     if (path === `${SITE_JSON}#tema` && operation.kind === 'write') {
@@ -457,6 +506,11 @@ export function applyProjectEdit(
         record(null)
       } else if (path === SITE_JSON) {
         record('site.json não pode ser apagado')
+      } else if (path === FAVICON_FILE) {
+        if (!nextPlan.favicon) { record('arquivo não existe'); continue }
+        const { favicon: _removed, ...rest } = nextPlan
+        nextPlan = rest
+        record(null)
       } else if (nextFiles[path] === undefined) {
         record('arquivo não existe')
       } else {

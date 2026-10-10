@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { assemblePages, assembleSite, pageSlugs } from '../../supabase/functions/code-maker/site.ts'
+import { assemblePages, assembleSite, pageSlugs, sanitizeFavicon } from '../../supabase/functions/code-maker/site.ts'
 import {
   applyProjectEdit,
   changeReport,
@@ -91,11 +91,14 @@ test('validação: JS com erro, CSS quebrado, script dentro do HTML e caminho fo
 <escrever arquivo="../segredo.txt">x</escrever>
 <apagar arquivo="secoes/header.html"/>`)
   const result = applyProjectEdit(plan, parts, {}, edit, { brief })
-  assert.equal(result.changes.length, 0)
+  assert.equal(result.files['script.js'], 'alert(1)\n')
+  assert.ok(!result.files['paginas/x.html'].includes('<script'))
+  assert.equal(result.changes.length, 3) // x.html, script.js e a lista de páginas do site.json
   const reasons = result.results.map((item) => item.reason)
   assert.match(reasons[0], /sintaxe/)
   assert.match(reasons[1], /chaves/)
-  assert.match(reasons[2], /script\.js/)
+  // <script> dentro do HTML não é mais recusado: vai para script.js
+  assert.equal(reasons[2], undefined)
   assert.match(reasons[3], /fora do projeto/)
   assert.match(reasons[4], /não podem ser apagados/)
 })
@@ -173,4 +176,30 @@ test('página extra escrita com <main> próprio não fica com <main> dentro de <
   assert.equal(result.files['paginas/blog.html'], '<section><h1>Blog</h1></section>')
   const page = assembleSite(result.plan, result.parts, { files: result.files, page: 'blog' })
   assert.equal((page.match(/<main\b/g) ?? []).length, 1)
+})
+
+const ICON = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="14" fill="#e11d48"/><circle cx="32" cy="32" r="14" fill="#fde68a"/></svg>`
+
+test('favicon.ico / icon.png viram o ícone do site (favicon.svg) e aparecem na aba', () => {
+  for (const name of ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png']) {
+    const result = applyProjectEdit(plan, parts, {}, parseProjectEdit(`<escrever arquivo="${name}">${ICON}</escrever>`), { brief })
+    assert.equal(result.results[0].ok, true, name)
+    assert.equal(result.plan.favicon, sanitizeFavicon(ICON))
+    assert.equal(result.changes[0].path, 'favicon.svg')
+    assert.match(assembleSite(result.plan, result.parts, { files: result.files }), /rel="icon"[^>]*image\/svg\+xml/)
+  }
+  const bad = applyProjectEdit(plan, parts, {}, parseProjectEdit('<escrever arquivo="favicon.ico">binário</escrever>'), { brief })
+  assert.equal(bad.results[0].ok, false)
+})
+
+test('head.html e assets/*.svg entram no site; imagem do asset vira data URI', () => {
+  const edit = parseProjectEdit(`<escrever arquivo="head.html"><meta name="theme-color" content="#e11d48"></escrever>
+<escrever arquivo="assets/pizza.svg">${ICON}</escrever>
+<editar arquivo="secoes/hero.html"><antes><h1>Advocacia trabalhista</h1></antes><depois><h1>Advocacia trabalhista</h1><img src="assets/pizza.svg" alt=""></depois></editar>`)
+  const result = applyProjectEdit(plan, parts, {}, edit, { brief })
+  assert.ok(result.results.every((item) => item.ok), JSON.stringify(result.results))
+  const html = assembleSite(result.plan, result.parts, { files: result.files })
+  assert.match(html, /theme-color/)
+  assert.match(html, /src="data:image\/svg\+xml;base64,/)
+  assert.ok(!html.includes('assets/pizza.svg'))
 })

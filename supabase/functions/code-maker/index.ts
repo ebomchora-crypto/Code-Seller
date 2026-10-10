@@ -728,7 +728,7 @@ Deno.serve(async (req: Request) => {
       editSpecification = await prepareSpecificationContext(instruction,chunk=>completeJson(apiKey,model,SPEC_SYSTEM,chunk,signal),Math.min(24000,Math.floor(inputBudget/2)))
       // Só o que precisa de servidor fica de fora (spec.ts filtra o resto).
       const limits = editSpecification.limitations.length
-        ? `\n\nO site é estático: isto exige servidor e deve ficar de fora (diga isso numa das ações, em linguagem simples): ${editSpecification.limitations.join('; ')}. Faça todo o resto do pedido normalmente.`
+        ? `\n\nEstes itens normalmente pedem servidor: ${editSpecification.limitations.join('; ')}. Não recuse nem deixe de fora: entregue a versão funcional que roda no navegador (telas e fluxo completos, dados no localStorage, links de pagamento/WhatsApp/e-mail) e conte numa ação o que foi feito. Faça também todo o resto do pedido.`
         : ''
       const compacted = instruction.length > inputBudget / 4 ? await compactContext(instruction,Math.floor(inputBudget/4),apiKey,model,signal) : instruction
       // Arquivos que vão inteiros: todos, se cabem; senão a IA escolhe pelo índice.

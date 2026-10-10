@@ -1243,10 +1243,13 @@ ARQUIVOS DO PROJETO
 - paginas/<nome>.html — páginas extras (ex.: paginas/publicacoes.html). Cada uma tem só o conteúdo do <main> (uma ou mais <section>); o cabeçalho e o rodapé entram sozinhos. Link para ela: href="publicacoes.html". Da página extra, link para uma seção da inicial: href="index.html#contato".
 - estilos.css — CSS próprio do site (media queries, ajustes que as classes Tailwind não resolvem). Entra em todas as páginas.
 - script.js — JavaScript próprio do site (abas, filtros, busca, carrossel, calculadora…). Entra no fim de todas as páginas; use addEventListener e seletores [data-*], nunca onclick no HTML.
+- favicon.svg — o ícone da aba do navegador (SVG simples, viewBox 0 0 64 64, até 3000 caracteres). Pedido de favicon, favicon.ico, ícone, logo na aba: escreva favicon.svg (qualquer nome de ícone — favicon.ico, icon.png, apple-touch-icon.png — é gravado aqui e entregue como ícone do site).
+- head.html — tags extras do <head> de todas as páginas (<meta>, <link>, fontes, JSON-LD, pixel de análise, verificação de domínio, <script src="https://…"> de bibliotecas…).
+- assets/<nome>.svg — imagens vetoriais próprias (ilustrações, logos, padrões). Use no HTML como src="assets/<nome>.svg" ou url(assets/<nome>.svg) no CSS.
 O índice mostra todos os arquivos; os que vieram inteiros estão em <arquivo caminho="...">. Você pode alterar qualquer arquivo do índice.
 
 TECNOLOGIA
-- HTML com Tailwind (CDN) e as cores do tema: brand, brand-dark, accent, ink, paper, surface, muted; fontes font-display e font-body. Sem <script> nem <style> dentro do HTML: CSS em estilos.css, JS em script.js.
+- HTML com Tailwind (CDN) e as cores do tema: brand, brand-dark, accent, ink, paper, surface, muted; fontes font-display e font-body. Prefira CSS em estilos.css e JS em script.js; se vier <style> ou <script> dentro do HTML, o sistema move para esses arquivos.
 - Comportamentos que já existem e podem ser usados no HTML: data-header, data-menu-toggle, data-menu, reveal, details/summary, data-year.
 
 ${DESIGN_RULES}
@@ -1276,7 +1279,7 @@ REGRAS
 - Faça TODOS os itens do pedido, nos arquivos certos. Página nova: crie o arquivo em paginas/ e coloque o link no menu (secoes/header.html) e onde fizer sentido. Responsividade: corrija as classes (sm:/md:/lg:) nas seções e, se precisar, estilos.css.
 - Ajuste preserva, redesenho substitui: mantenha a identidade (cores, fontes, cantos), os fatos e tudo o que não foi pedido. Nunca troque preços, contatos, endereço ou outros fatos, nem acrescente afirmações novas sobre o negócio, sem o usuário pedir.
 - TEXTOS PEDIDOS: quando o usuário pede para escrever ou preencher conteúdo (artigo completo, explicação de cada área, resumo, perguntas e respostas), ESCREVA você: conteúdo informativo, correto e geral sobre o tema, no tom do site, sem inventar fatos específicos do negócio (números, casos, clientes, prêmios, preços, prazos). Falta de texto pronto não é motivo para deixar de fora.
-- Deixe de fora só o que exige servidor (login, pagamento, banco de dados, envio de arquivos) ou um dado que só o usuário tem, dizendo isso numa ação.
+- Você faz TUDO o que o pedido pede, sem recusar e sem dizer que "não dá": nunca responda que algo está fora do alcance. O site roda no navegador, então entregue a versão funcional possível: login/área restrita → tela e fluxo completos com dados salvos no navegador (localStorage); pagamento → botão para link de pagamento/Pix/WhatsApp e resumo do pedido; banco de dados/lista → dados em script.js ou localStorage; envio de formulário → mailto:, WhatsApp ou serviço de formulários por link; mapas, vídeos, redes sociais, chat, analytics → incorpore por iframe/link/head.html; ícone, logo, imagem → desenhe em SVG. Se faltar um dado que só o usuário tem (telefone, link), deixe um espaço claro de preencher e diga numa ação.
 - Nunca diga numa ação que mudou algo que não está nas operações: o sistema confere os arquivos e mostra ao usuário só o que mudou de verdade.`
 
 // Pedido que fala de movimento/visual recebe a biblioteca inteira; os outros
@@ -2080,6 +2083,13 @@ const SKIP_LINK: Record<string, string> = {
 /** Arquivos do projeto além das seções: estilos.css, script.js e paginas/<nome>.html. */
 export type ProjectFiles = Record<string, string>
 
+/** Marcação extra do <head> (SEO, Open Graph, Google Analytics, Meta Pixel, dados estruturados…). */
+export const HEAD_FILE = 'head.html'
+/** Ilustrações e logos em SVG: viram imagem embutida no site (`assets/logo.svg` funciona em src e em url()). */
+export const ASSET_PATH = /^assets\/[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?\.svg$/
+/** Qualquer nome de ícone de aba (favicon.ico, favicon.svg, apple-touch-icon.png…) vira o ícone do site. */
+export const FAVICON_PATH = /^(?:favicon|icone|icon|apple-touch-icon|safari-pinned-tab)[a-z0-9-]*\.(?:ico|svg|png)$/i
+
 export const PAGE_PATH = /^paginas\/([a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?)\.html$/
 
 export function pageSlugs(files: ProjectFiles | null | undefined): string[] {
@@ -2101,6 +2111,24 @@ export function pageTitle(html: string, slug: string): string {
 function projectStyle(files: ProjectFiles): string {
   const css = (files['estilos.css'] ?? '').replace(/<\/style/gi, '<\\/style').trim()
   return css ? `\n<style data-arquivo="estilos.css">\n${css}\n</style>` : ''
+}
+function projectHead(files: ProjectFiles): string {
+  const extra = (files[HEAD_FILE] ?? '').replace(/<\/?(?:html|head|body)\b[^>]*>/gi, '').trim()
+  return extra ? `\n<!-- head.html -->\n${extra}` : ''
+}
+function svgDataUri(svg: string): string {
+  const bytes = new TextEncoder().encode(svg)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return `data:image/svg+xml;base64,${btoa(binary)}`
+}
+// assets/<nome>.svg → imagem embutida (em <img src>, background e url()).
+function inlineAssets(document: string, files: ProjectFiles): string {
+  let out = document
+  for (const path of Object.keys(files)) {
+    if (ASSET_PATH.test(path) && out.includes(path)) out = out.split(path).join(svgDataUri(files[path]))
+  }
+  return out
 }
 function projectScript(files: ProjectFiles): string {
   const js = (files['script.js'] ?? '').replace(/<\/script/gi, '<\\/script').trim()
@@ -2143,16 +2171,16 @@ export function assembleSite(
   const head = pageHtml !== null
     ? buildHead({ ...plan, title: `${pageTitle(pageHtml, options.page!)} · ${plan.title}` })
     : buildHead(plan)
-  return `<!doctype html>
+  return inlineAssets(`<!doctype html>
 <html lang="${lang}">
 <head>
-${head}${fx.css ? `\n<style>${fx.css}</style>` : ''}${projectStyle(files)}
+${head}${fx.css ? `\n<style>${fx.css}</style>` : ''}${projectStyle(files)}${projectHead(files)}
 </head>
 <body class="bg-paper text-ink font-body antialiased">
 ${body}
 ${BASE_SCRIPT}${fx.js ? `\n<script>${fx.js}</script>` : ''}${projectScript(files)}
 </body>
-</html>`
+</html>`, files)
 }
 
 /** Documento de cada página extra, já montado (é o que o site publicado mostra). */

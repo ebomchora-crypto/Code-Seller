@@ -1,6 +1,6 @@
 import { assemblePages, assembleSite, type ProjectFiles, type SiteParts, type SitePlan } from '../../../../supabase/functions/code-maker/site.ts';
 import { planFromSiteJson, projectTree, SECTION_PATH, SITE_JSON, STYLES, SCRIPT, isProjectPath } from '../../../../supabase/functions/code-maker/project.ts';
-import { PAGE_PATH } from '../../../../supabase/functions/code-maker/site.ts';
+import { ASSET_PATH, FAVICON_PATH, HEAD_FILE, PAGE_PATH, sanitizeFavicon } from '../../../../supabase/functions/code-maker/site.ts';
 
 export type SiteState = { plan: SitePlan; parts: SiteParts; files: ProjectFiles };
 const PROTECTED = new Set(['header', 'footer']);
@@ -30,7 +30,12 @@ export function fromIdeTree(tree: Record<string, string>, current: SiteState): S
   for (const id of ids) if (!PROTECTED.has(id) && !sections.some(section => section.id === id)) sections.push({ id, label: id, brief: '', bg: 'paper' });
   plan = { ...plan, sections };
   const files: ProjectFiles = {};
-  for (const [path, content] of entries) if (path === STYLES || path === SCRIPT || PAGE_PATH.test(path)) files[path] = content;
+  for (const [path, content] of entries) if (path === STYLES || path === SCRIPT || path === HEAD_FILE || PAGE_PATH.test(path) || ASSET_PATH.test(path)) files[path] = content;
+  // favicon.svg (ou favicon.ico/icon.png com SVG dentro) é o ícone do site; sem arquivo de ícone, o ícone sai do plano.
+  const iconFile = entries.find(([path]) => FAVICON_PATH.test(path));
+  const icon = iconFile ? sanitizeFavicon(iconFile[1]) : null;
+  if (iconFile && icon) plan = { ...plan, favicon: icon };
+  else if (!iconFile && plan.favicon) { const { favicon: _gone, ...rest } = plan; plan = rest; }
   return { plan, parts, files };
 }
 
