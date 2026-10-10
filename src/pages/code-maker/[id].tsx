@@ -8,17 +8,20 @@ import {
   Code2,
   Copy,
   Download,
+  BarChart3,
   Ellipsis,
   ExternalLink,
   Eye,
   Globe,
   Link2,
   Monitor,
+  MousePointerClick,
   PanelLeft,
   RotateCw,
   Smartphone,
   SquareTerminal,
   Trash2,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useBilling } from '@/stores/BillingContext'
@@ -28,7 +31,8 @@ import { useSiteBuilder } from '@/hooks/useSiteBuilder'
 import { useAttachments } from '@/components/code-maker/Attachments'
 import { BuildTimeline } from '@/components/code-maker/BuildTimeline'
 import { CodeView } from '@/components/code-maker/CodeView'
-import { SitePreview } from '@/components/code-maker/SitePreview'
+import { SitePreview, type ElementPick } from '@/components/code-maker/SitePreview'
+import { SiteStatsModal } from '@/components/code-maker/SiteStatsModal'
 import { AiLoader } from '@/components/ui/ai-loader'
 import { SiteFavicon } from '@/components/code-maker/SiteFavicon'
 import { PromptInputBox } from '@/components/ui/ai-prompt-box'
@@ -64,6 +68,9 @@ export default function CodeMakerEditorPage() {
   const [device, setDevice] = useState<Device>('desktop')
   const [pickedFile, setPickedFile] = useState<string | null>(null)
   const [instruction, setInstruction] = useState('')
+  const [statsOpen, setStatsOpen] = useState(false)
+  const [inspecting, setInspecting] = useState(false)
+  const [picked, setPicked] = useState<ElementPick | null>(null)
   const [slugOpen, setSlugOpen] = useState(false)
   const [slugDraft, setSlugDraft] = useState('')
   const [savingSlug, setSavingSlug] = useState(false)
@@ -248,13 +255,19 @@ export default function CodeMakerEditorPage() {
   async function submitEdit(event?: FormEvent) {
     event?.preventDefault()
     const assets = attachments.assets
-    const text = instruction.trim() || (assets.length > 0 ? 'Use as imagens anexadas no site.' : '')
-    if (!text || busy || !ready || attachments.uploading) return
+    const typed = instruction.trim() || (assets.length > 0 ? 'Use as imagens anexadas no site.' : '')
+    if (!typed || busy || !ready || attachments.uploading) return
+    // Elemento escolhido na prévia: a IA recebe o trecho e o arquivo provável junto do pedido.
+    const text = picked
+      ? `${typed}\n\n(Elemento selecionado na prévia: <${picked.tag}>${picked.file ? ` em ${picked.page ? `paginas/${picked.page}.html ou ` : ''}${picked.file}` : picked.page ? ` em paginas/${picked.page}.html` : ''}. Trecho atual: ${picked.html})`
+      : typed
     setInstruction('')
     setMobileTab('chat')
     const ok = await builder.edit(text, assets)
-    if (ok) attachments.clear()
-    else setInstruction(text)
+    if (ok) {
+      attachments.clear()
+      setPicked(null)
+    } else setInstruction(typed)
   }
 
   async function togglePublished(value: boolean) {
@@ -354,6 +367,7 @@ export default function CodeMakerEditorPage() {
   const menuItems: MenuItem[] = [
     ...(live ? [{ icon: ExternalLink, label: 'Abrir site', href: url }] : []),
     ...(ready ? [{ icon: SquareTerminal, label: 'Editar na IDE', href: `/ide/project/${site.id}` }] : []),
+    ...(ready ? [{ icon: BarChart3, label: 'Estatísticas', onClick: () => setStatsOpen(true) }] : []),
     {
       icon: Link2,
       label: 'Mudar o link',
@@ -536,6 +550,18 @@ export default function CodeMakerEditorPage() {
                 ))}
               </div>
             )}
+            {picked && (
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-[var(--accent-ring)] bg-[var(--accent-tint)] px-3 py-1.5 text-[12.5px] text-[var(--accent-text)]">
+                <MousePointerClick className="size-3.5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">
+                  Mudando: <strong className="font-semibold">&lt;{picked.tag}&gt;</strong>
+                  {picked.text ? ` “${picked.text}”` : ''}
+                </span>
+                <button type="button" onClick={() => setPicked(null)} aria-label="Tirar a seleção" className="shrink-0 rounded-full p-0.5 hover:bg-black/10">
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            )}
             <PromptInputBox
               value={instruction}
               onValueChange={setInstruction}
@@ -618,6 +644,12 @@ export default function CodeMakerEditorPage() {
                       className="h-full w-full"
                       page={shownPage}
                       hash={previewHash}
+                      inspect={inspecting}
+                      onPick={(pick) => {
+                        setPicked(pick)
+                        setInspecting(false)
+                        setMobileTab('chat')
+                      }}
                       onNavigate={(page, hash) => {
                         if (page && !pages.includes(page)) {
                           toast.error(`A página ${page}.html não existe neste site.`)
@@ -649,6 +681,19 @@ export default function CodeMakerEditorPage() {
                         ))}
                       </select>
                     </label>
+                  )}
+                  {previewHtml && ready && !busy && (
+                    <button
+                      type="button"
+                      onClick={() => setInspecting((value) => !value)}
+                      aria-pressed={inspecting}
+                      title="Clique num texto, foto ou botão do site para pedir uma mudança só nele"
+                      className={`absolute bottom-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold shadow-lg backdrop-blur transition ${
+                        inspecting ? 'border-[#8b5cf6] bg-[#8b5cf6] text-white' : 'border-black/10 bg-white/95 text-[#18181b] hover:border-[#8b5cf6]'
+                      }`}
+                    >
+                      <MousePointerClick className="size-3.5" /> {inspecting ? 'Clique no que quer mudar' : 'Selecionar elemento'}
+                    </button>
                   )}
                   {readyPill && (
                     <div className="cm-ready-pop pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_12px_30px_-10px_rgba(16,185,129,0.8)]">
@@ -699,6 +744,8 @@ export default function CodeMakerEditorPage() {
           )}
         </section>
       </div>
+
+      <SiteStatsModal siteId={site.id} siteName={site.name} open={statsOpen} onClose={() => setStatsOpen(false)} />
 
       <Modal open={slugOpen} onClose={() => setSlugOpen(false)} title="Link do site" size="sm">
         <form onSubmit={saveSlug} className="flex flex-col gap-4">

@@ -47,6 +47,7 @@ export default function ChatPanel({ session, onChanged, onOpen }: { session: Aut
   const [conversationLoaded, setConversationLoaded] = useState(false);
   const [mode, setMode] = useState<AgentMode>('agent');
   const [auto, setAuto] = useState(() => { try { return localStorage.getItem('cm-agent-auto') === '1'; } catch { return false; } });
+  const [images, setImages] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [liveText, setLiveText] = useState('');
   const [liveTools, setLiveTools] = useState<LiveTool[]>([]);
@@ -66,9 +67,10 @@ export default function ChatPanel({ session, onChanged, onOpen }: { session: Aut
   useEffect(() => { const el = scroller.current; if (el) el.scrollTop = el.scrollHeight; }, [messages, liveText, liveTools, approval]);
 
   async function send() {
-    const text = prompt.trim(); if (!text || busy || !conversationLoaded) return;
+    const text = prompt.trim() || (images.length ? 'Veja a imagem anexada e faça o que ela pede.' : ''); if (!text || busy || !conversationLoaded) return;
+    const sentImages = images; setImages([]);
     setBusy(true); setError(null); setLiveText(''); setLiveTools([]); setApproval(null); setPrompt('');
-    const previous = messages; setMessages([...previous, { role: 'user', content: text }]);
+    const previous = messages; setMessages([...previous, { role: 'user', content: sentImages.length ? `${text}\n\n📎 ${sentImages.length} imagem${sentImages.length > 1 ? 'ns' : ''} anexada${sentImages.length > 1 ? 's' : ''}` : text }]);
     const history = previous.map(item => ({ role: item.role, content: item.role === 'assistant' && item.tools?.length ? `${item.content}\n[Ações já feitas: ${summarize(item.tools).join('; ')}]` : item.content }));
     const controller = new AbortController(); abort.current = controller;
     let acc = ''; let tools: LiveTool[] = []; const outcome: { done?: { text: string; tools: ToolRecord[] }; failure?: string } = {}; const changed = new Set<string>();
@@ -86,7 +88,7 @@ export default function ChatPanel({ session, onChanged, onOpen }: { session: Aut
     };
     try {
       await session.flush();
-      await streamAgent(id, { prompt: text, mode, activeFile, messages: history, autoApprove: auto }, controller.signal, onEvent);
+      await streamAgent(id, { prompt: text, mode, activeFile, messages: history, autoApprove: auto, images: sentImages }, controller.signal, onEvent);
     } catch (error) { outcome.failure = (error as Error).name === 'AbortError' ? 'Interrompido. O que já foi feito continua salvo nos arquivos.' : (error as Error).message; }
     const record: ToolRecord[] = outcome.done?.tools ?? tools.filter(tool => tool.status !== 'running').map(tool => ({ name: tool.name, path: tool.path, ok: tool.status === 'ok', label: tool.label ?? tool.name, added: tool.added, removed: tool.removed }));
     const final = outcome.done?.text || acc.trim(); const failure = outcome.failure;
@@ -123,7 +125,7 @@ export default function ChatPanel({ session, onChanged, onOpen }: { session: Aut
       {error && <p className="error-banner" role="alert">{error}</p>}
     </div>
     <div className="p-3">
-      <AiPromptBox value={prompt} onChange={setPrompt} onSend={() => void send()} onStop={stop} busy={busy} disabled={!config?.ai} canSend={!!config?.ai && !!prompt.trim() && conversationLoaded}
+      <AiPromptBox value={prompt} onChange={setPrompt} onSend={() => void send()} onStop={stop} busy={busy} disabled={!config?.ai} canSend={!!config?.ai && (!!prompt.trim() || images.length > 0) && conversationLoaded} images={images} onImages={setImages}
         placeholder={mode === 'agent' ? 'O que vamos construir? Eu faço nos arquivos…' : mode === 'plan' ? 'Descreva o que quer planejar…' : 'Pergunte sobre o seu código…'}
         mode={mode} onMode={setMode} auto={auto} onAuto={setAuto} footnote="Enter envia · Shift+Enter quebra a linha" />
     </div>

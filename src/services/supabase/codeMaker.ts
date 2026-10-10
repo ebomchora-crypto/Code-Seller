@@ -248,10 +248,50 @@ export interface PublicSite {
   offline?: boolean
 }
 
-export async function getPublicSite(slug: string, page?: string): Promise<PublicSite | null> {
-  const { data, error } = await supabase.rpc('get_public_site', page ? { p_slug: slug, p_page: page } : { p_slug: slug })
+export async function getPublicSite(slug: string, page?: string, referrer?: string): Promise<PublicSite | null> {
+  const { data, error } = await supabase.rpc('get_public_site_ref', { p_slug: slug, p_page: page || null, p_ref: referrer || null })
   if (error) throw new Error(error.message)
   return (data as PublicSite | null) ?? null
+}
+
+// Cliques no WhatsApp, telefone ou e-mail dentro do site publicado.
+export async function recordSiteEvent(slug: string, kind: 'whatsapp' | 'phone' | 'email', page = ''): Promise<void> {
+  await supabase.rpc('record_site_event', { p_slug: slug, p_kind: kind, p_page: page || null })
+}
+
+export interface SiteLeadInput {
+  name: string
+  phone?: string
+  email?: string
+  message?: string
+}
+
+// Formulário do site publicado: vira contato no CRM de quem fez o site.
+export async function submitSiteLead(slug: string, lead: SiteLeadInput, page = ''): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('submit_site_lead', {
+    p_slug: slug,
+    p_name: lead.name,
+    p_phone: lead.phone || null,
+    p_email: lead.email || null,
+    p_message: lead.message || null,
+    p_page: page || null,
+  })
+  if (error) return { ok: false, error: 'failed' }
+  return (data as { ok: boolean; error?: string }) ?? { ok: false, error: 'failed' }
+}
+
+export interface SiteStats {
+  days: number
+  totals: { views: number; whatsapp: number; phone: number; email: number; leads: number }
+  daily: { day: string; views: number }[]
+  refs: { name: string; n: number }[]
+  pages: { name: string; n: number }[]
+}
+
+export async function getSiteStats(siteId: string, days: number): Promise<SiteStats | null> {
+  const { data, error } = await supabase.rpc('site_stats', { p_site_id: siteId, p_days: days })
+  if (error) throw new Error(error.message)
+  return (data as SiteStats | null) ?? null
 }
 
 const ASSET_BUCKET = 'site-assets'

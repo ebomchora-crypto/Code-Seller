@@ -199,6 +199,8 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot, acco
             const own = await configuration.get(); const useOwn = Boolean(own.baseUrl && own.model);
             if (!useOwn && !(await account.status()).signedIn) throw fail('Entre com a sua conta do Code Sellers (botão "Entrar" no assistente) para usar a IA.', 503);
             if (!['agent', 'ask', 'plan'].includes(input.mode) || typeof input.prompt !== 'string' || !input.prompt.trim() || input.prompt.length > 30000) throw fail('Pedido de IA inválido.');
+            const images = Array.isArray(input.images) ? input.images : [];
+            if (images.length > 4 || images.some(url => typeof url !== 'string' || !/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url) || url.length > 4_500_000)) throw fail('Imagem inválida (use até 4 imagens PNG, JPG, WebP ou GIF).');
             if (agentBusy.has(id)) throw fail('Aguarde a tarefa atual terminar (ou clique em Parar).', 429);
             const project = await repo.get(id);
             const getAi = async () => useOwn
@@ -219,7 +221,7 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot, acco
               emit({ type: 'approval', id: callId, command, trusted: Boolean(project.trusted) });
             });
             try {
-              const result = await runAgent({ root: repo.workspace(id), projectId: id, projectName: project.name, mode: input.mode, prompt: input.prompt, history: Array.isArray(input.messages) ? input.messages : [], activeFile: typeof input.activeFile === 'string' ? input.activeFile : undefined, getAi, emit, signal: controller.signal, backups, trash, approve });
+              const result = await runAgent({ root: repo.workspace(id), projectId: id, projectName: project.name, mode: input.mode, prompt: input.prompt, images, history: Array.isArray(input.messages) ? input.messages : [], activeFile: typeof input.activeFile === 'string' ? input.activeFile : undefined, getAi, emit, signal: controller.signal, backups, trash, approve });
               emit({ type: 'done', text: result.text, changed: result.changed, tools: result.tools });
             } catch (error) {
               emit({ type: 'error', message: error.name === 'AbortError' || controller.signal.aborted ? 'Interrompido. O que já foi feito continua salvo nos arquivos.' : error.status ? error.message : 'A IA falhou no meio da tarefa. O que já foi feito continua salvo nos arquivos.' });

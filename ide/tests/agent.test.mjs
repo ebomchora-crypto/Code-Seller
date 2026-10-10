@@ -103,3 +103,32 @@ test('não escapa da pasta do projeto', async () => {
     await assert.rejects(readFile(join(ctx.folder, '..', 'fora.txt')));
   } finally { await ctx.close(); }
 });
+
+test('imagens anexadas vão ao modelo; se o modelo recusar, a tarefa segue só com o texto', async () => {
+  const seen = [];
+  const provider = createServer(async (request, response) => {
+    let body = ''; for await (const chunk of request) body += chunk;
+    const payload = JSON.parse(body); seen.push(payload);
+    if (JSON.stringify(payload).includes('image_url')) { response.writeHead(400, { 'Content-Type': 'application/json' }); return response.end('{"error":{"message":"images not supported"}}'); }
+    response.writeHead(200, { 'Content-Type': 'text/event-stream' }); response.end(sse('Entendi o pedido sem a imagem.'));
+  });
+  await new Promise(done => provider.listen(0, '127.0.0.1', done));
+  const base = resolve('tests/.tmp'); await mkdir(base, { recursive: true });
+  const dir = await mkdtemp(resolve(base, 'agent-img-')); const folder = join(dir, 'p'); await mkdir(folder);
+  const server = createApiServer({ root: join(dir, 'data'), ai: { baseUrl: `http://127.0.0.1:${provider.address().port}/v1`, model: 'm', key: 'k' } });
+  await new Promise(done => server.listen(0, '127.0.0.1', done));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const post = (path, body) => fetch(`${url}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  try {
+    const project = await (await post('/api/open-folder', { path: folder })).json();
+    const png = 'data:image/png;base64,iVBORw0KGgo=';
+    const bad = await post(`/api/projects/${project.id}/agent`, { mode: 'agent', prompt: 'x', images: ['http://evil/x.png'] });
+    assert.equal(bad.status, 400);
+    const response = await post(`/api/projects/${project.id}/agent`, { mode: 'agent', prompt: 'veja o print', images: [png] });
+    const events = (await response.text()).split('\n\n').filter(line => line.startsWith('data:')).map(line => JSON.parse(line.slice(5)));
+    assert.equal(events.at(-1).type, 'done');
+    assert.ok(Array.isArray(seen[0].messages.at(-1).content) && seen[0].messages.at(-1).content.some(part => part.type === 'image_url'));
+    assert.equal(typeof seen[1].messages.at(-1).content, 'string');
+    assert.ok(events.some(event => event.type === 'text' && /não consegue ler imagens/.test(event.delta)));
+  } finally { await new Promise(done => server.close(done)); await new Promise(done => provider.close(done)); await rm(dir, { recursive: true, force: true }); }
+});

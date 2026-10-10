@@ -18,11 +18,23 @@ interface SitePreviewProps {
   onNavigate?: (page: string, hash: string) => void
   /** Mostra o carregamento da IA até o primeiro quadro do site aparecer. */
   loader?: boolean
+  /** Modo "selecionar elemento": clicar num trecho do site avisa quem chamou. */
+  inspect?: boolean
+  onPick?: (pick: ElementPick) => void
+}
+
+export interface ElementPick {
+  tag: string
+  text: string
+  /** Arquivo do projeto onde o trecho provavelmente está (secoes/hero.html…). */
+  file: string
+  html: string
+  page: string
 }
 
 // Prévia sem piscar: o documento novo carrega num quadro escondido e só
 // troca de lugar com o atual quando está pronto, na mesma posição de rolagem.
-export function SitePreview({ html, title, className = '', page = '', hash = '', onNavigate, loader = false }: SitePreviewProps) {
+export function SitePreview({ html, title, className = '', page = '', hash = '', onNavigate, loader = false, inspect = false, onPick }: SitePreviewProps) {
   const [docs, setDocs] = useState<[string | null, string | null]>([null, null])
   const [active, setActive] = useState<0 | 1>(0)
   const frames = [useRef<HTMLIFrameElement>(null), useRef<HTMLIFrameElement>(null)]
@@ -31,6 +43,10 @@ export function SitePreview({ html, title, className = '', page = '', hash = '',
   const waiting = useRef<0 | 1 | null>(null)
   const navigate = useRef(onNavigate)
   navigate.current = onNavigate
+  const inspectRef = useRef(inspect)
+  inspectRef.current = inspect
+  const pickRef = useRef(onPick)
+  pickRef.current = onPick
   const shownPage = useRef(page)
   const [firstLoaded, setFirstLoaded] = useState(false)
 
@@ -39,7 +55,10 @@ export function SitePreview({ html, title, className = '', page = '', hash = '',
     function onMessage(event: MessageEvent) {
       const visible = frames[activeRef.current].current
       if (!visible || event.source !== visible.contentWindow) return
-      const data = event.data as { codeMakerScroll?: unknown; codeMakerPage?: unknown; codeMakerHash?: unknown } | null
+      const data = event.data as { codeMakerScroll?: unknown; codeMakerPage?: unknown; codeMakerHash?: unknown; csPick?: ElementPick; csLead?: unknown } | null
+      // Na prévia o formulário não envia de verdade: só mostra como vai ficar.
+      if (data?.csLead) visible.contentWindow?.postMessage({ csLeadResult: { ok: true, preview: true } }, '*')
+      if (data?.csPick && typeof data.csPick.tag === 'string') pickRef.current?.(data.csPick)
       if (typeof data?.codeMakerScroll === 'number') scrollY.current = data.codeMakerScroll
       if (typeof data?.codeMakerPage === 'string') navigate.current?.(data.codeMakerPage, typeof data.codeMakerHash === 'string' ? data.codeMakerHash : '')
     }
@@ -68,7 +87,14 @@ export function SitePreview({ html, title, className = '', page = '', hash = '',
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [html, page, hash])
 
+  // O modo de seleção vale para o quadro visível e para o que acabou de carregar.
+  useEffect(() => {
+    frames[activeRef.current].current?.contentWindow?.postMessage({ csInspect: inspect }, '*')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inspect])
+
   function handleLoad(index: 0 | 1) {
+    frames[index].current?.contentWindow?.postMessage({ csInspect: inspectRef.current }, '*')
     if (!firstLoaded) window.setTimeout(() => setFirstLoaded(true), 250)
     if (waiting.current !== index) return
     waiting.current = null

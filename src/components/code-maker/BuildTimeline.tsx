@@ -26,6 +26,21 @@ function formatTime(value: string): string {
   })
 }
 
+const PICK_MARK = '\n\n(Elemento selecionado na prévia:'
+
+// O pedido enviado à IA leva o trecho escolhido na prévia; na conversa aparece só o pedido e uma etiqueta.
+function InstructionText({ text }: { text: string }) {
+  const at = text.indexOf(PICK_MARK)
+  if (at < 0) return <>{text}</>
+  const tag = text.slice(at + PICK_MARK.length).match(/^\s*<([a-z0-9]+)>/i)?.[1]
+  return (
+    <>
+      {text.slice(0, at)}
+      <span className="mt-1.5 block w-fit rounded-full bg-white/15 px-2 py-0.5 text-[11.5px]">Elemento selecionado{tag ? ` · ${tag}` : ''}</span>
+    </>
+  )
+}
+
 function UserBubble({ children, time }: { children: ReactNode; time?: string }) {
   return (
     <div className="flex flex-col items-end gap-1">
@@ -337,7 +352,7 @@ export function BuildTimeline(props: BuildTimelineProps) {
           </p>
         ) : (
           <div key={version.id} className="flex flex-col gap-3">
-            <UserBubble time={formatTime(version.created_at)}>{version.instruction}</UserBubble>
+            <UserBubble time={formatTime(version.created_at)}>{version.instruction ? <InstructionText text={version.instruction} /> : null}</UserBubble>
             <AiBlock title="Alteração feita" status="done">
               <ActionList
                 actions={version.actions}
@@ -351,7 +366,7 @@ export function BuildTimeline(props: BuildTimelineProps) {
 
       {pendingInstruction && (
         <div className="flex flex-col gap-3">
-          <UserBubble>{pendingInstruction}</UserBubble>
+          <UserBubble><InstructionText text={pendingInstruction} /></UserBubble>
           <AiBlock title="Alterando o site" status="working">
             <ActionList actions={editActions} live />
             <CodeTail code={editText.split(/<\/acoes>/i)[1] ?? ''} />

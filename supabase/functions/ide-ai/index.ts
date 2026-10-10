@@ -54,12 +54,28 @@ Deno.serve(async (req: Request) => {
     const list = body.messages
     if (!Array.isArray(list) || !list.length || list.length > MAX_MESSAGES) return json({ error: 'Mensagens inválidas.' }, 400)
     let size = 0
+    let imageChars = 0
     const messages = []
     for (const item of list as { role?: unknown; content?: unknown }[]) {
-      if (!item || !['system', 'user', 'assistant'].includes(String(item.role)) || typeof item.content !== 'string') return json({ error: 'Mensagens inválidas.' }, 400)
-      size += item.content.length; messages.push({ role: item.role, content: item.content })
+      if (!item || !['system', 'user', 'assistant'].includes(String(item.role))) return json({ error: 'Mensagens inválidas.' }, 400)
+      if (typeof item.content === 'string') {
+        size += item.content.length
+        messages.push({ role: item.role, content: item.content })
+        continue
+      }
+      // Mensagem do usuário com imagens anexadas (texto + imagens em data URL).
+      if (item.role !== 'user' || !Array.isArray(item.content) || item.content.length > 6) return json({ error: 'Mensagens inválidas.' }, 400)
+      const parts = []
+      for (const part of item.content as { type?: unknown; text?: unknown; image_url?: { url?: unknown } }[]) {
+        if (part?.type === 'text' && typeof part.text === 'string') { size += part.text.length; parts.push({ type: 'text', text: part.text }); continue }
+        const url = part?.type === 'image_url' ? part.image_url?.url : null
+        if (typeof url !== 'string' || !/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url) || url.length > 4_500_000) return json({ error: 'Imagem inválida.' }, 400)
+        imageChars += url.length
+        parts.push({ type: 'image_url', image_url: { url } })
+      }
+      messages.push({ role: 'user', content: parts })
     }
-    if (size > MAX_CHARS) return json({ error: 'Pedido grande demais.' }, 413)
+    if (size > MAX_CHARS || imageChars > 14_000_000) return json({ error: 'Pedido grande demais.' }, 413)
     const upstream = await fetch(AI_URL, {
       method: 'POST', signal: AbortSignal.timeout(170_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },

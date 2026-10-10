@@ -313,15 +313,17 @@ export async function completeStream(ai, messages, signal, onText) {
 }
 
 /** Quando a conversa passa do limite, os resultados de ferramenta mais antigos viram um resumo de uma linha. */
+const textOf = item => typeof item.content === 'string' ? item.content : item.content.filter(part => part.type === 'text').map(part => part.text).join('\n');
+
 export function compactMessages(messages, limit = MAX_CONTEXT_CHARS) {
-  const size = () => messages.reduce((sum, item) => sum + item.content.length, 0);
+  const size = () => messages.reduce((sum, item) => sum + textOf(item).length, 0);
   for (let index = 1; index < messages.length - 2 && size() > limit; index++) {
     const item = messages[index];
-    if (item.role === 'user' && item.content.startsWith('<resultados>') && item.content.length > 300) item.content = '<resultados>\n[resultado antigo omitido para economizar espaço; leia o arquivo de novo se precisar]\n</resultados>';
+    if (item.role === 'user' && typeof item.content === 'string' && item.content.startsWith('<resultados>') && item.content.length > 300) item.content = '<resultados>\n[resultado antigo omitido para economizar espaço; leia o arquivo de novo se precisar]\n</resultados>';
   }
   for (let index = 1; index < messages.length - 2 && size() > limit; index++) {
     const item = messages[index];
-    if (item.role === 'assistant' && item.content.length > 1500) item.content = `${item.content.slice(0, 1200)}\n… (omitido)`;
+    if (item.role === 'assistant' && typeof item.content === 'string' && item.content.length > 1500) item.content = `${item.content.slice(0, 1200)}\n… (omitido)`;
   }
 }
 
@@ -336,12 +338,14 @@ async function projectContext(root, activeFile, name) {
  * Laço do agente. `emit` recebe eventos para a tela; `ctx.approve(command)` pede a permissão do usuário.
  * Devolve o texto final e a lista de caminhos alterados.
  */
-export async function runAgent({ root, projectId, projectName, mode, prompt, history = [], activeFile, getAi, emit, signal, backups, trash, approve, maxSteps = MAX_STEPS }) {
+export async function runAgent({ root, projectId, projectName, mode, prompt, images = [], history = [], activeFile, getAi, emit, signal, backups, trash, approve, maxSteps = MAX_STEPS }) {
   if (!MODES.includes(mode)) throw fail('Modo de IA inválido.');
   const scripts = await packageScripts(root);
   const messages = [{ role: 'system', content: systemPrompt({ mode, projectName: projectName || basename(root), scripts }) }];
   for (const item of history.slice(-MAX_HISTORY)) if (['user', 'assistant'].includes(item?.role) && typeof item.content === 'string' && item.content.trim()) messages.push({ role: item.role, content: item.content.slice(0, 12000) });
-  messages.push({ role: 'user', content: `<contexto>\n${await projectContext(root, activeFile, projectName || basename(root))}\n</contexto>\n\n${prompt}` });
+  const first = `<contexto>\n${await projectContext(root, activeFile, projectName || basename(root))}\n</contexto>\n\n${prompt}${images.length ? `\n\n(O usuário anexou ${images.length} imagem${images.length > 1 ? 'ns' : ''} a este pedido.)` : ''}`;
+  messages.push({ role: 'user', content: images.length ? [{ type: 'text', text: first }, ...images.map(url => ({ type: 'image_url', image_url: { url } }))] : first });
+  let withImages = images.length > 0;
   const changed = new Set(); const tools = [];
   const ctx = { root, mode, backups, trash, projectId, changed, signal, approve };
   let final = ''; let emptyRetries = 0;
@@ -349,10 +353,21 @@ export async function runAgent({ root, projectId, projectName, mode, prompt, his
     if (signal?.aborted) throw Object.assign(new Error('Interrompido.'), { name: 'AbortError' });
     compactMessages(messages);
     let sent = 0;
-    const { text, finish } = await completeStream(await getAi(), messages, signal, full => {
+    const onText = full => {
       const show = visibleText(full);
       if (show.length > sent) { emit({ type: 'text', delta: show.slice(sent) }); sent = show.length; }
-    });
+    };
+    let completed;
+    try { completed = await completeStream(await getAi(), messages, signal, onText); }
+    catch (error) {
+      // O modelo não aceita imagens: segue só com o texto e avisa, em vez de falhar a tarefa.
+      if (!withImages || error.name === 'AbortError' || signal?.aborted) throw error;
+      withImages = false;
+      for (const item of messages) if (Array.isArray(item.content)) item.content = `${textOf(item)}\n\n(As imagens anexadas não puderam ser lidas por este modelo; peça ao usuário para descrever o que elas mostram, se for essencial.)`;
+      emit({ type: 'text', delta: 'O modelo atual não consegue ler imagens; vou seguir só com o texto do pedido.\n\n' });
+      completed = await completeStream(await getAi(), messages, signal, onText);
+    }
+    const { text, finish } = completed;
     const { calls, end, unclosed } = parseCalls(text);
     if (!calls.length) {
       if (unclosed || finish === 'length') {

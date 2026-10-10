@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import NotFoundPage from '@/pages/not-found'
-import { getPublicSite, type PublicSite } from '@/services/supabase/codeMaker'
+import { getPublicSite, recordSiteEvent, submitSiteLead, type PublicSite } from '@/services/supabase/codeMaker'
 import { SITE_SANDBOX } from '@/components/code-maker/SitePreview'
 import { frameDocument } from '@/utils/codeMakerStream'
 
@@ -28,7 +28,7 @@ export default function PublicSitePage() {
   useEffect(() => {
     let cancelled = false
     setStatus('loading')
-    getPublicSite(slug, page || undefined)
+    getPublicSite(slug, page || undefined, document.referrer)
       .then((data) => {
         if (cancelled) return
         setSite(data)
@@ -45,7 +45,20 @@ export default function PublicSitePage() {
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (!frame.current || event.source !== frame.current.contentWindow) return
-      const data = event.data as { codeMakerPage?: unknown; codeMakerHash?: unknown } | null
+      const data = event.data as { codeMakerPage?: unknown; codeMakerHash?: unknown; csEvent?: unknown; csLead?: Record<string, unknown>; page?: unknown } | null
+      const eventPage = typeof data?.page === 'string' ? data.page.slice(0, 40) : ''
+      if (data?.csEvent === 'whatsapp' || data?.csEvent === 'phone' || data?.csEvent === 'email') {
+        void recordSiteEvent(slug, data.csEvent, eventPage)
+        return
+      }
+      if (data?.csLead && typeof data.csLead === 'object') {
+        const text = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
+        const lead = data.csLead
+        void submitSiteLead(slug, { name: text(lead.name, 120), phone: text(lead.phone, 30), email: text(lead.email, 160), message: text(lead.message, 1500) }, eventPage)
+          .catch(() => ({ ok: false, error: 'failed' }))
+          .then((result) => frame.current?.contentWindow?.postMessage({ csLeadResult: result }, '*'))
+        return
+      }
       if (typeof data?.codeMakerPage !== 'string' || !/^[a-z0-9-]{0,40}$/.test(data.codeMakerPage)) return
       const base = shortLink ? `/${slug}` : `/s/${slug}`
       const target = data.codeMakerPage ? `${base}/${data.codeMakerPage}` : base
