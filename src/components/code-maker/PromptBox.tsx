@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { SiteStyle } from '../../../supabase/functions/code-maker/site'
 import type { AttachmentsState } from '@/components/code-maker/Attachments'
 import { PromptInputBox } from '@/components/ui/ai-prompt-box'
+import { readDefaultStyle } from '@/components/code-maker/CodeMakerSettings'
 
 const STYLES: { value: SiteStyle; label: string; swatch: string[] }[] = [
   { value: 'auto', label: 'A IA escolhe o estilo', swatch: ['#a78bfa', '#f472b6', '#fbbf24'] },
@@ -59,7 +60,13 @@ interface PromptBoxProps {
 
 // Pedido de um site novo: a caixa de pedido do Code Maker, com o estilo do site como opção.
 export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, footnote, attachments }: PromptBoxProps) {
-  const [style, setStyle] = useState<SiteStyle>('auto')
+  const [style, setStyle] = useState<SiteStyle>(readDefaultStyle)
+  // Mudou o estilo padrão nas configurações do Code Maker: o pedido em branco acompanha.
+  useEffect(() => {
+    const sync = () => setStyle(readDefaultStyle())
+    window.addEventListener('cs-code-maker:style', sync)
+    return () => window.removeEventListener('cs-code-maker:style', sync)
+  }, [])
   const [styleOpen, setStyleOpen] = useState(false)
   const current = STYLES.find((option) => option.value === style) ?? STYLES[0]
   const canSend = value.trim().length >= 8 && !attachments.uploading

@@ -9,6 +9,7 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { PromptBox, PROMPT_IDEAS } from '@/components/code-maker/PromptBox'
 import { useAttachments } from '@/components/code-maker/Attachments'
 import { SiteThumbnail } from '@/components/code-maker/SiteThumbnail'
+import { SiteFavicon } from '@/components/code-maker/SiteFavicon'
 import { createSite, getCodeMakerUsage, listSites, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
 import type { SiteBrief, SiteStyle } from '../../../supabase/functions/code-maker/site'
 import { useCodeMakerShell } from './layout'
@@ -249,9 +250,12 @@ export default function CodeMakerPage() {
               >
                 <SiteThumbnail html={site.html} title={site.name} />
                 <div className="flex items-start justify-between gap-3 border-t border-[var(--border-subtle)] px-4 py-3.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
-                    <p className="mt-0.5 truncate text-[12.5px] text-[var(--text-muted)]">/s/{site.slug}</p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <SiteFavicon site={site} size={34} />
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
+                      <p className="mt-0.5 truncate text-[12.5px] text-[var(--text-muted)]">/s/{site.slug}</p>
+                    </div>
                   </div>
                   <StatusBadge site={site} />
                 </div>

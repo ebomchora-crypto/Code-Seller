@@ -30,6 +30,7 @@ import { BuildTimeline } from '@/components/code-maker/BuildTimeline'
 import { CodeView } from '@/components/code-maker/CodeView'
 import { SitePreview } from '@/components/code-maker/SitePreview'
 import { AiLoader } from '@/components/ui/ai-loader'
+import { SiteFavicon } from '@/components/code-maker/SiteFavicon'
 import { PromptInputBox } from '@/components/ui/ai-prompt-box'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
@@ -398,8 +399,8 @@ export default function CodeMakerEditorPage() {
           <PanelLeft className="size-4.5" />
         </button>
         <div className="flex min-w-0 flex-1 items-center gap-3 lg:w-[402px] lg:flex-none xl:w-[442px]">
-          <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-[0_8px_20px_-8px_rgba(124,58,237,0.8)] sm:flex">
-            <Code2 className="size-4.5" />
+          <span className="hidden sm:block">
+            <SiteFavicon site={{ name: site.name, favicon: site.plan?.favicon, brand: site.plan?.palette?.brand, brand_dark: site.plan?.palette?.brandDark, accent: site.plan?.palette?.accent }} size={36} />
           </span>
           <div className="min-w-0">
             <p className="truncate font-display text-[14.5px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>

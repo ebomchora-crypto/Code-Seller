@@ -26,7 +26,15 @@ export interface Site {
   updated_at: string
 }
 
-export type SiteSummary = Pick<Site, 'id' | 'slug' | 'name' | 'status' | 'published' | 'views' | 'html' | 'updated_at' | 'created_at'>
+/** Ícone do site (desenhado pela IA) e cores da marca, tirados do plano para a lista não precisar baixar o plano inteiro. */
+export interface SiteIconFields {
+  favicon?: string | null
+  brand?: string | null
+  brand_dark?: string | null
+  accent?: string | null
+}
+
+export type SiteSummary = Pick<Site, 'id' | 'slug' | 'name' | 'status' | 'published' | 'views' | 'html' | 'updated_at' | 'created_at'> & SiteIconFields
 
 export interface SiteVersion {
   id: string
@@ -142,7 +150,8 @@ export async function streamCodeMaker(
   throw new Error('A IA demorou demais para terminar. Tente de novo.')
 }
 
-const SUMMARY_COLUMNS = 'id, slug, name, status, published, views, html, updated_at, created_at'
+const ICON_COLUMNS = 'favicon:plan->>favicon, brand:plan->palette->>brand, brand_dark:plan->palette->>brandDark, accent:plan->palette->>accent'
+const SUMMARY_COLUMNS = `id, slug, name, status, published, views, html, updated_at, created_at, ${ICON_COLUMNS}`
 
 export async function listSites(): Promise<SiteSummary[]> {
   const { data, error } = await supabase.from('sites').select(SUMMARY_COLUMNS).order('updated_at', { ascending: false })
@@ -150,7 +159,7 @@ export async function listSites(): Promise<SiteSummary[]> {
   return (data ?? []) as SiteSummary[]
 }
 
-export interface SiteListItem {
+export interface SiteListItem extends SiteIconFields {
   id: string
   name: string
   status: string
@@ -160,7 +169,7 @@ export interface SiteListItem {
 
 // Lista leve (sem o HTML) para a barra lateral do Code Maker.
 export async function listSiteItems(): Promise<SiteListItem[]> {
-  const { data, error } = await supabase.from('sites').select('id, name, status, published, updated_at').order('updated_at', { ascending: false })
+  const { data, error } = await supabase.from('sites').select(`id, name, status, published, updated_at, ${ICON_COLUMNS}`).order('updated_at', { ascending: false })
   if (error) throw new Error(error.message)
   return (data ?? []) as SiteListItem[]
 }

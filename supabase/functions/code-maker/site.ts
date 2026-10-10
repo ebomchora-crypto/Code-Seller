@@ -4,6 +4,7 @@
 // sempre funcionando.
 
 import { normalizeSpecification, type CodeMakerSpecification, type RecentEditContext } from './spec.ts'
+import { nicheFor, nicheMessage } from './niches.ts'
 import { cleanEffects, effectsGuide, effectsMenu, effectsRuntime, MAX_EFFECTS, usedEffects } from './effects.ts'
 import {
   BLOCKS,
@@ -84,6 +85,8 @@ export interface SitePlan {
   fonts: { display: string; body: string }
   /** Cantos do site inteiro: arredondado, suave ou reto. */
   radius?: 'round' | 'soft' | 'sharp'
+  /** Ícone da aba desenhado pela IA: um SVG pequeno e já validado (veja sanitizeFavicon). */
+  favicon?: string
   /** A marca registrada do site: o único elemento ousado, de que o visitante vai lembrar. */
   signature?: string
   /** Seção onde a marca registrada aparece. */
@@ -667,8 +670,9 @@ export function siteRecipe(brief: SiteBrief, recent: Partial<SitePlan>[], seed: 
   const darkShare = recent.length ? recent.filter((plan) => plan.theme === 'dark').length / recent.length : 0
 
   const style = brief.style ?? 'auto'
+  const niche = nicheFor(brief)
   const theme: 'dark' | 'light' =
-    style === 'dark' ? 'dark' : style === 'minimal' || style === 'vibrant' ? 'light' : darkShare < 1 / 3 ? 'dark' : hashOf(`${seed}:tema`) % 2 ? 'dark' : 'light'
+    style === 'dark' ? 'dark' : style === 'minimal' || style === 'vibrant' ? 'light' : niche?.theme ? niche.theme : darkShare < 1 / 3 ? 'dark' : hashOf(`${seed}:tema`) % 2 ? 'dark' : 'light'
 
   let heroes = hasPhotos ? (GROUP_HEROES[group ?? ''] ?? ['hero-cinema', 'hero-mundo', 'hero-dividido', 'hero-editorial']) : ['hero-brilho', 'hero-neon', 'hero-dividido']
   if (theme === 'light') heroes = heroes.filter((hero) => hero !== 'hero-neon')
@@ -676,7 +680,7 @@ export function siteRecipe(brief: SiteBrief, recent: Partial<SitePlan>[], seed: 
   const hero = pick(heroes, recentHeroes.slice(0, 4), `${seed}:topo`)
   const header = hero === 'hero-cinema' || hero === 'hero-retrato' ? 'menu-barra' : pick(['menu-pilula', 'menu-barra'], recent.slice(0, 1).map((plan) => plan.header ?? ''), `${seed}:menu`)
 
-  const moods = STYLE_MOODS[style] ?? GROUP_MOODS[group ?? ''] ?? ['modern', 'elegant', 'strong']
+  const moods = STYLE_MOODS[style] ?? niche?.moods ?? GROUP_MOODS[group ?? ''] ?? ['modern', 'elegant', 'strong']
   const pairs = moods.flatMap((mood) => FONT_PAIRS[mood])
   const fonts = pickMany(pairs, pairs.filter(([display]) => recentFonts.includes(display)), 3, `${seed}:fontes`).map(([display, body]) => ({ display, body }))
 
@@ -816,6 +820,7 @@ Formato do JSON:
   "palette": { "brand": "#hex cor principal", "brandDark": "#hex mais escura da principal", "accent": "#hex acento", "ink": "#hex texto principal (no dark é claro, no light é quase preto)", "paper": "#hex fundo principal", "surface": "#hex fundo alternativo/cartões", "muted": "#hex texto secundário" },
   "fonts": { "display": "fonte dos títulos (veja PARES DE FONTES)", "body": "fonte do texto" },
   "radius": "round" | "soft" | "sharp" (cantos do site inteiro, escolhidos pela direção de arte),
+  "favicon": "ícone da aba do navegador como UM SVG de 64x64 (viewBox 0 0 64 64), simples e legível em 16px: forma geométrica do mundo do negócio (tesoura, dente, balança, pão, chave inglesa, folha…) ou monograma, com as cores da paleta; fundo arredondado com a cor principal; só tags svg, rect, circle, ellipse, path, polygon, line, g e text (no máximo 2 letras), sem script, imagem, filtro nem fonte externa; até 900 caracteres",
   "signature": "a marca registrada do site em 1 ou 2 frases concretas: o único elemento ousado de que o visitante vai lembrar, tirado do mundo do negócio (ex.: título do topo enorme em caixa alta condensada cortado pela foto da navalha; tabela de preços desenhada como a lousa de giz da padaria; faixa com a planta baixa do apartamento em linhas finas)",
   "signatureSection": "id da seção onde a marca registrada aparece (normalmente hero)",
   "header": "id de um bloco de CABEÇALHO",
@@ -830,6 +835,8 @@ Formato do JSON:
 
 Regras do plano:
 - A especificação é obrigatória quando fornecida. Copie seus IDs: globalRequirementIds para requisitos transversais e requirementIds em cada seção. Todo requisito aplicável deve ser atribuído. Requisitos backend limitados permanecem limitações explícitas. Não declare que estão implementados. Respeite constraints, forbiddenChanges, relevantFiles, dependencies e validation.
+- favicon: OBRIGATÓRIO e bonito. Desenhe um ícone próprio do negócio (não a letra solta): símbolo simples do ramo dentro de um quadrado arredondado com a cor principal e um detalhe na cor de acento; deve ficar nítido em 16px.
+- Se vier a DIREÇÃO DO NICHO, a paleta, o clima e a energia do site partem dela: o site precisa parecer feito para aquele ramo (um site de pizzaria deve dar fome; um de barbearia, atitude), nunca um modelo genérico.
 - sections: de 6 a 9 itens, na ordem da página. O primeiro é sempre { "id": "hero", ... }. Não inclua cabeçalho nem rodapé (já existem). Use ids como hero, servicos, diferenciais, galeria, sobre, planos, como-funciona, localizacao, faq, contato — escolha o que faz sentido para o nicho. Só inclua "depoimentos" ou "numeros" se o pedido trouxer reputação real ou números reais (nunca invente). Inclua "contato" perto do fim. Bons sites têm pelo menos uma seção com conteúdo concreto e escaneável (catálogo, preços ou planos), além de serviços.
 - Alterne "bg" entre as seções para dar ritmo (nunca 3 seguidas iguais); use "ink" ou "brand" em 1 ou 2 seções de destaque.
 - "layout": o bloco de cada seção (lista BLOCOS abaixo). O hero usa um bloco de TOPO; as outras seções, blocos de SEÇÃO. Seções vizinhas sempre com blocos diferentes; "letreiro" e "faixa-destaque" no máximo uma vez cada; "depoimentos" só com depoimentos reais. O conteúdo do brief tem de caber no bloco (ex.: catálogo com fotos → cards-foto; preços sem foto → lista-precos; etapas → passos).
@@ -882,6 +889,7 @@ export function buildPlanMessage(brief: SiteBrief, includeLiteral = true, recipe
       ? 'Fotos: não há banco de fotos deste ramo, só fotos genéricas de escritório e equipe. Prefira blocos com pouca ou nenhuma foto (hero-brilho, editorial, lista-icones, passos, lista-precos, planos, faq) e resolva o visual com tipografia, cor e os fundos dos blocos.'
       : null,
     brief.specification ? `Especificação completa com IDs obrigatórios:\n${JSON.stringify(brief.specification)}` : null,
+    nicheFor(brief) ? nicheMessage(nicheFor(brief)!) : null,
     recipe ? recipeMessage(recipe) : null,
     includeLiteral && brief.details?.trim() ? `Pedido do usuário (siga o que ele pedir de estilo, cores e conteúdo):\n${brief.details.trim()}` : null,
   ]
@@ -1416,6 +1424,95 @@ function planEffects(value: unknown): string[] {
 }
 
 // Confere e completa o plano: nunca deixa o site sem cores/fontes válidas.
+const FAVICON_TAGS = new Set(['svg', 'g', 'defs', 'rect', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'line', 'linearGradient', 'radialGradient', 'stop', 'text'])
+const FAVICON_ATTRS = new Set([
+  'x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'd', 'width', 'height', 'points', 'x1', 'y1', 'x2', 'y2', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'opacity',
+  'fill-opacity', 'stroke-opacity', 'transform', 'offset', 'stop-color', 'stop-opacity', 'id', 'gradientTransform', 'gradientUnits', 'fill-rule', 'clip-rule', 'text-anchor',
+  'dominant-baseline', 'font-family', 'font-size', 'font-weight', 'letter-spacing',
+])
+
+/**
+ * O favicon que a IA desenha é um SVG de 64x64. Aqui ele passa por uma lista fechada de tags e atributos
+ * (sem script, imagem, link externo nem estilo): o que sair disso é descartado e o site usa a letra inicial.
+ */
+export function sanitizeFavicon(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const source = raw.trim().replace(/^```(?:svg|xml)?\s*|\s*```$/g, '')
+  if (source.length < 40 || source.length > 3000 || !/^<svg[\s>]/i.test(source)) return null
+  const tokens = source.match(/<[^>]+>|[^<]+/g)
+  if (!tokens) return null
+  const out: string[] = []
+  const stack: string[] = []
+  let elements = 0
+  let shapes = 0
+  for (const token of tokens) {
+    if (!token.startsWith('<')) {
+      // Texto só dentro de <text> e curto (a inicial ou um símbolo).
+      if (stack[stack.length - 1] === 'text') {
+        const text = token.replace(/&(amp|lt|gt|quot|apos|#\d+);/g, 'x').trim()
+        if (text.length > 3 || /[<>&]/.test(text)) return null
+        out.push(escapeHtml(token.trim()))
+      } else if (token.trim()) return null
+      continue
+    }
+    if (/^<(\?|!)/.test(token)) return null
+    const close = token.match(/^<\/\s*([a-zA-Z]+)\s*>$/)
+    if (close) {
+      const name = close[1] === 'lineargradient' ? 'linearGradient' : close[1]
+      if (stack.pop() !== name) return null
+      out.push(`</${name}>`)
+      continue
+    }
+    const open = token.match(/^<\s*([a-zA-Z]+)([^>]*?)(\/?)>$/)
+    if (!open) return null
+    const name = FAVICON_TAGS.has(open[1]) ? open[1] : [...FAVICON_TAGS].find((tag) => tag.toLowerCase() === open[1].toLowerCase())
+    if (!name) return null
+    if (++elements > 40) return null
+    const attrs: string[] = []
+    const rest = open[2].replace(/\s+/g, ' ')
+    const pattern = /\s*([a-zA-Z0-9:-]+)\s*=\s*("([^"]*)"|'([^']*)')/g
+    for (let match = pattern.exec(rest); match; match = pattern.exec(rest)) {
+      const key = match[1]
+      const value = (match[3] ?? match[4] ?? '').trim()
+      if (name === 'svg' && (key === 'xmlns' || key === 'viewBox' || key === 'width' || key === 'height')) continue
+      if (!FAVICON_ATTRS.has(key)) return null
+      if (value.length > 600 || /[<>]|javascript:|data:|expression|&#/i.test(value)) return null
+      if (/url\(/i.test(value) && !/^url\(#[\w-]{1,32}\)$/.test(value)) return null
+      attrs.push(`${key}='${value.replace(/'/g, '')}'`)
+    }
+    if (rest.replace(/\s*([a-zA-Z0-9:-]+)\s*=\s*("[^"]*"|'[^']*')/g, '').trim()) return null
+    if (['rect', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'line', 'text'].includes(name)) shapes++
+    if (name === 'svg') {
+      if (stack.length) return null
+      out.push(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>`)
+      stack.push('svg')
+      if (open[3]) return null
+      continue
+    }
+    if (!stack.length) return null
+    out.push(`<${name}${attrs.length ? ' ' + attrs.join(' ') : ''}${open[3] ? '/' : ''}>`)
+    if (!open[3]) stack.push(name)
+  }
+  if (stack.length || shapes === 0) return null
+  return out.join('')
+}
+
+/** Ícone da aba/lista: o desenhado pela IA ou, na falta dele, a inicial do nome sobre a cor principal. */
+export function faviconSvg(plan: { title: string; favicon?: string; palette?: { brand?: string; brandDark?: string; accent?: string } }): string {
+  if (plan.favicon) return plan.favicon
+  const hex = (value: unknown, fallback: string) => (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback)
+  const brand = hex(plan.palette?.brand, '#7c3aed')
+  const dark = hex(plan.palette?.brandDark, brand)
+  const accent = hex(plan.palette?.accent, '#ffffff')
+  const initial = escapeHtml((plan.title.trim()[0] ?? 'S').toUpperCase())
+  // Monograma: fundo em degradê da cor do negócio, letra grande e um ponto de acento.
+  return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${brand}'/><stop offset='1' stop-color='${dark}'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(#g)'/><text x='32' y='45' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='36' fill='#fff'>${initial}</text><circle cx='51' cy='13' r='4.5' fill='${accent}'/></svg>`
+}
+
+export function faviconDataUri(plan: Parameters<typeof faviconSvg>[0]): string {
+  return `data:image/svg+xml,${encodeURIComponent(faviconSvg(plan))}`
+}
+
 export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
   if (!raw || typeof raw !== 'object') return null
   const input = raw as Record<string, any>
@@ -1469,6 +1566,7 @@ export function normalizePlan(raw: unknown, brief: SiteBrief): SitePlan | null {
       body: cleanFont(input.fonts?.body, 'Inter'),
     },
     ...(['round', 'soft', 'sharp'].includes(input.radius) ? { radius: input.radius } : {}),
+    ...(sanitizeFavicon(input.favicon) ? { favicon: sanitizeFavicon(input.favicon)! } : {}),
     ...(planEffects(input.effects).length ? { effects: planEffects(input.effects) } : {}),
     ...(blockFor(input.header, ['header']) ? { header: blockFor(input.header, ['header'])! } : {}),
     ...(['clean', 'bold', 'soft'].includes(input.look) ? { look: input.look } : {}),
@@ -1954,10 +2052,7 @@ export function buildHead(plan: SitePlan): string {
       },
     },
   }
-  const initial = escapeHtml((plan.title.trim()[0] ?? 'S').toUpperCase())
-  const favicon = `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='${plan.palette.brand}'/><text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-weight='700' font-size='34' fill='#fff'>${initial}</text></svg>`,
-  )}`
+  const favicon = faviconDataUri(plan)
   return [
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',

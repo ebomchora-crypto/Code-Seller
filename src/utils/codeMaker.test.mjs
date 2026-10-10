@@ -515,3 +515,52 @@ test('escrever textos que o usuário não mandou prontos não vira limitação; 
     'Login de clientes: exige um backend que o publicador de sites estáticos não executa.',
   ]), ['Login de clientes: exige um backend que o publicador de sites estáticos não executa.'])
 })
+
+test('favicon desenhado pela IA: só SVG simples passa; o resto cai na letra inicial', async () => {
+  const { sanitizeFavicon, faviconSvg, normalizePlan } = await import('../../supabase/functions/code-maker/site.ts')
+  const bom = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#7c3aed"/><path d="M20 44 L32 18 L44 44 Z" fill="#fff"/><circle cx="32" cy="38" r="4" fill="#f59e0b"/></svg>`
+  const limpo = sanitizeFavicon(bom)
+  assert.match(limpo, /^<svg xmlns='http:\/\/www\.w3\.org\/2000\/svg' viewBox='0 0 64 64'>/)
+  assert.match(limpo, /<path d='M20 44 L32 18 L44 44 Z' fill='#fff'\/>/)
+  assert.equal(sanitizeFavicon('```svg\n' + bom + '\n```'), limpo)
+  // gradiente com referência interna é permitido
+  assert.ok(sanitizeFavicon(`<svg viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#g)"/><text x="32" y="42" text-anchor="middle" font-size="30" fill="#fff">A</text></svg>`))
+  // coisas perigosas ou fora da lista
+  for (const ruim of [
+    `<svg viewBox="0 0 64 64"><script>alert(1)</script><rect width="64" height="64"/></svg>`,
+    `<svg viewBox="0 0 64 64"><rect width="64" height="64" onload="alert(1)"/></svg>`,
+    `<svg viewBox="0 0 64 64"><image href="https://x.com/a.png" width="64" height="64"/></svg>`,
+    `<svg viewBox="0 0 64 64"><rect width="64" height="64" fill="url(https://x.com/a)"/></svg>`,
+    `<svg viewBox="0 0 64 64"><rect width="64" height="64" style="fill:red"/></svg>`,
+    `<svg viewBox="0 0 64 64"><foreignObject><div>oi</div></foreignObject><rect width="64" height="64"/></svg>`,
+    `<svg viewBox="0 0 64 64"><text x="1" y="1">texto muito grande aqui</text></svg>`,
+    `<svg viewBox="0 0 64 64"><rect width="64" height="64">`,
+    `<svg viewBox="0 0 64 64"></svg>`,
+    '<div>oi</div>',
+    42,
+  ]) assert.equal(sanitizeFavicon(ruim), null, String(ruim).slice(0, 60))
+  // plano: guarda o ícone válido e ignora o inválido
+  const brief = { businessName: 'Padaria', style: 'auto', details: 'padaria' }
+  const base = { title: 'Padaria Aurora', description: 'Pães', direction: 'quente', theme: 'light', palette: { brand: '#e0731a' }, fonts: { display: 'Poppins', body: 'Inter' }, sections: [{ id: 'hero', label: 'Início', brief: 'x' }] }
+  assert.equal(normalizePlan({ ...base, favicon: bom }, brief)?.favicon, limpo)
+  assert.equal(normalizePlan({ ...base, favicon: '<svg><script/></svg>' }, brief)?.favicon, undefined)
+  // sem ícone: letra inicial na cor da marca
+  assert.match(faviconSvg({ title: 'Padaria Aurora', palette: { brand: '#e0731a' } }), /stop-color='#e0731a'.*>P<\/text>/)
+  assert.equal(faviconSvg({ title: 'x', favicon: limpo }), limpo)
+})
+
+test('direção do nicho: pizzaria pede um site claro e gostoso; a receita e a mensagem do plano seguem', async () => {
+  const { nicheFor, nicheMessage } = await import('../../supabase/functions/code-maker/niches.ts')
+  const { siteRecipe, buildPlanMessage } = await import('../../supabase/functions/code-maker/site.ts')
+  assert.equal(nicheFor({ niche: 'Pizzaria' })?.id, 'pizzaria')
+  assert.equal(nicheFor({ niche: null, businessName: 'Don Vito', details: 'Site para a Pizzaria Don Vito em Santos' })?.id, 'pizzaria')
+  assert.equal(nicheFor({ niche: 'Hamburgueria artesanal' })?.id, 'hamburgueria')
+  assert.equal(nicheFor({ niche: 'Barbearia' })?.id, 'barbearia')
+  assert.equal(nicheFor({ niche: 'Fábrica de parafusos' }), undefined)
+  assert.match(nicheMessage(nicheFor({ niche: 'Pizzaria' })), /DIREÇÃO DO NICHO — Pizzaria[\s\S]*queijo[\s\S]*Evite/)
+  // O tema do nicho vale nos sites de pizzaria, qualquer que seja o sorteio.
+  for (let i = 0; i < 8; i++) assert.equal(siteRecipe({ businessName: 'Don Vito', niche: 'Pizzaria' }, [], `p-${i}`).theme, 'light')
+  for (let i = 0; i < 8; i++) assert.equal(siteRecipe({ businessName: 'Navalha', niche: 'Barbearia' }, [], `b-${i}`).theme, 'dark')
+  assert.match(buildPlanMessage({ businessName: 'Don Vito', niche: 'Pizzaria', style: 'auto' }), /DIREÇÃO DO NICHO — Pizzaria/)
+  assert.doesNotMatch(buildPlanMessage({ businessName: 'X', niche: 'Fábrica de parafusos', style: 'auto' }), /DIREÇÃO DO NICHO/)
+})
