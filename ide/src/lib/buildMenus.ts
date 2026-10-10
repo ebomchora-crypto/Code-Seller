@@ -75,11 +75,11 @@ export function buildMenus({ lazy = false, hasProject, active, previewable, rece
       { label: 'Abrir painel Executar', shortcut: 'Ctrl+Shift+D', disabled: !hasProject, action: () => actions.view('run') },
     ],
     Terminal: [{ label: 'Abrir ou fechar terminal', shortcut: 'Ctrl+`', disabled: !hasProject, action: actions.terminal }, { label: 'Problemas', disabled: !hasProject, action: actions.problems }],
-    Ajuda: [{ label: 'Atalhos de teclado', action: () => useUi.getState().set({ settings: true, settingsTab: 'keys' }) }, { label: 'Histórico de versões', disabled: !hasProject, action: actions.history }, { label: 'Configurar assistente de IA', action: () => useUi.getState().set({ settings: true, settingsTab: 'ai' }) }],
+    Ajuda: [{ label: 'Atalhos de teclado', action: () => useUi.getState().set({ settings: true, settingsTab: 'keys' }) }, { label: lazy ? 'Versões anteriores do arquivo' : 'Histórico de versões', disabled: !hasProject, action: actions.history }, { label: 'Configurar assistente de IA', action: () => useUi.getState().set({ settings: true, settingsTab: 'ai' }) }],
   };
   if (lazy) {
-    // Pasta aberta do computador: sem ZIP, preview nem histórico (o histórico é o Git).
-    const hide = new Set(['Exportar como ZIP', 'Preview', 'Histórico de versões']);
+    // Pasta aberta do computador: sem ZIP nem preview; as versões anteriores vêm das cópias de segurança de cada salvamento.
+    const hide = new Set(['Exportar como ZIP', 'Preview']);
     const clean = (items: MenuItem[]): MenuItem[] => items.filter(item => !('label' in item) || !hide.has(item.label)).map(item => 'submenu' in item && item.submenu ? { ...item, submenu: clean(item.submenu) } : item);
     return Object.fromEntries(Object.entries(menus).map(([name, items]) => [name, clean(items)]));
   }

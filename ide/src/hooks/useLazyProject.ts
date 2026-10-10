@@ -24,7 +24,8 @@ export function useLazyProject(project: ProjectDetail) {
   const [rootReady, setRootReady] = useState(false);
 
   const loadDir = useCallback(async (path: string) => {
-    try { const result = await fsList(id, path); useEditorStore.getState().setChildren(path, toNodes(path, result.entries)); if (path === '/') setRootReady(true); }
+    try { const result = await fsList(id, path); useEditorStore.getState().setChildren(path, toNodes(path, result.entries)); if (path === '/') setRootReady(true);
+      if (result.truncated) setError(`A pasta ${path === '/' ? 'raiz' : path.slice(1)} tem mais de ${result.entries.length.toLocaleString('pt-BR')} itens: só os primeiros aparecem no explorador. Use Ctrl+P ou a busca para achar os outros.`); }
     catch (e) { setError((e as Error).message); }
   }, [id]);
 
@@ -58,7 +59,7 @@ export function useLazyProject(project: ProjectDetail) {
             result = await send(true);
           }
           disk.current.set(file.id, { ...known, content, mtime: result.mtime });
-        } catch (e) { setStatus('error'); setError(`Não foi possível salvar ${file.name}: ${(e as Error).message}`); return; }
+        } catch (e) { setStatus('error'); setError(`Não foi possível salvar ${file.name}: ${(e as Error).message}`); clearTimeout(timer.current); timer.current = setTimeout(() => void run(), 8000); return; }
       }
     }
     setStatus('saved');
@@ -67,10 +68,11 @@ export function useLazyProject(project: ProjectDetail) {
   const run = useCallback(() => { const next = (running.current ?? Promise.resolve()).then(saveAll).finally(() => { if (running.current === next) running.current = null; }); running.current = next; return next; }, [saveAll]);
   const flush = useCallback(async () => { clearTimeout(timer.current); await run(); }, [run]);
 
-  // Salva sozinho 600 ms depois da última edição.
+  // Salva sozinho logo depois da última edição (arquivos grandes esperam um pouco mais, para não reescrever a cada tecla).
+  const saveDelay = () => 600 + Math.min(4400, Math.max(0, ...dirty().map(file => (file.content ?? '').length)) / 5000);
   useEffect(() => useEditorStore.subscribe((state, previous) => {
     if (state.openFiles === previous.openFiles || !state.lazy) return;
-    if (dirty().length) { setError(current => current && current.startsWith('Não foi possível salvar') ? null : current); clearTimeout(timer.current); timer.current = setTimeout(() => void run(), 600); }
+    if (dirty().length) { setError(current => current && current.startsWith('Não foi possível salvar') ? null : current); clearTimeout(timer.current); timer.current = setTimeout(() => void run(), saveDelay()); }
   }), [run]);
 
   // Árvore inicial e volta ao foco (atualiza as pastas já abertas).
@@ -107,6 +109,11 @@ export function useLazyProject(project: ProjectDetail) {
   }, [id]);
 
   useEffect(() => {
+    const blur = () => { if (dirty().length) { clearTimeout(timer.current); void run(); } };
+    window.addEventListener('blur', blur); return () => window.removeEventListener('blur', blur);
+  }, [run]);
+
+  useEffect(() => {
     const leaving = (event: BeforeUnloadEvent) => { if (dirty().length || running.current) { event.preventDefault(); event.returnValue = ''; } };
     window.addEventListener('beforeunload', leaving); return () => window.removeEventListener('beforeunload', leaving);
   }, []);
@@ -118,5 +125,12 @@ export function useLazyProject(project: ProjectDetail) {
     if (useEditorStore.getState().openFiles.some(file => file.id === path)) { disk.current.set(path, { content, mtime: result.mtime, encoding: known?.encoding ?? 'utf8', bom: known?.bom ?? false }); useEditorStore.getState().replaceOpen(path, content); }
   }, [id]);
 
-  return { status, error, setError, flush, open, loadDir, rootReady, writeFile, disk: disk.current };
+  /** Recarrega do disco um arquivo aberto (depois de restaurar uma versão anterior). */
+  const reload = useCallback(async (path: string) => {
+    const fresh = await fsRead(id, path);
+    if (fresh.kind !== 'text') return;
+    disk.current.set(path, { content: fresh.content, mtime: fresh.mtime, encoding: fresh.encoding, bom: fresh.bom }); useEditorStore.getState().replaceOpen(path, fresh.content);
+  }, [id]);
+
+  return { reload, status, error, setError, flush, open, loadDir, rootReady, writeFile, disk: disk.current };
 }

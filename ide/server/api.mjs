@@ -12,6 +12,7 @@ import { readWorkspace } from './workspace.mjs';
 import { listDirectory, readEntry, rawEntry, findFiles, searchText, writeEntry, operate, statEntries, forgetIndex, packageScripts, chatContext } from './folder.mjs';
 import { isAbsolute, basename } from 'node:path';
 import { pickFolder } from './folder-picker.mjs';
+import { createBackups } from './backups.mjs';
 import { serveStatic } from './static.mjs';
 
 async function bodyOf(request) {
@@ -26,6 +27,8 @@ async function bodyOf(request) {
 
 export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
   const repo = createRepository(root, { workspaceRoot });
+  const backups = createBackups(join(root, 'backups'));
+  const trash = join(root, 'trash');
   const configuration = createAiConfig(join(root, 'ai-config.json'), ai);
   let aiBusy = false;
   let builds = 0;
@@ -75,8 +78,16 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
         if (action === 'raw' && request.method === 'GET') return await rawEntry(root, url.searchParams.get('path'), response);
         if (action === 'find' && request.method === 'GET') return json(await findFiles(root, url.searchParams.get('q') || ''));
         if (action === 'search' && request.method === 'GET') { let closed = false; response.on('close', () => { closed = true; }); return json(await searchText(root, url.searchParams.get('q') || '', { caseSensitive: url.searchParams.get('cs') === '1', all: url.searchParams.get('all') === '1', cancelled: () => closed })); }
-        if (action === 'file' && request.method === 'PUT') return json(await writeEntry(root, await bodyOf(request)));
-        if (action === 'op' && request.method === 'POST') { const result = await operate(root, await bodyOf(request)); forgetIndex(root); return json(result); }
+        if (action === 'file' && request.method === 'PUT') return json(await writeEntry(root, await bodyOf(request), { backups, projectId: id }));
+        if (action === 'op' && request.method === 'POST') { const result = await operate(root, await bodyOf(request), { trash }); forgetIndex(root); return json(result); }
+        if (action === 'versions' && request.method === 'GET') return json({ versions: await backups.versions(id, url.searchParams.get('path') || '') });
+        if (action === 'restore' && request.method === 'POST') {
+          const input = await bodyOf(request); const data = await backups.read(id, input.path, input.version);
+          const bom = data[0] === 0xef && data[1] === 0xbb && data[2] === 0xbf; const body = bom ? data.subarray(3) : data;
+          let text; let encoding = 'utf8'; try { text = new TextDecoder('utf-8', { fatal: true }).decode(body); } catch { text = body.toString('latin1'); encoding = 'latin1'; }
+          await writeEntry(root, { path: input.path, content: text, bom: bom && encoding === 'utf8', encoding, force: true }, { backups, projectId: id });
+          return json({ content: text });
+        }
         if (action === 'stats' && request.method === 'POST') return json(await statEntries(root, (await bodyOf(request)).paths));
         throw fail('Rota não encontrada.', 404);
       }

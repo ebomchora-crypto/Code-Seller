@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { lstat, mkdir, readdir, readFile, realpath, rename as renameFile, rm, stat } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, readdir, readFile, realpath, rename as renameFile, rm, stat } from 'node:fs/promises';
 import { dirname, extname, join, relative, resolve, sep, basename } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -80,28 +80,64 @@ export async function rawEntry(root, path, response) {
   await new Promise((done, reject) => { const stream = createReadStream(target); stream.on('error', reject); stream.on('end', done); stream.pipe(response); });
 }
 
-export async function writeEntry(root, input) {
-  const { target } = await resolveInside(root, input.path, { mustExist: false });
-  if (typeof input.content !== 'string') throw fail('Conteúdo inválido.');
-  let current = null;
-  try { current = await stat(target); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-  if (current?.isDirectory()) throw fail('Isto é uma pasta.');
-  if (current && !input.force && typeof input.expectedMtime === 'number' && Math.abs(current.mtimeMs - input.expectedMtime) > 2) throw fail('Este arquivo foi alterado fora da IDE depois que você o abriu.', 409);
-  await mkdir(dirname(target), { recursive: true });
-  const latin = input.encoding === 'latin1';
-  const body = Buffer.concat([input.bom && !latin ? Buffer.from([0xef, 0xbb, 0xbf]) : Buffer.alloc(0), Buffer.from(input.content, latin ? 'latin1' : 'utf8')]);
-  await atomicWrite(target, body, `${target}.${randomUUID()}.cmtmp`);
-  const saved = await stat(target);
-  return { mtime: saved.mtimeMs, size: saved.size };
+const writing = new Map();
+/** Um arquivo por vez: dois salvamentos do mesmo arquivo nunca se misturam. */
+const serialized = (key, job) => { const next = (writing.get(key) ?? Promise.resolve()).catch(() => {}).then(job); writing.set(key, next); const clear = () => { if (writing.get(key) === next) writing.delete(key); }; next.then(clear, clear); return next; };
+
+async function safeReplace(target, body, mode) {
+  const temporary = `${target}.${randomUUID()}.cmtmp`;
+  try {
+    const handle = await open(temporary, 'w', mode);
+    try { await handle.writeFile(body); await handle.sync(); } finally { await handle.close(); }
+    const written = await stat(temporary);
+    if (written.size !== body.length) throw fail('A gravação ficou incompleta (disco cheio?). O arquivo original foi mantido.', 500);
+    for (let attempt = 0; ; attempt++) {
+      try { await renameFile(temporary, target); return; }
+      catch (error) {
+        if (attempt >= 6 || !['EPERM', 'EACCES', 'EBUSY'].includes(error.code)) throw error;
+        await new Promise(done => setTimeout(done, 25 * (attempt + 1)));
+      }
+    }
+  } catch (error) {
+    await rm(temporary, { force: true }).catch(() => {});
+    if (error.status) throw error;
+    throw fail(`Não foi possível gravar o arquivo (${error.code || 'erro de disco'}). O arquivo original foi mantido.`, 500);
+  }
 }
 
-async function toRecycleBin(target, folder) {
-  if (process.platform !== 'win32') { await rm(target, { recursive: true, force: false }); return; }
+export async function writeEntry(root, input, { backups, projectId } = {}) {
+  const { target } = await resolveInside(root, input.path, { mustExist: false });
+  if (typeof input.content !== 'string') throw fail('Conteúdo inválido.');
+  return serialized(target, async () => {
+    let current = null;
+    try { current = await stat(target); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (current?.isDirectory()) throw fail('Isto é uma pasta.');
+    if (current && !input.force && typeof input.expectedMtime === 'number' && Math.abs(current.mtimeMs - input.expectedMtime) > 2) throw fail('Este arquivo foi alterado fora da IDE depois que você o abriu.', 409);
+    const latin = input.encoding === 'latin1';
+    const body = Buffer.concat([input.bom && !latin ? Buffer.from([0xef, 0xbb, 0xbf]) : Buffer.alloc(0), Buffer.from(input.content, latin ? 'latin1' : 'utf8')]);
+    if (body.length > MAX_TEXT_BYTES + 3) throw fail('Conteúdo grande demais para gravar.', 413);
+    if (current && backups) { try { await backups.save(projectId, input.path, await readFile(target)); } catch { /* sem cópia de segurança o salvamento ainda segue */ } }
+    await mkdir(dirname(target), { recursive: true });
+    await safeReplace(target, body, current ? current.mode & 0o777 : 0o666);
+    if (current && process.platform !== 'win32') await chmod(target, current.mode & 0o7777).catch(() => {});
+    const saved = await stat(target);
+    return { mtime: saved.mtimeMs, size: saved.size };
+  });
+}
+
+async function toRecycleBin(target, folder, trash) {
+  if (process.platform !== 'win32') {
+    if (!trash) { await rm(target, { recursive: true, force: false }); return; }
+    await mkdir(trash, { recursive: true });
+    try { await renameFile(target, join(trash, `${Date.now()}-${basename(target)}`)); }
+    catch { throw fail(`Não foi possível mover ${folder ? 'a pasta' : 'o arquivo'} para a lixeira da IDE. Nada foi apagado.`, 500); }
+    return;
+  }
   const script = `Add-Type -AssemblyName Microsoft.VisualBasic; $p = $env:CM_TARGET; if ((Get-Item -LiteralPath $p).PSIsContainer) { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($p, 'OnlyErrorDialogs', 'SendToRecycleBin') } else { [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteFile($p, 'OnlyErrorDialogs', 'SendToRecycleBin') }`;
   try { await promisify(execFile)('powershell.exe', ['-NoProfile', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true, timeout: 120000, env: { ...process.env, CM_TARGET: target } }); }
   catch { throw fail(`Não foi possível enviar ${folder ? 'a pasta' : 'o arquivo'} para a Lixeira do Windows. Nada foi apagado.`, 500); }
 }
-export async function operate(root, input) {
+export async function operate(root, input, { trash } = {}) {
   switch (input.op) {
     case 'create': {
       const { target } = await resolveInside(root, input.path, { mustExist: false });
@@ -124,7 +160,7 @@ export async function operate(root, input) {
       const { target, base } = await resolveInside(root, input.path);
       if (lower(target) === lower(base)) throw fail('A pasta raiz não pode ser apagada pela IDE.', 403);
       const info = await lstat(target);
-      await toRecycleBin(target, info.isDirectory()); return {};
+      await toRecycleBin(target, info.isDirectory(), trash); return {};
     }
     default: throw fail('Operação inválida.');
   }

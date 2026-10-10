@@ -77,3 +77,45 @@ test('nada escapa da pasta aberta (.., caminhos absolutos e links simbólicos)',
     await assert.rejects(operate(folder, { op: 'delete', path: '/' }), /raiz/);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('gravar não perde nada: cópia de segurança, restauração, permissões e sem sobras', async () => {
+  const { createBackups } = await import('../server/backups.mjs');
+  const { stat, chmod, utimes } = await import('node:fs/promises');
+  const root = await scratch();
+  try {
+    const folder = join(root, 'proj'); await mkdir(folder);
+    const backups = createBackups(join(root, 'dados', 'backups')); const ctx = { backups, projectId: 'p1' };
+    await writeFile(join(folder, 'run.sh'), 'versao 1\n'); await chmod(join(folder, 'run.sh'), 0o755);
+    const first = await writeEntry(folder, { path: '/run.sh', content: 'versao 2\n' }, ctx);
+    assert.equal(await readFile(join(folder, 'run.sh'), 'utf8'), 'versao 2\n');
+    if (process.platform !== 'win32') assert.equal((await stat(join(folder, 'run.sh'))).mode & 0o777, 0o755);
+    assert.ok(first.mtime > 0);
+    // A versão original foi guardada fora da pasta do usuário.
+    const versions = await backups.versions('p1', '/run.sh'); assert.equal(versions.length, 1);
+    assert.equal((await backups.read('p1', '/run.sh', versions[0].id)).toString(), 'versao 1\n');
+    assert.deepEqual((await readdir(folder)).sort(), ['run.sh']);
+    // Salvamentos seguidos não enchem o disco de cópias.
+    await writeEntry(folder, { path: '/run.sh', content: 'versao 3\n' }, ctx); assert.equal((await backups.versions('p1', '/run.sh')).length, 1);
+    // Conteúdo com acentos e BOM continua igual byte a byte.
+    await writeFile(join(folder, 'bom.txt'), Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('olá')]));
+    const read = await readEntry(folder, '/bom.txt'); assert.equal(read.bom, true);
+    await writeEntry(folder, { path: '/bom.txt', content: read.content + '!', bom: read.bom, force: true }, ctx);
+    assert.deepEqual([...await readFile(join(folder, 'bom.txt'))], [...Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('olá!')])]);
+    // Falha: nada muda e nenhum arquivo temporário sobra.
+    await assert.rejects(writeEntry(folder, { path: '/run.sh', content: 'x'.repeat(25 * 1024 * 1024 + 10) }, ctx), /grande demais/);
+    assert.equal(await readFile(join(folder, 'run.sh'), 'utf8'), 'versao 3\n');
+    await assert.rejects(writeEntry(folder, { path: '/pasta-falsa/../../x', content: 'a' }, ctx), /inválido/);
+    assert.ok(!(await readdir(folder)).some(name => name.endsWith('.cmtmp')));
+    // Conflito com mudança externa continua protegendo.
+    const old = (await stat(join(folder, 'run.sh'))).mtimeMs; await new Promise(done => setTimeout(done, 20));
+    await writeFile(join(folder, 'run.sh'), 'mexeu por fora'); await utimes(join(folder, 'run.sh'), new Date(), new Date(Date.now() + 5000));
+    await assert.rejects(writeEntry(folder, { path: '/run.sh', content: 'meu', expectedMtime: old }, ctx), /alterado fora da IDE/);
+    assert.equal(await readFile(join(folder, 'run.sh'), 'utf8'), 'mexeu por fora');
+    // Gravações simultâneas do mesmo arquivo terminam inteiras (uma depois da outra).
+    await Promise.all(Array.from({ length: 9 }, (_, i) => writeEntry(folder, { path: '/par.txt', content: `${i}`.repeat(200000), force: true }, ctx)));
+    const final = await readFile(join(folder, 'par.txt'), 'utf8'); assert.match(final, /^(\d)\1{199999}$/);
+    assert.ok(!(await readdir(folder)).some(name => name.includes('.cmtmp')));
+    // Excluir não apaga de vez fora do Windows: vai para a lixeira da IDE.
+    if (process.platform !== 'win32') { const trash = join(root, 'dados', 'trash'); await operate(folder, { op: 'delete', path: '/bom.txt' }, { trash }); assert.equal((await readdir(trash)).length, 1); assert.ok(!(await readdir(folder)).includes('bom.txt')); }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 test('Git integration stages, commits and shows real working-tree diffs', async () => {
   const { gitStatus, gitAction, gitDiff } = await import('../server/git.mjs');
-  await mkdir('tests/.tmp', { recursive: true });
-  const dir = await mkdtemp(resolve('tests/.tmp/git-'));
+  // Fora do repositório do projeto: dentro dele o Git enxergaria o repositório de cima como se fosse o da pasta.
+  const dir = await mkdtemp(join(tmpdir(), 'ide-git-'));
   try {
     await writeFile(join(dir, 'app.js'), 'const value = 1;\n');
     assert.equal((await gitStatus(dir)).initialized, false);
