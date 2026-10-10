@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileNode, useEditorStore } from '../store/editorStore';
 import { ChevronRight, ChevronDown, FilePlus, Pencil, Trash2, ChevronsDownUp, Search, RefreshCw, Loader2 } from 'lucide-react';
 import { FileIcon, FolderIcon } from '../lib/fileIcons';
@@ -8,30 +8,70 @@ import type { Marker } from '../lib/markers';
 type Actions = { onCreate: (folder?: string) => void; onRename: (path?: string, folder?: boolean) => void; onDelete: (path?: string, folder?: boolean) => void };
 type Menu = { x: number; y: number; node: FileNode } | null;
 
-function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu, onOpenFile, lazy, expanded }: { lazy?: boolean; expanded?: Set<string>; onOpenFile?: () => void; node: FileNode; level: number; collapsed: Set<string>; toggle: (id: string) => void; filtering: boolean; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void }) {
+type RowProps = { node: FileNode; level: number; open: boolean; toggle: (id: string) => void; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void; onOpenFile?: () => void; onMore?: (path: string) => void };
+function TreeRow({ node, level, open, toggle, markers, onMenu, onOpenFile, onMore }: RowProps) {
   const active = useEditorStore(state => state.activeFileId);
   const openFile = useEditorStore(state => state.openFile);
+  if (node.more) return <button className="flex items-center h-[22px] w-full text-left text-xs underline" style={{ paddingLeft: level * 8 + 36, color: 'var(--vs-link)' }} onClick={() => onMore?.(node.more!.path)}>{node.name}</button>;
   const folder = node.type === 'folder';
-  const open = folder && (filtering || (lazy ? Boolean(expanded?.has(node.id)) : !collapsed.has(node.id)));
-  const own = markers.filter(item => folder ? item.path.startsWith(`${node.id}/`) : item.path === node.id);
+  const own = markers.length ? markers.filter(item => folder ? item.path.startsWith(`${node.id}/`) : item.path === node.id) : markers;
   const errors = own.filter(item => item.severity === 'error').length;
   const warnings = own.filter(item => item.severity === 'warning').length;
   const color = errors ? 'var(--vs-error)' : warnings ? 'var(--vs-warning)' : undefined;
+  return <button className="list-row pr-3 text-[13px]" data-active={!folder && active === node.id} title={node.id} style={{ paddingLeft: level * 8 + 8 }}
+    onClick={() => { if (folder) toggle(node.id); else { openFile(node); onOpenFile?.(); } }} onContextMenu={event => onMenu(event, node)}>
+    {folder ? (open ? <ChevronDown size={16} className="shrink-0 text-vs-muted" /> : <ChevronRight size={16} className="shrink-0 text-vs-muted" />) : <span className="w-4 shrink-0" />}
+    {folder ? <FolderIcon open={open} /> : <FileIcon name={node.name} />}
+    <span className="truncate" style={{ color: color ?? (node.heavy ? 'var(--vs-fg-dim)' : undefined) }}>{node.name}</span>
+    {(errors > 0 || warnings > 0) && <span className="ml-auto text-xs" style={{ color }}>{folder ? '●' : errors || warnings}</span>}
+  </button>;
+}
+
+function TreeNode({ node, level, collapsed, toggle, filtering, markers, onMenu, onOpenFile }: { onOpenFile?: () => void; node: FileNode; level: number; collapsed: Set<string>; toggle: (id: string) => void; filtering: boolean; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void }) {
+  const folder = node.type === 'folder';
+  const open = folder && (filtering || !collapsed.has(node.id));
   return <div>
-    <button className="list-row pr-3 text-[13px]" data-active={!folder && active === node.id} title={node.id} style={{ paddingLeft: level * 8 + 8 }}
-      onClick={() => { if (folder) toggle(node.id); else { openFile(node); onOpenFile?.(); } }} onContextMenu={event => onMenu(event, node)}>
-      {folder ? (open ? <ChevronDown size={16} className="shrink-0 text-vs-muted" /> : <ChevronRight size={16} className="shrink-0 text-vs-muted" />) : <span className="w-4 shrink-0" />}
-      {folder ? <FolderIcon open={open} /> : <FileIcon name={node.name} />}
-      <span className="truncate" style={{ color: color ?? (node.heavy ? 'var(--vs-fg-dim)' : undefined) }}>{node.name}</span>
-      {(errors > 0 || warnings > 0) && <span className="ml-auto text-xs" style={{ color }}>{folder ? '●' : errors || warnings}</span>}
-    </button>
-    {open && lazy && node.children === undefined && <p className="flex items-center gap-1.5 text-xs text-vs-dim h-[22px]" style={{ paddingLeft: level * 8 + 36 }}><Loader2 size={12} className="animate-spin" />Carregando…</p>}
-    {open && lazy && node.children?.length === 0 && <p className="text-xs text-vs-dim h-[22px] flex items-center" style={{ paddingLeft: level * 8 + 36 }}>Pasta vazia</p>}
-    {open && node.children?.map(child => <TreeNode key={child.id} node={child} level={level + 1} collapsed={collapsed} toggle={toggle} filtering={filtering} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} lazy={lazy} expanded={expanded} />)}
+    <TreeRow node={node} level={level} open={open} toggle={toggle} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} />
+    {open && node.children?.map(child => <TreeNode key={child.id} node={child} level={level + 1} collapsed={collapsed} toggle={toggle} filtering={filtering} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} />)}
   </div>;
 }
 
-export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], projectName = 'Projeto', onOpenFile, lazy, onExpand, onRefresh }: Actions & { lazy?: boolean; onExpand?: (path: string) => void; onRefresh?: () => void; onOpenFile?: () => void; disabled: boolean; markers?: Marker[]; projectName?: string }) {
+const ROW = 22;
+type Flat = { key: string; node?: FileNode; level: number; text?: 'loading' | 'empty' };
+/** Árvore de pastas abertas do computador: só as linhas visíveis existem no DOM, então uma pasta com 1 milhão de itens continua leve. */
+function LazyTree({ nodes, expanded, toggle, markers, onMenu, onOpenFile, onMore }: { nodes: FileNode[]; expanded: Set<string>; toggle: (id: string) => void; markers: Marker[]; onMenu: (event: React.MouseEvent, node: FileNode) => void; onOpenFile?: () => void; onMore?: (path: string) => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState({ top: 0, height: 600 });
+  useLayoutEffect(() => {
+    const element = box.current; if (!element) return;
+    const measure = () => setView(previous => previous.top === element.scrollTop && previous.height === element.clientHeight ? previous : { top: element.scrollTop, height: element.clientHeight });
+    measure(); const observer = new ResizeObserver(measure); observer.observe(element); return () => observer.disconnect();
+  }, []);
+  const rows = useMemo(() => {
+    const out: Flat[] = [];
+    const walk = (list: FileNode[], level: number) => list.forEach(node => {
+      out.push({ key: node.id, node, level });
+      if (node.type === 'folder' && expanded.has(node.id)) {
+        if (node.children === undefined) out.push({ key: `${node.id}:l`, level: level + 1, text: 'loading' });
+        else if (node.children.length === 0) out.push({ key: `${node.id}:e`, level: level + 1, text: 'empty' });
+        else walk(node.children, level + 1);
+      }
+    });
+    walk(nodes, 0); return out;
+  }, [nodes, expanded]);
+  const first = Math.max(0, Math.floor(view.top / ROW) - 12); const last = Math.min(rows.length, Math.ceil((view.top + view.height) / ROW) + 12);
+  return <div ref={box} className="overflow-auto flex-1 tree-focus py-0.5" onScroll={event => { const top = event.currentTarget.scrollTop; setView(previous => Math.abs(previous.top - top) < ROW / 2 ? previous : { ...previous, top }); }}>
+    <div style={{ height: rows.length * ROW, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: first * ROW, left: 0, right: 0 }}>
+        {rows.slice(first, last).map(row => row.node
+          ? <TreeRow key={row.key} node={row.node} level={row.level} open={expanded.has(row.node.id)} toggle={toggle} markers={markers} onMenu={onMenu} onOpenFile={onOpenFile} onMore={onMore} />
+          : <p key={row.key} className="flex items-center gap-1.5 text-xs text-vs-dim h-[22px]" style={{ paddingLeft: row.level * 8 + 36 }}>{row.text === 'loading' ? <><Loader2 size={12} className="animate-spin" />Carregando…</> : 'Pasta vazia'}</p>)}
+      </div>
+    </div>
+  </div>;
+}
+
+export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], projectName = 'Projeto', onOpenFile, lazy, onExpand, onRefresh, onMore }: Actions & { onMore?: (path: string) => void; lazy?: boolean; onExpand?: (path: string) => void; onRefresh?: () => void; onOpenFile?: () => void; disabled: boolean; markers?: Marker[]; projectName?: string }) {
   const files = useEditorStore(state => state.files);
   const active = useEditorStore(state => state.activeFileId);
   const [search, setSearch] = useState('');
@@ -78,8 +118,10 @@ export function Sidebar({ onCreate, onRename, onDelete, disabled, markers = [], 
         {lazy && <button className="icon-btn" aria-label="Atualizar lista de arquivos" title="Atualizar" onClick={onRefresh}><RefreshCw size={14} /></button>}<button className="icon-btn" aria-label="Recolher pastas" title="Recolher pastas" onClick={collapseAll}><ChevronsDownUp size={15} /></button>
       </div>
     </div>
-    <div className="overflow-auto flex-1 tree-focus py-0.5">{rootOpen && visible.map(file => <TreeNode key={file.id} node={file} level={0} collapsed={collapsed} toggle={toggle} filtering={!!term} markers={markers} onMenu={openMenu} onOpenFile={onOpenFile} lazy={lazy} expanded={expanded} />)}
-      {rootOpen && !visible.length && <p className="px-5 py-3 text-xs text-vs-dim">{term ? 'Nenhum arquivo encontrado.' : 'Nenhum arquivo no projeto.'}</p>}</div>
+    {lazy && !term
+      ? (rootOpen ? <LazyTree nodes={files} expanded={expanded} toggle={toggle} markers={markers} onMenu={openMenu} onOpenFile={onOpenFile} onMore={onMore} /> : <div className="flex-1" />)
+      : <div className="overflow-auto flex-1 tree-focus py-0.5">{rootOpen && visible.map(file => <TreeNode key={file.id} node={file} level={0} collapsed={collapsed} toggle={toggle} filtering={!!term} markers={markers} onMenu={openMenu} onOpenFile={onOpenFile} />)}
+      {rootOpen && !visible.length && <p className="px-5 py-3 text-xs text-vs-dim">{term ? 'Nenhum arquivo encontrado.' : 'Nenhum arquivo no projeto.'}</p>}</div>}
     {menu && <ContextMenu x={menu.x} y={menu.y} items={items(menu.node)} close={() => setMenu(null)} />}
   </aside>;
 }

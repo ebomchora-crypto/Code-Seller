@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-export interface FileNode { id: string; name: string; type: 'file' | 'folder'; content?: string; children?: FileNode[]; parentId?: string | null; heavy?: boolean; kind?: 'text' | 'image' | 'binary' | 'large'; size?: number }
+export interface FileNode { id: string; name: string; type: 'file' | 'folder'; content?: string; children?: FileNode[]; parentId?: string | null; heavy?: boolean; kind?: 'text' | 'image' | 'binary' | 'large'; size?: number; more?: { path: string; remaining: number } }
 export function fileTree(files: Record<string, string>): FileNode[] {
   const root: FileNode[] = [];
   for (const [path, content] of Object.entries(files).sort(([a], [b]) => a.localeCompare(b))) {

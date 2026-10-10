@@ -14,7 +14,6 @@ const SKIPPED_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'out', '.
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.avif', '.mp3', '.wav', '.ogg', '.flac', '.mp4', '.mov', '.avi', '.mkv', '.webm', '.zip', '.gz', '.tar', '.7z', '.rar', '.exe', '.dll', '.so', '.dylib', '.bin', '.pdf', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.psd', '.ai', '.sketch', '.fig', '.blend', '.fbx', '.glb', '.obj', '.class', '.jar', '.pyc', '.o', '.a', '.lib', '.iso', '.dmg', '.sqlite', '.db', '.parquet']);
 const IMAGE_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.ico': 'image/x-icon', '.avif': 'image/avif' };
 export const MAX_TEXT_BYTES = 24 * 1024 * 1024;
-const MAX_LIST = 10000;
 const lower = value => process.platform === 'win32' ? value.toLowerCase() : value;
 
 async function nearestExisting(path) {
@@ -40,20 +39,29 @@ export async function resolveInside(root, path, { mustExist = true } = {}) {
 }
 const toProjectPath = (base, full) => `/${relative(base, full).split(sep).join('/')}`;
 
-export async function listDirectory(root, path = '/', { all = false } = {}) {
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+const PAGE = 3000;
+/** Lista uma pasta em páginas (sem limite de itens): a IDE pede mais quando o usuário pede. */
+export async function listDirectory(root, path = '/', { all = false, offset = 0, limit = PAGE } = {}) {
   const { base, target } = await resolveInside(root, path);
   const info = await stat(target); if (!info.isDirectory()) throw fail('Isto não é uma pasta.');
   const dirents = await readdir(target, { withFileTypes: true });
-  const entries = [];
+  const folders = []; const files = []; const links = [];
   for (const entry of dirents) {
     if (HIDDEN.has(entry.name)) continue;
-    let folder = entry.isDirectory();
-    if (entry.isSymbolicLink()) { try { folder = (await stat(join(target, entry.name))).isDirectory(); } catch { continue; } }
-    entries.push({ name: entry.name, type: folder ? 'folder' : 'file', heavy: folder && !all && SKIPPED_DIRS.has(entry.name) });
-    if (entries.length >= MAX_LIST) break;
+    if (entry.isSymbolicLink()) links.push(entry.name); else if (entry.isDirectory()) folders.push(entry.name); else files.push(entry.name);
   }
-  entries.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }) : a.type === 'folder' ? -1 : 1));
-  return { path: path === '/' ? '/' : toProjectPath(base, target), entries, truncated: dirents.length > MAX_LIST };
+  for (const name of links) { try { ((await stat(join(target, name))).isDirectory() ? folders : files).push(name); } catch { /* link quebrado */ } }
+  const byName = (x, y) => collator.compare(x, y);
+  folders.sort(byName); files.sort(byName);
+  const total = folders.length + files.length;
+  const start = Math.max(0, Math.floor(Number(offset)) || 0); const size = Math.min(100000, Math.max(1, Math.floor(Number(limit)) || PAGE));
+  const entries = [];
+  for (let i = start; i < Math.min(total, start + size); i++) {
+    const isFolder = i < folders.length; const name = isFolder ? folders[i] : files[i - folders.length];
+    entries.push({ name, type: isFolder ? 'folder' : 'file', heavy: isFolder && !all && SKIPPED_DIRS.has(name) });
+  }
+  return { path: path === '/' ? '/' : toProjectPath(base, target), entries, total, offset: start, more: Math.max(0, total - (start + entries.length)) };
 }
 
 export async function readEntry(root, path) {

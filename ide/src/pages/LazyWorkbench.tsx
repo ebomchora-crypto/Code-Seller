@@ -44,7 +44,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const mobile = useIsMobile();
   const [tab, setTab] = useState<'files' | 'editor' | 'search' | 'terminal' | 'ai'>('files');
   const [burger, setBurger] = useState<{ x: number; y: number } | null>(null);
-  const { status, error, setError, flush, open, loadDir, writeFile, disk, reload } = lazyProject;
+  const { status, error, setError, flush, open, loadDir, writeFile, disk, reload, loadMore } = lazyProject;
   const active = useEditorStore(state => state.activeFileId);
   const tabSize = usePreferences(state => state.tabSize);
   const sidebarRight = usePreferences(state => state.sidebarRight);
@@ -174,7 +174,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
       </header>
       {error && <div role="alert" className="error-banner rounded-none shrink-0 py-2 flex justify-between items-center gap-2 text-[13px]"><span>{error}</span><button className="underline shrink-0" onClick={() => setError(null)}>Fechar</button></div>}
       <main className="flex-1 min-h-0 relative flex flex-col">
-        {tab === 'files' && <div className="flex-1 min-h-0" style={{ background: 'var(--vs-sidebar)' }}><Sidebar lazy disabled={busy} markers={markers} projectName={project.name} onOpenFile={() => setTab('editor')} onExpand={path => void loadDir(path)} onRefresh={() => { void loadDir('/'); }} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} /></div>}
+        {tab === 'files' && <div className="flex-1 min-h-0" style={{ background: 'var(--vs-sidebar)' }}><Sidebar lazy disabled={busy} markers={markers} projectName={project.name} onOpenFile={() => setTab('editor')} onExpand={path => void loadDir(path)} onMore={path => void loadMore(path)} onRefresh={() => { void loadDir('/'); }} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} /></div>}
         {tab === 'editor' && <><EditorTabs markers={markers} onSplit={() => undefined} onQuickOpen={() => setPalette('files')} /><Breadcrumbs path={active} /><div className="flex flex-col flex-1 min-h-0"><Editor projectId={id} /></div></>}
         {tab === 'search' && <div className="flex-1 min-h-0"><Suspense fallback={null}><LazySearchPanel projectId={id} onOpen={(path, line) => { setTab('editor'); void openAt(path, line); }} /></Suspense></div>}
         {tab === 'terminal' && <div className="flex-1 min-h-0 relative"><Suspense fallback={null}><div className="absolute inset-0"><TerminalPanel key={id} projectId={id} /></div></Suspense></div>}
@@ -190,7 +190,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   }
   const showBottom = bottom !== null; const t = trail.current;
   const sidebarPanel = sidebar && <div className={`relative shrink-0 min-h-0 ${sidebarRight ? 'border-l' : 'border-r'}`} style={{ width: sidebarWidth, background: 'var(--vs-sidebar)', borderColor: 'var(--vs-border-soft)' }}>
-    {activity === 'files' && <Sidebar lazy disabled={busy} markers={markers} projectName={project.name} onExpand={path => void loadDir(path)} onRefresh={() => { void loadDir('/'); }} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} />}
+    {activity === 'files' && <Sidebar lazy disabled={busy} markers={markers} projectName={project.name} onExpand={path => void loadDir(path)} onMore={path => void loadMore(path)} onRefresh={() => { void loadDir('/'); }} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} />}
     <Suspense fallback={null}>{activity === 'git' && <GitPanel key={id} projectId={id} />}{activity === 'search' && <LazySearchPanel projectId={id} onOpen={(path, line) => void openAt(path, line)} />}{activity === 'run' && <RunPanel projectId={id} files={{}} hasPackage run={runCommand} />}</Suspense>
     <Sash orientation="vertical" edge={sidebarRight ? 'start' : 'end'} invert={sidebarRight} label="Redimensionar barra lateral" value={sidebarWidth} min={170} max={560} onChange={setSidebarWidth} onCommit={value => patchLayout({ sidebarWidth: value })} />
   </div>;

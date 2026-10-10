@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEditorStore, type FileNode } from '../store/editorStore';
 import type { ProjectDetail } from '../lib/api';
-import { fsList, fsRead, fsStats, fsWrite, toNodes } from '../lib/lazyFs';
+import { fsList, fsRead, fsStats, fsWrite, moreNode, pageSize, toNodes } from '../lib/lazyFs';
 import { askConfirm } from '../lib/dialogs';
 
 type Disk = { content: string; mtime: number; encoding: 'utf8' | 'latin1'; bom: boolean };
@@ -23,10 +23,19 @@ export function useLazyProject(project: ProjectDetail) {
   const [error, setError] = useState<string | null>(null);
   const [rootReady, setRootReady] = useState(false);
 
-  const loadDir = useCallback(async (path: string) => {
-    try { const result = await fsList(id, path); useEditorStore.getState().setChildren(path, toNodes(path, result.entries)); if (path === '/') setRootReady(true);
-      if (result.truncated) setError(`A pasta ${path === '/' ? 'raiz' : path.slice(1)} tem mais de ${result.entries.length.toLocaleString('pt-BR')} itens: só os primeiros aparecem no explorador. Use Ctrl+P ou a busca para achar os outros.`); }
-    catch (e) { setError((e as Error).message); }
+  const loaded = useRef(new Map<string, number>());
+  const childrenOf = (path: string): FileNode[] => { const find = (nodes: FileNode[]): FileNode[] | undefined => { for (const node of nodes) { if (node.id === path) return node.children; if (node.children && path.startsWith(`${node.id}/`)) { const found = find(node.children); if (found) return found; } } return undefined; }; return path === '/' ? useEditorStore.getState().files : find(useEditorStore.getState().files) ?? []; };
+  /** Carrega uma pasta; `more` acrescenta a próxima página (pastas com milhares de itens). */
+  const loadDir = useCallback(async (path: string, more = false) => {
+    try {
+      const have = loaded.current.get(path) ?? 0;
+      const result = more ? await fsList(id, path, false, have, pageSize(have)) : await fsList(id, path, false, 0, Math.max(3000, have));
+      const fresh = toNodes(path, result.entries);
+      const previous = more ? childrenOf(path).filter(node => !node.more) : [];
+      const count = more ? have + result.entries.length : result.entries.length; loaded.current.set(path, count);
+      const nodes = [...previous, ...fresh, ...(result.total > count ? [moreNode(path, result.total - count, count)] : [])];
+      useEditorStore.getState().setChildren(path, nodes); if (path === '/') setRootReady(true);
+    } catch (e) { setError((e as Error).message); }
   }, [id]);
 
   const open = useCallback(async (path: string) => {
@@ -132,5 +141,5 @@ export function useLazyProject(project: ProjectDetail) {
     disk.current.set(path, { content: fresh.content, mtime: fresh.mtime, encoding: fresh.encoding, bom: fresh.bom }); useEditorStore.getState().replaceOpen(path, fresh.content);
   }, [id]);
 
-  return { reload, status, error, setError, flush, open, loadDir, rootReady, writeFile, disk: disk.current };
+  return { loadMore: (path: string) => loadDir(path, true), reload, status, error, setError, flush, open, loadDir, rootReady, writeFile, disk: disk.current };
 }

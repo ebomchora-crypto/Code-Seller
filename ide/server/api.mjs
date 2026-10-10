@@ -73,7 +73,7 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot }) {
         const project = await repo.get(id);
         if (!project.folderPath) throw fail('Este recurso é só para pastas abertas do computador.', 400);
         const root = project.folderPath; const action = parts[4];
-        if (action === 'list' && request.method === 'GET') return json(await listDirectory(root, url.searchParams.get('path') || '/', { all: url.searchParams.get('all') === '1' }));
+        if (action === 'list' && request.method === 'GET') return json(await listDirectory(root, url.searchParams.get('path') || '/', { all: url.searchParams.get('all') === '1', offset: url.searchParams.get('offset') || 0, limit: url.searchParams.get('limit') || undefined }));
         if (action === 'file' && request.method === 'GET') return json(await readEntry(root, url.searchParams.get('path')));
         if (action === 'raw' && request.method === 'GET') return await rawEntry(root, url.searchParams.get('path'), response);
         if (action === 'find' && request.method === 'GET') return json(await findFiles(root, url.searchParams.get('q') || ''));

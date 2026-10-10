@@ -119,3 +119,18 @@ test('gravar não perde nada: cópia de segurança, restauração, permissões e
     if (process.platform !== 'win32') { const trash = join(root, 'dados', 'trash'); await operate(folder, { op: 'delete', path: '/bom.txt' }, { trash }); assert.equal((await readdir(trash)).length, 1); assert.ok(!(await readdir(folder)).includes('bom.txt')); }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test('uma pasta com milhares de itens lista em páginas, sem limite e em ordem', async () => {
+  const root = await scratch();
+  try {
+    await mkdir(join(root, 'pasta/sub10'), { recursive: true }); await mkdir(join(root, 'pasta/sub2'));
+    for (let i = 0; i < 7500; i++) await writeFile(join(root, 'pasta', `a${i}.txt`), '');
+    const first = await listDirectory(root, '/pasta', { limit: 3000 });
+    assert.equal(first.total, 7502); assert.equal(first.entries.length, 3000); assert.equal(first.more, 4502);
+    assert.deepEqual(first.entries.slice(0, 3).map(e => e.name), ['sub2', 'sub10', 'a0.txt']);
+    const seen = new Set(first.entries.map(e => e.name)); let offset = 3000;
+    while (offset < first.total) { const page = await listDirectory(root, '/pasta', { offset, limit: 3000 }); page.entries.forEach(e => seen.add(e.name)); offset += page.entries.length; assert.ok(page.entries.length > 0); }
+    assert.equal(seen.size, 7502);
+    const last = await listDirectory(root, '/pasta', { offset: 7000, limit: 3000 }); assert.equal(last.more, 0); assert.equal(last.entries.at(-1).name, 'a7499.txt');
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
