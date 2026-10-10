@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { frameDocument } from '@/utils/codeMakerStream'
+import { AiLoader } from '@/components/ui/ai-loader'
 
 // O site gerado roda isolado: pode ter scripts, mas não acessa o painel,
 // a sessão nem nada do Code Sellers.
@@ -15,11 +16,13 @@ interface SitePreviewProps {
   hash?: string
   /** Link para outra página do projeto clicado dentro do site. */
   onNavigate?: (page: string, hash: string) => void
+  /** Mostra o carregamento da IA até o primeiro quadro do site aparecer. */
+  loader?: boolean
 }
 
 // Prévia sem piscar: o documento novo carrega num quadro escondido e só
 // troca de lugar com o atual quando está pronto, na mesma posição de rolagem.
-export function SitePreview({ html, title, className = '', page = '', hash = '', onNavigate }: SitePreviewProps) {
+export function SitePreview({ html, title, className = '', page = '', hash = '', onNavigate, loader = false }: SitePreviewProps) {
   const [docs, setDocs] = useState<[string | null, string | null]>([null, null])
   const [active, setActive] = useState<0 | 1>(0)
   const frames = [useRef<HTMLIFrameElement>(null), useRef<HTMLIFrameElement>(null)]
@@ -29,6 +32,7 @@ export function SitePreview({ html, title, className = '', page = '', hash = '',
   const navigate = useRef(onNavigate)
   navigate.current = onNavigate
   const shownPage = useRef(page)
+  const [firstLoaded, setFirstLoaded] = useState(false)
 
   // Guarda a rolagem do quadro visível.
   useEffect(() => {
@@ -65,6 +69,7 @@ export function SitePreview({ html, title, className = '', page = '', hash = '',
   }, [html, page, hash])
 
   function handleLoad(index: 0 | 1) {
+    if (!firstLoaded) window.setTimeout(() => setFirstLoaded(true), 250)
     if (waiting.current !== index) return
     waiting.current = null
     // Tempo para o Tailwind aplicar os estilos antes de mostrar.
@@ -93,6 +98,7 @@ export function SitePreview({ html, title, className = '', page = '', hash = '',
           />
         ),
       )}
+      {loader && html && !firstLoaded && <AiLoader text="Carregando" caption="Abrindo a prévia do site…" />}
     </div>
   )
 }

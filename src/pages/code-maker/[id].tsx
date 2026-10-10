@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowUp,
   Check,
   CheckCircle2,
   CloudOff,
@@ -18,7 +17,6 @@ import {
   PanelLeft,
   RotateCw,
   Smartphone,
-  Square,
   SquareTerminal,
   Trash2,
 } from 'lucide-react'
@@ -27,13 +25,14 @@ import { useBilling } from '@/stores/BillingContext'
 import { assembleSite, pageSlugs, pageTitle, parsePart, partOrder } from '../../../supabase/functions/code-maker/site'
 import { projectTree } from '../../../supabase/functions/code-maker/project'
 import { useSiteBuilder } from '@/hooks/useSiteBuilder'
-import { AttachButton, AttachmentTray, useAttachments } from '@/components/code-maker/Attachments'
+import { useAttachments } from '@/components/code-maker/Attachments'
 import { BuildTimeline } from '@/components/code-maker/BuildTimeline'
 import { CodeView } from '@/components/code-maker/CodeView'
 import { SitePreview } from '@/components/code-maker/SitePreview'
+import { AiLoader } from '@/components/ui/ai-loader'
+import { PromptInputBox } from '@/components/ui/ai-prompt-box'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Spinner } from '@/components/ui/Spinner'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteSite, getCodeMakerUsage, restoreSiteVersion, updateSite, type CodeMakerUsage, type SiteVersion } from '@/services/supabase/codeMaker'
 import { downloadName, publicSiteUrl, SLUG_PATTERN, slugify } from '@/utils/codeMakerStream'
@@ -213,8 +212,8 @@ export default function CodeMakerEditorPage() {
 
   if (builder.loading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Spinner size="lg" className="text-purple-600" />
+      <div className="relative flex-1">
+        <AiLoader text="Carregando" />
       </div>
     )
   }
@@ -235,6 +234,15 @@ export default function CodeMakerEditorPage() {
 
   const url = publicSiteUrl(site.slug)
   const ready = site.status === 'ready'
+  // O que a IA está fazendo agora (aparece embaixo do carregamento da prévia).
+  const partsDone = Object.values(builder.progress).filter((part) => part.status === 'done').length
+  const partsTotal = Object.keys(builder.progress).length
+  const loaderCaption =
+    phase === 'planning'
+      ? (builder.planActions[builder.planActions.length - 1] ?? 'Escolhendo cores, fontes e as seções certas para o negócio.')
+      : phase === 'building'
+        ? `Escrevendo o site${partsTotal ? ` · ${partsDone} de ${partsTotal} partes` : '…'}`
+        : (builder.editActions[builder.editActions.length - 1] ?? 'Aplicando a sua alteração…')
 
   async function submitEdit(event?: FormEvent) {
     event?.preventDefault()
@@ -246,18 +254,6 @@ export default function CodeMakerEditorPage() {
     const ok = await builder.edit(text, assets)
     if (ok) attachments.clear()
     else setInstruction(text)
-  }
-
-  function handleComposerKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      void submitEdit()
-      return
-    }
-    if (event.key === 'Escape' && instruction) {
-      event.preventDefault()
-      setInstruction('')
-    }
   }
 
   async function togglePublished(value: boolean) {
@@ -401,14 +397,24 @@ export default function CodeMakerEditorPage() {
         <button type="button" onClick={shell.openSites} className={`${iconButton} lg:hidden`} aria-label="Ver seus sites" title="Seus sites">
           <PanelLeft className="size-4.5" />
         </button>
-        <div className="min-w-0 flex-1 lg:w-[402px] lg:flex-none xl:w-[442px]">
-          <p className="truncate font-display text-[14.5px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
-          <p className="flex items-center gap-1.5 truncate text-[11.5px] text-[var(--text-muted)]">
-            <span className={`size-1.5 shrink-0 rounded-full ${live ? 'bg-emerald-500' : 'bg-[var(--border-strong)]'}`} />
-            <span className="truncate">
-              /{site.slug} · {busy ? 'a IA está trabalhando' : !ready ? 'em criação' : live ? 'no ar' : 'fora do ar'}
-            </span>
-          </p>
+        <div className="flex min-w-0 flex-1 items-center gap-3 lg:w-[402px] lg:flex-none xl:w-[442px]">
+          <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-[0_8px_20px_-8px_rgba(124,58,237,0.8)] sm:flex">
+            <Code2 className="size-4.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate font-display text-[14.5px] font-semibold tracking-tight text-[var(--text-primary)]">{site.name}</p>
+            <p className="flex items-center gap-1.5 truncate text-[11.5px] text-[var(--text-muted)]">
+              <span
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[10.5px] font-semibold ${
+                  busy ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]' : live ? 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400' : 'bg-[var(--bg-muted)] text-[var(--text-muted)]'
+                }`}
+              >
+                <span className={`size-1.5 rounded-full ${busy ? 'animate-pulse bg-[#a78bfa]' : live ? 'bg-emerald-500' : 'bg-[var(--border-strong)]'}`} />
+                {busy ? 'IA trabalhando' : !ready ? 'Em criação' : live ? 'No ar' : 'Fora do ar'}
+              </span>
+              <span className="truncate">/{site.slug}</span>
+            </p>
+          </div>
         </div>
 
         <div className="hidden flex-1 items-center gap-2 lg:flex">
@@ -539,57 +545,20 @@ export default function CodeMakerEditorPage() {
                 <SquareTerminal className="size-3.5" /> Importar para a IDE
               </a>
             )}
-            <div
-              onDragOver={(event) => {
-                if (event.dataTransfer.types.includes('Files')) event.preventDefault()
-              }}
-              onDrop={(event) => {
-                if (!event.dataTransfer.files.length || !ready || busy) return
-                event.preventDefault()
-                attachments.add(event.dataTransfer.files)
-              }}
-              className="rounded-2xl border border-[var(--border-default)] bg-[var(--field-bg)] p-1.5 transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)]"
-            >
-              <AttachmentTray state={attachments} />
-              <textarea
-                value={instruction}
-                onChange={(event) => setInstruction(event.target.value)}
-                onKeyDown={handleComposerKey}
-                onPaste={(event) => {
-                  if (event.clipboardData.files.length && ready && !busy) {
-                    event.preventDefault()
-                    attachments.add(event.clipboardData.files)
-                  }
-                }}
-                rows={2}
-                disabled={!ready || busy}
-                placeholder={busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança no site…' : 'Espere o site ficar pronto'}
-                className="block max-h-80 min-h-[52px] w-full resize-none overflow-y-auto bg-transparent px-2 py-1.5 text-[13.5px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed"
-              />
-              <div className="flex items-center justify-between gap-2">
-                <AttachButton onFiles={attachments.add} disabled={!ready || busy} compact />
-                {busy ? (
-                  <button
-                    type="button"
-                    onClick={builder.stop}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-muted)] text-[var(--text-primary)] transition hover:bg-[var(--bg-card-hover)]"
-                    aria-label="Parar"
-                    title="Parar"
-                  >
-                    <Square className="size-3 fill-current" />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={(!instruction.trim() && attachments.assets.length === 0) || !ready || attachments.uploading}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white transition hover:brightness-110 disabled:opacity-40"
-                    aria-label="Enviar"
-                  >
-                    <ArrowUp className="size-4" />
-                  </button>
-                )}
-              </div>
-            </div>
+            <PromptInputBox
+              value={instruction}
+              onValueChange={setInstruction}
+              onSend={() => void submitEdit()}
+              onStop={builder.stop}
+              isLoading={busy}
+              disabled={!ready}
+              canSend={(instruction.trim().length > 0 || attachments.assets.length > 0) && ready && !attachments.uploading}
+              rows={2}
+              maxHeight={260}
+              attachments={attachments}
+              ariaLabel="Peça uma mudança no site"
+              placeholder={busy ? 'A IA está trabalhando…' : ready ? 'Peça uma mudança no site…' : 'Espere o site ficar pronto'}
+            />
             {usage?.edits_limit != null && (
               <p className={`mt-1.5 px-1 text-[11.5px] ${editsLeft === 0 ? 'text-amber-500' : 'text-[var(--text-muted)]'}`}>
                 {usage.edits_today} de {usage.edits_limit} alterações hoje
@@ -602,32 +571,59 @@ export default function CodeMakerEditorPage() {
         {/* Direita: prévia ou código do site */}
         <section className={`${mobileTab === 'site' ? 'flex' : 'hidden'} min-h-0 min-w-0 flex-1 flex-col lg:flex`}>
           {view === 'previa' ? (
-            <div className="relative flex min-h-0 flex-1 justify-center overflow-hidden bg-[var(--bg-muted)]/40">
-              {previewHtml ? (
-                <div
-                  className={`relative h-full transition-[width] duration-300 ${
-                    device === 'mobile'
-                      ? 'my-4 h-[calc(100%-2rem)] w-[390px] max-w-full overflow-hidden rounded-[28px] border-[6px] border-[#1d1b24] shadow-2xl'
-                      : 'w-full'
-                  }`}
-                >
-                  <SitePreview
-                    key={reloadKey}
-                    html={previewHtml}
-                    title={`Prévia de ${site.name}`}
-                    className="h-full w-full"
-                    page={shownPage}
-                    hash={previewHash}
-                    onNavigate={(page, hash) => {
-                      if (page && !pages.includes(page)) {
-                        toast.error(`A página ${page}.html não existe neste site.`)
-                        return
-                      }
-                      setPreviewPage(page)
-                      setPreviewHash(hash)
-                    }}
-                  />
-                  {pages.length > 0 && (
+            <div className="relative flex min-h-0 flex-1 justify-center overflow-hidden bg-[radial-gradient(120%_80%_at_50%_0%,rgba(124,58,237,0.10),transparent_60%)] bg-[var(--bg-muted)]/40 p-2.5 sm:p-4">
+              <div
+                className={`relative flex min-h-0 flex-col overflow-hidden transition-[width] duration-300 ${
+                  device === 'mobile'
+                    ? 'my-auto h-full max-h-[820px] w-[390px] max-w-full rounded-[34px] border-[7px] border-[#1d1b24] bg-[#fff] shadow-[0_40px_90px_-30px_rgba(0,0,0,0.65)]'
+                    : 'h-full w-full rounded-2xl border border-[var(--border-default)] bg-[#fff] shadow-[0_40px_90px_-40px_rgba(0,0,0,0.6)]'
+                }`}
+              >
+                {device === 'desktop' && (
+                  <div className="flex h-10 shrink-0 items-center gap-3 border-b border-black/[0.07] bg-[#f4f4f6] px-3.5">
+                    <span className="flex gap-1.5" aria-hidden>
+                      <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+                      <span className="size-2.5 rounded-full bg-[#febc2e]" />
+                      <span className="size-2.5 rounded-full bg-[#28c840]" />
+                    </span>
+                    <div className="mx-auto flex h-7 min-w-0 max-w-md flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#fff] px-3 text-[12px] text-[#52525b] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]">
+                      <Globe className="size-3 shrink-0 text-[#a1a1aa]" />
+                      <span className="truncate">{live ? url.replace(/^https?:\/\//, '') : `prévia · /${site.slug}${shownPage ? `/${shownPage}` : ''}`}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setReloadKey((key) => key + 1)}
+                      className="flex size-7 items-center justify-center rounded-lg text-[#71717a] transition hover:bg-black/5 hover:text-[#18181b]"
+                      aria-label="Recarregar prévia"
+                      title="Recarregar prévia"
+                    >
+                      <RotateCw className="size-3.5" />
+                    </button>
+                  </div>
+                )}
+                <div className="relative min-h-0 flex-1">
+                  {previewHtml ? (
+                    <SitePreview
+                      key={reloadKey}
+                      html={previewHtml}
+                      loader
+                      title={`Prévia de ${site.name}`}
+                      className="h-full w-full"
+                      page={shownPage}
+                      hash={previewHash}
+                      onNavigate={(page, hash) => {
+                        if (page && !pages.includes(page)) {
+                          toast.error(`A página ${page}.html não existe neste site.`)
+                          return
+                        }
+                        setPreviewPage(page)
+                        setPreviewHash(hash)
+                      }}
+                    />
+                  ) : (
+                    <PlanningPlaceholder busy={phase === 'planning'} actions={builder.planActions} />
+                  )}
+                  {previewHtml && pages.length > 0 && (
                     <label className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 rounded-full border border-black/10 bg-white/95 py-1 pl-3 pr-1 text-[12px] font-medium text-[#18181b] shadow-lg backdrop-blur">
                       Página
                       <select
@@ -652,10 +648,9 @@ export default function CodeMakerEditorPage() {
                       <CheckCircle2 className="size-4" /> Site pronto
                     </div>
                   )}
+                  {busy && <AiLoader text={phase === 'editing' ? 'Alterando' : 'Gerando'} translucent={phase === 'editing'} caption={loaderCaption} />}
                 </div>
-              ) : (
-                <PlanningPlaceholder busy={phase === 'planning'} actions={builder.planActions} />
-              )}
+              </div>
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col bg-[#0d0c12]">

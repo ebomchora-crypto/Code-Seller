@@ -595,3 +595,8 @@
   font-weight: 600;
   color: #171325;
 }
+
+/* Caixa de pedido do Code Maker: barra de rolagem fina dentro do texto. */
+.cm-prompt-textarea::-webkit-scrollbar { width: 6px; }
+.cm-prompt-textarea::-webkit-scrollbar-track { background: transparent; }
+.cm-prompt-textarea::-webkit-scrollbar-thumb { background-color: var(--border-strong); border-radius: 3px; }

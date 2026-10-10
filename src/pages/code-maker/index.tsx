@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useBilling } from '@/stores/BillingContext'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, Globe, Loader2, PanelLeft, TriangleAlert } from 'lucide-react'
+import { Eye, Globe, Loader2, PanelLeft, Sparkles, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageWrapper } from '@/components/ui/PageWrapper'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -167,15 +167,22 @@ export default function CodeMakerPage() {
       <span className="font-display text-[15px] font-semibold tracking-tight">Code Maker</span>
     </div>
     <PageWrapper>
-      <section className="relative mx-auto max-w-3xl pb-4 pt-6 text-center sm:pt-12">
-        <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-64 w-[640px] max-w-full -translate-x-1/2 rounded-full bg-[#7c3aed]/20 blur-[100px]" />
-        <h1 className="relative font-display text-[32px] font-bold leading-tight tracking-tight text-[var(--text-primary)] sm:text-[44px]">
+      <section className="relative mx-auto max-w-3xl pb-4 pt-6 text-center sm:pt-14">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-10 left-1/2 h-[460px] w-[1100px] max-w-[160%] -translate-x-1/2 opacity-70 [background-image:linear-gradient(var(--border-subtle)_1px,transparent_1px),linear-gradient(90deg,var(--border-subtle)_1px,transparent_1px)] [background-size:46px_46px] [mask-image:radial-gradient(55%_65%_at_50%_0%,black,transparent)]"
+        />
+        <div aria-hidden className="pointer-events-none absolute left-1/2 top-0 h-64 w-[640px] max-w-full -translate-x-1/2 rounded-full bg-[#7c3aed]/25 blur-[100px]" />
+        <span className="relative inline-flex items-center gap-1.5 rounded-full border border-[var(--purple-border)] bg-[var(--purple-soft)] px-3 py-1 text-[12px] font-semibold text-[var(--accent-text)]">
+          <Sparkles className="size-3.5" /> Site completo em poucos minutos
+        </span>
+        <h1 className="relative mt-4 bg-gradient-to-r from-[var(--text-primary)] via-[var(--text-primary)] to-[var(--accent-text)] bg-clip-text font-display text-[34px] font-bold leading-[1.08] tracking-tight text-transparent sm:text-[52px]">
           O que vamos criar hoje?
         </h1>
-        <p className="relative mx-auto mt-2 max-w-xl text-[15px] text-[var(--text-muted)]">
+        <p className="relative mx-auto mt-3 max-w-xl text-[15.5px] leading-relaxed text-[var(--text-muted)]">
           Descreva o site do seu jeito e anexe a logo e as fotos do cliente. A IA cria e você ajusta conversando.
         </p>
-        <div className="relative mt-7 text-left">
+        <div className="relative mt-8 text-left">
           <PromptBox
             value={prompt}
             onChange={setPrompt}

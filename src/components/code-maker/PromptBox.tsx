@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { ArrowUp, ChevronDown, Eraser, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import type { SiteStyle } from '../../../supabase/functions/code-maker/site'
-import { AttachButton, AttachmentTray, type AttachmentsState } from '@/components/code-maker/Attachments'
+import type { AttachmentsState } from '@/components/code-maker/Attachments'
+import { PromptInputBox } from '@/components/ui/ai-prompt-box'
 
 const STYLES: { value: SiteStyle; label: string; swatch: string[] }[] = [
   { value: 'auto', label: 'A IA escolhe o estilo', swatch: ['#a78bfa', '#f472b6', '#fbbf24'] },
@@ -56,161 +57,77 @@ interface PromptBoxProps {
   attachments: AttachmentsState
 }
 
+// Pedido de um site novo: a caixa de pedido do Code Maker, com o estilo do site como opção.
 export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, footnote, attachments }: PromptBoxProps) {
-  const [dragging, setDragging] = useState(false)
   const [style, setStyle] = useState<SiteStyle>('auto')
   const [styleOpen, setStyleOpen] = useState(false)
-  const [placeholder, setPlaceholder] = useState(0)
-  const textarea = useRef<HTMLTextAreaElement>(null)
   const current = STYLES.find((option) => option.value === style) ?? STYLES[0]
-  const canSend = value.trim().length >= 8 && !busy && !disabled && !attachments.uploading
+  const canSend = value.trim().length >= 8 && !attachments.uploading
 
-  // Cresce com o texto (sem limite artificial, suportando especificações longas).
-  useEffect(() => {
-    const element = textarea.current
-    if (!element) return
-    element.style.height = 'auto'
-    const newHeight = Math.min(element.scrollHeight, 480)
-    element.style.height = `${newHeight}px`
-    element.style.overflowY = element.scrollHeight > 480 ? 'auto' : 'hidden'
-  }, [value])
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setPlaceholder((index) => (index + 1) % PLACEHOLDERS.length), 3500)
-    return () => window.clearInterval(timer)
-  }, [])
-
-  function submit(event?: FormEvent) {
-    event?.preventDefault()
-    if (canSend) onSubmit(style)
-  }
-
-  function handleKey(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      submit()
-      return
-    }
-    if (event.key === 'Escape' && value) {
-      event.preventDefault()
-      onChange('')
-    }
-  }
+  const styleChip = (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setStyleOpen((open) => !open)}
+        className="flex h-8 items-center gap-2 rounded-full border border-[var(--border-default)] px-3 text-[12.5px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent-ring)] hover:text-[var(--text-primary)]"
+        aria-haspopup="listbox"
+        aria-expanded={styleOpen}
+      >
+        <span className="flex -space-x-1">
+          {current.swatch.map((color) => (
+            <span key={color} className="size-3.5 rounded-full ring-2 ring-[var(--bg-card)]" style={{ background: color }} />
+          ))}
+        </span>
+        <span className="hidden sm:inline">{current.label}</span>
+        <span className="sm:hidden">Estilo</span>
+        <ChevronDown className="size-3.5" />
+      </button>
+      {styleOpen && (
+        <ul role="listbox" className="absolute bottom-full left-0 z-30 mb-2 w-60 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]">
+          {STYLES.map((option) => (
+            <li key={option.value}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={option.value === style}
+                onClick={() => {
+                  setStyle(option.value)
+                  setStyleOpen(false)
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[13px] transition ${
+                  option.value === style ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]'
+                }`}
+              >
+                <span className="flex -space-x-1">
+                  {option.swatch.map((color) => (
+                    <span key={color} className="size-3.5 rounded-full ring-2 ring-[var(--panel-bg)]" style={{ background: color }} />
+                  ))}
+                </span>
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 
   return (
-    <form
-      onSubmit={submit}
-      onDragOver={(event) => {
-        if (!event.dataTransfer.types.includes('Files')) return
-        event.preventDefault()
-        setDragging(true)
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(event) => {
-        if (!event.dataTransfer.files.length) return
-        event.preventDefault()
-        setDragging(false)
-        attachments.add(event.dataTransfer.files)
-      }}
-      className={`relative rounded-[26px] border bg-[var(--bg-card)] p-3 shadow-[0_30px_80px_-40px_rgba(124,58,237,0.55)] transition focus-within:border-[var(--accent-ring)] focus-within:ring-4 focus-within:ring-[var(--accent-tint)] ${
-        dragging ? 'border-[var(--accent-ring)] ring-4 ring-[var(--accent-tint)]' : 'border-[var(--border-default)]'
-      }`}
-    >
-      {dragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-[26px] bg-[var(--panel-bg)]/85 text-[14px] font-medium text-[var(--accent-text)]">
-          Solte aqui a logo e as fotos do cliente
-        </div>
-      )}
-      <AttachmentTray state={attachments} />
-      <textarea
-        ref={textarea}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={handleKey}
-        onPaste={(event) => {
-          if (event.clipboardData.files.length) {
-            event.preventDefault()
-            attachments.add(event.clipboardData.files)
-          }
-        }}
-        rows={3}
-        disabled={busy || disabled}
-        placeholder={PLACEHOLDERS[placeholder]}
-        aria-label="Descreva o site que você quer"
-        className="block min-h-[92px] w-full resize-none bg-transparent px-2 py-1.5 text-[15.5px] leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] disabled:opacity-60"
-      />
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="relative flex items-center gap-2">
-          <AttachButton onFiles={attachments.add} disabled={busy || disabled} />
-          <button
-            type="button"
-            onClick={() => setStyleOpen((open) => !open)}
-            className="flex items-center gap-2 rounded-full border border-[var(--border-default)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-strong)]"
-            aria-haspopup="listbox"
-            aria-expanded={styleOpen}
-          >
-            <span className="flex -space-x-1">
-              {current.swatch.map((color) => (
-                <span key={color} className="size-3.5 rounded-full ring-2 ring-[var(--bg-card)]" style={{ background: color }} />
-              ))}
-            </span>
-            {current.label}
-            <ChevronDown className="size-3.5" />
-          </button>
-          {styleOpen && (
-            <ul
-              role="listbox"
-              className="absolute bottom-full left-0 z-20 mb-2 w-56 overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--panel-bg)] p-1 shadow-[var(--shadow-modal)]"
-            >
-              {STYLES.map((option) => (
-                <li key={option.value}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={option.value === style}
-                    onClick={() => {
-                      setStyle(option.value)
-                      setStyleOpen(false)
-                    }}
-                    className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-[13px] transition ${
-                      option.value === style ? 'bg-[var(--accent-tint)] text-[var(--accent-text)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-muted)]'
-                    }`}
-                  >
-                    <span className="flex -space-x-1">
-                      {option.swatch.map((color) => (
-                        <span key={color} className="size-3.5 rounded-full ring-2 ring-[var(--panel-bg)]" style={{ background: color }} />
-                      ))}
-                    </span>
-                    {option.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {footnote && <span className="hidden text-[12px] tabular-nums text-[var(--text-muted)] sm:inline">{footnote}</span>}
-          {value.trim().length > 0 && !busy && !disabled && (
-            <button
-              type="button"
-              onClick={() => onChange('')}
-              title="Limpar texto (Esc)"
-              aria-label="Limpar texto"
-              className="flex size-9 items-center justify-center rounded-full border border-[var(--border-default)] text-[var(--text-muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
-            >
-              <Eraser className="size-4" />
-            </button>
-          )}
-          <button
-            type="submit"
-            disabled={!canSend}
-            aria-label="Criar site"
-            className="flex size-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#8b5cf6,#6d28d9)] text-white shadow-[0_8px_22px_-10px_rgba(124,58,237,0.9)] transition hover:brightness-110 disabled:opacity-35"
-          >
-            {busy ? <Loader2 className="size-4.5 animate-spin" /> : <ArrowUp className="size-4.5" strokeWidth={2.4} />}
-          </button>
-        </div>
-      </div>
-    </form>
+    <PromptInputBox
+      value={value}
+      onValueChange={onChange}
+      onSend={() => onSubmit(style)}
+      isLoading={busy}
+      disabled={disabled}
+      canSend={canSend}
+      rows={3}
+      minHeight={96}
+      maxHeight={480}
+      placeholder={PLACEHOLDERS}
+      ariaLabel="Descreva o site que você quer"
+      attachments={attachments}
+      tools={styleChip}
+      footnote={footnote}
+    />
   )
 }
