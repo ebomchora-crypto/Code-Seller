@@ -8,9 +8,9 @@ export function useMonacoTheme() {
   const { theme, accent, editorBg, bgImage } = usePreferences();
   return useMemo(() => {
     const palette = themes[theme];
-    if (!palette.rules && !accent && !editorBg && !bgImage) return palette.base;
+    if (!palette.rules && !palette.colors && !accent && !editorBg && !bgImage) return palette.base;
     const id = `cm-${theme}-${accent.slice(1)}-${editorBg.slice(1)}-${bgImage ? 'img' : 'solid'}`;
-    const colors: Record<string, string> = {};
+    const colors: Record<string, string> = { ...(palette.colors || {}) };
     const bg = editorBg || palette.vars?.['--vs-editor'];
     if (bgImage) { colors['editor.background'] = '#00000000'; colors['minimap.background'] = '#00000000'; colors['editorGutter.background'] = '#00000000'; } else if (bg) colors['editor.background'] = bg;
     if (palette.vars?.['--vs-selection']) colors['editor.selectionBackground'] = palette.vars['--vs-selection'];

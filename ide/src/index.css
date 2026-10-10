@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('./fonts/inter-latin-wght-normal.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
 /*
  * Sistema visual da IDE, no estilo do VS Code.
  * Todas as cores vêm das variáveis --vs-*; os três temas (escuro "Dark+",
@@ -350,3 +352,15 @@ html.has-bg-image #root { position: relative; z-index: 1; }
   select.field { padding-right: 8px; }
 }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Acabamento do Code Sellers: cantos mais redondos, botão com brilho roxo e foco suave (só nos temas da marca). */
+[data-palette^="code-sellers"] .btn-primary, [data-palette^="code-sellers"] .btn-secondary { border-radius: 9px; font-weight: 500; }
+[data-palette^="code-sellers"] .btn-primary { background: linear-gradient(180deg, #8b5cf6, #7c3aed); box-shadow: 0 6px 18px -8px rgba(124, 58, 237, .75); }
+[data-palette^="code-sellers"] .btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #9d75f8, #8b5cf6); }
+[data-palette^="code-sellers"] .field { border-radius: 9px; padding: 5px 9px; }
+[data-palette^="code-sellers"] .field:focus { outline: 2px solid var(--vs-focus); outline-offset: -1px; border-color: transparent; }
+[data-palette^="code-sellers"] .error-banner { border-radius: 10px; }
+[data-palette^="code-sellers"] .kbd { border-radius: 6px; }
+[data-palette^="code-sellers"] .menu-pop { border-radius: 14px; }
+[data-palette^="code-sellers"] .list-row { border-radius: 7px; width: calc(100% - 8px); margin: 0 4px; }
+[data-palette^="code-sellers"] .icon-btn { border-radius: 8px; }

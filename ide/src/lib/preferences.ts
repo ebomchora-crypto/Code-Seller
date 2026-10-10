@@ -9,7 +9,7 @@ export type Preferences = {
   accent: string; editorBg: string; bgIntensity: number; bgBlur: number; sidebarRight: boolean;
 };
 export const defaults: Preferences = {
-  fontSize: 14, wordWrap: cloud, minimap: !cloud, theme: 'vs-dark', tabSize: 2, fontFamily: 'cascadia', lineHeight: 0, lineNumbers: 'on', cursorStyle: 'line', ligatures: true,
+  fontSize: 14, wordWrap: cloud, minimap: !cloud, theme: 'code-sellers', tabSize: 2, fontFamily: 'cascadia', lineHeight: 0, lineNumbers: 'on', cursorStyle: 'line', ligatures: true,
   accent: '', editorBg: '', bgIntensity: 25, bgBlur: 0, sidebarRight: false,
 };
 const hex = (value: unknown) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : '';
@@ -19,7 +19,7 @@ function read(): Preferences {
     const item = JSON.parse(localStorage.getItem('cm-editor-settings') || '{}') || {};
     return {
       fontSize: num(item.fontSize, 10, 28, 14), wordWrap: item.wordWrap === undefined ? defaults.wordWrap : item.wordWrap === true, minimap: item.minimap === undefined ? defaults.minimap : item.minimap !== false,
-      theme: themeNames.includes(item.theme) ? item.theme : 'vs-dark', tabSize: [2, 4, 8].includes(item.tabSize) ? item.tabSize : 2,
+      theme: themeNames.includes(item.theme) ? item.theme : 'code-sellers', tabSize: [2, 4, 8].includes(item.tabSize) ? item.tabSize : 2,
       fontFamily: item.fontFamily in fontFamilies ? item.fontFamily : 'cascadia', lineHeight: num(item.lineHeight, 0, 40, 0),
       lineNumbers: ['on', 'off', 'relative'].includes(item.lineNumbers) ? item.lineNumbers : 'on', cursorStyle: ['line', 'block', 'underline'].includes(item.cursorStyle) ? item.cursorStyle : 'line',
       ligatures: item.ligatures !== false, accent: hex(item.accent), editorBg: hex(item.editorBg), bgIntensity: num(item.bgIntensity, 5, 70, 25), bgBlur: num(item.bgBlur, 0, 20, 0),

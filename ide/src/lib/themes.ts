@@ -1,10 +1,47 @@
 // Temas de cores. Os três primeiros vivem em index.css (data-theme); os demais sobrescrevem
 // as variáveis --vs-* do Dark+ e trazem as regras de cor do Monaco.
-export type ThemeName = 'vs-dark' | 'vs' | 'hc-black' | 'monokai' | 'dracula' | 'nord' | 'solarized-dark';
+export type ThemeName = 'code-sellers' | 'code-sellers-light' | 'vs-dark' | 'vs' | 'hc-black' | 'monokai' | 'dracula' | 'nord' | 'solarized-dark';
 export type MonacoRules = { token: string; foreground: string; fontStyle?: string }[];
-type Palette = { label: string; base: 'vs-dark' | 'vs' | 'hc-black'; vars?: Record<string, string>; rules?: MonacoRules; swatch: [string, string, string] };
+type Palette = { label: string; base: 'vs-dark' | 'vs' | 'hc-black'; vars?: Record<string, string>; rules?: MonacoRules; colors?: Record<string, string>; swatch: [string, string, string] };
 
+const UI = "Inter, 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif";
+// Paleta do Code Sellers (roxo sobre fundo quase preto), a mesma do site e do painel.
+const sellersDark: Record<string, string> = {
+  '--vs-font': UI, '--vs-editor': '#0d0a14', '--vs-panel': '#0d0a14', '--vs-tab-active': '#0d0a14', '--vs-sidebar': '#0a0710', '--vs-tab-bar': '#08060d', '--vs-tab-inactive': '#120f1a',
+  '--vs-titlebar': '#08060d', '--vs-titlebar-fg': '#aba5b8', '--vs-activitybar': '#08060d', '--vs-activitybar-fg': '#f6f4fa', '--vs-activitybar-fg-dim': '#736c85', '--vs-activitybar-badge': '#8b5cf6',
+  '--vs-fg': '#d9d4e6', '--vs-fg-muted': '#aba5b8', '--vs-fg-dim': '#736c85', '--vs-fg-strong': '#f6f4fa', '--vs-sidebar-header': '#aba5b8',
+  '--vs-border': '#2a2238', '--vs-border-soft': '#1a1624', '--vs-tab-inactive-fg': '#aba5b8', '--vs-tab-accent': '#a78bfa', '--vs-tab-active-fg': '#f6f4fa',
+  '--vs-statusbar': '#6d28d9', '--vs-statusbar-fg': '#ffffff', '--vs-statusbar-remote': '#8b5cf6', '--vs-statusbar-hover': '#ffffff26',
+  '--vs-list-hover': '#181421', '--vs-list-active': '#241a3d', '--vs-list-focus': '#3b2a6b', '--vs-list-focus-fg': '#ffffff', '--vs-toolbar-hover': '#8b5cf626', '--vs-selection': '#5b3fb066',
+  '--vs-input-bg': '#120f1a', '--vs-input-border': '#2a2238', '--vs-input-fg': '#f6f4fa', '--vs-focus': '#a78bfa',
+  '--vs-btn-bg': '#7c3aed', '--vs-btn-hover': '#8b5cf6', '--vs-btn-fg': '#ffffff', '--vs-btn2-bg': '#1a1624', '--vs-btn2-hover': '#241e31', '--vs-btn2-fg': '#e9e6f0',
+  '--vs-link': '#b79cff', '--vs-badge-bg': '#2a2238', '--vs-badge-fg': '#e9e6f0', '--vs-menu-bg': '#120f1a', '--vs-menu-border': '#2a2238', '--vs-menu-hover': '#2b1f4d', '--vs-quick-bg': '#120f1a',
+  '--vs-shadow': '0 16px 48px -12px #000000cc', '--vs-scroll': '#8b5cf633', '--vs-scroll-hover': '#8b5cf666', '--vs-scroll-active': '#a78bfa88',
+  '--vs-git-modified': '#e2c08d', '--vs-git-added': '#6ee7b7', '--vs-diff-add': '#34d3991f', '--vs-diff-del': '#f871711f',
+};
+const sellersLight: Record<string, string> = {
+  '--vs-font': UI, '--vs-editor': '#ffffff', '--vs-panel': '#fbfafd', '--vs-tab-active': '#ffffff', '--vs-sidebar': '#f5f3fa', '--vs-tab-bar': '#efedf3', '--vs-tab-inactive': '#e9e5f1',
+  '--vs-titlebar': '#efedf3', '--vs-titlebar-fg': '#52525b', '--vs-activitybar': '#efedf3', '--vs-activitybar-fg': '#2b1760', '--vs-activitybar-fg-dim': '#8a82a0', '--vs-activitybar-badge': '#7c3aed',
+  '--vs-fg': '#2f2a3c', '--vs-fg-muted': '#52525b', '--vs-fg-dim': '#8a82a0', '--vs-fg-strong': '#0a0a0c', '--vs-sidebar-header': '#6b6480',
+  '--vs-border': '#ddd7ea', '--vs-border-soft': '#e8e4f0', '--vs-tab-inactive-fg': '#52525b', '--vs-tab-accent': '#7c3aed', '--vs-tab-active-fg': '#0a0a0c',
+  '--vs-statusbar': '#7c3aed', '--vs-statusbar-fg': '#ffffff', '--vs-statusbar-remote': '#5b21b6', '--vs-statusbar-hover': '#ffffff26',
+  '--vs-list-hover': '#ece8f5', '--vs-list-active': '#e4dcf7', '--vs-list-focus': '#7c3aed', '--vs-list-focus-fg': '#ffffff', '--vs-toolbar-hover': '#7c3aed1a', '--vs-selection': '#c9b6f566',
+  '--vs-input-bg': '#ffffff', '--vs-input-border': '#d6cfe6', '--vs-input-fg': '#0a0a0c', '--vs-focus': '#7c3aed',
+  '--vs-btn-bg': '#7c3aed', '--vs-btn-hover': '#6d28d9', '--vs-btn-fg': '#ffffff', '--vs-btn2-bg': '#e9e5f1', '--vs-btn2-hover': '#ddd7ea', '--vs-btn2-fg': '#2f2a3c',
+  '--vs-link': '#6d28d9', '--vs-badge-bg': '#e4dcf7', '--vs-badge-fg': '#4c1d95', '--vs-menu-bg': '#ffffff', '--vs-menu-border': '#ddd7ea', '--vs-menu-hover': '#ece8f5', '--vs-quick-bg': '#ffffff',
+  '--vs-shadow': '0 16px 48px -12px #2b176033', '--vs-scroll': '#7c3aed33', '--vs-scroll-hover': '#7c3aed66', '--vs-scroll-active': '#7c3aed99',
+};
 export const themes: Record<ThemeName, Palette> = {
+  'code-sellers': {
+    label: 'Code Sellers (escuro)', base: 'vs-dark', swatch: ['#0d0a14', '#08060d', '#7c3aed'], vars: sellersDark,
+    colors: { 'editor.background': '#0d0a14', 'editor.lineHighlightBackground': '#181421', 'editorLineNumber.foreground': '#4d4660', 'editorLineNumber.activeForeground': '#b79cff', 'editorCursor.foreground': '#a78bfa', 'editor.selectionBackground': '#5b3fb066', 'editorIndentGuide.background1': '#1f1930', 'editorIndentGuide.activeBackground1': '#3b2a6b', 'editorWidget.background': '#120f1a', 'editorSuggestWidget.background': '#120f1a', 'editorSuggestWidget.selectedBackground': '#2b1f4d', 'minimap.background': '#0d0a14', 'scrollbarSlider.background': '#8b5cf633', 'scrollbarSlider.hoverBackground': '#8b5cf666' },
+    rules: [{ token: 'comment', foreground: '6f6785', fontStyle: 'italic' }, { token: 'keyword', foreground: 'c4a1ff' }, { token: 'string', foreground: '86efac' }, { token: 'number', foreground: 'fbbf77' }, { token: 'type', foreground: '7dd3fc' }, { token: 'identifier', foreground: 'e9e6f0' }, { token: 'tag', foreground: 'f0abfc' }, { token: 'attribute.name', foreground: 'b79cff' }, { token: 'attribute.value', foreground: '86efac' }, { token: 'delimiter', foreground: '9a92b0' }, { token: 'regexp', foreground: 'fda4af' }],
+  },
+  'code-sellers-light': {
+    label: 'Code Sellers (claro)', base: 'vs', swatch: ['#ffffff', '#efedf3', '#7c3aed'], vars: sellersLight,
+    colors: { 'editor.background': '#ffffff', 'editor.lineHighlightBackground': '#f5f3fa', 'editorLineNumber.foreground': '#b5acc8', 'editorLineNumber.activeForeground': '#6d28d9', 'editorCursor.foreground': '#7c3aed', 'editor.selectionBackground': '#c9b6f566', 'editorWidget.background': '#ffffff' },
+    rules: [{ token: 'comment', foreground: '8a82a0', fontStyle: 'italic' }, { token: 'keyword', foreground: '7c3aed' }, { token: 'string', foreground: '15803d' }, { token: 'number', foreground: 'c2410c' }, { token: 'type', foreground: '0369a1' }, { token: 'tag', foreground: 'a21caf' }, { token: 'attribute.name', foreground: '6d28d9' }, { token: 'attribute.value', foreground: '15803d' }],
+  },
   'vs-dark': { label: 'Escuro (Dark+)', base: 'vs-dark', swatch: ['#1e1e1e', '#252526', '#007acc'] },
   vs: { label: 'Claro (Light+)', base: 'vs', swatch: ['#ffffff', '#f3f3f3', '#007acc'] },
   'hc-black': { label: 'Alto contraste', base: 'hc-black', swatch: ['#000000', '#000000', '#f38518'] },
@@ -30,7 +67,7 @@ export const themes: Record<ThemeName, Palette> = {
   },
 };
 export const themeNames = Object.keys(themes) as ThemeName[];
-export const accents = ['#007acc', '#0e9f6e', '#e5484d', '#f5a524', '#a855f7', '#ec4899', '#14b8a6', '#64748b'];
+export const accents = ['#7c3aed', '#007acc', '#0e9f6e', '#e5484d', '#f5a524', '#a855f7', '#ec4899', '#14b8a6', '#64748b'];
 export const fontFamilies: Record<string, { label: string; stack: string }> = {
   cascadia: { label: 'Cascadia Code', stack: "'Cascadia Code', 'Cascadia Mono', Consolas, 'Courier New', monospace" },
   consolas: { label: 'Consolas', stack: "Consolas, 'Courier New', monospace" },
