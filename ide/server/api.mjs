@@ -18,6 +18,7 @@ import { createBackups } from './backups.mjs';
 import { createSites } from './site.mjs';
 import { createAccount, openInBrowser, SUPABASE_ANON_KEY } from './account.mjs';
 import { serveStatic } from './static.mjs';
+import { runAgent } from './agent.mjs';
 
 async function bodyOf(request) {
   if (!request.headers['content-type']?.startsWith('application/json')) throw fail('Envie JSON.', 415);
@@ -54,6 +55,8 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot, acco
   const sites = createSites();
   const configuration = createAiConfig(join(root, 'ai-config.json'), ai);
   let aiBusy = false;
+  const agentBusy = new Set();
+  const approvals = new Map();
   let builds = 0;
   let terminals;
   const server = createServer(async (request, response) => {
@@ -142,7 +145,7 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot, acco
         await repo.get(id);
         const path = join(root, 'conversations', `${id}.json`);
         if (request.method === 'GET') return json(await readFile(path, 'utf8').then(JSON.parse).catch(error => { if (error.code === 'ENOENT') return []; throw error; }));
-        if (request.method === 'POST') { const input = await bodyOf(request); if (!Array.isArray(input.messages) || input.messages.length > 80 || input.messages.some(item => !item || !['user', 'assistant'].includes(item.role) || typeof item.content !== 'string' || item.content.length > 100000)) throw fail('Conversa inválida.'); await mkdir(join(root, 'conversations'), { recursive: true }); await atomicWrite(path, JSON.stringify(input.messages.map(({ role, content }) => ({ role, content })))); return json({ saved: true }); }
+        if (request.method === 'POST') { const input = await bodyOf(request); if (!Array.isArray(input.messages) || input.messages.length > 80 || input.messages.some(item => !item || !['user', 'assistant'].includes(item.role) || typeof item.content !== 'string' || item.content.length > 100000 || (item.tools !== undefined && (!Array.isArray(item.tools) || item.tools.length > 300)))) throw fail('Conversa inválida.'); await mkdir(join(root, 'conversations'), { recursive: true }); await atomicWrite(path, JSON.stringify(input.messages.map(({ role, content, tools }) => ({ role, content, ...(tools ? { tools: tools.slice(0, 300).map(tool => ({ name: String(tool?.name ?? '').slice(0, 30), path: typeof tool?.path === 'string' ? tool.path.slice(0, 500) : undefined, ok: tool?.ok !== false, label: String(tool?.label ?? '').slice(0, 300), added: Number.isFinite(tool?.added) ? tool.added : undefined, removed: Number.isFinite(tool?.removed) ? tool.removed : undefined })) } : {}) })))); return json({ saved: true }); }
       }
       if (parts[3] === 'git' && request.method === 'GET') {
         await repo.get(id);
@@ -186,6 +189,44 @@ export function createApiServer({ root, workspaceRoot, ai = {}, staticRoot, acco
           case 'checkpoint': return json(await repo.checkpoint(id, input.label || 'Checkpoint manual'));
           case 'restore': return json(await repo.restore(id, input.id));
           case 'apply': return json(await repo.apply(id, input));
+          case 'agent': {
+            // Agente de código: a IA trabalha direto nos arquivos da pasta (ler, escrever, editar, apagar, executar comandos).
+            if (parts[4] === 'approve') {
+              const pending = approvals.get(String(input.id));
+              if (!pending || pending.project !== id) throw fail('Este pedido de permissão já expirou.', 404);
+              pending.resolve(input.allow === true); return json({ ok: true });
+            }
+            const own = await configuration.get(); const useOwn = Boolean(own.baseUrl && own.model);
+            if (!useOwn && !(await account.status()).signedIn) throw fail('Entre com a sua conta do Code Sellers (botão "Entrar" no assistente) para usar a IA.', 503);
+            if (!['agent', 'ask', 'plan'].includes(input.mode) || typeof input.prompt !== 'string' || !input.prompt.trim() || input.prompt.length > 30000) throw fail('Pedido de IA inválido.');
+            if (agentBusy.has(id)) throw fail('Aguarde a tarefa atual terminar (ou clique em Parar).', 429);
+            const project = await repo.get(id);
+            const getAi = async () => useOwn
+              ? { url: `${own.baseUrl.replace(/\/$/, '')}/chat/completions`, model: own.model, headers: { 'Content-Type': 'application/json', ...(own.key ? { Authorization: `Bearer ${own.key}` } : {}) } }
+              : { account: true, maxTokens: 16000, url: `${account.supabaseUrl}/functions/v1/ide-ai`, model: 'ide-ai', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await account.accessToken()}`, apikey: SUPABASE_ANON_KEY } };
+            agentBusy.add(id);
+            const controller = new AbortController();
+            response.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' });
+            const emit = event => { if (!response.destroyed) response.write(`data: ${JSON.stringify(event)}\n\n`); };
+            response.on('close', () => controller.abort());
+            const approve = (callId, command) => new Promise(resolve => {
+              if (input.autoApprove === true && project.trusted) return resolve(true);
+              const finish = value => { clearTimeout(timer); controller.signal.removeEventListener('abort', onAbort); approvals.delete(callId); resolve(value); };
+              const onAbort = () => finish(false);
+              const timer = setTimeout(() => finish(false), 10 * 60 * 1000);
+              controller.signal.addEventListener('abort', onAbort, { once: true });
+              approvals.set(callId, { project: id, resolve: finish });
+              emit({ type: 'approval', id: callId, command, trusted: Boolean(project.trusted) });
+            });
+            try {
+              const result = await runAgent({ root: repo.workspace(id), projectId: id, projectName: project.name, mode: input.mode, prompt: input.prompt, history: Array.isArray(input.messages) ? input.messages : [], activeFile: typeof input.activeFile === 'string' ? input.activeFile : undefined, getAi, emit, signal: controller.signal, backups, trash, approve });
+              emit({ type: 'done', text: result.text, changed: result.changed, tools: result.tools });
+            } catch (error) {
+              emit({ type: 'error', message: error.name === 'AbortError' || controller.signal.aborted ? 'Interrompido. O que já foi feito continua salvo nos arquivos.' : error.status ? error.message : 'A IA falhou no meio da tarefa. O que já foi feito continua salvo nos arquivos.' });
+              if (!error.status && error.name !== 'AbortError') console.error(error);
+            } finally { agentBusy.delete(id); response.end(); }
+            return;
+          }
           case 'chat': {
             const own = await configuration.get(); const token = own.baseUrl && own.model ? null : await account.accessToken();
             if (!token && (!own.baseUrl || !own.model)) throw fail('Entre com a sua conta do Code Sellers (botão "Entrar" no assistente) para usar a IA.', 503);

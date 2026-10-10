@@ -161,6 +161,12 @@ function ProjectWorkbench({ id }: { id: string }) {
       session.replace(project); useEditorStore.getState().syncFiles(project.files, session.project.id);
     } finally { if (useEditorStore.getState().projectId === session.project.id) useEditorStore.setState({ locked: previousLock }); }
   }
+  // A IA mexeu direto nos arquivos da pasta do projeto: traz o estado novo para o editor.
+  async function reloadFromDisk() {
+    if (!session) return;
+    const project = await api<ProjectDetail>(`/projects/${id}`);
+    session.replace(project); useEditorStore.getState().syncFiles(project.files, session.project.id);
+  }
   // Salvar = gravar o rascunho e, no site, publicar (monta as páginas e deixa o site no ar).
   async function saveNow() {
     if (!session) return;
@@ -275,7 +281,7 @@ function ProjectWorkbench({ id }: { id: string }) {
         {tab === 'files' && <div className="flex-1 min-h-0" style={{ background: 'var(--vs-sidebar)' }}><Sidebar disabled={busy} markers={markers} projectName={session.project.name} onOpenFile={() => setTab('editor')} onCreate={folder => void newFile(folder)} onRename={(path, folder) => void renamePath(path, folder)} onDelete={(path, folder) => void deletePath(path, folder)} /></div>}
         {tab === 'editor' && <><EditorTabs markers={markers} onSplit={() => undefined} onQuickOpen={() => setPalette('files')} /><Breadcrumbs path={active} /><div className="flex flex-col flex-1 min-h-0"><Editor projectId={session.project.id} /></div></>}
         {tab === 'preview' && !noPreview && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando…</p>}><Preview project={session.project} files={session.files} /></Suspense></div>}
-        {tab === 'ai' && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}>{cloud ? <CloudAssistant key={id} session={session} /> : <ChatPanel key={id} session={session} apply={apply} />}</Suspense></div>}
+        {tab === 'ai' && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}>{cloud ? <CloudAssistant key={id} session={session} /> : <ChatPanel key={id} session={session} onChanged={reloadFromDisk} />}</Suspense></div>}
         {tab === 'search' && <div className="flex-1 min-h-0"><Suspense fallback={null}><SearchPanel session={session} apply={apply} /></Suspense></div>}
       </main>
       <nav className="shrink-0 flex safe-bottom" style={{ background: 'var(--vs-activitybar)', borderTop: '1px solid var(--vs-border-soft)' }} aria-label="Seções">
@@ -329,7 +335,7 @@ function ProjectWorkbench({ id }: { id: string }) {
         <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando runtime…</p>}><Preview project={session.project} files={session.files} /></Suspense></div>}
       {chat && <div className={`relative shrink-0 min-h-0 ${sidebarRight ? 'border-r' : 'border-l'}`} style={{ width: chatWidth, borderColor: 'var(--vs-border)' }}>
         <Sash orientation="vertical" invert={!sidebarRight} edge={sidebarRight ? 'end' : 'start'} label="Redimensionar assistente" value={chatWidth} min={280} max={700} onChange={setChatWidth} onCommit={value => patchLayout({ chatWidth: value })} />
-        <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}>{cloud ? <CloudAssistant key={id} session={session} /> : <ChatPanel key={id} session={session} apply={apply} />}</Suspense></div>}
+        <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}>{cloud ? <CloudAssistant key={id} session={session} /> : <ChatPanel key={id} session={session} onChanged={reloadFromDisk} />}</Suspense></div>}
     </div>
     <StatusBar publish={cloud ? { published: publishedFiles.current === session.files && session.project.published !== false, url: session.project.publicUrl } : undefined} status={session.status} busy={busy} active={active} git={git} markers={markers} tabSize={tabSize} onSave={save} onProblems={() => setBottom('problems')} onGit={() => showView('git')} />
     {history && <Suspense fallback={null}><HistoryPanel session={session} busy={busy} close={() => setHistory(false)} checkpoint={() => void checkpoint()} restore={checkpointId => void run(async () => { await session.flush(); const project = await api<ProjectDetail>(`/projects/${id}/restore`, 'POST', { id: checkpointId }); session.replace(project); useEditorStore.getState().syncFiles(project.files, session.project.id); })} /></Suspense>}

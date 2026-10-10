@@ -20,8 +20,8 @@ async function planUsage(userId: string, email: string | null | undefined): Prom
 
 const AI_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
 const MODEL = 'glm-5.3-flash'
-const MAX_MESSAGES = 30
-const MAX_CHARS = 200_000
+const MAX_MESSAGES = 400
+const MAX_CHARS = 700_000
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     const upstream = await fetch(AI_URL, {
       method: 'POST', signal: AbortSignal.timeout(170_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: MODEL, messages, stream: true, max_tokens: 8000 }),
+      body: JSON.stringify({ model: MODEL, messages, stream: true, max_tokens: 16000 }),
     })
     if (!upstream.ok || !upstream.body) { await upstream.body?.cancel(); return json({ error: 'A IA não respondeu agora. Tente de novo em instantes.' }, 502) }
     return new Response(upstream.body, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store' } })

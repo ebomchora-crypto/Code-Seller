@@ -1,4 +1,5 @@
-export interface Message { role: 'user' | 'assistant'; content: string }
+import type { ToolRecord } from './agent';
+export interface Message { role: 'user' | 'assistant'; content: string; tools?: ToolRecord[] }
 export async function streamChat(id: string, body: unknown, signal: AbortSignal, onChunk: (text: string) => void): Promise<string> {
   const response = await fetch(`/api/projects/${id}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal });
   if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'Erro de IA.'); }

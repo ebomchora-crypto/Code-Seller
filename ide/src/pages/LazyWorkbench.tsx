@@ -47,7 +47,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const mobile = useIsMobile();
   const [tab, setTab] = useState<'files' | 'editor' | 'search' | 'terminal' | 'site' | 'ai'>('files');
   const [burger, setBurger] = useState<{ x: number; y: number } | null>(null);
-  const { status, error, setError, flush, open, loadDir, writeFile, disk, reload, loadMore } = lazyProject;
+  const { status, error, setError, flush, open, loadDir, disk, reload, loadMore } = lazyProject;
   const active = useEditorStore(state => state.activeFileId);
   const tabSize = usePreferences(state => state.tabSize);
   const sidebarRight = usePreferences(state => state.sidebarRight);
@@ -167,7 +167,12 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
   const openFiles = useEditorStore(state => state.openFiles);
   // O assistente enxerga os arquivos abertos (e só altera o arquivo ativo): o resto da pasta fica no disco.
   const session = useMemo(() => ({ project, status, error, get files() { return Object.fromEntries(useEditorStore.getState().openFiles.filter(file => (!file.kind || file.kind === 'text') && typeof file.content === 'string').map(file => [file.id, file.content as string])); }, flush, replace: () => undefined, onChange: () => undefined }) as never, [project, status, error, flush, openFiles]);
-  const applyFiles = async (next: Record<string, string>) => { const current = (session as { files: Record<string, string> }).files; for (const [path, content] of Object.entries(next)) if (current[path] !== content) await writeFile(path, content); };
+  // A IA mexeu em arquivos da pasta: recarrega os que estão abertos e atualiza as pastas da árvore.
+  const agentChanged = async (paths: string[]) => {
+    const opened = new Set(useEditorStore.getState().openFiles.map(file => file.id));
+    for (const path of paths) if (opened.has(path)) { try { await reload(path); } catch { /* arquivo apagado ou movido */ } }
+    for (const dir of new Set(['/', ...paths.map(path => path.slice(0, path.lastIndexOf('/')) || '/')])) void loadDir(dir);
+  };
   const commands = [
     { label: 'Arquivo: novo arquivo', action: () => void newFile() }, { label: 'Arquivo: renomear arquivo ativo', action: () => void renamePath() }, { label: 'Arquivo: excluir arquivo ativo', action: () => void deletePath() },
     { label: 'Executar: projeto', action: () => void runProject() }, { label: 'Visualização: alternar', action: () => setPreview(value => !value) }, { label: 'Arquivo: salvar', action: () => void flush() }, { label: 'Arquivo: restaurar versão anterior…', action: () => void showVersions() }, { label: 'Executar: arquivo atual', action: runFile }, { label: 'Terminal: abrir', action: () => setBottom('terminal') }, { label: 'Problemas: abrir', action: () => setBottom('problems') },
@@ -206,7 +211,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
         {tab === 'search' && <div className="flex-1 min-h-0"><Suspense fallback={null}><LazySearchPanel projectId={id} onOpen={(path, line) => { setTab('editor'); void openAt(path, line); }} /></Suspense></div>}
         {tab === 'site' && <div className="flex-1 min-h-0"><Suspense fallback={null}><FolderPreview projectId={id} target={previewTarget} reloadKey={reloadKey} running={running} onUrl={url => { setPreviewTarget({ kind: 'url', url }); setReloadKey(value => value + 1); }} /></Suspense></div>}
         {tab === 'terminal' && <div className="flex-1 min-h-0 relative"><Suspense fallback={null}><div className="absolute inset-0"><TerminalPanel key={id} projectId={id} /></div></Suspense></div>}
-        {tab === 'ai' && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}><ChatPanel key={id} session={session} modes={['ask', 'plan', 'edit']} apply={applyFiles} /></Suspense></div>}
+        {tab === 'ai' && <div className="flex-1 min-h-0"><Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}><ChatPanel key={id} session={session} onChanged={agentChanged} onOpen={path => void open(path)} /></Suspense></div>}
       </main>
       <nav className="shrink-0 flex safe-bottom" style={{ background: 'var(--vs-activitybar)', borderTop: '1px solid var(--vs-border-soft)' }} aria-label="Seções">
         {tabs.map(({ id: key, label, Icon }) => <button key={key} aria-label={label} aria-current={tab === key} className="flex-1 h-14 flex flex-col items-center justify-center gap-0.5 text-[11px]" style={{ color: tab === key ? 'var(--vs-fg-strong)' : 'var(--vs-activitybar-fg-dim)', borderTop: tab === key ? '2px solid var(--vs-focus)' : '2px solid transparent' }} onClick={() => setTab(key)}><Icon size={20} strokeWidth={1.6} />{label}</button>)}
@@ -252,7 +257,7 @@ export default function LazyWorkbench({ project }: { project: ProjectDetail }) {
         <Suspense fallback={null}><FolderPreview projectId={id} target={previewTarget} reloadKey={reloadKey} running={running} onUrl={url => { setPreviewTarget({ kind: 'url', url }); setReloadKey(value => value + 1); }} /></Suspense></div>}
       {chat && <div className={`relative shrink-0 min-h-0 ${sidebarRight ? 'border-r' : 'border-l'}`} style={{ width: chatWidth, borderColor: 'var(--vs-border)' }}>
         <Sash orientation="vertical" invert={!sidebarRight} edge={sidebarRight ? 'end' : 'start'} label="Redimensionar assistente" value={chatWidth} min={280} max={700} onChange={setChatWidth} onCommit={value => patchLayout({ chatWidth: value })} />
-        <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}><ChatPanel key={id} session={session} modes={['ask', 'plan', 'edit']} apply={applyFiles} /></Suspense></div>}
+        <Suspense fallback={<p className="p-5 text-sm text-vs-dim">Carregando assistente…</p>}><ChatPanel key={id} session={session} onChanged={agentChanged} onOpen={path => void open(path)} /></Suspense></div>}
     </div>
     <StatusBar status={status} busy={busy} active={active} git={git} markers={markers} tabSize={tabSize} onSave={() => void flush()} onProblems={() => setBottom('problems')} onGit={() => showView('git')} />
     {palette && <Suspense fallback={null}><CommandPalette title={palette === 'files' ? 'Abrir arquivo…' : palette === 'versions' ? 'Restaurar versão anterior deste arquivo…' : 'Executar comando…'} close={() => setPalette(null)} items={palette === 'files' ? [] : palette === 'versions' ? versionItems : commands}

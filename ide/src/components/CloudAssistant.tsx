@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Send, Square, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import AiPromptBox from './AiPromptBox';
 import { api, ProjectDetail } from '../lib/api';
 import { editWithAssistant } from '../lib/cloud/assistant';
 import { useEditorStore } from '../store/editorStore';
@@ -34,10 +35,8 @@ export default function CloudAssistant({ session }: { session: Autosave }) {
       {partial && <p className="text-xs whitespace-pre-wrap text-vs-muted break-words">{partial}</p>}
       {error && <p className="error-banner" role="alert">{error}</p>}
     </div>
-    <div className="p-3 border-t border-vs-border">
-      <textarea className="field w-full text-xs resize-none" rows={3} placeholder="O que vamos mudar no site?" value={prompt} maxLength={4000} onChange={e => setPrompt(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void send(); } }} />
-      <div className="flex items-center justify-between mt-2"><span className="text-[10px] text-vs-dim">Ctrl + Enter para enviar</span>
-        {busy ? <button className="btn-secondary text-xs" onClick={() => abort.current?.abort()}><Square size={12} /> Parar</button> : <button className="btn-primary text-xs" disabled={!prompt.trim()} onClick={() => void send()}><Send size={13} /> Enviar</button>}</div>
+    <div className="p-3">
+      <AiPromptBox value={prompt} onChange={setPrompt} onSend={() => void send()} onStop={() => abort.current?.abort()} busy={busy} canSend={!!prompt.trim()} maxLength={4000} placeholder="O que vamos mudar no site?" footnote="Enter envia · Shift+Enter quebra a linha" />
     </div>
   </aside>;
 }
