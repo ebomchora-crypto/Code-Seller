@@ -18,6 +18,13 @@ else {
     const node = app.isPackaged ? process.execPath : process.env.CODE_MAKERS_NODE;
     if (!node) throw new Error('Use npm run desktop para iniciar o aplicativo.');
     backend = fork(join(base, 'server', 'desktop-server.mjs'), [], { execPath: node, cwd: base, env: { ...process.env, ELECTRON_RUN_AS_NODE: app.isPackaged ? '1' : undefined, CODE_MAKERS_DATA: data }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
+    // Janela de escolher pasta: pedida pelo servidor local, aberta aqui com a janela nativa do Windows.
+    backend.on('message', async message => {
+      if (message?.type !== 'pick-folder') return;
+      let path = '';
+      try { const result = await dialog.showOpenDialog(window ?? undefined, { title: String(message.title || 'Escolher pasta'), properties: ['openDirectory', 'createDirectory'], buttonLabel: 'Selecionar pasta' }); path = result.canceled ? '' : result.filePaths[0] || ''; } catch { path = ''; }
+      if (backend && backend.connected) backend.send({ type: 'picked', id: message.id, path });
+    });
     backend.stderr.on('data', chunk => appendFileSync(join(data, 'desktop.log'), chunk));
     home = await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('O servidor local não iniciou.')), 30000);

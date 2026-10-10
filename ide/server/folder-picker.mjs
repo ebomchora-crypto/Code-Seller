@@ -2,7 +2,19 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fail } from './repository.mjs';
 let picking = false;
+// No app instalado o servidor roda como processo filho do Electron: quem abre a janela de pastas do Windows é o
+// próprio app (dialog.showOpenDialog), que é confiável e aparece por cima da IDE. O PowerShell fica só de reserva.
+const waiting = new Map(); let counter = 0;
+if (process.send) process.on('message', message => { if (message?.type === 'picked' && waiting.has(message.id)) { waiting.get(message.id)(String(message.path ?? '')); waiting.delete(message.id); } });
+function askDesktop(description) {
+  return new Promise((resolve, reject) => {
+    const id = ++counter; const timer = setTimeout(() => { waiting.delete(id); reject(new Error('timeout')); }, 10 * 60_000); timer.unref?.();
+    waiting.set(id, value => { clearTimeout(timer); resolve(value); });
+    process.send({ type: 'pick-folder', id, title: description });
+  });
+}
 export async function pickFolder(description = 'Abrir pasta na Code Makers IDE') {
+  if (process.send) { if (picking) throw fail('A janela de seleção de pasta já está aberta.', 409); picking = true; try { return (await askDesktop(description)).trim(); } catch { throw fail('Não foi possível abrir a janela de pastas.', 400); } finally { picking = false; } }
   if (process.platform !== 'win32') throw fail('Informe o caminho completo da pasta neste sistema.', 400);
   if (picking) throw fail('A janela de seleção de pasta já está aberta.', 409);
   picking = true;
