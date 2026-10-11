@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
-import { MapPin, Phone } from 'lucide-react'
+import { MapPin, Phone, Repeat } from 'lucide-react'
+import { useSubscriptionIndex } from '@/hooks/useSubscriptionIndex'
+import { formatMoney } from '@/utils/currency'
 import { TagBadge } from '@/components/crm/TagBadge'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { formatRelativeDate } from '@/utils/date'
@@ -14,6 +16,8 @@ interface ContactCardProps {
 export function ContactCard({ contact, dragHandleProps, isDragging = false }: ContactCardProps) {
   const location = [contact.city, contact.state].filter(Boolean).join('/')
   const created = formatRelativeDate(contact.created_at)
+  const subscriptions = useSubscriptionIndex().filter((item) => item.contact_id === contact.id)
+  const perMonth = subscriptions.reduce<Record<string, number>>((sum, item) => ({ ...sum, [item.currency]: (sum[item.currency] ?? 0) + item.amount }), {})
 
   return (
     <Link
@@ -49,6 +53,12 @@ export function ContactCard({ contact, dragHandleProps, isDragging = false }: Co
             </span>
           )}
         </div>
+      )}
+
+      {subscriptions.length > 0 && (
+        <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[11.5px] font-semibold text-emerald-600 dark:text-emerald-400" title="Mensalidade ativa">
+          <Repeat className="size-3" /> {Object.entries(perMonth).map(([currency, value]) => `${formatMoney(value, currency, { decimals: false })}/mês`).join(' + ')}
+        </p>
       )}
 
       {contact.tags && contact.tags.length > 0 && (

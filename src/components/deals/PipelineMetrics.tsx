@@ -1,4 +1,8 @@
-import { Briefcase, Receipt, Target, Wallet, type LucideIcon } from 'lucide-react'
+import { Briefcase, Receipt, Repeat, Target, Wallet, type LucideIcon } from 'lucide-react'
+import { useSubscriptionIndex } from '@/hooks/useSubscriptionIndex'
+import { formatMoney, getViewCurrency } from '@/utils/currency'
+import { monthlyRecurring } from '@/utils/subscriptions'
+import { localDay } from '@/utils/saleDate'
 import { useCountUp } from '@/hooks/useCountUp'
 import { formatCurrency } from '@/utils/deals'
 import type { PipelineMetrics as PipelineMetricsType } from '@/types'
@@ -28,13 +32,27 @@ export function PipelineMetrics({ metrics, activeDealsCount }: PipelineMetricsPr
   const activeCount = useCountUp(activeDealsCount)
   const conversionRate = useCountUp(metrics.conversion_rate)
   const avgDealValue = useCountUp(metrics.avg_deal_value)
+  const subscriptions = useSubscriptionIndex()
+  const recurring = monthlyRecurring(subscriptions, localDay(new Date()))
+  const view = getViewCurrency()
+  const recurringCurrency = recurring[view] !== undefined ? view : Object.keys(recurring)[0] ?? view
+  const recurringCount = subscriptions.length
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+    <div className={`grid grid-cols-2 gap-3 sm:gap-4 ${recurringCount > 0 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
       <MetricCard label="Em aberto" value={formatCurrency(openValue)} caption="Soma dos negócios em andamento" icon={Wallet} tone="#a78bfa" />
       <MetricCard label="Negócios ativos" value={Math.round(activeCount).toString()} caption="Em andamento agora" icon={Briefcase} tone="#818cf8" />
       <MetricCard label="Conversão" value={`${Math.round(conversionRate)}%`} caption="Ganhos sobre os já decididos" icon={Target} tone="#e879f9" />
       <MetricCard label="Ticket médio" value={formatCurrency(avgDealValue)} caption="Média dos negócios ganhos" icon={Receipt} tone="#34d399" />
+      {recurringCount > 0 && (
+        <MetricCard
+          label="Mensalidades"
+          value={`${formatMoney(recurring[recurringCurrency] ?? 0, recurringCurrency, { decimals: false })}/mês`}
+          caption={`${recurringCount} ${recurringCount === 1 ? 'cliente paga' : 'clientes pagam'} todo mês`}
+          icon={Repeat}
+          tone="#22c55e"
+        />
+      )}
     </div>
   )
 }

@@ -28,6 +28,7 @@ import { PanelHeader } from '@/components/ui/PanelHeader'
 import { whatsappUrl } from '@/utils/contactLinks'
 import { Modal } from '@/components/ui/Modal'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { SubscriptionCard } from '@/components/subscriptions/SubscriptionCard'
 import { deleteDeal } from '@/services/supabase/deals'
 import { getContacts } from '@/services/supabase/contacts'
 import { DEAL_STAGES, formatCurrency, getStageConfig } from '@/utils/deals'
@@ -335,6 +336,8 @@ export function DealDetail({
               </div>
             )}
           </Card>
+
+          <SubscriptionCard dealId={deal.id} refreshKey={deal.updated_at} onEdit={onEdit} />
 
           <Card>
             <PanelHeader title="Contato" />

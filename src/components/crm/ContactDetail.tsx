@@ -26,6 +26,7 @@ import { StageBadge } from '@/components/deals/StageBadge'
 import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
 import { siteUrl, whatsappUrl } from '@/utils/contactLinks'
 import { Modal } from '@/components/ui/Modal'
+import { SubscriptionCard } from '@/components/subscriptions/SubscriptionCard'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { deleteContact } from '@/services/supabase/contacts'
 import { getUnlinkedDeals, linkDealToContact } from '@/services/supabase/deals'
@@ -296,6 +297,8 @@ export function ContactDetail({
               onCreate={onCreateTag}
             />
           </Card>
+
+          <SubscriptionCard contactId={contact.id} refreshKey={contact.updated_at} onEdit={onEdit} />
 
           <Card>
             <PanelHeader title="Negócios" subtitle="Vinculados a este contato" />

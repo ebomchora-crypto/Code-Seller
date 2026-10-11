@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Repeat } from 'lucide-react'
+import { useSubscriptionIndex } from '@/hooks/useSubscriptionIndex'
+import { formatMoney } from '@/utils/currency'
 import { InitialsAvatar } from '@/components/ui/InitialsAvatar'
 import { formatCurrency, getStageConfig } from '@/utils/deals'
 import type { Deal } from '@/types'
@@ -23,6 +25,7 @@ export function DealCard({ deal, isDragging = false }: DealCardProps) {
   const config = getStageConfig(deal.stage)
   const showService = deal.service && deal.service.trim().toLowerCase() !== deal.title.trim().toLowerCase()
   const late = deal.expected_close_date ? isLate(deal.expected_close_date) : false
+  const subscription = useSubscriptionIndex().find((item) => item.deal_id === deal.id)
 
   return (
     <Link
@@ -52,6 +55,12 @@ export function DealCard({ deal, isDragging = false }: DealCardProps) {
       <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]" title={`${deal.probability}% de chance de fechar`}>
         <div className="h-full rounded-full" style={{ width: `${deal.probability}%`, backgroundColor: config.color }} />
       </div>
+
+      {subscription && (
+        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[11.5px] font-semibold text-emerald-600 dark:text-emerald-400" title="Mensalidade ativa">
+          <Repeat className="size-3" /> {formatMoney(subscription.amount, subscription.currency, { decimals: false })}/mês
+        </p>
+      )}
 
       {(deal.contact || deal.expected_close_date) && (
         <div className="mt-3 flex flex-col gap-1.5 text-[12px]">

@@ -45,7 +45,11 @@ export interface Transaction {
 export interface Receivable {
   id: string
   user_id: string
-  deal_id: string
+  /** Vazio nas cobranças de mensalidade sem negócio (ligadas só ao contato). */
+  deal_id: string | null
+  /** Cobrança de uma mensalidade (e qual parcela). */
+  subscription_id?: string | null
+  installment?: number | null
   contact_id: string | null
   description: string
   amount: number

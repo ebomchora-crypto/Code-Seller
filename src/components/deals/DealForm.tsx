@@ -9,8 +9,11 @@ import { getContactById, getContacts } from '@/services/supabase/contacts'
 import { createDeal, updateDeal } from '@/services/supabase/deals'
 import { PAYMENT_METHOD_LABELS } from '@/utils/financial'
 import { DEAL_STAGES, getStageConfig } from '@/utils/deals'
-import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type Contact, type Deal, type DealStage, type PaymentMethod } from '@/types'
+import { ORIGIN_SUGGESTIONS, SERVICE_SUGGESTIONS, type ClientSubscription, type Contact, type Deal, type DealStage, type PaymentMethod, type SubscriptionDraft } from '@/types'
 import { startFollowUp } from '@/services/supabase/followup'
+import { getSubscriptions, syncSubscription } from '@/services/supabase/subscriptions'
+import { SubscriptionFields } from '@/components/subscriptions/SubscriptionFields'
+import { draftFromSubscription, emptyDraft, suggestedStart, validateDraft } from '@/utils/subscriptions'
 import { dayToTimestamp, localDay } from '@/utils/saleDate'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { currencyOf, getViewCurrency, type CurrencyCode } from '@/utils/currency'
@@ -72,6 +75,12 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
   const today = localDay(new Date())
   // Virando Ganho agora: já recebeu ou ainda vai receber? (vai para o Financeiro)
   const [received, setReceived] = useState(false)
+  // Mensalidade do negócio: já vem preenchida se o negócio tem uma.
+  const [subscription, setSubscription] = useState<SubscriptionDraft>(() => emptyDraft(suggestedStart(initialWonDate(deal))))
+  const [existingSubscription, setExistingSubscription] = useState<ClientSubscription | null>(null)
+  const [startTouched, setStartTouched] = useState(false)
+  const [showSubscriptionErrors, setShowSubscriptionErrors] = useState(false)
+  const subscriptionErrors = validateDraft(subscription)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix')
 
   const [contactOptions, setContactOptions] = useState<Contact[]>([])
@@ -126,8 +135,28 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (!deal) return
+    let cancelled = false
+    getSubscriptions({ dealId: deal.id })
+      .then((list) => {
+        if (cancelled || list.length === 0) return
+        setExistingSubscription(list[0])
+        setSubscription(draftFromSubscription(list[0]))
+        setStartTouched(true)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [deal])
+
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
+    // A 1ª cobrança acompanha o dia da venda/fechamento até a pessoa escolher a data.
+    if ((key === 'wonDate' || key === 'expectedCloseDate') && !startTouched && typeof value === 'string' && value) {
+      setSubscription((current) => ({ ...current, startDate: suggestedStart(value) }))
+    }
   }
 
   function handleStageChange(stage: DealStage) {
@@ -176,7 +205,8 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
     }
 
     setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    setShowSubscriptionErrors(true)
+    return Object.keys(nextErrors).length === 0 && Object.keys(subscriptionErrors).length === 0
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -210,6 +240,15 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
 
       const payment = becomingWon ? { received, method: paymentMethod } : undefined
       const result = deal ? await updateDeal(deal.id, payload, payment) : await createDeal(payload, payment)
+      let subscriptionFailed = false
+      if (subscription.enabled || existingSubscription) {
+        try {
+          await syncSubscription(subscription, { dealId: result.id, contactId: result.contact_id, currency: form.currency, existing: existingSubscription })
+        } catch (error) {
+          subscriptionFailed = true
+          toast.error(error instanceof Error ? `O negócio foi salvo, mas a mensalidade não: ${error.message}` : 'O negócio foi salvo, mas a mensalidade não.')
+        }
+      }
       let scheduled = 0
       if (!deal && payload.status === 'open' && payload.contact_id) {
         // Negócio novo com contato: agenda o follow-up automático (se ligado).
@@ -218,7 +257,7 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
           deal: { id: result.id, title: result.title, value: result.value },
         }).catch(() => 0)
       }
-      toast.success(
+      if (!subscriptionFailed) toast.success(
         becomingWon
           ? received
             ? 'Venda registrada. O valor entrou no Financeiro como recebido.'
@@ -389,6 +428,16 @@ export function DealForm({ deal, defaultContactId, defaultContactName, onSuccess
           </p>
         </div>
       )}
+
+      <SubscriptionFields
+        draft={subscription}
+        onChange={(next) => {
+          if (next.startDate !== subscription.startDate) setStartTouched(true)
+          setSubscription(next)
+        }}
+        currency={form.currency}
+        errors={showSubscriptionErrors ? subscriptionErrors : {}}
+      />
 
       <Input
         label="Nome do negócio"

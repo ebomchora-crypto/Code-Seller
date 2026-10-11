@@ -8,6 +8,11 @@ import { ChoiceField } from '@/components/ui/ChoiceField'
 import { CONTACT_STATUS_COLORS } from '@/components/crm/statusColors'
 import { mergeChoices } from '@/utils/choiceList'
 import { createContact, getContactFacets, updateContact } from '@/services/supabase/contacts'
+import { getSubscriptions, syncSubscription } from '@/services/supabase/subscriptions'
+import { SubscriptionFields } from '@/components/subscriptions/SubscriptionFields'
+import { draftFromSubscription, emptyDraft, suggestedStart, validateDraft } from '@/utils/subscriptions'
+import { localDay } from '@/utils/saleDate'
+import { currencyOf, getViewCurrency, type CurrencyCode } from '@/utils/currency'
 import {
   BRAZILIAN_STATES,
   CONTACT_STATUS_LABELS,
@@ -15,7 +20,9 @@ import {
   NICHE_SUGGESTIONS,
   ORIGIN_SUGGESTIONS,
   type Contact,
+  type ClientSubscription,
   type ContactStatus,
+  type SubscriptionDraft,
 } from '@/types'
 
 interface ContactFormProps {
@@ -69,6 +76,29 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
   const [submitting, setSubmitting] = useState(false)
   const [nicheOptions, setNicheOptions] = useState<string[]>(NICHE_SUGGESTIONS)
   const [originOptions, setOriginOptions] = useState<string[]>(ORIGIN_SUGGESTIONS)
+  // Mensalidade do cliente (a que não vem de um negócio). Em contato existente, carrega a que já tem.
+  const [subscription, setSubscription] = useState<SubscriptionDraft>(() => emptyDraft(suggestedStart(localDay(new Date()))))
+  const [subscriptionCurrency, setSubscriptionCurrency] = useState<CurrencyCode>(getViewCurrency())
+  const [existingSubscription, setExistingSubscription] = useState<ClientSubscription | null>(null)
+  const subscriptionErrors = validateDraft(subscription)
+  const [showSubscriptionErrors, setShowSubscriptionErrors] = useState(false)
+
+  useEffect(() => {
+    if (!contact) return
+    let cancelled = false
+    getSubscriptions({ contactId: contact.id })
+      .then((list) => {
+        const own = list.find((item) => !item.deal_id)
+        if (cancelled || !own) return
+        setExistingSubscription(own)
+        setSubscription(draftFromSubscription(own))
+        setSubscriptionCurrency(currencyOf(own.currency))
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [contact])
 
   // Também oferece nichos/origens que a pessoa já usou antes.
   useEffect(() => {
@@ -101,7 +131,8 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
     }
 
     setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    setShowSubscriptionErrors(true)
+    return Object.keys(nextErrors).length === 0 && Object.keys(subscriptionErrors).length === 0
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -125,7 +156,16 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
       }
 
       const result = contact ? await updateContact(contact.id, payload) : await createContact(payload)
-      toast.success(contact ? 'Contato atualizado com sucesso.' : 'Contato criado com sucesso.')
+      let subscriptionFailed = false
+      if (subscription.enabled || existingSubscription) {
+        try {
+          await syncSubscription(subscription, { contactId: result.id, currency: subscriptionCurrency, existing: existingSubscription })
+        } catch (error) {
+          subscriptionFailed = true
+          toast.error(error instanceof Error ? `O contato foi salvo, mas a mensalidade não: ${error.message}` : 'O contato foi salvo, mas a mensalidade não.')
+        }
+      }
+      if (!subscriptionFailed) toast.success(contact ? 'Contato atualizado com sucesso.' : 'Contato criado com sucesso.')
       onSuccess(result)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Não foi possível salvar o contato.')
@@ -224,6 +264,16 @@ export function ContactForm({ contact, onSuccess, onCancel }: ContactFormProps) 
         <p className="text-[12px] leading-snug text-[var(--text-muted)]">
           {STATUS_HINTS[form.status]} Muda sozinho quando você abre ou ganha um negócio com ele.
         </p>
+      </FormSection>
+
+      <FormSection title="Mensalidade">
+        <SubscriptionFields
+          draft={subscription}
+          onChange={setSubscription}
+          currency={subscriptionCurrency}
+          onCurrencyChange={setSubscriptionCurrency}
+          errors={showSubscriptionErrors ? subscriptionErrors : {}}
+        />
       </FormSection>
 
       <details
