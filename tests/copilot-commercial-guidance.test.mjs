@@ -7,7 +7,7 @@ test('price interest uses a concise reply without hiding a known price', () => {
   assert.equal(signals.mode, 'quick_reply')
   assert.equal(signals.priceRequested, true)
   assert.equal(signals.positiveInterest, true)
-  assert.match(commercialRequestGuidance('Gostei, quanto custa?'), /não esconda um preço conhecido/i)
+  assert.match(commercialRequestGuidance('Gostei, quanto custa?'), /referência real que existir/i)
 })
 
 test('first price question tries a short conversation first, insistence gets the price', () => {
@@ -34,8 +34,8 @@ test('meeting refusal overrides call-first and asks for a direct price answer', 
 test('price objection avoids an automatic discount and asks for the cause', () => {
   assert.equal(inferCommercialResponseMode('Está caro.'), 'objection')
   const guidance = commercialRequestGuidance('Está caro.')
-  assert.match(guidance, /não ofereça desconto imediatamente/i)
-  assert.match(guidance, /orçamento.*percepção de valor/i)
+  assert.match(guidance, /não ofereça desconto de cara/i)
+  assert.match(guidance, /orçamento ou valor percebido/i)
 })
 
 test('prototype silence after three days becomes a short follow-up', () => {
@@ -53,13 +53,13 @@ test('long pasted history still obeys an explicit detailed-analysis request', ()
 test('simple reply requests bring the message right after one opening line and explain why', () => {
   assert.equal(inferCommercialResponseMode('O que eu respondo?'), 'quick_reply')
   const guidance = commercialRequestGuidance('O que eu respondo?')
-  assert.match(guidance, /mensagem pronta logo em seguida/i)
-  assert.match(guidance, /por que ela funciona/i)
+  assert.match(guidance, /a mensagem pronta \(em <mensagem_pronta>\)/i)
+  assert.match(guidance, /Nada de seção "Por que funciona"/i)
 })
 
 test('conversation analysis requests the complete commercial reading', () => {
   assert.equal(inferCommercialResponseMode('Analisa essa conversa.'), 'analysis')
-  assert.match(commercialRequestGuidance('Analisa essa conversa.'), /análise comercial completa/i)
+  assert.match(commercialRequestGuidance('Analisa essa conversa.'), /como um consultor explicaria/i)
 })
 
 test('pergunta sobre o que mandar depois do protótipo puxa a reunião, curta', () => {
@@ -67,7 +67,7 @@ test('pergunta sobre o que mandar depois do protótipo puxa a reunião, curta', 
   assert.equal(inferCommercialResponseMode(message), 'quick_reply')
   const guidance = commercialRequestGuidance(message)
   assert.match(guidance, /DEPOIS DA PRÉVIA/)
-  assert.match(guidance, /horário com duas opções/)
+  assert.match(guidance, /pergunta de horário fácil de responder/)
   assert.match(guidance, /Pedido curto/)
   assert.doesNotMatch(commercialRequestGuidance('Não quero reunião, já mandei a prévia, o que respondo?'), /DEPOIS DA PRÉVIA/)
 })

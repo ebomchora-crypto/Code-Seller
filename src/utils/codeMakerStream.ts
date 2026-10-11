@@ -70,7 +70,7 @@ if(x.type==='email'||/mail/.test(n)){if(!d.email)d.email=v}else if(x.type==='tel
 var st=f.querySelector('[data-cs-status]');if(!st){st=document.createElement('p');st.setAttribute('data-cs-status','');f.appendChild(st)}st.style.color='';st.textContent='Enviando...';pending={form:f,status:st};
 var btn=f.querySelector('[type=submit],button:not([type])');if(btn)btn.disabled=true;
 if(d.website){window.setTimeout(function(){done({ok:true})},400);return}
-post({csLead:d,page:page})},true);
+post({csLead:d,page:page});window.setTimeout(function(){if(pending&&pending.form===f)done({ok:false,error:'timeout'})},15000)},true);
 function done(r){if(!pending)return;var f=pending.form,st=pending.status;pending=null;var btn=f.querySelector('[type=submit],button:not([type])');if(btn)btn.disabled=false;
 if(r&&r.ok){st.style.color='#15803d';st.textContent=r.preview?'Prévia: no site publicado, este contato chega direto no seu CRM.':'Recebemos sua mensagem! Entraremos em contato em breve.';f.reset()}else{st.style.color='#b91c1c';st.textContent=r&&r.error==='invalid'?'Confira o nome e o telefone ou e-mail e tente de novo.':'Não foi possível enviar agora. Tente de novo em instantes.'}}
 window.addEventListener('message',function(e){if(e.source!==parent)return;var m=e.data||{};if(m.csInspect!==undefined)setInspect(!!m.csInspect);if(m.csLeadResult)done(m.csLeadResult)});

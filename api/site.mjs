@@ -21,7 +21,9 @@ async function shell(origin, res) {
 }
 
 export default async function handler(req, res) {
-  const host = req.headers['x-forwarded-host'] || req.headers.host || 'codesellers.vercel.app'
+  // O endereço vem do cabeçalho: só domínios do próprio projeto são aceitos.
+  const asked = String(req.headers['x-forwarded-host'] || req.headers.host || '').toLowerCase()
+  const host = /^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.vercel\.app$/.test(asked) ? asked : 'codesellers.vercel.app'
   const origin = `https://${host}`
   const query = new URL(req.url, origin).searchParams
   const slug = String(query.get('slug') || '').toLowerCase()
@@ -40,6 +42,8 @@ export default async function handler(req, res) {
     res.statusCode = 200
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
+    // O site é conteúdo de terceiros: roda isolado, sem acesso à sessão do painel (como no quadro do navegador).
+    res.setHeader('Content-Security-Policy', 'sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms')
     res.end(injectSeo(site.html, site, url))
   } catch {
     return shell(origin, res)

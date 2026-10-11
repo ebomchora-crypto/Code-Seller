@@ -132,3 +132,20 @@ test('imagens anexadas vão ao modelo; se o modelo recusar, a tarefa segue só c
     assert.ok(events.some(event => event.type === 'text' && /não consegue ler imagens/.test(event.delta)));
   } finally { await new Promise(done => server.close(done)); await new Promise(done => provider.close(done)); await rm(dir, { recursive: true, force: true }); }
 });
+
+test('abrir uma página da internet também depende da aprovação do usuário', async () => {
+  const ctx = await setup(['<ferramenta nome="web">https://example.com/doc?x=1</ferramenta>', 'Segui sem a página.']);
+  try {
+    const response = await ctx.post(`/api/projects/${ctx.project.id}/agent`, { mode: 'agent', prompt: 'leia a doc' });
+    const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; const events = [];
+    for (;;) {
+      const { value, done } = await reader.read(); if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n'); buffer = parts.pop();
+      for (const part of parts) { const event = JSON.parse(part.slice(5)); events.push(event); if (event.type === 'approval') { assert.match(event.command, /example\.com/); await ctx.post(`/api/projects/${ctx.project.id}/agent/approve`, { id: event.id, allow: false }); } }
+    }
+    assert.ok(events.some(event => event.type === 'approval'));
+    assert.ok(events.some(event => event.type === 'tool_result' && !event.ok && /NÃO permitiu/.test(event.detail)));
+    assert.equal(events.at(-1).type, 'done');
+  } finally { await ctx.close(); }
+});

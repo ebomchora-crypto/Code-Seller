@@ -51,7 +51,7 @@ conteúdo completo do arquivo
 - Mover ou renomear: <ferramenta nome="mover" caminho="/a.ts" para="/pasta/b.ts"/>
 - Executar um comando no terminal da pasta do projeto (${windows ? 'PowerShell do Windows' : 'bash'}): <ferramenta nome="executar">npm run build</ferramenta>
   O usuário aprova cada comando. Não rode servidores que nunca terminam (npm run dev, vite, nodemon): para conferir o app, use build, testes ou checagem de tipos. Máximo de 10 minutos por comando (tempo="300" define o limite em segundos).
-` : ''}- Ler uma página da internet (documentação, API): <ferramenta nome="web">https://exemplo.com/doc</ferramenta>
+` : ''}- Ler uma página da internet (documentação, API): <ferramenta nome="web">https://exemplo.com/doc</ferramenta> (o usuário aprova cada acesso)
 
 COMO TRABALHAR
 - Antes de alterar um arquivo existente, leia-o. Explore a pasta quando não souber onde as coisas estão. Siga o estilo, as bibliotecas e as convenções que o projeto já usa.
@@ -222,6 +222,8 @@ export async function runTool(call, ctx) {
         const address = call.body.trim() || String(call.attrs.url ?? '');
         let target; try { target = new URL(address); } catch { throw fail('Endereço inválido.'); }
         if (!['http:', 'https:'].includes(target.protocol)) throw fail('Só endereços http e https.');
+        // Uma página maliciosa poderia mandar a IA "enviar" arquivos do projeto para fora numa URL: o usuário aprova cada acesso.
+        if (!await ctx.approve(`Abrir a página ${target.href.slice(0, 300)}`)) return { ok: false, label: 'Acesso recusado', output: 'O usuário NÃO permitiu abrir esta página. Siga sem ela.' };
         const response = await fetch(target, { signal: AbortSignal.timeout(20_000), headers: { 'User-Agent': 'CodeSellersIDE/1.0', Accept: 'text/html,text/plain,application/json,*/*' } });
         const type = response.headers.get('content-type') || ''; const raw = (await response.text()).slice(0, 400_000);
         const text = /html/i.test(type) ? htmlToText(raw) : raw;
