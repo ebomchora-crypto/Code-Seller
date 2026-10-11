@@ -1,6 +1,6 @@
 import { Bot, Crosshair, ListChecks, Search, UserCog, Users, Wallet, type LucideIcon } from 'lucide-react'
 import { SilkRibbons } from '@/components/auth/SilkRibbons'
-import { OVERALL_STATUS } from '@/data/systemStatus'
+import { overallLevel, useSystemStatus } from '@/services/systemHealth'
 
 interface Topic {
   title: string
@@ -41,6 +41,8 @@ interface HelpCenterProps {
 // Topo do Suporte: o mesmo tecido roxo do Dashboard, com a busca no centro e
 // o status dos sistemas; embaixo, os tópicos que abrem o FAQ filtrado.
 export function HelpCenter({ search, onSearchChange, onSelectTopic }: HelpCenterProps) {
+  const services = useSystemStatus()
+  const overall = services && services.length > 0 ? overallLevel(services) : null
   return (
     <div className="flex flex-col gap-4">
       <section className="relative isolate overflow-hidden rounded-[28px] bg-[#0f0a1c] px-6 py-12 text-center text-white ring-1 ring-white/[0.07] sm:px-10 sm:py-14">
@@ -51,8 +53,8 @@ export function HelpCenter({ search, onSearchChange, onSelectTopic }: HelpCenter
 
         <div className="relative mx-auto max-w-2xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-[12.5px] text-white/80 backdrop-blur-md">
-            <span className={`size-1.5 rounded-full ${STATUS_DOT[OVERALL_STATUS]}`} />
-            {STATUS_LABEL[OVERALL_STATUS]}
+            <span className={`size-1.5 rounded-full ${overall ? STATUS_DOT[overall] : 'bg-white/40'}`} />
+            {overall ? STATUS_LABEL[overall] : 'Verificando os sistemas…'}
           </span>
           <h1 className="mt-5 font-display text-[32px] font-bold leading-tight tracking-tight sm:text-[42px]">Como podemos ajudar?</h1>
           <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-white/65">

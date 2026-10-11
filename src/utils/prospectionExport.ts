@@ -3,7 +3,7 @@
 // Gera CSV (UTF-8 com BOM) e Excel real (.xlsx)
 // ============================================================================
 
-import * as XLSX from 'xlsx'
+import writeExcelFile from 'write-excel-file/browser'
 import type { Prospect, ScoredProspect } from '@/types'
 import { isMobilePhone } from './prospection'
 import { deduplicateProspects } from './prospectionDuplicates'
@@ -119,26 +119,21 @@ export function exportProspectsToCSV(
   downloadBlob(blob, `${filename}.csv`)
 }
 
-export function exportProspectsToExcel(
+/** Linhas da planilha: cabeçalho em negrito e os dados na ordem das colunas. */
+export function buildProspectSheet(prospects: (Prospect | ScoredProspect)[], searchNiche?: string) {
+  const rows = deduplicateProspects(prospects).map((p) => prospectToRow(p, searchNiche))
+  const header = COLUMN_HEADERS.map((col) => ({ value: col.label, fontWeight: 'bold' as const }))
+  const body = rows.map((row) => COLUMN_HEADERS.map((col) => ({ value: String(row[col.key]) })))
+  return { data: [header, ...body], columns: COLUMN_HEADERS.map((col) => ({ width: col.width })) }
+}
+
+export async function exportProspectsToExcel(
   prospects: (Prospect | ScoredProspect)[],
   filename = 'leads',
   searchNiche?: string,
-): void {
-  const unique = deduplicateProspects(prospects)
-  const rows = unique.map((p) => prospectToRow(p, searchNiche))
-
-  const headerRow = COLUMN_HEADERS.map((col) => col.label)
-  const dataRows = rows.map((row) => COLUMN_HEADERS.map((col) => row[col.key]))
-
-  const worksheet = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows])
-
-  // Larguras de coluna para boa legibilidade
-  worksheet['!cols'] = COLUMN_HEADERS.map((col) => ({ wch: col.width }))
-
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads')
-
-  XLSX.writeFile(workbook, `${filename}.xlsx`)
+): Promise<void> {
+  const { data, columns } = buildProspectSheet(prospects, searchNiche)
+  await writeExcelFile(data, { columns, sheet: 'Leads' }).toFile(`${filename}.xlsx`)
 }
 
 export function buildProspectionFilename(city?: string | null, niche?: string | null): string {

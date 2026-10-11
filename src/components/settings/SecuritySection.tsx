@@ -113,8 +113,7 @@ export function SecuritySection() {
         <div className="mt-6 border-t border-[var(--border-subtle)] pt-6">
           <h3 className="text-[14px] font-semibold text-[var(--text-primary)]">Sessões ativas</h3>
           <p className="mt-0.5 text-[12.5px] text-[var(--text-muted)]">
-            {/* TODO: usar a Admin API do Supabase (via Edge Function) para listar todas as sessões. */}
-            Por enquanto mostramos só o dispositivo que você está usando agora.
+            Os dispositivos em que a sua conta está conectada agora.
           </p>
 
           <div className="mt-4 flex flex-col gap-2">

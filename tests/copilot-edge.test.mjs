@@ -1,4 +1,12 @@
 import assert from 'node:assert/strict'
+import { register } from 'node:module'
+
+// A função roda no Deno, que entende "npm:" e "jsr:"; aqui o Node troca essas bibliotecas por versões vazias.
+register('data:text/javascript,' + encodeURIComponent(`
+export async function resolve(specifier, context, next) {
+  if (/^(npm|jsr):/.test(specifier)) return { url: 'data:text/javascript,' + encodeURIComponent('export const load = () => ({}); export const createClient = () => ({});'), shortCircuit: true }
+  return next(specifier, context)
+}`))
 import test from 'node:test'
 import { splitText, copilotParts } from '../supabase/functions/ai-chat/context.ts'
 
@@ -22,7 +30,7 @@ test('copilot message contract keeps the current request last', () => {
 let handle
 globalThis.Deno = {
   env:{get: name => ({SUPABASE_URL:'https://fixture.supabase.co',SUPABASE_ANON_KEY:'public-fixture',
-    EXPERIENTIAL_API_KEY:'private-fixture'})[name]},
+    EXPERIENTIAL_API_KEY:'private-fixture',SUPABASE_SERVICE_ROLE_KEY:'service-fixture'})[name]},
   serve: callback => { handle = callback },
 }
 await import('../supabase/functions/ai-chat/index.ts')
@@ -32,9 +40,12 @@ globalThis.fetch = async (input, options) => {
   if (String(input).endsWith('/auth/v1/user')) {
     return new Response(JSON.stringify({id:'fixture-user'}),{status:options.headers.authorization==='Bearer authenticated' ? 200 : 401})
   }
+  // Plano da conta (limites por dia) e contagem de uso: a conta de teste tem acesso liberado.
+  if (String(input).includes('/rest/v1/rpc/usage_for')) return new Response(JSON.stringify({access:true,plan:'paid',state:'active',copilot_used:0,copilot_limit:50,sites_used:0,sites_limit:10,hunter_used_today:0,hunter_daily_limit:null}))
+  if (String(input).includes('/rest/v1/usage_events')) return new Response(null,{status:201})
   const payload = JSON.parse(options.body)
   providerCalls.push(payload)
-  const summary = payload.messages[0].content.includes('Comprima o material')
+  const summary = /Comprima o material|mantém a memória de trabalho/.test(payload.messages[0].content)
   return new Response(JSON.stringify({choices:[{message:{content:summary
     ? 'Resumo: ' + [...new Set(payload.messages.at(-1).content.match(/PRECO_500|SEM_REUNIAO|PROTOTIPO_ENVIADO/g) ?? [])].join(', ')
     : 'Resposta comercial completa.'},finish_reason:'stop'}]}))
@@ -78,7 +89,7 @@ test('commercial memory retains prior facts for the next request', async () => {
   const data = await response.json()
   assert.match(data.memory,/SEM_REUNIAO/)
   assert.match(data.memory,/PRECO_500/)
-  assert.ok(providerCalls.every(call=>call.max_tokens===2400))
+  assert.ok(providerCalls.every(call=>call.max_tokens===1600))
 })
 
 test.after(()=> { globalThis.fetch = originalFetch })

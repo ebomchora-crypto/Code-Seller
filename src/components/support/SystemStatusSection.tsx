@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/Card'
 import { PanelHeader } from '@/components/ui/PanelHeader'
-import { SYSTEM_STATUS } from '@/data/systemStatus'
+import { useSystemStatus } from '@/services/systemHealth'
 import type { SystemStatus } from '@/types'
 
 const SERVICE_STYLE: Record<SystemStatus['status'], { dot: string; text: string; label: string }> = {
@@ -10,11 +10,13 @@ const SERVICE_STYLE: Record<SystemStatus['status'], { dot: string; text: string;
 }
 
 export function SystemStatusSection() {
+  const services = useSystemStatus()
   return (
     <Card>
       <PanelHeader title="Status dos sistemas" />
       <ul className="flex flex-col divide-y divide-[var(--border-subtle)]">
-        {SYSTEM_STATUS.map((service) => {
+        {services === null && <li className="py-1 text-[13px] text-[var(--text-muted)]">Verificando os sistemas…</li>}
+        {(services ?? []).map((service) => {
           const style = SERVICE_STYLE[service.status]
           return (
             <li key={service.service} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">

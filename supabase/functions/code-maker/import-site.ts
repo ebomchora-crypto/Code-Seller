@@ -104,7 +104,7 @@ export function parseSitePage(html: string, base: URL): ImportedSite {
     ...new Set(
       [...links.filter((href) => /^tel:/i.test(href)).map((href) => href.replace(/^tel:/i, '')), ...(visible.match(/(?:\+?55\s?)?\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4}/g) ?? [])]
         .map((value) => value.replace(/[^\d+]/g, ''))
-        .filter((value) => value.replace(/\D/g, '').length >= 10 && value.replace(/\D/g, '').length <= 13),
+        .filter((value) => value.replace(/\D/g, '').length >= 10 && value.replace(/\D/g, '').length <= 13 && !/^(?:\+?55)?0?(?:800|300)/.test(value.replace(/\D/g, ''))),
     ),
   ].slice(0, 3)
   const emails = [...new Set([...links.filter((href) => /^mailto:/i.test(href)).map((href) => href.replace(/^mailto:/i, '').split('?')[0]), ...(visible.match(/[\w.+-]+@[\w-]+\.[\w.-]+/g) ?? [])].map((value) => value.toLowerCase()))].slice(0, 3)
@@ -127,6 +127,8 @@ export function parseSitePage(html: string, base: URL): ImportedSite {
     if (/logo|logotipo|brand|marca/i.test(label) && !/\.svg/i.test(src)) add(src, 'logo')
     else add(src, 'photo')
   }
+  // Fotos postas como fundo (faixas, banners e sliders) e imagens de <picture>.
+  for (const match of body.matchAll(/(?:background(?:-image)?\s*:[^;"']*?url\(\s*["']?|data-bg(?:-image)?\s*=\s*["']|<source\b[^>]*\bsrcset\s*=\s*["'])([^"')\s,]+)/gi)) add(match[1], 'photo')
   const cover = meta('og:image')
   if (cover) add(cover, 'photo')
 
@@ -148,3 +150,58 @@ export function importedSummary(site: ImportedSite): string {
     .filter(Boolean)
     .join('\n')
 }
+
+const IMPORT_UA = 'Mozilla/5.0 (compatible; CodeSellersBot/1.0; +https://codesellers.vercel.app)'
+
+export async function publicOnly(url: URL): Promise<void> {
+  if (isBlockedHost(url.hostname)) throw new Error('Esse endereço não pode ser lido.')
+  // O nome do site não pode apontar para um endereço interno.
+  try {
+    const resolve = (globalThis as { Deno?: { resolveDns?: (name: string, type: string) => Promise<string[]> } }).Deno?.resolveDns
+    if (!resolve) return
+    const answers = [...(await resolve(url.hostname, 'A').catch(() => [])), ...(await resolve(url.hostname, 'AAAA').catch(() => []))]
+    if (answers.some((address) => isBlockedHost(String(address)))) throw new Error('Esse endereço não pode ser lido.')
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Esse endereço')) throw error
+  }
+}
+
+/** `truncate`: páginas grandes são lidas só até o limite; arquivos (imagens) acima do limite são recusados. */
+export async function fetchLimited(start: URL, accept: string, maxBytes: number, truncate = false): Promise<{ response: Response; bytes: Uint8Array; url: URL }> {
+  let url = start
+  for (let hop = 0; hop < 4; hop++) {
+    await publicOnly(url)
+    const response = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': IMPORT_UA, Accept: accept, 'Accept-Language': 'pt-BR,pt;q=0.9' }, signal: AbortSignal.timeout(12_000) })
+    if (response.status >= 300 && response.status < 400) {
+      const next = normalizeSiteUrl(new URL(response.headers.get('location') ?? '', url).href)
+      await response.body?.cancel()
+      if (!next) throw new Error('O site redirecionou para um endereço que não pode ser lido.')
+      url = next
+      continue
+    }
+    if (!response.ok || !response.body) { await response.body?.cancel(); throw new Error(`O site respondeu com erro (${response.status}).`) }
+    const declared = Number(response.headers.get('content-length') ?? 0)
+    if (!truncate && declared > maxBytes) { await response.body.cancel(); throw new Error('Arquivo grande demais.') }
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) break
+      if (size + value.length > maxBytes) {
+        await reader.cancel()
+        if (!truncate) throw new Error('Arquivo grande demais.')
+        chunks.push(value.slice(0, maxBytes - size))
+        break
+      }
+      size += value.length
+      chunks.push(value)
+    }
+    const bytes = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0))
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
+    return { response, bytes, url }
+  }
+  throw new Error('O site redirecionou demais.')
+}
+

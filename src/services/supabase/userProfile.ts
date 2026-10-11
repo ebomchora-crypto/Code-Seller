@@ -168,14 +168,21 @@ export interface ActiveSession {
   user_agent?: string
 }
 
-// O SDK do Supabase no frontend só tem acesso à sessão atual — listar TODAS
-// as sessões ativas do usuário exige a Supabase Admin API (chave service_role,
-// que nunca deve rodar no navegador).
-// TODO: usar a Admin API (via Edge Function) para listar todas as sessões.
+// Lista os dispositivos conectados na conta (função do banco que só enxerga as sessões de quem está logado).
+// Se a função não responder, mostra ao menos o dispositivo atual.
 export async function getActiveSessions(): Promise<ActiveSession[]> {
   const { data, error } = await supabase.auth.getSession()
   if (error) throw new Error(error.message)
   if (!data.session) return []
+
+  const listed = await supabase.rpc('my_sessions')
+  if (!listed.error && Array.isArray(listed.data) && listed.data.length > 0) {
+    return (listed.data as { created_at: string; updated_at: string | null; user_agent: string | null; is_current: boolean }[]).map((row) => ({
+      current: row.is_current,
+      created_at: row.created_at,
+      user_agent: row.user_agent ?? undefined,
+    }))
+  }
 
   return [
     {

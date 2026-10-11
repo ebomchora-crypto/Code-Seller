@@ -396,9 +396,8 @@ export async function getTaskMetrics(): Promise<TaskMetrics> {
   return { total: rows.length, pending, done_today: doneToday, overdue }
 }
 
-// Lembretes visuais — ver AppLayout.tsx.
-// TODO: implementar push notifications reais (Service Worker + Supabase Edge
-// Function com cron job). Esta função só cobre a verificação ao carregar o app.
+// Lembretes visuais — ver AppLayout.tsx. Esta função cobre o aviso dentro do app; o aviso no celular e no
+// app de Windows sai pela função de notificações do servidor (a cada 5 minutos).
 export async function getUpcomingReminders(): Promise<Task[]> {
   const now = new Date()
   const in60min = new Date(now.getTime() + 60 * 60 * 1000)

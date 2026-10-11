@@ -48,7 +48,8 @@ async function readImage(file: File): Promise<Pick<PreparedAttachment, 'images' 
 async function readPdf(file: File): Promise<Pick<PreparedAttachment, 'text' | 'truncated' | 'images'>> {
   const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')])
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise
+  const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) })
+  const pdf = await task.promise
   try {
     const pages: string[] = []
     const total = Math.min(pdf.numPages, PDF_MAX_PAGES)
@@ -75,7 +76,7 @@ async function readPdf(file: File): Promise<Pick<PreparedAttachment, 'text' | 't
     }
     return { images, truncated: pdf.numPages > PDF_SCAN_PAGES }
   } finally {
-    void pdf.destroy()
+    void task.destroy()
   }
 }
 

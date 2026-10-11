@@ -47,7 +47,7 @@ import {
   type SitePlan,
 } from './site.ts'
 import { applyProjectEdit, changeReport, fileIndex, parseProjectEdit, projectTree, selectFiles } from './project.ts'
-import { importedSummary, isBlockedHost, normalizeSiteUrl, parseSitePage, type ImportedImage } from './import-site.ts'
+import { fetchLimited, importedSummary, normalizeSiteUrl, parseSitePage, type ImportedImage } from './import-site.ts'
 import { cleanUserText } from './prompt.ts'
 import { findPrototype, prepareLeadPrototype, PrototypeError } from './prototype.ts'
 import { prepareSpecificationContext, SPEC_SYSTEM, validateRequirementCoverage, type RecentEditContext, type CodeMakerSpecification } from './spec.ts'
@@ -169,52 +169,6 @@ function cleanBrief(input: Record<string, unknown>, userId: string): SiteBrief |
 // ---------------------------------------------------------------------------
 // "Já tem site?": baixa o site atual do cliente (só endereços públicos) e guarda as fotos dele.
 // ---------------------------------------------------------------------------
-
-const IMPORT_UA = 'Mozilla/5.0 (compatible; CodeSellersBot/1.0; +https://codesellers.vercel.app)'
-
-async function publicOnly(url: URL): Promise<void> {
-  if (isBlockedHost(url.hostname)) throw new Error('Esse endereço não pode ser lido.')
-  // O nome do site não pode apontar para um endereço interno.
-  try {
-    const answers = [...(await Deno.resolveDns(url.hostname, 'A').catch(() => [])), ...(await Deno.resolveDns(url.hostname, 'AAAA').catch(() => []))]
-    if (answers.some((address) => isBlockedHost(String(address)))) throw new Error('Esse endereço não pode ser lido.')
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith('Esse endereço')) throw error
-  }
-}
-
-async function fetchLimited(start: URL, accept: string, maxBytes: number): Promise<{ response: Response; bytes: Uint8Array; url: URL }> {
-  let url = start
-  for (let hop = 0; hop < 4; hop++) {
-    await publicOnly(url)
-    const response = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': IMPORT_UA, Accept: accept, 'Accept-Language': 'pt-BR,pt;q=0.9' }, signal: AbortSignal.timeout(12_000) })
-    if (response.status >= 300 && response.status < 400) {
-      const next = normalizeSiteUrl(new URL(response.headers.get('location') ?? '', url).href)
-      await response.body?.cancel()
-      if (!next) throw new Error('O site redirecionou para um endereço que não pode ser lido.')
-      url = next
-      continue
-    }
-    if (!response.ok || !response.body) { await response.body?.cancel(); throw new Error(`O site respondeu com erro (${response.status}).`) }
-    const declared = Number(response.headers.get('content-length') ?? 0)
-    if (declared > maxBytes) { await response.body.cancel(); throw new Error('Arquivo grande demais.') }
-    const reader = response.body.getReader()
-    const chunks: Uint8Array[] = []
-    let size = 0
-    for (;;) {
-      const { value, done } = await reader.read()
-      if (done) break
-      size += value.length
-      if (size > maxBytes) { await reader.cancel(); if (maxBytes > 2_000_000) throw new Error('Arquivo grande demais.'); break }
-      chunks.push(value)
-    }
-    const bytes = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0))
-    let offset = 0
-    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
-    return { response, bytes, url }
-  }
-  throw new Error('O site redirecionou demais.')
-}
 
 async function storeImportedImages(admin: SupabaseClient, userId: string, images: ImportedImage[]): Promise<ImportedImage[]> {
   const stored = await Promise.all(
@@ -461,7 +415,7 @@ Deno.serve(async (req: Request) => {
       const start = normalizeSiteUrl(String(body.url ?? ''))
       if (!start) return json({ error: 'Endereço inválido. Cole o endereço do site, como www.empresa.com.br.' }, 400)
       try {
-        const { response, bytes, url } = await fetchLimited(start, 'text/html,application/xhtml+xml', 1_500_000)
+        const { response, bytes, url } = await fetchLimited(start, 'text/html,application/xhtml+xml', 1_500_000, true)
         if (!/html|xml/i.test(response.headers.get('content-type') ?? 'text/html')) return json({ error: 'Esse endereço não é uma página de site.' }, 422)
         const site = parseSitePage(new TextDecoder('utf-8').decode(bytes), url)
         if (!site.text && !site.title) return json({ error: 'Não encontrei conteúdo nessa página. Alguns sites só carregam o texto depois de abrir no navegador.' }, 422)
