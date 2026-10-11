@@ -745,7 +745,7 @@ export default function CodeMakerEditorPage() {
         </section>
       </div>
 
-      <SiteStatsModal siteId={site.id} siteName={site.name} open={statsOpen} onClose={() => setStatsOpen(false)} />
+      <SiteStatsModal siteId={site.id} siteName={site.name} siteUrl={url} open={statsOpen} onClose={() => setStatsOpen(false)} />
 
       <Modal open={slugOpen} onClose={() => setSlugOpen(false)} title="Link do site" size="sm">
         <form onSubmit={saveSlug} className="flex flex-col gap-4">

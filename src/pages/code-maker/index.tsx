@@ -10,7 +10,7 @@ import { PromptBox, PROMPT_IDEAS } from '@/components/code-maker/PromptBox'
 import { useAttachments } from '@/components/code-maker/Attachments'
 import { SiteThumbnail } from '@/components/code-maker/SiteThumbnail'
 import { SiteFavicon } from '@/components/code-maker/SiteFavicon'
-import { createSite, getCodeMakerUsage, listSites, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
+import { createSite, getCodeMakerUsage, listSites, readExistingSite, type CodeMakerUsage, type SiteSummary } from '@/services/supabase/codeMaker'
 import type { SiteBrief, SiteStyle } from '../../../supabase/functions/code-maker/site'
 import { useCodeMakerShell } from './layout'
 
@@ -97,6 +97,8 @@ export default function CodeMakerPage() {
   const [prompt, setPrompt] = useState('')
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [creating, setCreating] = useState(false)
+  const [siteUrl, setSiteUrl] = useState('')
+  const [reading, setReading] = useState(false)
   const attachments = useAttachments()
   const shell = useCodeMakerShell()
 
@@ -131,20 +133,35 @@ export default function CodeMakerPage() {
   const limitReached = usage?.sites_limit != null ? usage.sites_today >= usage.sites_limit : false
 
   async function create(style: SiteStyle) {
-    const text = prompt.trim()
-    if (!text || creating) return
+    const typed = prompt.trim()
+    const address = siteUrl.trim()
+    if ((!typed && !address) || creating) return
     setCreating(true)
     try {
+      // Site atual do cliente: lê o conteúdo e as fotos e junta ao pedido.
+      let text = typed
+      let assets = attachments.assets
+      let businessName = prefill?.businessName ?? ''
+      let phone = prefill?.phone ?? null
+      if (address) {
+        setReading(true)
+        const imported = await readExistingSite(address).finally(() => setReading(false))
+        text = [typed || 'Recrie o site atual deste cliente com um design muito mais bonito e profissional.', imported.details].join('\n\n')
+        const mine = attachments.assets
+        assets = [...mine, ...imported.assets.filter((asset) => !(asset.kind === 'logo' && mine.some((item) => item.kind === 'logo')))].slice(0, 12)
+        businessName = businessName || imported.name
+        phone = phone || imported.phone
+      }
       const brief: SiteBrief = {
-        businessName: prefill?.businessName ?? '',
+        businessName,
         niche: prefill?.niche ?? null,
         city: prefill?.city ?? null,
-        phone: prefill?.phone ?? null,
+        phone,
         rating: prefill?.rating ?? null,
         reviews: prefill?.reviews ?? null,
         style,
         details: text,
-        assets: attachments.assets,
+        assets,
       }
       const site = await createSite(brief, prefill?.contactId)
       navigate(`/code-maker/${site.id}?gerar=1`)
@@ -192,7 +209,10 @@ export default function CodeMakerPage() {
             disabled={limitReached}
             footnote={usage?.sites_limit != null ? `${usage.sites_today} de ${usage.sites_limit} ${usage.sites_limit === 1 ? 'site' : 'sites'} hoje` : null}
             attachments={attachments}
+            siteUrl={siteUrl}
+            onSiteUrlChange={setSiteUrl}
           />
+          {reading && <p className="mt-2 text-center text-[13px] text-[var(--text-muted)]">Lendo o site atual do cliente…</p>}
         </div>
         {limitReached ? (
           <p className="relative mt-4 text-[13.5px] text-amber-600 dark:text-amber-300">

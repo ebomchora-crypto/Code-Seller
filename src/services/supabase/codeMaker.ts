@@ -106,6 +106,20 @@ export async function createSite(brief: SiteBrief, contactId?: string | null): P
   return data.site
 }
 
+export interface ImportedSiteInfo {
+  /** Texto pronto com o conteúdo do site atual, para entrar no pedido. */
+  details: string
+  /** Logo e fotos do site atual, já guardadas na conta. */
+  assets: { url: string; kind: 'logo' | 'photo' }[]
+  name: string
+  phone: string | null
+}
+
+// "Já tem site?": lê o site atual do cliente para a IA recriar com um design melhor.
+export async function readExistingSite(url: string): Promise<ImportedSiteInfo> {
+  return postJson<ImportedSiteInfo>({ action: 'read_site', url })
+}
+
 // Todas as partes prontas mas o site não ficou "pronto" (a conexão caiu no fim): termina.
 export async function finishSite(siteId: string): Promise<void> {
   await postJson<{ site: Site }>({ action: 'finish', site_id: siteId })

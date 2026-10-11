@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Eye, Mail, MessageCircle, Phone, UserPlus } from 'lucide-react'
+import { Eye, FileDown, Mail, MessageCircle, Phone, UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { getSiteStats, type SiteStats } from '@/services/supabase/codeMaker'
+import { useAuthContext } from '@/stores/AuthContext'
+import { openPrintWindow } from '@/utils/printDocument'
+import { buildSiteReportHtml } from '@/utils/siteReport'
 
 const PERIODS = [
   { days: 7, label: '7 dias' },
@@ -44,7 +49,8 @@ function List({ title, rows }: { title: string; rows: { name: string; n: number 
 }
 
 // Números do site publicado: visitas, cliques de contato e contatos recebidos no CRM.
-export function SiteStatsModal({ siteId, siteName, open, onClose }: { siteId: string; siteName: string; open: boolean; onClose: () => void }) {
+export function SiteStatsModal({ siteId, siteName, siteUrl, open, onClose }: { siteId: string; siteName: string; siteUrl: string; open: boolean; onClose: () => void }) {
+  const { user, profile } = useAuthContext()
   const [days, setDays] = useState(7)
   const [stats, setStats] = useState<SiteStats | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -64,6 +70,14 @@ export function SiteStatsModal({ siteId, siteName, open, onClose }: { siteId: st
       cancelled = true
     }
   }, [open, siteId, days])
+
+  function downloadReport() {
+    if (!stats) return
+    const preparedBy = profile?.company_name || profile?.full_name || user?.name || ''
+    if (!openPrintWindow(`Relatório do site ${siteName}`, buildSiteReportHtml(stats, { name: siteName, url: siteUrl }, preparedBy))) {
+      toast.error('Seu navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente de novo.')
+    }
+  }
 
   const peak = Math.max(1, ...(stats?.daily.map((day) => day.views) ?? [1]))
   const clicks = stats ? stats.totals.whatsapp + stats.totals.phone + stats.totals.email : 0
@@ -86,6 +100,11 @@ export function SiteStatsModal({ siteId, siteName, open, onClose }: { siteId: st
           ))}
         </div>
 
+        {state === 'ready' && (
+          <Button size="sm" variant="secondary" className="self-start" onClick={downloadReport}>
+            <FileDown className="size-3.5" /> Baixar relatório do cliente (PDF)
+          </Button>
+        )}
         {state === 'loading' && <p className="py-8 text-center text-[13px] text-[var(--text-muted)]">Carregando…</p>}
         {state === 'error' && <p className="py-8 text-center text-[13px] text-[var(--text-muted)]">Não foi possível carregar os números agora.</p>}
 

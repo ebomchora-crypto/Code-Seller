@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Globe } from 'lucide-react'
 import type { SiteStyle } from '../../../supabase/functions/code-maker/site'
 import type { AttachmentsState } from '@/components/code-maker/Attachments'
 import { PromptInputBox } from '@/components/ui/ai-prompt-box'
@@ -56,10 +56,14 @@ interface PromptBoxProps {
   disabled?: boolean
   footnote?: string | null
   attachments: AttachmentsState
+  /** Endereço do site atual do cliente (opcional): a IA recria a partir dele. */
+  siteUrl: string
+  onSiteUrlChange: (value: string) => void
 }
 
 // Pedido de um site novo: a caixa de pedido do Code Maker, com o estilo do site como opção.
-export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, footnote, attachments }: PromptBoxProps) {
+export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, footnote, attachments, siteUrl, onSiteUrlChange }: PromptBoxProps) {
+  const [urlOpen, setUrlOpen] = useState(false)
   const [style, setStyle] = useState<SiteStyle>(readDefaultStyle)
   // Mudou o estilo padrão nas configurações do Code Maker: o pedido em branco acompanha.
   useEffect(() => {
@@ -69,7 +73,7 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
   }, [])
   const [styleOpen, setStyleOpen] = useState(false)
   const current = STYLES.find((option) => option.value === style) ?? STYLES[0]
-  const canSend = value.trim().length >= 8 && !attachments.uploading
+  const canSend = (value.trim().length >= 8 || siteUrl.trim().length >= 4) && !attachments.uploading
 
   const styleChip = (
     <div className="relative">
@@ -119,7 +123,31 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
     </div>
   )
 
+  const urlRow = (
+    <div className="mt-2.5">
+      {urlOpen || siteUrl ? (
+        <label className="flex items-center gap-2 rounded-2xl border border-[var(--border-default)] bg-[var(--bg-card)] px-3.5 py-2 text-[13.5px] focus-within:border-[var(--accent-ring)]">
+          <Globe className="size-4 shrink-0 text-[var(--text-muted)]" />
+          <input
+            value={siteUrl}
+            onChange={(event) => onSiteUrlChange(event.target.value)}
+            placeholder="www.empresa.com.br — a IA lê o site atual e recria melhor"
+            inputMode="url"
+            autoComplete="off"
+            aria-label="Endereço do site atual do cliente"
+            className="min-w-0 flex-1 bg-transparent text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+          />
+        </label>
+      ) : (
+        <button type="button" onClick={() => setUrlOpen(true)} className="inline-flex items-center gap-1.5 px-1 text-[12.5px] font-medium text-[var(--text-muted)] transition hover:text-[var(--accent-text)]">
+          <Globe className="size-3.5" /> O cliente já tem um site? Importar o conteúdo dele
+        </button>
+      )}
+    </div>
+  )
+
   return (
+    <>
     <PromptInputBox
       value={value}
       onValueChange={onChange}
@@ -136,5 +164,7 @@ export function PromptBox({ value, onChange, onSubmit, busy, disabled = false, f
       tools={styleChip}
       footnote={footnote}
     />
+    {urlRow}
+    </>
   )
 }

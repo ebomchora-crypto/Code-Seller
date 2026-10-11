@@ -2,6 +2,7 @@
 //
 // Usuário logado (Authorization: Bearer <token>). Ações:
 //   { action: 'usage' }                         → quantos sites/alterações hoje
+//   { action: 'read_site', url }                → lê o site atual do cliente (textos, contatos, fotos)
 //   { action: 'create', brief, contact_id? }    → cria o site (sem IA ainda)
 //   { action: 'plan', site_id, partial? }       → IA planeja cores/fontes/seções (texto ao vivo)
 //   { action: 'part', site_id, part_id, partial? } → IA escreve uma parte (texto ao vivo)
@@ -46,6 +47,7 @@ import {
   type SitePlan,
 } from './site.ts'
 import { applyProjectEdit, changeReport, fileIndex, parseProjectEdit, projectTree, selectFiles } from './project.ts'
+import { importedSummary, isBlockedHost, normalizeSiteUrl, parseSitePage, type ImportedImage } from './import-site.ts'
 import { cleanUserText } from './prompt.ts'
 import { findPrototype, prepareLeadPrototype, PrototypeError } from './prototype.ts'
 import { prepareSpecificationContext, SPEC_SYSTEM, validateRequirementCoverage, type RecentEditContext, type CodeMakerSpecification } from './spec.ts'
@@ -162,6 +164,79 @@ function cleanBrief(input: Record<string, unknown>, userId: string): SiteBrief |
     reviews: Number.isFinite(reviews) && reviews > 0 ? Math.round(reviews) : null,
     assets: cleanAssets(input.assets, userId, Deno.env.get('SUPABASE_URL')!),
   }
+}
+
+// ---------------------------------------------------------------------------
+// "Já tem site?": baixa o site atual do cliente (só endereços públicos) e guarda as fotos dele.
+// ---------------------------------------------------------------------------
+
+const IMPORT_UA = 'Mozilla/5.0 (compatible; CodeSellersBot/1.0; +https://codesellers.vercel.app)'
+
+async function publicOnly(url: URL): Promise<void> {
+  if (isBlockedHost(url.hostname)) throw new Error('Esse endereço não pode ser lido.')
+  // O nome do site não pode apontar para um endereço interno.
+  try {
+    const answers = [...(await Deno.resolveDns(url.hostname, 'A').catch(() => [])), ...(await Deno.resolveDns(url.hostname, 'AAAA').catch(() => []))]
+    if (answers.some((address) => isBlockedHost(String(address)))) throw new Error('Esse endereço não pode ser lido.')
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Esse endereço')) throw error
+  }
+}
+
+async function fetchLimited(start: URL, accept: string, maxBytes: number): Promise<{ response: Response; bytes: Uint8Array; url: URL }> {
+  let url = start
+  for (let hop = 0; hop < 4; hop++) {
+    await publicOnly(url)
+    const response = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': IMPORT_UA, Accept: accept, 'Accept-Language': 'pt-BR,pt;q=0.9' }, signal: AbortSignal.timeout(12_000) })
+    if (response.status >= 300 && response.status < 400) {
+      const next = normalizeSiteUrl(new URL(response.headers.get('location') ?? '', url).href)
+      await response.body?.cancel()
+      if (!next) throw new Error('O site redirecionou para um endereço que não pode ser lido.')
+      url = next
+      continue
+    }
+    if (!response.ok || !response.body) { await response.body?.cancel(); throw new Error(`O site respondeu com erro (${response.status}).`) }
+    const declared = Number(response.headers.get('content-length') ?? 0)
+    if (declared > maxBytes) { await response.body.cancel(); throw new Error('Arquivo grande demais.') }
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) break
+      size += value.length
+      if (size > maxBytes) { await reader.cancel(); if (maxBytes > 2_000_000) throw new Error('Arquivo grande demais.'); break }
+      chunks.push(value)
+    }
+    const bytes = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0))
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
+    return { response, bytes, url }
+  }
+  throw new Error('O site redirecionou demais.')
+}
+
+async function storeImportedImages(admin: SupabaseClient, userId: string, images: ImportedImage[]): Promise<ImportedImage[]> {
+  const stored = await Promise.all(
+    images.map(async (image): Promise<ImportedImage | null> => {
+      try {
+        const url = normalizeSiteUrl(image.url)
+        if (!url) return null
+        const { response, bytes } = await fetchLimited(url, 'image/jpeg,image/png,image/webp', 4_000_000)
+        const type = (response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
+        const extension = type === 'image/jpeg' ? 'jpg' : type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : ''
+        if (!extension || bytes.length < 4000) return null
+        const path = `${userId}/${crypto.randomUUID()}.${extension}`
+        const { error } = await admin.storage.from('site-assets').upload(path, bytes, { contentType: type, upsert: false })
+        if (error) return null
+        return { url: admin.storage.from('site-assets').getPublicUrl(path).data.publicUrl, kind: image.kind }
+      } catch {
+        return null
+      }
+    }),
+  )
+  const result = stored.filter((image): image is ImportedImage => image !== null)
+  return result.filter((image, index) => image.kind !== 'logo' || result.findIndex((other) => other.kind === 'logo') === index)
 }
 
 async function completeJson(apiKey: string, model: string, system: string, content: string, signal: AbortSignal): Promise<any> {
@@ -381,6 +456,23 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!usage.access) return json({ error: NO_ACCESS_MESSAGE }, 402)
+
+    if (action === 'read_site') {
+      const start = normalizeSiteUrl(String(body.url ?? ''))
+      if (!start) return json({ error: 'Endereço inválido. Cole o endereço do site, como www.empresa.com.br.' }, 400)
+      try {
+        const { response, bytes, url } = await fetchLimited(start, 'text/html,application/xhtml+xml', 1_500_000)
+        if (!/html|xml/i.test(response.headers.get('content-type') ?? 'text/html')) return json({ error: 'Esse endereço não é uma página de site.' }, 422)
+        const site = parseSitePage(new TextDecoder('utf-8').decode(bytes), url)
+        if (!site.text && !site.title) return json({ error: 'Não encontrei conteúdo nessa página. Alguns sites só carregam o texto depois de abrir no navegador.' }, 422)
+        const assets = await storeImportedImages(admin, user.id, site.images.slice(0, 7))
+        const name = site.title.split(/\s[-|–—·•:]\s/)[0].trim().slice(0, 80)
+        return json({ details: importedSummary(site), assets, name, phone: site.whatsapp ?? site.phones[0]?.replace(/\D/g, '') ?? null })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : ''
+        return json({ error: /^(Esse endereço|O site|Arquivo)/.test(message) ? message : 'Não consegui abrir esse site. Confira o endereço e tente de novo.' }, 422)
+      }
+    }
 
     if (action === 'create') {
       let prototype: Awaited<ReturnType<typeof prepareLeadPrototype>> | null = null

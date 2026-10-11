@@ -14,6 +14,28 @@
       "destination": "/ide/index.html"
     },
     {
+      "source": "/:slug([a-z0-9][a-z0-9-]{1,46}[a-z0-9])",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?:Googlebot|bingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|Applebot|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Slackbot|Discordbot|Pinterestbot|SkypeUriPreview|Embedly).*"
+        }
+      ],
+      "destination": "/api/site?slug=:slug"
+    },
+    {
+      "source": "/:slug([a-z0-9][a-z0-9-]{1,46}[a-z0-9])/:page([a-z0-9-]{1,40})",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(?:Googlebot|bingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Slurp|Applebot|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Slackbot|Discordbot|Pinterestbot|SkypeUriPreview|Embedly).*"
+        }
+      ],
+      "destination": "/api/site?slug=:slug&page=:page"
+    },
+    {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
