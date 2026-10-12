@@ -71,9 +71,6 @@ const sections: LegalSection[] = [
       'O uso deve ser pessoal e de boa-fé. Para manter o serviço estável para todos, podemos limitar uso automatizado ou abusivo.',
     ],
   },
-      'Os limites diários recomeçam à meia-noite (horário de Brasília) e o mensal, no primeiro dia de cada mês. Se for preciso ajustar um limite, avisaremos antes.',
-    ],
-  },
   {
     id: 'uso-permitido',
     title: 'O que não é permitido',
