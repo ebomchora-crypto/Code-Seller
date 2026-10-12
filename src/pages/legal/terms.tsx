@@ -33,23 +33,15 @@ const sections: LegalSection[] = [
     title: 'Sua conta',
     blocks: [
       'Você deve informar dados verdadeiros e mantê-los atualizados. A senha é pessoal: não a compartilhe. Você responde pelo que for feito na sua conta e deve nos avisar logo se suspeitar de uso indevido.',
-      'Cada conta é de uma pessoa. Podemos recusar ou encerrar contas criadas para burlar o teste grátis, os limites do plano ou estes termos.',
+      'Cada conta é de uma pessoa. Podemos recusar ou encerrar contas criadas para burlar a cobrança, os limites do plano ou estes termos.',
     ],
   },
   {
-    id: 'teste-gratis',
-    title: 'Teste grátis',
+    id: 'sem-plano-gratis',
+    title: 'Sem plano grátis',
     blocks: [
-      'Toda conta nova tem 7 dias de teste grátis, contados a partir do cadastro, sem precisar de cartão. Durante o teste valem estes limites:',
-      {
-        list: [
-          '1 busca por dia no Buyers Hunter, com até 10 empresas;',
-          '5 mensagens por dia no CS Copilot;',
-          '2 sites e 10 alterações por dia no Code Maker.',
-        ],
-      },
-      'Sites publicados durante o teste mostram o selo "Feito com Code Sellers" e saem do ar se o teste terminar sem assinatura. Ao assinar, o selo some e eles voltam ao ar.',
-      'Quando o teste termina, o acesso ao painel fica bloqueado até você assinar. Os dados que você cadastrou continuam guardados, como explica a Política de Privacidade. O teste grátis vale uma vez por pessoa.',
+      'O Code Sellers é pago: não há plano grátis nem período de teste. O acesso ao painel e às ferramentas só é liberado com a assinatura em dia.',
+      'Sites publicados saem do ar enquanto a assinatura do dono não estiver em dia, e voltam ao ar quando ela for regularizada. Os dados que você cadastrou continuam guardados, como explica a Política de Privacidade.',
     ],
   },
   {
@@ -204,8 +196,8 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Termos de Uso"
-      description="Regras de uso do Code Sellers: conta, teste grátis, assinatura, cancelamento, limites e responsabilidades."
-      intro="Estes termos explicam as regras para usar o Code Sellers: como funcionam a conta, o teste grátis, a assinatura, o cancelamento e o que cada parte se compromete a fazer. Escrevemos de forma direta para que fique claro."
+      description="Regras de uso do Code Sellers: conta, assinatura, cancelamento, limites e responsabilidades."
+      intro="Estes termos explicam as regras para usar o Code Sellers: como funcionam a conta, a assinatura, o cancelamento e o que cada parte se compromete a fazer. Escrevemos de forma direta para que fique claro."
       sections={sections}
       other={{ to: '/privacidade', label: 'Política de Privacidade' }}
     />

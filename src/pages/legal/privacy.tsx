@@ -90,7 +90,7 @@ const sections: LegalSection[] = [
     id: 'retencao',
     title: 'Por quanto tempo guardamos',
     blocks: [
-      'Guardamos os seus dados enquanto a sua conta existir, inclusive depois que o teste grátis acaba ou a assinatura é cancelada, para que você possa voltar de onde parou.',
+      'Guardamos os seus dados enquanto a sua conta existir, inclusive depois que a assinatura é cancelada, para que você possa voltar de onde parou.',
       'Se você pedir a exclusão da conta, apagamos os dados em até 30 dias. A exceção é o que a lei manda guardar: os registros de acesso ficam por 6 meses e os dados de pagamento pelo prazo exigido pela legislação fiscal.',
     ],
   },

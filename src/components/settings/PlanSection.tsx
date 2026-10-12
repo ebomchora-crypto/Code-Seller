@@ -3,7 +3,7 @@ import { CreditCard } from 'lucide-react'
 import { SettingsNote, SettingsSection } from '@/components/settings/SettingsSection'
 import { useAuthContext } from '@/stores/AuthContext'
 import { useBilling } from '@/stores/BillingContext'
-import { PLAN_PRICE_LABEL, checkoutUrl, daysLeft, getUsageToday, type BillingState, type UsageToday } from '@/services/supabase/billing'
+import { PLAN_PRICE_LABEL, checkoutUrl, getUsageToday, type BillingState, type UsageToday } from '@/services/supabase/billing'
 import { openExternal } from '@/utils/openExternal'
 
 function formatDate(iso: string | null): string {
@@ -15,7 +15,6 @@ const LABELS: Record<BillingState, { label: string; tone: string }> = {
   active: { label: 'Assinatura ativa', tone: 'bg-emerald-500/12 text-emerald-500' },
   late: { label: 'Pagamento pendente', tone: 'bg-amber-500/12 text-amber-500' },
   canceled_active: { label: 'Cancelada', tone: 'bg-amber-500/12 text-amber-500' },
-  trial: { label: 'Teste grátis', tone: 'bg-[var(--accent-tint)] text-[var(--accent-text)]' },
   expired: { label: 'Sem assinatura', tone: 'bg-red-500/12 text-red-500' },
   signed_out: { label: '—', tone: 'bg-[var(--bg-muted)] text-[var(--text-muted)]' },
 }
@@ -61,10 +60,8 @@ export function PlanSection() {
           ? 'A última cobrança não passou. Atualize o pagamento para não perder o acesso.'
           : status.state === 'canceled_active'
             ? `Você continua usando até ${formatDate(status.next_charge_at)}.`
-            : status.state === 'trial'
-              ? `Seu teste termina em ${formatDate(status.trial_ends_at)} (faltam ${daysLeft(status.trial_ends_at)} dias).`
-              : 'Assine para continuar usando.'
-  const canSubscribe = ['trial', 'late', 'canceled_active', 'expired'].includes(status.state)
+            : 'Assine para liberar o Code Sellers.'
+  const canSubscribe = ['late', 'canceled_active', 'expired'].includes(status.state)
 
   return (
     <SettingsSection id="plano" icon={CreditCard} title="Meu plano" description={`Code Sellers · ${PLAN_PRICE_LABEL} por mês.`}>

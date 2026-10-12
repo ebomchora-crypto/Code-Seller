@@ -5,7 +5,7 @@
 //
 // POST (Authorization: Bearer <sessão do Code Sellers>) { messages, stream? } → texto da IA (SSE)
 
-const NO_ACCESS_MESSAGE = 'Seu teste grátis acabou. Assine o Code Sellers para continuar.'
+const NO_ACCESS_MESSAGE = 'Assine o Code Sellers para continuar.'
 
 // Mesma regra de acesso das outras funções do Code Sellers (função usage_for no banco).
 async function planUsage(userId: string, email: string | null | undefined): Promise<{ access: boolean }> {

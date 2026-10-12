@@ -57,7 +57,7 @@ export function LandingNavbar() {
                 rememberDownloadIntent('setup')
                 navigate('/register')
               }}
-              title="Crie sua conta grátis para baixar"
+              title="Crie sua conta para baixar"
               className="inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-white/80 transition-colors hover:text-white"
             >
               <Download className="h-4 w-4" />
@@ -157,7 +157,7 @@ export function LandingNavbar() {
                   onClick={() => navigate('/register')}
                   className="h-12 rounded-full bg-landing-primary text-[15px] font-semibold text-white transition-colors active:bg-landing-primary-hover"
                 >
-                  Começar grátis
+                  Assinar agora
                 </button>
               </div>
             </motion.nav>

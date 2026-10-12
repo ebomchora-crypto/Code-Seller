@@ -246,9 +246,6 @@ export function HunterSearchPanel({
                   </button>
                 )
               })}
-              {resultsCap < MAX_LEADS_PER_SEARCH && (
-                <span className="text-[12px] text-white/45">No teste grátis, até {resultsCap} por busca.</span>
-              )}
             </div>
           </form>
 
@@ -260,7 +257,7 @@ export function HunterSearchPanel({
           {limitReached && (
             <p className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] px-4 py-3 text-[13px] leading-5 text-amber-100">
               {usage?.period === 'day'
-                ? `No teste grátis dá para fazer ${usage.limit} ${usage.limit === 1 ? 'busca' : 'buscas'} por dia. Assine para ter 50 buscas por mês, ou volte amanhã.`
+                ? `Você usou as ${usage.limit} ${usage.limit === 1 ? 'busca' : 'buscas'} de hoje. Volte amanhã.`
                 : `Você usou as ${usage?.limit} buscas deste mês. O limite renova no dia 1º.`}
             </p>
           )}

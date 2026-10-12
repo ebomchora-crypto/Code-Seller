@@ -10,7 +10,7 @@ const faqItems = [
   { question: 'Serve para sites e sistemas?', answer: 'Sim. Sites, landing pages e sistemas sob medida.' },
   { question: 'O que é o Buyers Hunter?', answer: 'A ferramenta que encontra empresas por nicho e cidade para você abordar.' },
   { question: 'Ensina a vender?', answer: 'Sim: oferta, abordagem, proposta e fechamento.' },
-  { question: 'Quanto custa?', answer: 'R$ 99,90 por mês. Os primeiros 7 dias são grátis, sem cartão.' },
+  { question: 'Quanto custa?', answer: 'R$ 99,90 por mês, com tudo incluído. Não há plano grátis. Cancele quando quiser.' },
   { question: 'Posso cancelar?', answer: 'Sim, quando quiser, sem multa.' },
 ]
 

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useBilling } from '@/stores/BillingContext'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, Globe, Loader2, PanelLeft, Sparkles, TriangleAlert } from 'lucide-react'
 import { toast } from 'sonner'
@@ -129,7 +128,6 @@ export default function CodeMakerPage() {
     setSearchParams(new URLSearchParams(), { replace: true })
   }, [searchParams, setSearchParams])
 
-  const billing = useBilling().status
   const limitReached = usage?.sites_limit != null ? usage.sites_today >= usage.sites_limit : false
 
   async function create(style: SiteStyle) {
@@ -216,9 +214,7 @@ export default function CodeMakerPage() {
         </div>
         {limitReached ? (
           <p className="relative mt-4 text-[13.5px] text-amber-600 dark:text-amber-300">
-            {billing?.state === 'trial'
-              ? `No teste grátis dá para criar ${usage?.sites_limit} sites por dia. Assine para criar até 10 por dia — e dá para continuar alterando o que já existe.`
-              : `Você já criou os ${usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.`}
+            {`Você já criou os ${usage?.sites_limit} sites de hoje. Amanhã libera de novo — dá para continuar alterando os que já existem.`}
           </p>
         ) : (
           <div className="relative mt-4 flex flex-wrap justify-center gap-2">

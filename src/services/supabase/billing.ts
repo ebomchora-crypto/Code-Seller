@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 
 // Situação da assinatura da conta logada (função billing_status no banco).
-export type BillingState = 'exempt' | 'active' | 'late' | 'canceled_active' | 'trial' | 'expired' | 'signed_out'
+export type BillingState = 'exempt' | 'active' | 'late' | 'canceled_active' | 'expired' | 'signed_out'
 
 export interface BillingStatus {
   access: boolean

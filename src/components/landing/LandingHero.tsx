@@ -104,16 +104,16 @@ export function LandingHero() {
                 variants={fadeInUp}
                 className="hidden rounded-landing-lg border border-white/20 bg-white/[0.06] p-6 shadow-landing-card backdrop-blur-2xl backdrop-saturate-150 lg:block"
               >
-                <LandingEyebrow>7 dias grátis</LandingEyebrow>
+                <LandingEyebrow>R$ 99,90 por mês</LandingEyebrow>
                 <h2 className="mt-3 text-base font-semibold leading-snug text-landing-text">
-                  Teste tudo, sem cartão.
+                  Tudo para vender, em um só plano.
                 </h2>
                 <button
                   type="button"
                   onClick={() => navigate('/login')}
                   className="group mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-landing-md bg-landing-primary px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-landing-primary-hover"
                 >
-                  Começar grátis
+                  Assinar agora
                   <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </button>
               </motion.div>

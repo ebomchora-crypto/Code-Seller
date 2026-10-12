@@ -14,7 +14,7 @@ const INCLUDED = [
   'Área do aluno com o método completo',
 ]
 
-// Tela de quando o teste grátis acabou ou a assinatura não está em dia.
+// Tela de quem ainda não assinou ou está com a assinatura fora de dia.
 export function Paywall() {
   const { user, signOut } = useAuthContext()
   const { status, refresh } = useBilling()
@@ -34,10 +34,10 @@ export function Paywall() {
       <div className="w-full max-w-[440px]">
         <img src="/logo.png" alt="Code Sellers" className="mx-auto size-14 rounded-2xl" />
         <h1 className="mt-6 text-center font-display text-[26px] font-bold tracking-tight text-[var(--text-primary)]">
-          {neverPaid ? 'Seu teste grátis acabou' : 'Sua assinatura não está ativa'}
+          {neverPaid ? 'Assine para começar' : 'Sua assinatura não está ativa'}
         </h1>
         <p className="mx-auto mt-2 max-w-sm text-center text-[14.5px] leading-relaxed text-[var(--text-muted)]">
-          Assine para continuar vendendo. Seus contatos, negócios e sites continuam salvos.
+          Escolha o plano para liberar o Code Sellers. Se você já usou antes, seus contatos, negócios e sites continuam salvos.
         </p>
 
         <div className="mt-7 rounded-[24px] border border-[var(--border-default)] bg-[var(--bg-secondary)] p-6 shadow-[0_24px_60px_-30px_rgba(91,33,182,0.55)]">

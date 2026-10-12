@@ -3,7 +3,7 @@ import { useBilling } from '@/stores/BillingContext'
 import { Spinner } from '@/components/ui/Spinner'
 import { Paywall } from '@/components/billing/Paywall'
 
-// Só deixa entrar no sistema com teste grátis válido ou assinatura em dia.
+// Só deixa entrar no sistema com assinatura em dia (ou conta liberada).
 export function BillingGate({ children }: { children: ReactNode }) {
   const { status, loading } = useBilling()
   // Carregamento só na primeira vez: conferir de novo (ao voltar para a aba)

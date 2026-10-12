@@ -84,7 +84,7 @@ export function LandingDownload() {
                   Baixar a IDE
                 </button>
               </div>
-              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta grátis para baixar · Windows 10 ou 11 · A IDE é o editor de código completo, com terminal e Git</p>
+              <p className="mt-4 text-[12.5px] text-white/40">Crie sua conta para baixar · Windows 10 ou 11 · A IDE é o editor de código completo, com terminal e Git</p>
             </div>
 
             <div className="relative hidden lg:block" aria-hidden>

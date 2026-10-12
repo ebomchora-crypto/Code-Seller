@@ -1,7 +1,7 @@
 // Plano e uso do dia de uma conta (função usage_for no banco). Usado pelas
 // funções do servidor para bloquear quem não tem acesso e aplicar os limites
-// diários: teste grátis 2 sites, 10 alterações, 5 mensagens do CS Copilot e 1
-// busca de até 10 empresas no Buyers Hunter; plano pago 10 sites, 100 alterações
+// diários. Não existe plano grátis: sem assinatura (ou conta liberada) não há
+// acesso. Plano pago: 10 sites, 100 alterações
 // e 50 mensagens (Buyers Hunter: 50 buscas no mês, até 30 empresas cada);
 // conta liberada sem limite (limite null).
 
@@ -17,7 +17,7 @@ export interface PlanUsage {
   hunter_daily_limit: number | null
 }
 
-export const NO_ACCESS_MESSAGE = 'Seu teste grátis acabou. Assine o Code Sellers para continuar.'
+export const NO_ACCESS_MESSAGE = 'Assine o Code Sellers para continuar.'
 
 /** Empresas por busca do Buyers Hunter no teste grátis (no plano pago, até 30). */
 export const TRIAL_RESULTS_PER_SEARCH = 10
