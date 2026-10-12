@@ -102,7 +102,7 @@ export function useAutoPilot(contactId?: string) {
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Falha ao salvar preferências da conversa.') }
   }, [activeConversation])
   const deleteConversation = useCallback(async (id: string) => {
-    if (sendLock.current) return
+    if (sendLock.current) { toast.message('Espere o Copilot terminar de responder para excluir uma conversa.'); return }
     try {
       await removeConversation(id)
       setConversations((current) => current.filter((item) => item.id !== id))

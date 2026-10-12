@@ -14,6 +14,7 @@ import { duration, easing } from '@/motion/tokens'
 import { getUpcomingReminders, markRemindersSeen } from '@/services/supabase/tasks'
 import { cn } from '@/lib/utils'
 import { getAppSurface } from '@/layouts/appSurface'
+import { KeepAlivePanes } from '@/layouts/KeepAlivePanes'
 import { scrollAppToTop } from '@/utils/appScroll'
 import { useViewCurrency } from '@/hooks/useViewCurrency'
 import { isDesktopApp } from '@/utils/desktop'
@@ -155,6 +156,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </AnimatePresence>
             </div>
           </SmoothScrollProvider>
+          <KeepAlivePanes />
         </main>
       </div>
       <CommandPalette />

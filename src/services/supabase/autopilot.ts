@@ -85,8 +85,9 @@ export async function updateConversationTitle(id: string, title: string): Promis
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-  const { error } = await supabase.from('autopilot_conversations').delete().eq('id', id)
+  const { data, error } = await supabase.from('autopilot_conversations').delete().eq('id', id).select('id')
   if (error) throw new Error(error.message)
+  if (!data || data.length === 0) throw new Error('Não foi possível excluir esta conversa. Atualize a página e tente de novo.')
 }
 
 export async function saveMessage(data: Omit<AutoPilotMessage, 'id' | 'created_at'>): Promise<AutoPilotMessage> {

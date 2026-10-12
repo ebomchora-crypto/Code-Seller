@@ -62,7 +62,7 @@ export default function CodeMakerShell() {
   const context: CodeMakerShellContext = { refreshSites, openSites: () => setMobileOpen(true) }
 
   return (
-    <div className="flex h-dvh min-h-0 overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
+    <div className="relative flex h-full min-h-0 overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
       <div
         className={`absolute inset-y-0 left-0 z-40 w-[270px] bg-[var(--bg-card)] transition-[width,transform] duration-200 lg:static lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'

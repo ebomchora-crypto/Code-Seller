@@ -110,7 +110,7 @@ function CopilotWorkspace({ contactId }: { contactId?: string }) {
 export default function CopilotPage() {
   const [params] = useSearchParams()
   const contactId = params.get('contact') || undefined
-  return <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
+  return <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--panel-bg)] text-[var(--text-primary)]">
     <CopilotWorkspace key={contactId ?? 'general'} contactId={contactId} />
   </div>
 }

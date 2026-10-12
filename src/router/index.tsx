@@ -20,10 +20,6 @@ const DealsPage = lazyPage(() => import('@/pages/deals'))
 const DealDetailPage = lazyPage(() => import('@/pages/deals/[id]'))
 const FinancialPage = lazyPage(() => import('@/pages/financial'))
 const TasksPage = lazyPage(() => import('@/pages/tasks'))
-const CopilotPage = lazyPage(() => import('@/pages/autopilot'))
-const CodeMakerPage = lazyPage(() => import('@/pages/code-maker'))
-const CodeMakerEditorPage = lazyPage(() => import('@/pages/code-maker/[id]'))
-const CodeMakerShell = lazyPage(() => import('@/pages/code-maker/layout'))
 const SettingsPage = lazyPage(() => import('@/pages/settings'))
 const SupportPage = lazyPage(() => import('@/pages/support'))
 const ReportsPage = lazyPage(() => import('@/pages/reports'))
@@ -102,31 +98,10 @@ export function AppRouter() {
             }
           />
 
-          {/* CS Copilot em tela cheia, fora do painel do sistema. */}
-          <Route
-            path="/copilot"
-            element={
-              <PrivateRoute>
-                <CopilotPage />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Code Maker em tela cheia, como o CS Copilot: sites à esquerda; à
-              direita, o pedido de um site novo ou o editor (chat + prévia). */}
-          <Route
-            path="/code-maker"
-            element={
-              <PrivateRoute>
-                <CodeMakerShell />
-              </PrivateRoute>
-            }
-          >
-            <Route index element={<CodeMakerPage />} />
-            <Route path=":id" element={<CodeMakerEditorPage />} />
-          </Route>
-
           <Route element={<PrivateRoute><AppLayout /></PrivateRoute>}>
+            {/* CS Copilot e Code Maker vivem dentro do painel e ficam abertos por baixo (ver KeepAlivePanes). */}
+            <Route path="/copilot" element={null} />
+            <Route path="/code-maker/*" element={null} />
             <Route path="/aluno" element={<AcademyPage />} />
             <Route path="/aluno/licao/:id" element={<AcademyLessonPage />} />
             <Route path="/aluno/kit" element={<AcademyKitPage />} />

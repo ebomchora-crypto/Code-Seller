@@ -118,7 +118,7 @@ export function ConversationSidebar({
                       onClick={() => setDeletingId(conversation.id)}
                       aria-label="Excluir conversa"
                       title="Excluir conversa"
-                      className="flex size-7 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-0 transition hover:bg-red-500/10 hover:text-red-500 focus:opacity-100 group-hover:opacity-100"
+                      className="flex size-7 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-60 transition hover:bg-red-500/10 hover:text-red-500 hover:opacity-100 focus:opacity-100 group-hover:opacity-100"
                     >
                       <Trash2 className="size-3.5" />
                     </button>
