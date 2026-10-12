@@ -82,7 +82,7 @@ test('prompt permanente traz os módulos novos e resolve os conflitos antigos', 
   // O antigo "não use storytelling/FOMO" conflitava com o uso seletivo pedido.
   assert.doesNotMatch(COPILOT_PERMANENT_PROMPT, /Não use FOMO, storytelling/)
   assert.doesNotMatch(COPILOT_PERMANENT_PROMPT, /\(2 a 4 linhas\)/)
-  assert.equal(COPILOT_PROMPT_VERSION, 2)
+  assert.equal(COPILOT_PROMPT_VERSION, 3)
   const full = copilotInstructions('PREFERÊNCIAS:\n- Tom: natural.')
   assert.ok(full.startsWith(COPILOT_PERMANENT_PROMPT))
   assert.match(full, /CONFIGURAÇÃO DESTA CONVERSA[\s\S]*Tom: natural/)

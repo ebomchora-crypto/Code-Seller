@@ -1,7 +1,7 @@
 import { attributedHistory, CONTEXT_PROVENANCE_GUARD, copilotParts, historyWindow, splitText, type ChatMessage } from './context.ts'
 import { load } from 'npm:cheerio@1.1.2'
 import { isAfterPrototypeRequest, isDiscountRequest, isFirstContactRequest, isPriceObjectionRequest, pickBetter, reviewRewritePrompt, reviewSuggestedMessage } from './review.ts'
-import { COPILOT_PROMPT_VERSION, copilotInstructions } from './copilotPrompt.ts'
+import { copilotInstructions } from './copilotPrompt.ts'
 import { copilotLimitMessage, NO_ACCESS_MESSAGE, planUsage, recordCopilotMessage } from '../_shared/plan.ts'
 
 const AI_API_URL = 'https://api.experientiallabs.ai/v1/chat/completions'
@@ -313,7 +313,7 @@ async function copilotCompletion(apiKey: string, messages: ChatMessage[],budget:
   // Versão 2: o navegador manda só a configuração da conversa; as regras
   // permanentes vêm do servidor. Sem versão = site antigo ainda aberto, que
   // manda o prompt inteiro.
-  const instructions: ChatMessage = options.promptVersion === COPILOT_PROMPT_VERSION
+  const instructions: ChatMessage = (options.promptVersion ?? 0) >= 2 // 2 e 3: o navegador manda só a configuração
     ? { role: 'system', content: copilotInstructions(parts.instructions.content) }
     : parts.instructions
   const { context, history, current } = parts

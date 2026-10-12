@@ -8,7 +8,7 @@ import { commercialRequestGuidance } from './copilotGuidance.ts'
 // permanentes (metodologia, técnicas, nichos, formato) ficam no servidor
 // (supabase/functions/ai-chat/copilotPrompt.ts) e são juntadas lá.
 
-export const COPILOT_PROMPT_VERSION = 2
+export const COPILOT_PROMPT_VERSION = 3
 
 const TONE: Record<CopilotPreferences['tone'], string> = {
   natural: 'natural, como conversa de WhatsApp',
