@@ -65,16 +65,12 @@ const sections: LegalSection[] = [
   },
   {
     id: 'limites',
-    title: 'Limites do plano pago',
+    title: 'Uso do plano',
     blocks: [
-      'Para manter o serviço rápido e estável para todos, o plano pago tem estes limites:',
-      {
-        list: [
-          '50 buscas por mês no Buyers Hunter, com até 30 empresas cada;',
-          '50 mensagens por dia no CS Copilot;',
-          '10 sites e 100 alterações por dia no Code Maker.',
-        ],
-      },
+      'O plano pago não tem limite diário de uso do Buyers Hunter, do CS Copilot nem do Code Maker. Cada busca do Buyers Hunter traz até 30 empresas.',
+      'O uso deve ser pessoal e de boa-fé. Para manter o serviço estável para todos, podemos limitar uso automatizado ou abusivo.',
+    ],
+  },
       'Os limites diários recomeçam à meia-noite (horário de Brasília) e o mensal, no primeiro dia de cada mês. Se for preciso ajustar um limite, avisaremos antes.',
     ],
   },

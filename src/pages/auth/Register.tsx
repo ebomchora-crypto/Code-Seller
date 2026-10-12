@@ -12,6 +12,7 @@ import {
 } from '@/components/auth/AuthForm'
 import { setRememberSession } from '@/lib/supabaseClient'
 import { useAuthContext } from '@/stores/AuthContext'
+import { checkoutUrl, getBillingStatus } from '@/services/supabase/billing'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -53,7 +54,19 @@ export default function RegisterPage() {
       return
     }
 
-    navigate('/', { replace: true })
+    // Conta nova vai direto ao pagamento. Quem já pagou antes de criar a conta (mesmo e-mail) entra direto.
+    const paid = await getBillingStatus().then((status) => status.access).catch(() => false)
+    if (paid) {
+      navigate('/', { replace: true })
+      return
+    }
+    const url = checkoutUrl(email.trim())
+    if (window.codeSellersDesktop) {
+      window.codeSellersDesktop.openInBrowser(url)
+      navigate('/', { replace: true })
+    } else {
+      window.location.assign(url)
+    }
   }
 
   return (

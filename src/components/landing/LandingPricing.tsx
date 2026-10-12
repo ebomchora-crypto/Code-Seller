@@ -4,9 +4,9 @@ import { LandingKicker } from '@/components/landing/LandingKicker'
 import { PLAN_PRICE_LABEL, checkoutUrl } from '@/services/supabase/billing'
 
 const PRO = [
-  '50 buscas de empresas por mês no Buyers Hunter',
-  '50 mensagens por dia no CS Copilot',
-  '10 sites por dia no Code Maker',
+  'Buyers Hunter: buscas de empresas sem limite',
+  'CS Copilot: mensagens sem limite',
+  'Code Maker: crie e altere sites sem limite',
   'CRM, negócios, propostas online e financeiro',
   'Área do aluno com o método completo',
   'App para Windows com avisos de tarefas',

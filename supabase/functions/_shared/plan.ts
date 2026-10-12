@@ -1,9 +1,8 @@
 // Plano e uso do dia de uma conta (função usage_for no banco). Usado pelas
 // funções do servidor para bloquear quem não tem acesso e aplicar os limites
-// diários. Não existe plano grátis: sem assinatura (ou conta liberada) não há
-// acesso. Plano pago: 10 sites, 100 alterações
-// e 50 mensagens (Buyers Hunter: 50 buscas no mês, até 30 empresas cada);
-// conta liberada sem limite (limite null).
+// de uso. Não existe plano grátis: sem assinatura (ou conta liberada) não há
+// acesso. Quem paga usa tudo sem limite diário (limite null); só cada busca do
+// Buyers Hunter traz até 30 empresas.
 
 export interface PlanUsage {
   access: boolean
@@ -22,10 +21,9 @@ export const NO_ACCESS_MESSAGE = 'Assine o Code Sellers para continuar.'
 /** Empresas por busca do Buyers Hunter no teste grátis (no plano pago, até 30). */
 export const TRIAL_RESULTS_PER_SEARCH = 10
 
-/** Alterações por dia no Code Maker: teste 10, pago 100, conta liberada sem limite (null). */
+/** Alterações por dia no Code Maker: quem paga (ou tem conta liberada) não tem limite (null). */
 export function editsLimit(usage: PlanUsage): number | null {
-  if (usage.plan === 'exempt') return null
-  return usage.plan === 'paid' ? 100 : 10
+  return usage.plan === 'paid' || usage.plan === 'exempt' ? null : 0
 }
 
 export function editsLimitMessage(usage: PlanUsage): string {

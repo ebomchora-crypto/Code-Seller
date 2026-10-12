@@ -155,13 +155,15 @@ Deno.serve(async (req: Request) => {
 
     const plan = await planUsage(userId, userData.user.email)
     const daily = plan.hunter_daily_limit !== null
+    // Quem paga (ou tem conta liberada) busca sem limite de buscas; limit 0 = sem contador na tela.
+    const unlimited = plan.plan === 'paid' || plan.plan === 'exempt'
     // No teste grátis cada busca traz menos empresas (custo de quem ainda não paga).
     const maxResults = plan.plan === 'trial' ? TRIAL_RESULTS_PER_SEARCH : MAX_RESULTS_PER_SEARCH
 
     if (body.action === 'usage') {
       return json(daily
         ? { configured: Boolean(apifyToken), used: plan.hunter_used_today, limit: plan.hunter_daily_limit, period: 'day', max_results: maxResults }
-        : { configured: Boolean(apifyToken), used, limit, period: 'month', max_results: maxResults })
+        : { configured: Boolean(apifyToken), used, limit: unlimited ? 0 : limit, period: 'month', max_results: maxResults })
     }
 
     if (body.action !== 'search') return fail('invalid_input', 'Ação inválida.', 400)
@@ -179,7 +181,7 @@ Deno.serve(async (req: Request) => {
     if (daily && plan.hunter_used_today >= plan.hunter_daily_limit!) {
       return fail('limit_reached', hunterDailyLimitMessage(plan), 429)
     }
-    if (!daily && used >= limit) {
+    if (!daily && !unlimited && used >= limit) {
       return fail('limit_reached', `Você usou as ${limit} buscas deste mês. O limite renova no dia 1º.`, 429)
     }
 
@@ -217,7 +219,7 @@ Deno.serve(async (req: Request) => {
       results,
       usage: daily
         ? { configured: true, used: plan.hunter_used_today + 1, limit: plan.hunter_daily_limit, period: 'day' }
-        : { configured: true, used: used + 1, limit, period: 'month' },
+        : { configured: true, used: used + 1, limit: unlimited ? 0 : limit, period: 'month' },
     })
   } catch (error) {
     console.error('buyers-hunter', error)
